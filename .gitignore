@@ -1,0 +1,32 @@
+# 本地构建、IDE与运行材料
+.gradle/
+.kotlin/
+.idea/
+*.iml
+local.properties
+**/build/
+**/.cxx/
+**/.externalNativeBuild/
+.work/
+.DS_Store
+__pycache__/
+*.pyc
+
+# 参考仓库与研究材料不作为产品源码提交
+/references/
+
+# 身份、签名、设备记录与分发产物不入库
+.private/
+.env
+.env.*
+*.jks
+*.keystore
+*.pk8
+*.p7b
+*.p12
+*.pfx
+*.pem
+*.key
+*.apk
+*.aab
+*.log

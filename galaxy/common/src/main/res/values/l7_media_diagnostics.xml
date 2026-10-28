@@ -1,0 +1,73 @@
+<resources>
+    <string name="l7_physical_size_automatic">自动匹配车机显示区域。当前面板约 %1$d×%2$d mm，按配置的屏幕规格换算；浮动侧栏不改变投屏尺寸。</string>
+    <string-array name="l7_audio_stream_names">
+        <item>音乐 · usage 1</item>
+        <item>导航 · usage 12</item>
+        <item>Siri · usage 16</item>
+        <item>通话 · usage 2</item>
+        <item>原厂用途（高级）</item>
+        <item>传统流 1 · 系统提示</item>
+        <item>传统流 2 · 铃声</item>
+        <item>传统流 3 · 音乐</item>
+        <item>传统流 4 · 闹钟</item>
+        <item>传统流 5 · 通知</item>
+        <item>传统流 6 · 蓝牙通话（系统定义）</item>
+        <item>传统流 7 · 强制系统提示</item>
+        <item>传统流 8 · 拨号按键</item>
+        <item>传统流 9 · 语音合成（系统保留）</item>
+        <item>传统流 10 · 无障碍（系统限制）</item>
+        <item>传统流 11 · 车机扩展流</item>
+        <item>传统流 12 · 车机扩展流</item>
+        <item>传统流 13 · 车机扩展流</item>
+        <item>传统流 14 · 导航（博越默认）</item>
+        <item>传统流 15 · 车机扩展流</item>
+        <item>传统流 16 · 车机扩展流</item>
+        <item>传统流 17 · 车机扩展流</item>
+        <item>传统流 18 · 车机扩展流</item>
+        <item>传统流 19 · 车机扩展流</item>
+        <item>传统流 20 · 车机扩展流</item>
+    </string-array>
+    <string name="l7_audio_media">媒体音乐</string>
+    <string name="l7_audio_assistant">语音助手（Siri）</string>
+    <string name="l7_audio_navigation">导航播报</string>
+    <string name="l7_audio_roles_note">选择音乐、导航、Siri 与通话的声音路由，可分别试听。修改后保存，下次连接生效。</string>
+    <string name="l7_audio_route_select">输出路由</string>
+    <string name="l7_audio_route_choose">选择</string>
+    <string name="l7_audio_route_help">① 选择路由；② 试听并记录；③ 确定修改。\n试听不保存，车型页还需点击底部“保存”。</string>
+    <string name="l7_audio_test_play">试听此声道（2 秒）</string>
+    <string name="l7_audio_test_stop">停止试听</string>
+    <string name="l7_audio_test_ready">试听不会保存设置。请确认车机音量已开启，并在停车时操作。</string>
+    <string name="l7_audio_test_playing">正在试听 %1$s…</string>
+    <string name="l7_audio_test_stopped">试听已停止，设置未保存。</string>
+    <string name="l7_audio_test_sent">测试音已发送，请确认是否听到。\n实际输出：%1$s。\n是否可用以实车听感为准。</string>
+    <string name="l7_audio_output_speaker">系统扬声器</string>
+    <string name="l7_audio_output_earpiece">听筒</string>
+    <string name="l7_audio_output_bus">车载 BUS</string>
+    <string name="l7_audio_output_wired">有线耳机</string>
+    <string name="l7_audio_output_bluetooth">蓝牙音频</string>
+    <string name="l7_audio_output_usb">USB 音频</string>
+    <string name="l7_audio_output_unknown">系统未报告</string>
+    <string name="l7_audio_output_system">其他系统输出</string>
+    <string name="l7_hevc_failed_title">HEVC 画面未正常输出</string>
+    <string name="l7_hevc_failed_message">解码初始化失败，或收到视频后未能确认画面输出。诊断日志已记录配置、解码与渲染阶段。可关闭 HEVC，切换到 H.264 并重新连接；热点设置不变。</string>
+    <string name="l7_hevc_use_avc">切换 H.264 并重连</string>
+    <string name="l7_call_processing">通话回声消除与降噪</string>
+    <string name="l7_call_processing_note">通话时使用系统支持的音效；若出现回声、音量或路由异常可关闭。修改下次连接生效。</string>
+    <string name="l7_audio_bus">尝试 BUS 路由</string>
+    <string name="l7_audio_bus_note">默认关闭，播放与录音交给系统，保持原版音频路径。仅在确认车机支持后开启；设备缺失或请求失败时回退系统。修改下次连接生效。</string>
+    <string name="l7_audio_headrest_note">有头枕音响的车型，可开启原车头枕音响模式（如“驾享”），分别试听导航、Siri 和通话。音乐避让由音频焦点与车机混音策略共同决定；关闭音频焦点会影响全部音频。</string>
+    <string name="l7_audio_phone">电话</string>
+    <string name="l7_audio_phone_usage">通话 · usage 2</string>
+    <string name="l7_audio_phone_note">可选择输出路由并试听；保存后重新连接，再通过实际通话验证。</string>
+    <string name="l7_video_failed_title">画面暂时无法显示</string>
+    <string name="l7_video_failed_message">连接仍保留。可以只重试画面，避免中断现有音频；恢复结果以实际画面为准。仍未恢复时，返回连接设置手动重新连接。</string>
+    <string name="l7_video_retry">重试画面</string>
+    <string name="l7_video_retrying">已请求重试，等待画面恢复</string>
+    <string name="l7_video_retry_unavailable">重试尚未启动或正在处理，请稍后再试；也可返回连接设置。</string>
+    <string name="l7_video_settings">返回连接设置</string>
+    <string name="l7_audio_test_heard">听到了</string>
+    <string name="l7_audio_test_unheard">没听到</string>
+    <string name="l7_audio_test_recorded">已记录：%1$s。可换一个路由继续试听。</string>
+    <string name="l7_audio_test_phone_hint">只播放模拟音，不拨号、不录音。真实通话需保存、重新连接后验证。</string>
+    <string name="l7_audio_test_unavailable">暂时无法试听“%1$s”。可换个路由再试，详情已记入日志。</string>
+</resources>

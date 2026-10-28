@@ -1,0 +1,113 @@
+package com.shilapi.xcertplay
+
+import android.content.Intent
+import android.view.KeyEvent
+import android.view.View
+import android.widget.FrameLayout
+import androidx.activity.ComponentActivity
+import com.shilapi.xcertplay.host.R
+import com.shilapi.xcertplay.airplay.AirPlayDisplayConfig
+import com.shilapi.xcertplay.media.AndroidMediaSink
+import com.shilapi.xcertplay.media.AudioOutputRole
+import com.shilapi.xcertplay.media.CarPlayVideoLayout
+import com.shilapi.xcertplay.media.GalaxyMediaPolicy
+import com.shilapi.xcertplay.orchestration.CarPlayController
+import kotlin.math.roundToInt
+
+/** 唯一公开安装入口供Application调用，不向mobile暴露内部宿主接口。 */
+object GalaxyHostAdapter {
+    fun install() {
+        // Application显式安装即选择本产品；核心无注册时仍用上游默认，不再叠加隐式资源门控。
+        HostProductBindings.factory = { activity, actions -> GalaxyProductHostAdapter(activity, actions) }
+    }
+}
+
+/** Galaxy宿主装配集中在产品目录；核心只调用中性接口，不读取车型文件或厂商服务。 */
+private class GalaxyProductHostAdapter(
+    private val activity: ComponentActivity,
+    private val actions: HostProductActions,
+) : CarPlayHostProduct {
+    private val chrome = GalaxyHostChrome(activity)
+    private val geometry = GalaxyDisplayTrace(actions.report)
+    override val name = "CarPlay"
+
+    override fun enterHost() = L7Agreement.require(activity) && L7StartupGuard.enterHost(activity)
+    override fun homeIntent(page: String) = Intent(activity, GalaxySettingsActivity::class.java).putExtra("page", page)
+    override fun uiScalePercent() = GalaxyProjectionScale.sanitize(activity
+        .getSharedPreferences("xcertplay_airplay", 0).getInt("ui_scale_percent", 100))
+    override fun oemLabel() = GalaxyCarPlayAppearance.label(activity)
+    override fun icon() = GalaxyCarPlayAppearance.icon(activity)
+    override fun scaleIcons(display: AirPlayDisplayConfig, percent: Int) = GalaxyProjectionScale.icons(display, percent)
+    override fun connectionStage(message: String, englishMessage: String) = message
+    override fun wifiP2pAllowedChannels(): List<Int> = GalaxyP2pSettings.load(activity).policy.channels
+    override fun preferredAvcDecoder(): String? = GalaxyVideoDecoderPreferences.load(activity).decoder
+
+    override fun audioConfiguration(): HostAudioConfiguration {
+        val template = L7AudioTemplates.load(activity)
+        return HostAudioConfiguration(
+            platform = GalaxyMediaPolicy(factoryProfile = true, preferBus = template.preferBus,
+                template = template, navigationDevice = GalaxyNavigationOutput.load(activity)),
+            advancedMapping = true,
+            focusEnabled = GalaxyPreferencePolicy.loadAudioFocusEnabled(activity),
+            mediaChannel = template.choice(AudioOutputRole.MEDIA),
+            navigationChannel = template.choice(AudioOutputRole.NAVIGATION),
+            assistantChannel = template.choice(AudioOutputRole.ASSISTANT),
+            callProcessingEnabled = GalaxyPreferencePolicy.loadCallProcessingEnabled(activity),
+            localMediaAudioEnabled = GalaxyMusicPlayback.localEnabled(activity),
+        )
+    }
+
+    override fun installChrome(root: FrameLayout, replacing: View, before: View?, wireless: Boolean,
+                               retry: () -> Unit): HostChromeBinding {
+        root.removeView(replacing)
+        val waiting = chrome.waiting(wireless, { actions.home("home") },
+            cancel = { actions.cancel(); actions.home("home") },
+            recovery = { actions.home("settings-connection") })
+        waiting.retryButton.setOnClickListener { retry() }
+        root.addView(waiting, root.indexOfChild(before), FrameLayout.LayoutParams(-1, -1))
+        val navigation = chrome.navigation(actions.releaseTouches, actions.home)
+        root.addView(navigation, FrameLayout.LayoutParams(-1, -1))
+        return HostChromeBinding(waiting, waiting.stage, waiting.retryButton, waiting.recoveryButton,
+            connected = navigation::setConnected,
+            refresh = { navigation.refreshAppearance(); L7Ui.refresh(waiting) },
+            showMenu = navigation::expand)
+    }
+
+    override fun onHardwareKey(controller: CarPlayController?, event: KeyEvent) =
+        GalaxyMediaKeys.onHardwareKey(controller, event)
+
+    override fun bindMedia(sink: AndroidMediaSink, controller: CarPlayController) {
+        GalaxyMediaKeys.attach(activity, controller, sink::resumeMediaAudioFocus, sink::isAssistantAudioActive)
+        val app = activity.applicationContext
+        sink.setMediaAudioChangedListener { active ->
+            // Sink可能脱离Activity继续后台播放；仅持有Application和本代控制器/音频对象。
+            val snapshot = CarPlayBackgroundSession.snapshot()
+            if (snapshot?.controller === controller && snapshot.sink === sink) {
+                GalaxyMediaKeys.onMediaAudioChanged(controller, active)
+                CarPlayBackgroundSession.setBluetoothMediaActive(controller, app, active)
+            }
+        }
+    }
+
+    override fun sessionStateChanged(controller: CarPlayController?, active: Boolean) {
+        controller ?: return
+        GalaxyMediaKeys.onSessionStateChanged(controller, active)
+        if (active) L7StartupGuard.connected(activity.applicationContext) {
+            actions.currentController() === controller && controller.hasActiveSession()
+        }
+    }
+
+    override fun sessionStored(controller: CarPlayController) {
+        CarPlayBackgroundSession.setConfiguration(controller, GalaxyProfiles(activity).refresh())
+    }
+    override fun detachMedia(controller: CarPlayController?) = GalaxyMediaKeys.detach(controller)
+
+    override fun observeVideoLayout(generation: Int, viewWidth: Int, viewHeight: Int,
+                                    canvasWidth: Int, canvasHeight: Int, layout: CarPlayVideoLayout,
+                                    softwareDecoder: Boolean) {
+        geometry.observe(generation, viewWidth, viewHeight, canvasWidth, canvasHeight,
+            layout.left.roundToInt(), layout.top.roundToInt(), layout.width.roundToInt(), layout.height.roundToInt(),
+            hardware = !softwareDecoder)
+    }
+
+}

@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 产品调试包与正式入口一致，不继承上游BYD实验入口和HUD Test名称。 -->
+<manifest />
+

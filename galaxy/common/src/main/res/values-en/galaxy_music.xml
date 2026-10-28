@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="galaxy_music_owner">Music output</string>
+    <string name="galaxy_music_local">Local CarPlay music</string>
+    <string name="galaxy_music_guide">USB and wireless music setup</string>
+    <string name="galaxy_music_guide_body">USB and wireless connections both play CarPlay music locally on the head unit. Select GalaxyPlay as the vehicle media source and CarPlay as the iPhone music output. Bluetooth media exclusion prevents duplicate playback while retaining Bluetooth calls, pairing, and the Bluetooth link required for wireless connection. Reconnect after upgrading.</string>
+</resources>

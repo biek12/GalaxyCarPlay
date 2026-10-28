@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="config_page_credentials">本地认证材料</string>
+    <string name="config_page_credentials_hint">由本机统一管理，不随车型模板覆盖</string>
+    <string name="config_page_title">偏好设置</string>
+    <string name="config_page_entry_hint">调整音频、画面、方向盘按键与原车显示</string>
+    <string name="config_page_value_hint">先确定，再在配置页面保存。</string>
+    <string name="config_page_restore">撤销修改</string>
+    <string name="config_page_common">常用</string>
+    <string name="config_page_connection">连接</string>
+    <string name="config_page_audio">音频</string>
+    <string name="config_page_video">画面</string>
+    <string name="config_page_interface">界面</string>
+    <string name="config_page_more">更多</string>
+    <string name="config_page_unsaved">有未保存的修改</string>
+    <string name="config_page_next_connection">参数调整不会中断当前连接。</string>
+    <string name="template_l7">银河 L7</string>
+    <string name="template_l6">银河 L6</string>
+    <string name="template_quick">内置快速设置</string>
+    <string name="template_overwrite">应用模板会覆盖当前偏好及未保存修改，之后可继续调整。连接设置、应用设置、认证材料和日志保留。</string>
+    <string name="template_saved">已保存 · 当前车型：%1$s</string>
+    <string name="template_pending_connection">已保存 · 当前连接保持原配置，下次连接生效</string>
+    <string name="application_settings_title">应用设置</string>
+    <string name="application_settings_entry_hint">调整语言、界面大小与显示习惯</string>
+    <string name="application_settings_hint">语言、界面／图标／按钮大小与显示偏好独立保存，不随车型模板覆盖；上传日志时一并附带。</string>
+    <string name="template_choose">选择车型</string>
+    <string name="template_apply">应用模板</string>
+    <string name="template_current">车型 · %1$s</string>
+    <string name="template_hint">选择 L7／L6 快速填入偏好，之后可继续调整；热点与连接在“连接设置”中独立设置。</string>
+    <string name="config_hotspot_title">热点名称与密码</string>
+    <string name="config_hotspot_hint">填写车机热点名称和密码；无密码热点可留空，其余参数自动处理。</string>
+    <string name="config_auth_default_hint">日常使用保持默认即可；需要更换认证方式时再调整。</string>
+    <string name="config_quality">画面清晰度</string>
+    <string name="config_quality_clear" formatted="false">清晰 · 100%（推荐）</string>
+    <string name="config_quality_balanced" formatted="false">均衡 · 80%</string>
+    <string name="config_quality_light" formatted="false">省资源 · 60%</string>
+    <string name="config_smoothness">画面流畅度</string>
+    <string name="config_smoothness_standard">标准 · 30 fps（推荐）</string>
+    <string name="config_smoothness_high">更流畅 · 60 fps</string>
+    <string name="config_music_stability">音乐播放</string>
+    <string name="config_music_fast">反应更快 · 300 ms（推荐）</string>
+    <string name="config_music_stable">更稳定 · 500 ms</string>
+    <string name="config_music_safest">优先稳定 · 1000 ms</string>
+    <string name="config_bluetooth_music">暂停手机蓝牙音乐</string>
+    <string name="config_bluetooth_hint">连接 CarPlay 时避免蓝牙与 CarPlay 同时播放音乐。</string>
+    <string name="config_icon_size">CarPlay 图标大小</string>
+    <string name="config_size_default" formatted="false">默认 · 100%（推荐）</string>
+    <string name="config_size_large" formatted="false">大 · 125%</string>
+    <string name="config_size_larger" formatted="false">更大 · 150%</string>
+    <string name="config_custom_value">自定义 · %1$d</string>
+    <string name="config_custom_percent">自定义百分比…</string>
+    <string name="config_percent_value">自定义 · %1$d%%</string>
+    <string name="template_custom">自定义</string>
+    <string name="config_reset_current">重置当前配置</string>
+    <string name="config_reset_confirm">确认重置</string>
+    <string name="config_reset_message">恢复“%1$s”的默认音频、方控、上报与画面参数，覆盖已保存的偏好和未保存修改。连接设置、应用设置、本地认证材料和日志保留。当前连接不会中断，下次连接使用默认参数。</string>
+    <string name="config_page_steering">方控</string>
+    <string name="config_page_reporting">上报</string>
+    <string name="config_steering_control">方向盘按键控制</string>
+    <string name="config_steering_hint">转发已支持的媒体与语音按键；未知按键可在调试中逐步记录，不自动猜测映射。保存后下次连接生效。</string>
+    <string name="config_media_reporting">原车音乐与媒体上报</string>
+    <string name="config_navigation_reporting">原车导航上报</string>
+    <string name="config_reporting_hint">将手机音乐信息和导航信息交给原车服务显示，需车机支持。开关不代表系统已接受；可在调试中逐步验证。保存后下次连接生效。</string>
+</resources>

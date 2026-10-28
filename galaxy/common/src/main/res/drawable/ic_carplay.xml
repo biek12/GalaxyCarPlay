@@ -1,0 +1,5 @@
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 传统入口由两层矢量合成，保持 80dp 圆角外观，不引入位图缩放。 -->
+    <item android:drawable="@drawable/ic_carplay_background_rounded" />
+    <item android:drawable="@drawable/ic_carplay_mark" />
+</layer-list>

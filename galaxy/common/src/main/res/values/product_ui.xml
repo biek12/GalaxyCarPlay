@@ -1,0 +1,12 @@
+<resources>
+    <!-- 默认保留核心宿主外观，L7 由入口模块覆盖。 -->
+    <color name="product_ui_background">#0C111B</color>
+    <color name="product_ui_surface">#151E2C</color>
+    <color name="product_ui_border">#2A384B</color>
+    <color name="product_ui_accent">#A6C8FF</color>
+    <color name="product_ui_connected">#7BD89B</color>
+    <color name="product_ui_text">#F1F5FC</color>
+    <color name="product_ui_muted">#A8B6CA</color>
+    <color name="product_ui_warning">#FFC480</color>
+    <string name="l7_core_source_info" translatable="false">DiPlay v0.2.21 · 49bf3bc2b011cb5ee7c7f4da9b99b18cbd3a23a2</string>
+</resources>

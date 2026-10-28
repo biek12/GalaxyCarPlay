@@ -1,0 +1,3 @@
+<resources>
+    <string name="galaxy_update_not_configured">This project has no configured release source. No network request was sent, and no update is downloaded from the legacy project.</string>
+</resources>

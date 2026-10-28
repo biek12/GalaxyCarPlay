@@ -1,0 +1,204 @@
+--- a/common/build.gradle.kts
++++ b/common/build.gradle.kts
+@@ -20,6 +20,14 @@
+ 
+     buildFeatures {
+         compose = true
++    }
++
++    // 学习旧GalaxyPlay的产品组织：核心仍在common，产品适配只放galaxy/common。
++    sourceSets {
++        getByName("main").kotlin.directories.add(rootProject.file("galaxy/common/src/main/java").path)
++        getByName("main").java.directories.add(rootProject.file("galaxy/common/src/main/java").path)
++        getByName("test").kotlin.directories.add(rootProject.file("galaxy/common/src/test/java").path)
++        getByName("test").java.directories.add(rootProject.file("galaxy/common/src/test/java").path)
+     }
+ 
+     testOptions {
+--- a/galaxy/mobile/build.gradle.kts
++++ b/galaxy/mobile/build.gradle.kts
+@@ -1,6 +1,13 @@
++import java.util.Properties
++
+ plugins {
+     alias(libs.plugins.android.application)
+     alias(libs.plugins.kotlin.compose)
++}
++
++// 产品版本独立于核心锁定；只读取公开构建元数据，不读取本机身份。
++val productVersion = Properties().apply {
++    rootProject.file("gradle/galaxyplay-version.properties").reader().use { load(it) }
+ }
+ 
+ // Optional local-only input. CI and ordinary source builds contain no accessory identity.
+@@ -14,11 +21,13 @@
+     }
+ 
+     defaultConfig {
+-        applicationId = "com.shihab.diplay"
++        applicationId = "com.ecarx.carplay"
+         minSdk = 24
+         targetSdk = 37
+-        versionCode = 40
+-        versionName = "0.2.21"
++        versionCode = productVersion.getProperty("versionCode").toInt()
++        versionName = productVersion.getProperty("versionName")
++        manifestPlaceholders["diplayCoreVersion"] = productVersion.getProperty("diplayCoreVersion")
++        manifestPlaceholders["diplayCoreCommit"] = productVersion.getProperty("diplayCoreCommit")
+ 
+     }
+ 
+@@ -39,8 +48,7 @@
+ 
+     buildTypes {
+         debug {
+-            applicationIdSuffix = ".hudtest"
+-            versionNameSuffix = "-hud-test"
++            // 包名按产品规范固定；不使用上游.hudtest后缀，不自动安装或替换车机应用。
+         }
+         release {
+             optimization {
+--- a/galaxy/mobile/src/main/AndroidManifest.xml
++++ b/galaxy/mobile/src/main/AndroidManifest.xml
+@@ -3,16 +3,20 @@
+     xmlns:tools="http://schemas.android.com/tools">
+ 
+     <application
++        android:name="com.ecarx.carplay.GalaxyPlayApplication"
+         android:allowBackup="false"
+         android:fullBackupContent="@xml/backup_rules"
+         android:dataExtractionRules="@xml/data_extraction_rules"
+         android:icon="@drawable/ic_carplay"
+-        android:label="@string/app_name"
++        android:label="@string/galaxy_app_name"
+         android:localeConfig="@xml/locales_config"
+         android:roundIcon="@drawable/ic_carplay"
+         android:supportsRtl="true"
+         android:resizeableActivity="true"
+         android:theme="@style/Theme.Xcertplay">
++
++        <meta-data android:name="galaxyplay.diplay.core.version" android:value="${diplayCoreVersion}" />
++        <meta-data android:name="galaxyplay.diplay.core.commit" android:value="${diplayCoreCommit}" />
+ 
+         <meta-data
+             android:name="android.allow_multiple_resumed_activities"
+--- /dev/null
++++ b/galaxy/mobile/src/main/res/values/product.xml
+@@ -0,0 +1,4 @@
++<resources>
++    <!-- 独立资源名避免上游本地化app_name重新覆盖桌面显示名。 -->
++    <string name="galaxy_app_name" translatable="false">CarPlay</string>
++</resources>
+--- /dev/null
++++ b/galaxy/mobile/src/main/java/com/ecarx/carplay/GalaxyPlayApplication.kt
+@@ -0,0 +1,12 @@
++package com.ecarx.carplay
++
++import android.app.Application
++import com.ecarx.carplay.product.GalaxyStartupDefaults
++
++/** 仅安装产品默认配置；不在Application中连接手机、绑定OEM服务或启动仪表。 */
++class GalaxyPlayApplication : Application() {
++    override fun onCreate() {
++        super.onCreate()
++        GalaxyStartupDefaults.initialize(this)
++    }
++}
+--- /dev/null
++++ b/galaxy/common/src/main/java/com/ecarx/carplay/product/GalaxyProduct.kt
+@@ -0,0 +1,10 @@
++package com.ecarx.carplay.product
++
++/** 产品身份与首验配置；不是车型自动探测结果，也不赋予未知车辆写操作权限。 */
++object GalaxyProduct {
++    const val INITIAL_VEHICLE_PROFILE = "g733-2023-max-flymeauto-2.3.1"
++    const val VEHICLE_MODEL = "银河L6"
++    const val VEHICLE_YEAR = 2023
++    const val VEHICLE_TRIM = "Max"
++    const val FLYME_AUTO_VERSION = "2.3.1"
++}
+--- /dev/null
++++ b/galaxy/common/src/main/java/com/ecarx/carplay/product/GalaxyStartupDefaults.kt
+@@ -0,0 +1,27 @@
++package com.ecarx.carplay.product
++
++import android.content.Context
++import com.shilapi.xcertplay.orchestration.WirelessHotspotMode
++
++/** 主进程创建时调用；保留上游偏好空间，不改连接方式、认证来源及用户已存值。 */
++object GalaxyStartupDefaults {
++    const val PREFERENCES = "xcertplay_airplay"
++    const val VEHICLE_PROFILE_KEY = "galaxy_vehicle_profile"
++    private const val WIRELESS_MODE_KEY = "wireless_hotspot_mode"
++
++    fun initialize(context: Context) {
++        val preferences = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
++        val editor = preferences.edit()
++        var changed = false
++        if (!preferences.contains(VEHICLE_PROFILE_KEY)) {
++            editor.putString(VEHICLE_PROFILE_KEY, GalaxyProduct.INITIAL_VEHICLE_PROFILE)
++            changed = true
++        }
++        if (!preferences.contains(WIRELESS_MODE_KEY)) {
++            editor.putString(WIRELESS_MODE_KEY, WirelessHotspotMode.MANUAL.name)
++            changed = true
++        }
++        // 一次提交到内存并异步落盘；重复启动可重入，不启动连接或等待外部服务。
++        if (changed) editor.apply()
++    }
++}
+--- /dev/null
++++ b/galaxy/common/src/test/java/com/ecarx/carplay/product/GalaxyStartupDefaultsTest.kt
+@@ -0,0 +1,52 @@
++package com.ecarx.carplay.product
++
++import android.content.Context
++import com.shilapi.xcertplay.orchestration.WirelessHotspotMode
++import org.junit.Assert.assertEquals
++import org.junit.Assert.assertFalse
++import org.junit.Before
++import org.junit.Test
++import org.junit.runner.RunWith
++import org.robolectric.RobolectricTestRunner
++import org.robolectric.RuntimeEnvironment
++import org.robolectric.annotation.Config
++
++@RunWith(RobolectricTestRunner::class)
++@Config(sdk = [30])
++class GalaxyStartupDefaultsTest {
++    private val context: Context get() = RuntimeEnvironment.getApplication()
++    private val preferences get() = context.getSharedPreferences(
++        GalaxyStartupDefaults.PREFERENCES, Context.MODE_PRIVATE,
++    )
++
++    @Before fun reset() {
++        preferences.edit().clear().commit()
++    }
++
++    @Test fun firstLaunchUsesL6AndManualWithoutSelectingAuthentication() {
++        GalaxyStartupDefaults.initialize(context)
++        assertEquals("g733-2023-max-flymeauto-2.3.1", preferences.getString("galaxy_vehicle_profile", null))
++        assertEquals("MANUAL", preferences.getString("wireless_hotspot_mode", null))
++        assertFalse(preferences.contains("mfi_target"))
++        assertFalse(preferences.contains("transport"))
++    }
++
++    @Test fun repeatedLaunchPreservesExplicitP2pProfileAndAuthentication() {
++        preferences.edit()
++            .putString("galaxy_vehicle_profile", "explicit-profile")
++            .putString("wireless_hotspot_mode", WirelessHotspotMode.WIFI_P2P.name)
++            .putString("mfi_target", "USB_CH341")
++            .commit()
++        repeat(2) { GalaxyStartupDefaults.initialize(context) }
++        assertEquals("explicit-profile", preferences.getString("galaxy_vehicle_profile", null))
++        assertEquals("WIFI_P2P", preferences.getString("wireless_hotspot_mode", null))
++        assertEquals("USB_CH341", preferences.getString("mfi_target", null))
++    }
++
++    @Test fun missingProfileDoesNotResetSavedWirelessChoice() {
++        preferences.edit().putString("wireless_hotspot_mode", "WIFI_P2P").commit()
++        GalaxyStartupDefaults.initialize(context)
++        assertEquals(GalaxyProduct.INITIAL_VEHICLE_PROFILE, preferences.getString("galaxy_vehicle_profile", null))
++        assertEquals("WIFI_P2P", preferences.getString("wireless_hotspot_mode", null))
++    }
++}

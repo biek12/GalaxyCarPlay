@@ -1,0 +1,20 @@
+--- a/settings.gradle.kts
++++ b/settings.gradle.kts
+@@ -22,12 +22,8 @@
+     }
+ }
+ 
+-rootProject.name = "xcertplay"
+-include(":common")
+-include(":mobile")
+-include(":automotive")
+-include(":shared")
+-include(":maphost")
+-project(":maphost").projectDir = file("samples/maphost")
+-include(":home")
+-project(":home").projectDir = file("samples/home")
++// 产品仅构建车机接收端；上游示例与其他入口保留在研究快照，不进入产品依赖图。
++rootProject.name = "GalaxyPlay"
++include(":common", ":mobile", ":shared")
++// mobile仅为Gradle逻辑名，应用目录只有galaxy/mobile，不再保留根mobile壳。
++project(":mobile").projectDir = file("galaxy/mobile")

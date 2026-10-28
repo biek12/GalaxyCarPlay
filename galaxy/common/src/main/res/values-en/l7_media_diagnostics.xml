@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="l7_physical_size_automatic">Automatically matches the head unit display area. The current panel is approximately %1$d×%2$d mm, calculated from the configured screen specification. The floating sidebar does not change the projection size.</string>
+    <string-array name="l7_audio_stream_names">
+        <item>Music · usage 1</item>
+        <item>Navigation · usage 12</item>
+        <item>Siri · usage 16</item>
+        <item>Calls · usage 2</item>
+        <item>Factory usage (advanced)</item>
+        <item>Legacy 1 · System sounds</item>
+        <item>Legacy 2 · Ringtone</item>
+        <item>Legacy 3 · Music</item>
+        <item>Legacy 4 · Alarm</item>
+        <item>Legacy 5 · Notifications</item>
+        <item>Legacy 6 · Bluetooth calls (system)</item>
+        <item>Legacy 7 · Enforced system sounds</item>
+        <item>Legacy 8 · Dial pad tones</item>
+        <item>Legacy 9 · Text-to-speech (system reserved)</item>
+        <item>Legacy 10 · Accessibility (system restricted)</item>
+        <item>Legacy 11 · Head-unit stream</item>
+        <item>Legacy 12 · Head-unit stream</item>
+        <item>Legacy 13 · Head-unit stream</item>
+        <item>Legacy 14 · Guidance (Boyue default)</item>
+        <item>Legacy 15 · Head-unit stream</item>
+        <item>Legacy 16 · Head-unit stream</item>
+        <item>Legacy 17 · Head-unit stream</item>
+        <item>Legacy 18 · Head-unit stream</item>
+        <item>Legacy 19 · Head-unit stream</item>
+        <item>Legacy 20 · Head-unit stream</item>
+    </string-array>
+    <string name="l7_audio_media">Media music</string>
+    <string name="l7_audio_assistant">Voice assistant (Siri)</string>
+    <string name="l7_audio_navigation">Navigation prompts</string>
+    <string name="l7_audio_roles_note">Choose and preview sound routing for music, navigation, Siri and calls. Save changes to apply them on the next connection.</string>
+    <string name="l7_audio_route_select">Output routing</string>
+    <string name="l7_audio_route_choose">Select</string>
+    <string name="l7_audio_route_help">1. Choose a route. 2. Preview and record. 3. Confirm.\nPreview does not save. Also save on the vehicle page.</string>
+    <string name="l7_audio_test_play">Play test tone (2 seconds)</string>
+    <string name="l7_audio_test_stop">Stop test tone</string>
+    <string name="l7_audio_test_ready">Previewing does not save settings. Make sure vehicle audio is audible and operate only while parked.</string>
+    <string name="l7_audio_test_playing">Previewing %1$s…</string>
+    <string name="l7_audio_test_stopped">Preview stopped. Settings have not been saved.</string>
+    <string name="l7_audio_test_sent">Test tone sent. Check whether you heard it.\nActual output: %1$s.\nVerify the result in the vehicle.</string>
+    <string name="l7_audio_output_speaker">System speaker</string>
+    <string name="l7_audio_output_earpiece">Earpiece</string>
+    <string name="l7_audio_output_bus">Vehicle BUS</string>
+    <string name="l7_audio_output_wired">Wired headphones</string>
+    <string name="l7_audio_output_bluetooth">Bluetooth audio</string>
+    <string name="l7_audio_output_usb">USB audio</string>
+    <string name="l7_audio_output_unknown">Not reported by the system</string>
+    <string name="l7_audio_output_system">Other system output</string>
+    <string name="l7_hevc_failed_title">HEVC video did not display</string>
+    <string name="l7_hevc_failed_message">Decoder initialization failed, or no video output was confirmed after receiving data. Diagnostic logs include configuration, decoding and rendering details. Turn off HEVC, switch to H.264 and reconnect. Hotspot settings will remain unchanged.</string>
+    <string name="l7_hevc_use_avc">Use H.264 and reconnect</string>
+    <string name="l7_call_processing">Call echo cancellation and noise suppression</string>
+    <string name="l7_call_processing_note">Use supported system effects during calls. Turn off if echo, volume or routing becomes worse. Applies on the next connection.</string>
+    <string name="l7_audio_bus">Try BUS routing</string>
+    <string name="l7_audio_bus_note">Off by default: playback and recording use system routing, matching the upstream audio path. Enable only after confirming vehicle support. Missing or rejected devices fall back to the system. Applies on the next connection.</string>
+    <string name="l7_audio_headrest_note">For vehicles with headrest speakers, enable the vehicle’s headrest audio mode, if available, and preview navigation, Siri and calls separately. Music ducking depends on audio focus and the vehicle’s mixing policy. Turning audio focus off affects all audio.</string>
+    <string name="l7_audio_phone">Phone calls</string>
+    <string name="l7_audio_phone_usage">Calls · usage 2</string>
+    <string name="l7_audio_phone_note">Choose and preview an output route. Save, reconnect, then verify during a real call.</string>
+    <string name="l7_video_failed_title">Video is temporarily unavailable</string>
+    <string name="l7_video_failed_message">The connection is retained. Retry video without restarting existing audio. Confirm recovery from the actual picture. If it does not recover, reconnect manually from connection settings.</string>
+    <string name="l7_video_retry">Retry video</string>
+    <string name="l7_video_retrying">Retry requested. Waiting for video.</string>
+    <string name="l7_video_retry_unavailable">Retry was not started or is already pending. Try later or open connection settings.</string>
+    <string name="l7_video_settings">Open connection settings</string>
+    <string name="l7_audio_test_heard">Heard it</string>
+    <string name="l7_audio_test_unheard">No sound</string>
+    <string name="l7_audio_test_recorded">Recorded: %1$s. Choose another route to try again.</string>
+    <string name="l7_audio_test_phone_hint">Plays a test tone without calling or recording. Save and reconnect to verify a real call.</string>
+    <string name="l7_audio_test_unavailable">Cannot preview “%1$s” right now. Try another route; details are in the log.</string>
+</resources>

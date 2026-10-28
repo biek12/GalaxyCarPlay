@@ -1,0 +1,4 @@
+<resources>
+    <string name="galaxy_update_manifest_url" translatable="false"></string>
+    <string name="galaxy_update_not_configured">本项目尚未配置发布源，未发送网络请求；不会从旧项目下载更新。</string>
+</resources>

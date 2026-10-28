@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="setup_error_auth">CarPlay authentication is not ready. Import credentials in settings, or configure USB or Remote MFi authentication.</string>
+    <string name="l7_probe_sdk_contract">Vendor SDK contracts (read only)</string>
+    <string name="l7_probe_media_sessions">System media sessions (read only)</string>
+    <string name="l7_probe_sdk_contract_checked">SDK contract evidence collected. See details for loading results; service access is unverified.</string>
+    <string name="l7_steering_title">Steering controls</string>
+    <string name="l7_steering_status">Current control path</string>
+    <string name="l7_steering_session">Phone session</string>
+    <string name="l7_steering_chain">Observed state</string>
+    <string name="l7_steering_hint">Press a steering control and check the events. No INPUT means this app has not received an event through that path. A channel write does not confirm phone execution. Phone state observations are recorded separately.</string>
+    <string name="l7_steering_markers">Issue markers</string>
+    <string name="l7_steering_mark_failed">Mark a missed control</string>
+    <string name="l7_steering_mark_ok">Mark a working control</string>
+    <string name="l7_steering_logs">View and export logs</string>
+    <string name="l7_steering_clear">Clear this page</string>
+    <string name="l7_steering_clear_hint">Clears the current display only; existing logs are kept.</string>
+    <string name="l7_steering_events">Recent inputs and stages</string>
+    <string name="l7_steering_events_hint">Keeps 256 stages and displays 12 groups. Match trace IDs and session generations in STEERING_TRACE logs. Timing starts at event receipt. Bluetooth waits, repeat filtering, foreign focus, queues and channel results are recorded separately.</string>
+    <string name="l7_steering_connected">Connected · generation %1$d</string>
+    <string name="l7_steering_disconnected">Disconnected · generation %1$d</string>
+    <string name="l7_steering_empty">No steering or media control events yet</string>
+    <string name="l7_usb_start_failed">Wired connection could not start</string>
+    <string name="l7_usb_vpn_waiting">Waiting for system network consent before starting the wired connection.</string>
+    <string name="l7_usb_vpn_missing">The head unit could not open the system network consent screen required for a wired connection. View diagnostics or return to wired settings. If retrying fails, check whether the system component is available.</string>
+    <string name="l7_usb_vpn_system_denied">The system rejected the network consent operation required for a wired connection. This attempt has stopped. View diagnostics and check system authorization.</string>
+    <string name="l7_usb_vpn_declined">Network consent was not completed and may have been declined or cancelled. The wired connection has not started. You can request consent again or return to wired settings.</string>
+    <string name="l7_usb_vpn_failed">Network consent preparation or screen launch failed. The failed stage was recorded. View diagnostics; this attempt did not continue connecting.</string>
+    <string name="l7_usb_retry">Check and request consent again</string>
+    <string name="l7_usb_back_settings">Return to wired settings</string>
+    <string name="l7_usb_previous_title">Previous wired connection ended unexpectedly</string>
+    <string name="l7_usb_previous_hint">The previous wired connection did not end normally or did not finish starting. Stages and available exit reasons for the last two attempts were kept. View, upload or export diagnostics from the log page, then retry manually.</string>
+    <string name="l7_steering_vehicle">Vehicle and input capture</string>
+    <string name="l7_steering_l7_capture">L7 keeps the existing steering implementation</string>
+    <string name="l7_steering_other_capture">Extra input diagnostics are enabled by default. Unknown inputs are recorded without mapping. Vendor callback observation applies on the next connection.</string>
+    <string name="l7_steering_test_key">Mark the key to test</string>
+    <string name="l7_steering_test_key_hint">Select a key, press the physical control, then mark success or failure. Records enter the logs by default; you initiate uploads.</string>
+    <string-array name="l7_steering_test_keys">
+        <item>Left key</item>
+        <item>Right key</item>
+        <item>Play / Pause key</item>
+        <item>Voice short press</item>
+        <item>Voice long press</item>
+        <item>Volume up</item>
+        <item>Volume down</item>
+        <item>Other steering key</item>
+        <item>Not a steering control / Accidental input</item>
+    </string-array>
+    <string name="l7_debug_details">View technical details</string>
+    <string name="l7_listen_step">1. Start listening</string>
+    <string name="l7_listen_intro">Start listening and press one steering control. After an input arrives, choose the key you pressed before testing the next one. Listening stops after two minutes or when you leave this page.</string>
+    <string name="l7_listen_status">Current status</string>
+    <string name="l7_listen_start">Start input logging</string>
+    <string name="l7_listen_stop">Stop listening</string>
+    <string name="l7_listen_idle">Not started</string>
+    <string name="l7_listen_waiting">Listening — press one steering control</string>
+    <string name="l7_listen_received">Control input received</string>
+    <string name="l7_listen_stopped">Listening stopped; records saved</string>
+    <string name="l7_listen_question">Which steering control did you just press? Your choice will be linked to this input group, then listening will continue. Wait until you finish labeling before pressing another key.</string>
+    <string name="l7_listen_skip">Ignore this input group</string>
+    <string name="l7_listen_no_input">Pressed a control but received no input</string>
+    <string name="l7_listen_no_input_hint">Record the missing input for investigation after upload.</string>
+    <string name="l7_listen_records">2. Labeled controls</string>
+    <string name="l7_listen_saved">Inputs and labels are saved to the logs. Labels do not change control mappings.</string>
+    <string name="l7_listen_empty">Start listening and press a control. Choose its label after an input arrives.</string>
+    <string name="l7_listen_sample">Input group %1$d</string>
+    <string name="l7_listen_bound">Linked to %1$d input records</string>
+    <string name="l7_listen_finish">3. Finish and upload</string>
+    <string name="l7_listen_upload_hint">Stop listening, then upload the records manually from Logs.</string>
+    <string name="l7_listen_no_input_saved">Recorded: no input arrived for this press</string>
+    <string name="l7_report_expected_media">%1$s\nState: %2$s · Progress: %3$d seconds\nArtwork: %4$s</string>
+    <string name="l7_report_expected_road">Test road: %1$s\nCheck whether the HUD or cluster shows this road.</string>
+    <string name="l7_report_playing">Playing</string>
+    <string name="l7_report_paused">Paused</string>
+    <string name="l7_report_green">Green test artwork</string>
+    <string name="l7_report_blue">Blue test artwork</string>
+    <string name="l7_report_no_cover">No artwork</string>
+    <string name="l7_report_service_issue">Some test requests failed. The reasons are saved in the logs.</string>
+    <string name="l7_report_cleanup_question">Check the vehicle display: has the test information been cleared?</string>
+    <string name="l7_report_preparing">Preparing the sample. Please wait.</string>
+    <string name="l7_report_begin_first">Start the test to see the current sample here.</string>
+    <string name="l7_report_compare_hint">Check the vehicle display before recording a result. Check again after each sample update.</string>
+    <string name="l7_report_result_ok">Recorded: matched expectations</string>
+    <string name="l7_report_result_bad">Recorded: did not match expectations</string>
+    <string name="l7_report_sample_changed">The sample changed. Check the current content before recording a result.</string>
+    <string name="l7_voice_source_normal">Standard voice input (recommended)</string>
+    <string name="l7_voice_source_raw">Raw microphone input</string>
+    <string name="l7_voice_source_call">Call voice input</string>
+    <string name="l7_voice_retry">Capture failed. Check microphone permission or try another input mode. Details are saved.</string>
+    <string name="l7_voice_system_muted">The system is muting capture. End the call or check microphone permission.</string>
+    <string name="l7_voice_input_level">Input level: %1$d%%. Say a short sentence.</string>
+    <string name="l7_voice_data_received">Recording data received</string>
+    <string name="l7_voice_speak_hint">Start the test, speak toward the vehicle microphone, and watch the input level.</string>
+    <string name="l7_voice_elapsed">Captured for %1$d seconds</string>
+    <string name="l7_voice_phone_recording">The phone has opened voice input. Speak toward the vehicle microphone.</string>
+    <string name="l7_voice_phone_ready">Request Siri, speak when it opens, then record whether the phone responds.</string>
+    <string name="l7_voice_result_ok">Record a phone response</string>
+    <string name="l7_voice_result_bad">Record no response or recognition issues</string>
+    <string name="l7_voice_response_saved">Recorded: the phone responded</string>
+    <string name="l7_voice_no_response_saved">Recorded: no response or recognition issues</string>
+    <string name="l7_debug_choose">Choose a function to test</string>
+    <string name="l7_debug_choose_hint">Follow the steps to start, observe, and record a result. Test logs are saved automatically; you upload them manually.</string>
+    <string name="l7_debug_goal_steering">Listen for controls, then label the key after its input arrives.</string>
+    <string name="l7_debug_goal_voice">Check vehicle recording, then test the phone response to Siri.</string>
+    <string name="l7_debug_goal_media">Publish a test track and compare it with the vehicle media card.</string>
+    <string name="l7_debug_goal_hud">Publish a test road and check the HUD or cluster.</string>
+    <string name="l7_debug_details_hide">Hide technical details</string>
+    <string name="l7_report_current_sample">Current sample</string>
+    <string name="galaxy_wireless_retry">Retry connection</string>
+    <string name="wireless_startup_retries_exhausted">Automatic retries stopped. Check the connection and retry manually.</string>
+</resources>

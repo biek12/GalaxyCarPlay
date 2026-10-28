@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- 只在用户确认安装更新时申请此来源的系统安装授权。 -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+    <!-- VPN 控制候选权限需由系统授予；声明不能替代 ACTIVATE_VPN 的 AppOps 授权。 -->
+    <uses-permission android:name="android.permission.CONTROL_VPN" tools:ignore="ProtectedPermissions" />
+    <!-- 用户主动授予，用于尝试开启 Android 原生热点；不代表获得配置写入权限。 -->
+    <!-- 原生热点候选权限；声明不代表获得系统签名或特权授权，以实车调用为准。 -->
+    <!-- 仅用于只读系统媒体会话查询；普通 APK 声明后仍可能被系统拒绝。 -->
+    <uses-permission android:name="android.permission.MEDIA_CONTENT_CONTROL" tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.NETWORK_SETTINGS" tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.OVERRIDE_WIFI_CONFIG" tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.TETHER_PRIVILEGED" tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.NETWORK_STACK" tools:ignore="ProtectedPermissions" />
+    <uses-permission android:name="android.permission.WRITE_SETTINGS" />
+    <!-- 仅查询和加载已核对的参考 SDK 包，避免 Android 11 包可见性过滤造成误判。 -->
+    <queries>
+        <package android:name="com.android.settings" />
+        <package android:name="com.ecarx.android.auto" />
+        <package android:name="com.ecarx.config" />
+        <package android:name="com.flyme.auto.map" />
+        <package android:name="com.flyme.auto.settings" />
+        <package android:name="com.geely.linkhmi" />
+        <package android:name="com.netease.cloudmusic.iot" />
+        <package android:name="com.flyme.auto.music" />
+        <package android:name="com.flyme.auto.mediacontrol" />
+        <package android:name="com.huawei.dmsdpdevice" />
+        <package android:name="com.huawei.nearby" />
+        <package android:name="com.lge.car" />
+        <package android:name="ecarx.xsf.mediacenter" />
+        <package android:name="com.ecarx.sdk.openapi" />
+    </queries>
+
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_LOCATION" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <!-- Optional, owner-enabled Usage Access for the verified DiLink 5.1 cluster profile. -->
+    <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS" tools:ignore="ProtectedPermissions" />
+    <application>
+        <!-- 旧Galaxy产品清单不声明这些BYD专用入口；核心源码保留，L6/L7不发布这些组件。 -->
+        <activity android:name="com.shilapi.xcertplay.AdbClusterActivity" tools:node="remove" />
+        <service android:name="com.shilapi.xcertplay.MapEmbedService" tools:node="remove" />
+        <service android:name="com.shilapi.xcertplay.WheelKeyService" tools:node="remove" />
+        <provider android:name="com.shilapi.xcertplay.GalaxyUpdateFileProvider"
+            android:authorities="${applicationId}.app-updates"
+            android:exported="false" android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/galaxy_update_paths" />
+        </provider>
+        <provider android:name="com.shilapi.xcertplay.DiagnosticReportProvider"
+            android:authorities="${applicationId}.diagnostic-reports"
+            android:exported="false" android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/diagnostic_report_paths" />
+        </provider>
+        <service android:name="com.shilapi.xcertplay.GalaxyCodecProbeService"
+            android:exported="false" android:process=":codec_probe" android:stopWithTask="true" />
+        <provider android:name="com.shilapi.xcertplay.L7MediaArtworkProvider"
+            android:authorities="${applicationId}.media-artwork"
+            android:exported="false" android:grantUriPermissions="true">
+            <meta-data android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/l7_media_artwork_paths" />
+        </provider>
+        <activity android:name="com.shilapi.xcertplay.L7AgreementActivity"
+            android:exported="false"
+            android:configChanges="uiMode"
+            android:theme="@style/Theme.Xcertplay" />
+        <activity android:name="com.shilapi.xcertplay.GalaxySettingsActivity"
+            android:exported="true" android:launchMode="singleTop"
+            android:configChanges="density|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:theme="@style/Theme.Xcertplay">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+        <!-- 沿旧Galaxy的清单注入：保留核心类源码供上游同步，运行时旧组件名统一指向产品入口。 -->
+        <activity android:name="com.shilapi.xcertplay.DiPlayActivity" tools:node="remove" />
+        <activity-alias android:name="com.shilapi.xcertplay.DiPlayActivity"
+            android:targetActivity="com.shilapi.xcertplay.GalaxySettingsActivity" android:exported="true" />
+        <service android:name="com.shilapi.xcertplay.DiPlaySessionService"
+            android:exported="false" android:foregroundServiceType="connectedDevice|microphone|location" />
+
+        <activity
+            android:name="com.shilapi.xcertplay.CarPlayHostActivity"
+            android:configChanges="density|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:resizeableActivity="true"
+            android:screenOrientation="fullSensor"
+            android:theme="@style/Theme.Xcertplay"
+            android:windowSoftInputMode="adjustResize">
+            <intent-filter>
+                <action android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED" />
+            </intent-filter>
+            <meta-data
+                android:name="android.hardware.usb.action.USB_DEVICE_ATTACHED"
+                android:resource="@xml/usb_device_filter" />
+        </activity>
+
+        <activity
+            android:name="com.shilapi.xcertplay.CarPlayVideoActivity"
+            android:configChanges="density|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+            android:exported="false"
+            android:theme="@style/Theme.Xcertplay" />
+
+        <activity
+            android:name="com.shilapi.xcertplay.MainActivity"
+            android:exported="false"
+            android:theme="@style/Theme.Xcertplay" />
+
+        <activity
+            android:name="com.shilapi.xcertplay.ImageCropActivity"
+            android:exported="false"
+            android:screenOrientation="fullSensor"
+            android:theme="@style/Theme.Xcertplay" />
+
+        <receiver android:name="com.shilapi.xcertplay.BootReceiver" tools:node="remove" />
+        <receiver android:name="com.shilapi.xcertplay.GalaxyBootReceiver" android:enabled="true" android:exported="true">
+            <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /></intent-filter>
+        </receiver>
+    </application>
+
+</manifest>

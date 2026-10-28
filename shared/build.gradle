@@ -1,0 +1,54 @@
+plugins {
+    id 'com.android.library'
+}
+android {
+    namespace = 'com.shilapi.xcertplay.shared'
+    compileSdk = 37
+
+    defaultConfig {
+        minSdk = 24
+        consumerProguardFiles 'ambient-consumer-rules.pro'
+        targetSdk = 37
+
+        ndk {
+            abiFilters 'arm64-v8a', 'armeabi-v7a', 'x86', 'x86_64'
+        }
+
+        externalNativeBuild {
+            ndkBuild {
+                // 产品最低Android10，已迁入的NDK probe使用API28+，不改官方native源码。
+                arguments 'APP_PLATFORM=android-29'
+            }
+        }
+
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+    ndkVersion = '28.2.13676358'
+    externalNativeBuild {
+        ndkBuild {
+            path = rootProject.file('galaxy/shared/src/main/jni/Product.mk')
+        }
+    }
+    // 实际迁入的产品音频策略与其回归增量编译，不替换上游main/test目录。
+    sourceSets {
+        main.java.directories.add(rootProject.file('galaxy/shared/src/main/java').path)
+        main.kotlin.directories.add(rootProject.file('galaxy/shared/src/main/java').path)
+        test.java.directories.add(rootProject.file('galaxy/shared/src/test/java').path)
+        test.kotlin.directories.add(rootProject.file('galaxy/shared/src/test/java').path)
+    }
+    buildFeatures {
+        // Geely/Lynk head-unit input API (com.geely.inputservice); declarations in src/main/aidl.
+        aidl true
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
+}
+dependencies {
+    implementation libs.androidx.app
+    implementation libs.bouncycastle
+    implementation libs.jmdns
+    testImplementation libs.junit
+    testImplementation 'org.robolectric:robolectric:4.17'
+}

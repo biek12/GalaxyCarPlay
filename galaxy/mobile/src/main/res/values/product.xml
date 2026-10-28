@@ -1,0 +1,4 @@
+<resources>
+    <!-- 独立资源名避免上游本地化app_name重新覆盖桌面显示名。 -->
+    <string name="galaxy_app_name" translatable="false">CarPlay</string>
+</resources>
