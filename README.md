@@ -2,7 +2,7 @@
 
 新车机 CarPlay 接收端项目。应用显示名 **CarPlay**，包名 **com.ecarx.carplay**。首验为 **银河 L6 2023 年 Max / FlymeAuto 2.3.1**，L7 随后适配。
 
-当前进入**Galaxy适配迁移实施阶段**：官方 DiPlay v0.2.21 固定提交为核心基线，旧GalaxyPlay `galaxy/` 目录已完整迁入并按L6首验与v0.2.21接口适配；唯一应用入口为 galaxy/mobile，产品适配集中在 galaxy/common。`:shared` 与 `:common` 单元测试全绿（1680+1601项），`assembleDebug` 可产出APK；方控运行时接入、仪表HAB→QNX画面与L6 DIM显式绑定、L7 profile 及实车验收尚未完成。结果见[工程基础](docs/工程基础.md)。
+当前进入**Galaxy适配迁移实施阶段**：官方 DiPlay v0.2.21 固定提交为核心基线，旧GalaxyPlay `galaxy/` 目录已完整迁入并按L6首验与v0.2.21接口适配；唯一应用入口为 galaxy/mobile，产品适配集中在 galaxy/common。`scripts/verify.sh` 一条命令跑完整验证：离线源码契约 + `:shared` 1680项、`:common` 1617项单测 + `:mobile` lintDebug（0 error/72 warning）+ assembleDebug 产出APK，全部通过（2026-10-29 01:34）。方控学习已接入投屏会话运行时（七动作真正下发）。**尚未完成**：仪表HAB→QNX完整导航/音乐画面与L6 DIM显式绑定、L7 profile、实车验收。结果见[工程基础](docs/工程基础.md)。
 
 ## 项目文档
 
@@ -21,7 +21,7 @@
 
 “车机逆向”与“星枢”在原目录只读研究，不复制其密钥、缓存或私有日志。参考材料不等于新 App 源码，不自动打包或再分发。
 
-用户已明确要求开始建立项目基础，本轮据此解除该范围的只研究限制。保留参考实现对标记录；不把基础落入当作所有功能已迁移。不初始化根Git仓库、不安装APK、不连接车辆、不替换签名或推送发版。
+用户已明确要求开始建立项目基础，本轮据此解除该范围的只研究限制。保留参考实现对标记录；不把基础落入当作所有功能已迁移。根Git按D10初始化：`main` 只收已验证状态，改动走 `feat/*`/`fix/*` 短分支，不推远端。不安装APK、不连接车辆、不替换签名或推送发版。
 
 ## 源码目录
 
@@ -34,8 +34,8 @@
 ## 基础检查
 
 ```sh
-python3 scripts/project_checks.py
-python3 -m unittest discover -s scripts/tests -v
+scripts/verify.sh          # 全量：源码契约 + 单测 + lint + assembleDebug
+scripts/verify.sh --quick  # 只跑离线源码检查（秒级）
 ```
 
 Android构建沿用上游固定工具链，不沿用旧工程Docker约定；认证与签名仍外置。详见[工程基础](docs/工程基础.md)和[安全约定](SECURITY.md)。
