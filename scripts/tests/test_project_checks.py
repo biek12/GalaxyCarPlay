@@ -110,6 +110,25 @@ class CoreChecksTest(unittest.TestCase):
         (self.root / 'common/build/generated.kt').write_text('generated')
         self.assertEqual((3, 0), checks.check_core(self.root))
 
+    def test_registered_deletion_passes_only_when_file_is_gone(self):
+        self.registry['deletions'] = [{'path': 'common/gone.kt', 'reason': '合成删除'}]
+        self.save()
+        self.assertEqual((3, 0), checks.check_core(self.root))
+
+    def test_registered_deletion_fails_when_file_still_exists(self):
+        (self.root / 'common/alive.kt').write_text('still here\n')
+        self.registry['deletions'] = [{'path': 'common/alive.kt', 'reason': '合成删除'}]
+        self.save()
+        with self.assertRaisesRegex(AssertionError, '已登记删除的文件仍存在'):
+            checks.check_core(self.root)
+
+    def test_deletion_cannot_overlap_a_registered_change(self):
+        self.register_patch()
+        self.registry['deletions'] = [{'path': 'shared/build.gradle', 'reason': '合成删除'}]
+        self.save()
+        with self.assertRaisesRegex(AssertionError, '已登记删除的文件仍存在'):
+            checks.check_core(self.root)
+
 
 class ProductChecksTest(unittest.TestCase):
     def test_mobile_path_is_mapped_without_changing_core_paths(self):
@@ -148,3 +167,32 @@ class ProductChecksTest(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+
+class RecordPatchesTest(unittest.TestCase):
+    """补丁重建工具的差异生成规则；不读写真实产品与基线。"""
+
+    def setUp(self):
+        sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+        import record_patches
+        self.record = record_patches
+
+    def test_new_text_file_becomes_full_addition(self):
+        text = self.record.render('galaxy/common/src/main/java/A.kt', None, b'package a\nclass A\n')
+        self.assertTrue(text.startswith('--- /dev/null\n+++ b/galaxy/common/src/main/java/A.kt\n@@ -0,0 +1,2 @@\n'))
+        self.assertIn('+class A\n', text)
+
+    def test_unchanged_content_has_no_diff(self):
+        self.assertEqual('', self.record.render('common/A.kt', b'same\n', b'same\n'))
+
+    def test_binary_suffix_and_non_utf8_use_marker(self):
+        self.assertEqual('Binary files /dev/null and b/common/icon.png differ\n',
+                         self.record.render('common/icon.png', None, b'\x89PNG\r\n\x1a\n'))
+        self.assertEqual('Binary files a/common/blob.bin and b/common/blob.bin differ\n',
+                         self.record.render('common/blob.bin', b'\x00\x01', b'\x00\x02'))
+
+    def test_new_files_join_the_group_of_their_module(self):
+        groups = {'P005': {'files': {'galaxy/common/src/main/java/A.kt': {}}},
+                  'P002': {'files': {'galaxy/mobile/src/main/AndroidManifest.xml': {}}}}
+        self.assertEqual('P005', self.record.group_for('galaxy/common/src/main/java/B.kt', groups))
+        self.assertEqual('P002', self.record.group_for('galaxy/mobile/src/main/res/values/x.xml', groups))

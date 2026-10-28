@@ -1,0 +1,13 @@
+// GalaxyPlay 本机验证用 init 脚本（决策 D09）：仅在显式 --mirror 时加载。
+// 只把解析仓库指向同版本的公开镜像，不改依赖坐标、版本或校验策略；不进入产品仓库声明。
+// 镜像地址可用 GALAXY_MAVEN_MIRROR_GOOGLE / GALAXY_MAVEN_MIRROR_CENTRAL 覆盖。
+def googleUrl = System.getenv('GALAXY_MAVEN_MIRROR_GOOGLE') ?: 'https://maven.aliyun.com/repository/google'
+def centralUrl = System.getenv('GALAXY_MAVEN_MIRROR_CENTRAL') ?: 'https://maven.aliyun.com/repository/public'
+
+settingsEvaluated { settings ->
+    settings.dependencyResolutionManagement.repositories {
+        clear()
+        maven { url = uri(googleUrl) }
+        maven { url = uri(centralUrl) }
+    }
+}

@@ -37,6 +37,13 @@ def check_core(root):
     lock = json.loads((root / 'tools/upstream/baseline-lock.json').read_text())
     registry = json.loads((root / 'tools/upstream/patches.json').read_text())
     expected = {product_path(path, registry.get('pathMap', {})): sha for path, sha in lock['files'].items()}
+    # 删除项必须真的不在源码里，且不能再同时出现在某组补丁的修改清单中。
+    deleted = set()
+    for entry in registry.get('deletions', []):
+        path = entry['path']
+        assert path not in deleted, f'删除项重复登记: {path}'
+        assert not (root / path).exists(), f'已登记删除的文件仍存在: {path}'
+        deleted.add(path)
     registered = set()
     for patch in registry['patches']:
         patch_file = root / patch['patch']
@@ -46,6 +53,7 @@ def check_core(root):
             assert path not in registered, f'同一核心文件重复登记: {path}'
             # 新增产品文件以null原始摘要登记，不伪造上游已存在该文件。
             assert expected.get(path) == entry['baselineSha256'], f'基线摘要不符: {path}'
+            assert path not in deleted, f'同一文件既登记修改又登记删除: {path}'
             registered.add(path)
             expected[path] = entry['productSha256']
     for path, sha in expected.items():
@@ -113,7 +121,8 @@ def main():
     except (AssertionError, KeyError, OSError, ValueError) as error:
         print(f'检查失败: {error}', file=sys.stderr)
         return 1
-    print(f'检查通过：{files}份锁定文件，{patches}份已登记差异；产品身份、源集和无凭据边界通过。')
+    deletions = len(json.loads((ROOT / 'tools/upstream/patches.json').read_text()).get('deletions', []))
+    print(f'检查通过：{files}份锁定文件，{patches}份已登记差异，{deletions}份已登记删除；产品身份、源集和无凭据边界通过。')
     print('这是离线源码契约检查，不代表Android编译、手机连接或实车验收通过。')
     return 0
 

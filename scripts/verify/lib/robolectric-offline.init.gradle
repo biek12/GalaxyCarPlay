@@ -1,0 +1,33 @@
+// GalaxyPlay 本机验证用 init 脚本（决策 D09）。
+// 只给 Test 任务的测试 JVM 追加系统属性：把 Robolectric 的 user.home 重定向到仓库内可写目录，
+// 并在离线依赖目录已备齐时强制离线取物。不进入 APK、不进入产品源集、不改依赖版本与测试断言。
+//
+// 缓存根目录由 GALAXY_VERIFY_CACHE 指定；缺省为仓库根下 .work（该目录已被 .gitignore 排除）。
+def cacheRoot = new File(System.getenv('GALAXY_VERIFY_CACHE') ?: new File(rootDir, '.work').toString()).absoluteFile
+def dependencyDir = new File(cacheRoot, 'robolectric-deps')
+// Robolectric 运行时会在 user.home 下建下载锁与缓存，受限环境不可写真实用户目录。
+def sandboxHome = new File(cacheRoot, 'android-user-home')
+def strictOffline = System.getenv('GALAXY_ROBOLECTRIC_STRICT_OFFLINE') == '1'
+def mirrorUrl = System.getenv('GALAXY_ROBOLECTRIC_REPO_URL') ?: 'https://maven.aliyun.com/repository/public'
+
+def hasDependencies = dependencyDir.isDirectory() && dependencyDir.list()?.any { it.endsWith('.jar') }
+
+if (strictOffline && !hasDependencies) {
+    throw new GradleException("缺少 Robolectric 离线依赖: ${dependencyDir}；先按 docs/工程基础.md 备齐缓存，或去掉 --offline")
+}
+
+gradle.projectsEvaluated {
+    gradle.rootProject.allprojects { project ->
+        project.tasks.withType(Test).configureEach { task ->
+            task.systemProperty 'user.home', sandboxHome.absolutePath
+            if (hasDependencies) {
+                task.systemProperty 'robolectric.offline', 'true'
+                task.systemProperty 'robolectric.dependency.dir', dependencyDir.absolutePath
+            } else {
+                // 没有本地缓存时退回公开镜像；仅本机验证用，不代表产品依赖声明。
+                task.systemProperty 'robolectric.dependency.repo.id', 'galaxy-verify-mirror'
+                task.systemProperty 'robolectric.dependency.repo.url', mirrorUrl
+            }
+        }
+    }
+}
