@@ -16,8 +16,17 @@ import com.shilapi.xcertplay.steering.SteeringLearningSession
 import com.shilapi.xcertplay.steering.SteeringSnapshot
 import java.io.Closeable
 
-/** 按先观察/学习、再选择动作、最后确认保存；离开前台页面由宿主close注销观察句柄。 */
-internal class GalaxySteeringSettings(private val activity: Activity, parent: LinearLayout) : Closeable {
+/**
+ * 方控设置的唯一入口：上半部分做学习/确认/保存/删除与总开关，下半部分是实物键观察与标注。
+ *
+ * 边界：开关沿用产品既有键（见 SteeringConfigurationStore），关闭后既不执行已保存映射，
+ * 也停止原车键回送；本页只观察与确认，不发送测试按键、不拦截原车按键。
+ * 线程：全部在主线程构建与刷新；学习句柄由 [GalaxySteeringSessions.observe] 在主线程持有，
+ * 离开页面由宿主调用 [close] 注销观察句柄（最后一个句柄释放后Binder订阅一起注销）。
+ * 生命周期：[background]/[resume] 转发给内嵌的观察页，页面不可见时停止它自己的监听日志。
+ */
+internal class GalaxySteeringSettings(private val activity: Activity, parent: LinearLayout,
+    private val onLogs: () -> Unit = {}) : Closeable {
     private var closed = false
     private var state = SteeringSnapshot()
     private var selectedGesture = SteeringGesture.CLICK
@@ -35,6 +44,9 @@ internal class GalaxySteeringSettings(private val activity: Activity, parent: Li
     private lateinit var confirm: Button
     private val bindings = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
     private var renderedBindings: List<SteeringBinding>? = null
+
+    /** 实物键观察与标注：复用原调试页实现，作为本页下半部分而不是第二个入口。 */
+    private var watch: L7SteeringDebugPage? = null
 
     init {
         L7SettingsSection.add(parent, text(R.string.galaxy_steering_learning_title),
@@ -69,7 +81,23 @@ internal class GalaxySteeringSettings(private val activity: Activity, parent: Li
             confirm = L7Components.actionButton(activity, text(R.string.galaxy_steering_confirm)) { confirmMapping() }.also(group::addView)
         }
         parent.addView(bindings)
+        L7SettingsSection.add(parent, text(R.string.galaxy_steering_watch_title),
+            text(R.string.galaxy_steering_watch_hint)) { }
+        watch = L7SteeringDebugPage(activity, parent, onLogs)
         session = GalaxySteeringSessions.observe(activity, ::update)
+    }
+
+    /** 宿主定时刷新入口；内嵌观察页自带200ms节拍，这里只补一次即时刷新。 */
+    fun update() {
+        if (!closed) watch?.update()
+    }
+
+    fun background() {
+        if (!closed) watch?.background()
+    }
+
+    fun resume() {
+        if (!closed) watch?.resume()
     }
 
     private fun update(snapshot: SteeringSnapshot) {
@@ -158,6 +186,8 @@ internal class GalaxySteeringSettings(private val activity: Activity, parent: Li
         closed = true
         dialog?.dismiss()
         dialog = null
+        watch?.close()
+        watch = null
         session.close()
     }
 }

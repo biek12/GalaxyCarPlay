@@ -1,6 +1,92 @@
 --- a/shared/src/main/java/com/shilapi/xcertplay/orchestration/CarPlayController.kt
 +++ b/shared/src/main/java/com/shilapi/xcertplay/orchestration/CarPlayController.kt
-@@ -2203,38 +2203,7 @@
+@@ -250,6 +250,8 @@
+     @Volatile private var dashboardMapOutputVisible = false
+     private val dashboardMapEpoch = AtomicInteger()
+     private val playbackStatus = com.shilapi.xcertplay.media.CarPlayPlaybackStatus()
++    /** 可选原始导航帧观察接缝；解析状态与OEM输出由调用方拥有，核心不反向引用产品类。 */
++    @Volatile var navigationFrameListener: ((com.shilapi.xcertplay.iap2.wire.Iap2Frame) -> Unit)? = null
+ 
+     private val albumReplayLock = Any()
+     private var initialArtworkReplay: com.shilapi.xcertplay.transport.Iap2ArtworkTransfer? = null
+@@ -351,6 +353,10 @@
+             if (currentCornerMask?.session !== session) currentCornerMask = null
+             val replacement = activeSession !== session
+             if (replacement) {
++                if (activeSession != null) {
++                    synchronized(albumReplayLock) { initialArtworkReplay = null }
++                    synchronized(playbackStatus) { playbackStatus.clearAll() }?.let { nowPlayingListener?.invoke(it) }
++                }
+                 BydNavigationOutputs.start(appContext)
+                 BydNavigationOutputs.carPlaySessionStarted()
+                 com.shilapi.xcertplay.glance.CarPlayGlance.setConnected(true)
+@@ -473,6 +479,15 @@
+ 
+     fun isClosed(): Boolean = closed
+ 
++    /** 产品媒体接入只观察当前真实会话，不自行创建或替换控制通道。 */
++    fun hasActiveSession(): Boolean = activeMediaSessionOwner() != null
++    fun activeMediaSessionOwner(): Any? = activeSession?.takeIf { !closed && !it.isClosed }
++    val transport: CarPlayTransport get() = config.transport
++    // 官方媒体引擎始终本地解码音乐；本属性明确其现有行为，不是空兼容参数。
++    val localMediaAudioEnabled: Boolean get() = true
++    val activeBluetoothDeviceAddress: String? get() = runCatching { bluetoothSocket?.remoteDevice?.address }.getOrNull()
++        ?: config.wirelessBluetoothDeviceAddress
++
+     /** Nonblocking identity for wheel controls: only an unclosed phone with an accepted primary stream. */
+     fun activeAirPlaySessionToken(): Any? {
+         if (closed) return null
+@@ -648,13 +663,27 @@
+         }
+     }
+ 
+-    fun sendMediaButton(index: Int): Boolean {
+-        if (closed) return false
+-        val session = activeSession ?: return false
++    fun sendMediaButton(index: Int): Boolean = activeMediaSessionOwner()?.let {
++        sendMediaButton(index, it)
++    } ?: false
++
++    /** OEM回调与延迟播放绑定手机会话；相同控制器重连也不能发送旧命令。 */
++    fun sendMediaButton(index: Int, owner: Any, trace: ((String, String) -> Unit)? = null): Boolean {
++        val session = activeSession
++        if (closed || session == null || session !== owner || session.isClosed) {
++            trace?.invoke("DROP", "STALE_SESSION")
++            return false
++        }
+         return try {
+-            touchExecutor.execute { session.sendMedia(index) }
++            touchExecutor.execute {
++                if (!closed && activeSession === session && !session.isClosed) {
++                    val sent = session.sendMedia(index)
++                    trace?.invoke(if (sent) "PHONE_WRITTEN" else "DROP", if (sent) "HID_PRESS_RELEASE_NO_PLAYBACK_ACK" else "EVENT_CHANNEL_UNAVAILABLE")
++                } else trace?.invoke("DROP", "STALE_SESSION_AT_SEND")
++            }
+             true
+-        } catch (_: Exception) {
++        } catch (_: java.util.concurrent.RejectedExecutionException) {
++            trace?.invoke("DROP", "EXECUTOR_CLOSED")
+             false
+         }
+     }
+@@ -817,10 +846,14 @@
+     // HUD (SOME/IP) and cluster (AMap broadcast) keep separate state so one failing cannot stall the other.
+     private fun onRouteFrame(frame: com.shilapi.xcertplay.iap2.wire.Iap2Frame) {
+         BydNavigationOutputs.onFrame(frame)
++        if (frame.messageId == 0x5201 || frame.messageId == 0x5202) {
++            runCatching { navigationFrameListener?.invoke(frame) }
++                .onFailure { debugLog("navigation observer failed type=${it.javaClass.simpleName}") }
++        }
+         com.shilapi.xcertplay.glance.CarPlayGlance.onFrame(frame)
+         synchronized(playbackStatus) {
+-            val previousPlaying = playbackStatus.playing
+-            playbackStatus.acceptUpdate(frame)?.let { it to (it.playing != previousPlaying) }
++            val previous = playbackStatus.nowPlaying
++            playbackStatus.acceptUpdate(frame)?.let { it to (it.playbackKnown && (!previous.playbackKnown || it.playing != previous.playing)) }
+         }?.let { (update, playingChanged) ->
+             nowPlayingListener?.invoke(update)
+             if (playingChanged) playbackListener?.invoke(update.playing)
+@@ -2203,38 +2236,7 @@
              )
              onStatus(CarPlayStatus.ConnectingControl)
              val carKitClient = LockdownCarKitClient(mux)
@@ -40,3 +126,13 @@
              val carkit = try {
                  carKitClient.open(pairRecord, config.label)
              } catch (error: Throwable) {
+@@ -2440,7 +2442,8 @@
+         }
+         val manager: WirelessHotspotManager = when (hotspotMode) {
+             WirelessHotspotMode.WIFI_P2P -> WifiP2pGroupManager(appContext, ::debugLog,
+-                preferredChannel = config.wifiP2pPreferredChannel)
++                preferredChannel = config.wifiP2pPreferredChannel,
++                allowedChannels = config.wifiP2pAllowedChannels)
+             WirelessHotspotMode.LOCAL_ONLY_HOTSPOT -> if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                 LocalOnlyHotspotManager(appContext, ::debugLog)
+             } else {

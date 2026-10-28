@@ -5880,7 +5880,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +}
 --- /dev/null
 +++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyHostAdapter.kt
-@@ -0,0 +1,113 @@
+@@ -0,0 +1,125 @@
 +package com.shilapi.xcertplay
 +
 +import android.content.Intent
@@ -5961,6 +5961,8 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +
 +    override fun bindMedia(sink: AndroidMediaSink, controller: CarPlayController) {
 +        GalaxyMediaKeys.attach(activity, controller, sink::resumeMediaAudioFocus, sink::isAssistantAudioActive)
++        // 投屏媒体建立即挂上方控；本类回调来自连接链路，GalaxySteeringBinding内部投递到主线程。
++        GalaxySteeringBinding.attach(activity, controller)
 +        val app = activity.applicationContext
 +        sink.setMediaAudioChangedListener { active ->
 +            // Sink可能脱离Activity继续后台播放；仅持有Application和本代控制器/音频对象。
@@ -5975,15 +5977,25 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    override fun sessionStateChanged(controller: CarPlayController?, active: Boolean) {
 +        controller ?: return
 +        GalaxyMediaKeys.onSessionStateChanged(controller, active)
-+        if (active) L7StartupGuard.connected(activity.applicationContext) {
-+            actions.currentController() === controller && controller.hasActiveSession()
-+        }
++        if (active) {
++            GalaxySteeringBinding.attach(activity, controller)
++            L7StartupGuard.connected(activity.applicationContext) {
++                actions.currentController() === controller && controller.hasActiveSession()
++            }
++        } else GalaxySteeringBinding.onSessionEnded(controller)
 +    }
 +
 +    override fun sessionStored(controller: CarPlayController) {
 +        CarPlayBackgroundSession.setConfiguration(controller, GalaxyProfiles(activity).refresh())
++        // 媒体命令要经 CarPlayBackgroundSession 的蓝牙等待闸门，因此在 store 之后再确认一次挂接；
++        // 与 bindMedia 的同控制器重复调用是空操作。
++        GalaxySteeringBinding.attach(activity, controller)
 +    }
-+    override fun detachMedia(controller: CarPlayController?) = GalaxyMediaKeys.detach(controller)
++
++    override fun detachMedia(controller: CarPlayController?) {
++        GalaxyMediaKeys.detach(controller)
++        GalaxySteeringBinding.detach(controller)
++    }
 +
 +    override fun observeVideoLayout(generation: Int, viewWidth: Int, viewHeight: Int,
 +                                    canvasWidth: Int, canvasHeight: Int, layout: CarPlayVideoLayout,
@@ -6383,7 +6395,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +}
 --- /dev/null
 +++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyMediaKeys.kt
-@@ -0,0 +1,255 @@
+@@ -0,0 +1,262 @@
 +package com.shilapi.xcertplay
 +
 +import android.content.Context
@@ -6391,10 +6403,12 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +import android.media.session.MediaSession
 +import android.os.Handler
 +import android.os.Looper
++import android.os.SystemClock
 +import android.view.KeyEvent
 +import com.shilapi.xcertplay.airplay.CarPlayMediaButton
 +import com.shilapi.xcertplay.media.CarPlayNowPlaying
 +import com.shilapi.xcertplay.orchestration.CarPlayController
++import com.shilapi.xcertplay.steering.GalaxySteeringMediaWindow
 +
 +/** 唯一产品媒体绑定；焦点归Sink，媒体注册/封面/回调随真实手机会话代次释放。 */
 +internal object GalaxyMediaKeys {
@@ -6516,7 +6530,12 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    private fun dispatcher(next: CarPlayController) = L7MediaCommandDispatcher(
 +        next::activeMediaSessionOwner,
 +        { synchronized(this) { controller === next } },
-+        { index, source -> synchronized(this) { commandGate.accept(index, source) } },
++        // 方控HardKey与原车媒体中心可能回送同一次按键；共享M05的250ms跨源窗口后再走原有入口闸门。
++        { index, source -> synchronized(this) {
++            GalaxySteeringMediaWindow.acceptVehicleMedia(index, SystemClock::elapsedRealtime) {
++                commandGate.accept(index, source)
++            }
++        } },
 +        { index, action -> CarPlayBackgroundSession.beforeMediaCommand(next, index, action) },
 +        CarPlayVideo::onMediaKey,
 +        { index, expected -> next.sendMediaButton(index, expected) },
@@ -7798,7 +7817,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +}
 --- /dev/null
 +++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxySettingsActivity.kt
-@@ -0,0 +1,1203 @@
+@@ -0,0 +1,1204 @@
 +// SPDX-License-Identifier: AGPL-3.0-only
 +// 基于 DiPlay 宿主代码适配，保留其上游 DiAuto 来源声明；许可见 docs/第三方许可.md。
 +package com.shilapi.xcertplay
@@ -7889,7 +7908,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    private var adbCheckGeneration = 0
 +    private var diagnosticSettings: L7DiagnosticSettings? = null
 +    private var debugPage: L7DebugPage? = null
-+    private var steeringDebugPage: L7SteeringDebugPage? = null
++    private var steeringPage: GalaxySteeringSettings? = null
 +    private var reportingTestPage: L7ReportingTestPage? = null
 +    private var codecProbePage: GalaxyCodecProbePage? = null
 +    private var fullDebugPage: GalaxyFullDebugPage? = null
@@ -8045,7 +8064,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    }
 +    override fun onResume() {
 +        super.onResume()
-+        steeringDebugPage?.resume()
++        steeringPage?.resume()
 +        reportingTestPage?.resume(); debugPage?.resume(); scenarioDebugPage?.resume()
 +        if (!L7Agreement.require(this)) return
 +        voiceDebugPage?.resume()
@@ -8093,7 +8112,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    private var logView: L7LogView? = null
 +
 +    override fun onPause() {
-+        steeringDebugPage?.background()
++        steeringPage?.background()
 +        debugPage?.background(); scenarioDebugPage?.background()
 +        reportingTestPage?.background()
 +        voiceDebugPage?.background()
@@ -8121,7 +8140,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    override fun onDestroy() {
 +        configurationPage?.close(); configurationPage = null
 +        codecProbeController.close()
-+        steeringDebugPage?.close(); steeringDebugPage = null
++        steeringPage?.close(); steeringPage = null
 +        debugPage?.close(); scenarioDebugPage?.close(); scenarioDebugPage = null
 +        audioModelConfirmation.close()
 +        reportingTestPage?.close(); reportingTestPage = null
@@ -8152,7 +8171,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        }
 +        configurationPage?.close(); configurationPage = null
 +        if (!L7Agreement.require(this)) return
-+        steeringDebugPage?.close(); steeringDebugPage = null
++        steeringPage?.close(); steeringPage = null
 +        debugPage?.close(); scenarioDebugPage?.close(); scenarioDebugPage = null
 +        reportingTestPage?.close(); reportingTestPage = null
 +        voiceDebugPage?.close(); voiceDebugPage = null
@@ -8166,7 +8185,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        renderedPage?.let { scrollPositions[it] = contentScroll?.scrollY ?: 0 }
 +        contentScroll = null; desktopPermissionHint = null; homePanel = null; usbButton = null
 +        reconnectRow = null
-+        status = null; connectButton = null; disconnectButton = null; lastRunning = null; diagnosticSettings = null; exportButton = null; debugPage = null; steeringDebugPage = null
++        status = null; connectButton = null; disconnectButton = null; lastRunning = null; diagnosticSettings = null; exportButton = null; debugPage = null; steeringPage = null
 +        if (l7Ui) {
 +            renderL7()
 +            return
@@ -8208,7 +8227,8 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +                { if (CarPlayBackgroundSession.hasSession()) openProjection() else connect(false) }, ::stopFromHome)
 +            "settings-auth", "settings-display", "settings-audio", "settings-general", "settings-permissions" -> settings(content)
 +            "settings-debug-scenario" -> scenarioDebugPage = GalaxyScenarioDebugPage(this, content) { page = "settings-logs"; render() }
-+            "settings-debug-steering" -> steeringDebugPage = L7SteeringDebugPage(this, content) { page = "settings-logs"; render() }
++            // 方控唯一入口：学习/确认/保存/删除/开关与实物键观察合并于一页（GalaxySteeringSettings）。
++            "settings-debug-steering" -> steeringPage = GalaxySteeringSettings(this, content) { page = "settings-logs"; render() }
 +            "settings-debug-codec" -> codecProbePage = GalaxyCodecProbePage(this, content, codecProbeController, ::codecProbeOccupied) { page = "settings-logs"; render() }
 +            "settings-debug-full" -> {
 +                val startNow = pendingFullDebugStart; pendingFullDebugStart = false
@@ -8319,7 +8339,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        "settings-debug-history" -> R.string.l7_probe_history
 +        "settings-debug-scenario" -> R.string.debug_guide_scenario
 +        "settings-debug-full" -> R.string.full_debug_title
-+        "settings-debug-steering" -> R.string.l7_steering_title
++        "settings-debug-steering" -> R.string.galaxy_steering_learning_title
 +        "settings-debug-codec" -> R.string.codec_probe_title
 +        "settings-debug-voice" -> R.string.l7_voice_title
 +        "settings-debug-media" -> R.string.l7_report_media_title
@@ -8750,7 +8770,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    private fun refreshStatus() {
 +        diagnosticSettings?.update(exportInProgress)
 +        debugPage?.update()
-+        steeringDebugPage?.update()
++        steeringPage?.update()
 +        reportingTestPage?.update()
 +        voiceDebugPage?.update()
 +        codecProbePage?.update()
@@ -9085,7 +9105,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +}
 --- /dev/null
 +++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxySteeringSettings.kt
-@@ -0,0 +1,163 @@
+@@ -0,0 +1,193 @@
 +package com.shilapi.xcertplay
 +
 +import android.app.Activity
@@ -9104,8 +9124,17 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +import com.shilapi.xcertplay.steering.SteeringSnapshot
 +import java.io.Closeable
 +
-+/** 按先观察/学习、再选择动作、最后确认保存；离开前台页面由宿主close注销观察句柄。 */
-+internal class GalaxySteeringSettings(private val activity: Activity, parent: LinearLayout) : Closeable {
++/**
++ * 方控设置的唯一入口：上半部分做学习/确认/保存/删除与总开关，下半部分是实物键观察与标注。
++ *
++ * 边界：开关沿用产品既有键（见 SteeringConfigurationStore），关闭后既不执行已保存映射，
++ * 也停止原车键回送；本页只观察与确认，不发送测试按键、不拦截原车按键。
++ * 线程：全部在主线程构建与刷新；学习句柄由 [GalaxySteeringSessions.observe] 在主线程持有，
++ * 离开页面由宿主调用 [close] 注销观察句柄（最后一个句柄释放后Binder订阅一起注销）。
++ * 生命周期：[background]/[resume] 转发给内嵌的观察页，页面不可见时停止它自己的监听日志。
++ */
++internal class GalaxySteeringSettings(private val activity: Activity, parent: LinearLayout,
++    private val onLogs: () -> Unit = {}) : Closeable {
 +    private var closed = false
 +    private var state = SteeringSnapshot()
 +    private var selectedGesture = SteeringGesture.CLICK
@@ -9123,6 +9152,9 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    private lateinit var confirm: Button
 +    private val bindings = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
 +    private var renderedBindings: List<SteeringBinding>? = null
++
++    /** 实物键观察与标注：复用原调试页实现，作为本页下半部分而不是第二个入口。 */
++    private var watch: L7SteeringDebugPage? = null
 +
 +    init {
 +        L7SettingsSection.add(parent, text(R.string.galaxy_steering_learning_title),
@@ -9157,7 +9189,23 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +            confirm = L7Components.actionButton(activity, text(R.string.galaxy_steering_confirm)) { confirmMapping() }.also(group::addView)
 +        }
 +        parent.addView(bindings)
++        L7SettingsSection.add(parent, text(R.string.galaxy_steering_watch_title),
++            text(R.string.galaxy_steering_watch_hint)) { }
++        watch = L7SteeringDebugPage(activity, parent, onLogs)
 +        session = GalaxySteeringSessions.observe(activity, ::update)
++    }
++
++    /** 宿主定时刷新入口；内嵌观察页自带200ms节拍，这里只补一次即时刷新。 */
++    fun update() {
++        if (!closed) watch?.update()
++    }
++
++    fun background() {
++        if (!closed) watch?.background()
++    }
++
++    fun resume() {
++        if (!closed) watch?.resume()
 +    }
 +
 +    private fun update(snapshot: SteeringSnapshot) {
@@ -9246,10 +9294,11 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        closed = true
 +        dialog?.dismiss()
 +        dialog = null
++        watch?.close()
++        watch = null
 +        session.close()
 +    }
-+}
---- /dev/null
++}--- /dev/null
 +++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyStorageMaintenance.kt
 @@ -0,0 +1,26 @@
 +package com.shilapi.xcertplay
@@ -23387,14 +23436,13 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +}
 --- /dev/null
 +++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/steering/GalaxySteeringSessions.kt
-@@ -0,0 +1,222 @@
+@@ -0,0 +1,207 @@
 +package com.shilapi.xcertplay.steering
 +
 +import android.content.Context
 +import android.os.Handler
 +import android.os.Looper
 +import android.os.SystemClock
-+import com.shilapi.xcertplay.airplay.CarPlayMediaButton
 +import com.shilapi.xcertplay.orchestration.CarPlayController
 +import java.io.Closeable
 +import java.util.concurrent.atomic.AtomicBoolean
@@ -23583,25 +23631,11 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +            }
 +        }
 +
++        /** 按键只经当前目标控制器执行；动作映射与 owner 校验集中在 [SteeringActionDispatch]。 */
 +        private fun dispatch(action: SteeringAction): Boolean {
 +            val target = targets.values.lastOrNull() ?: return false
-+            val controller = target.controller
 +            val owner = targetOwner ?: return false
-+            if (controller !== targetController || controller.activeMediaSessionOwner() !== owner || controller.isClosed()) return false
-+            val mediaIndex = when (action) {
-+                SteeringAction.PLAY -> CarPlayMediaButton.PLAY
-+                SteeringAction.PAUSE -> CarPlayMediaButton.PAUSE
-+                SteeringAction.PREVIOUS -> CarPlayMediaButton.PREVIOUS
-+                SteeringAction.NEXT -> CarPlayMediaButton.NEXT
-+                else -> null
-+            }
-+            if (mediaIndex != null) return target.mediaCommand?.invoke(mediaIndex) ?: controller.sendMediaButton(mediaIndex, owner)
-+            return when (action) {
-+                SteeringAction.SIRI -> controller.requestSiri()
-+                SteeringAction.ANSWER_CALL -> controller.answerCall()
-+                SteeringAction.END_CALL -> controller.endCall()
-+                else -> false
-+            }
++            return SteeringActionDispatch.dispatch(target.controller, owner, target.mediaCommand, action)
 +        }
 +
 +        private fun publish() {
@@ -23612,18 +23646,35 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +}
 --- /dev/null
 +++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/steering/SteeringConfigurationStore.kt
-@@ -0,0 +1,36 @@
+@@ -0,0 +1,58 @@
 +package com.shilapi.xcertplay.steering
 +
 +import android.content.Context
 +import org.json.JSONArray
 +import org.json.JSONObject
 +
-+/** 借鉴星枢ServiceConfigurationJson的版本化字段；仅保存用户确认的方控语义映射。 */
++/**
++ * 借鉴星枢ServiceConfigurationJson的版本化字段；仅保存用户确认的方控语义映射。
++ *
++ * D11兼容：开关沿用产品既有键 `xcertplay_airplay/galaxy_steering_enabled`（车型配置页与
++ * GalaxyMediaKeys 读取的同一个键），新文件里的 `enabled` 只作为旧版本的镜像与新装默认值来源，
++ * 读取顺序为 既有键 → 本文件 → 默认true，保证用户此前关闭/开启的选择不被新页面覆盖。
++ * 映射本身只存在本文件 `configuration` 键，读取失败不覆盖原内容，避免丢用户已确认的映射。
++ */
 +internal class SteeringConfigurationStore(context: Context) {
-+    private val preferences = context.applicationContext.getSharedPreferences("galaxy_steering_learning", 0)
-+    fun enabled(): Boolean = preferences.getBoolean("enabled", true)
-+    fun setEnabled(enabled: Boolean) { check(preferences.edit().putBoolean("enabled", enabled).commit()) }
++    private val app = context.applicationContext
++    private val preferences = app.getSharedPreferences("galaxy_steering_learning", 0)
++    private val productPreferences = app.getSharedPreferences(PRODUCT_PREFERENCES, 0)
++    fun enabled(): Boolean = when {
++        productPreferences.contains(LEGACY_ENABLED) -> productPreferences.getBoolean(LEGACY_ENABLED, true)
++        preferences.contains("enabled") -> preferences.getBoolean("enabled", true)
++        else -> true
++    }
++    fun setEnabled(enabled: Boolean) {
++        // 双写：既有键是所有入口的权威值，本文件键保留给旧版本回读。
++        check(preferences.edit().putBoolean("enabled", enabled).commit())
++        check(productPreferences.edit().putBoolean(LEGACY_ENABLED, enabled).commit())
++    }
 +    fun load(): SteeringConfiguration {
 +        val raw = preferences.getString("configuration", null) ?: return SteeringConfiguration()
 +        require(raw.toByteArray(Charsets.UTF_8).size <= MAX_BYTES)
@@ -23647,9 +23698,13 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        require(json.toByteArray(Charsets.UTF_8).size <= MAX_BYTES)
 +        check(preferences.edit().putString("configuration", json).commit())
 +    }
-+    companion object { private const val MAX_BYTES = 32_768 }
-+}
---- /dev/null
++    companion object {
++        private const val MAX_BYTES = 32_768
++        /** 产品既有偏好文件与其方控开关键（GalaxyVehiclePreferences.steering 同源）。 */
++        private const val PRODUCT_PREFERENCES = "xcertplay_airplay"
++        private const val LEGACY_ENABLED = "galaxy_steering_enabled"
++    }
++}--- /dev/null
 +++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/steering/SteeringLearningEngine.kt
 @@ -0,0 +1,142 @@
 +package com.shilapi.xcertplay.steering
@@ -23796,7 +23851,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +}
 --- /dev/null
 +++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/steering/SteeringMediaCommandDeduplicator.kt
-@@ -0,0 +1,25 @@
+@@ -0,0 +1,38 @@
 +package com.shilapi.xcertplay.steering
 +
 +/**
@@ -23811,6 +23866,13 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +
 +    private val lastByAction = mutableMapOf<SteeringAction, Last>()
 +
++    /** 只查询窗口是否允许该动作，不写入记录；调用方在命令真的发出后再调用 [accept]。 */
++    @Synchronized
++    fun allowed(action: SteeringAction, source: String, nowMs: Long): Boolean {
++        val last = lastByAction[action] ?: return true
++        return !(last.source != source && nowMs - last.atMs in 0 until windowMs)
++    }
++
 +    @Synchronized
 +    fun accept(action: SteeringAction, source: String, nowMs: Long): Boolean {
 +        val last = lastByAction[action]
@@ -23820,6 +23882,12 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        }
 +        lastByAction[action] = Last(source, nowMs)
 +        return true
++    }
++
++    /** 仅供回归测试清理窗口，产品路径不调用。 */
++    @Synchronized
++    fun clear() {
++        lastByAction.clear()
 +    }
 +}
 --- /dev/null
@@ -24857,12 +24925,12 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +</resources>
 --- /dev/null
 +++ b/galaxy/common/src/main/res/values-en/galaxy_steering_learning.xml
-@@ -0,0 +1,41 @@
+@@ -0,0 +1,43 @@
 +<resources>
 +    <string name="galaxy_steering_learning_title">Steering wheel learning</string>
 +    <string name="galaxy_steering_learning_boundary">Observe the verified Autolink key service only. Unknown keys do nothing; original car keys are not intercepted. Confirm a mapping after observing the key.</string>
 +    <string name="galaxy_steering_listening">Listen to steering wheel keys</string>
-+    <string name="galaxy_steering_listening_hint">Projection and the foreground learning page share one registration. Turning this off unregisters the listener and stops mapped actions.</string>
++    <string name="galaxy_steering_listening_hint">Projection and the foreground learning page share one registration; this switch also gates the original car key pass-through to CarPlay. Turning it off unregisters the listener and stops mapped actions.</string>
 +    <string name="galaxy_steering_service">Service state</string>
 +    <string name="galaxy_steering_recent">Recent physical input</string>
 +    <string name="galaxy_steering_candidate">Key learned this time</string>
@@ -24898,6 +24966,8 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +    <string name="galaxy_steering_siri">Siri</string>
 +    <string name="galaxy_steering_answer">Answer call</string>
 +    <string name="galaxy_steering_end">End call</string>
++    <string name="galaxy_steering_watch_title">Physical key observation</string>
++    <string name="galaxy_steering_watch_hint">Press a steering wheel key here and label it to keep evidence, then learn and confirm the mapping above. This section only observes and logs; it does not change mappings or send test keys.</string>
 +</resources>
 --- /dev/null
 +++ b/galaxy/common/src/main/res/values-en/galaxy_storage.xml
@@ -26949,12 +27019,12 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +</resources>
 --- /dev/null
 +++ b/galaxy/common/src/main/res/values/galaxy_steering_learning.xml
-@@ -0,0 +1,41 @@
+@@ -0,0 +1,43 @@
 +<resources>
 +    <string name="galaxy_steering_learning_title">方控学习与映射</string>
 +    <string name="galaxy_steering_learning_boundary">只监听已核验的 Autolink 按键信号。未知按键不执行动作，不拦截原车按键；映射须观察后主动确认。</string>
 +    <string name="galaxy_steering_listening">监听方控</string>
-+    <string name="galaxy_steering_listening_hint">投屏与前台学习页共用一个监听；关闭后注销，不执行已保存映射。</string>
++    <string name="galaxy_steering_listening_hint">投屏与前台学习页共用一个监听，原车按键回送 CarPlay 也受此开关控制；关闭后注销监听、不执行已保存映射。</string>
 +    <string name="galaxy_steering_service">服务状态</string>
 +    <string name="galaxy_steering_recent">最近真实输入</string>
 +    <string name="galaxy_steering_candidate">本次学习按键</string>
@@ -26990,6 +27060,8 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +    <string name="galaxy_steering_siri">Siri</string>
 +    <string name="galaxy_steering_answer">接听电话</string>
 +    <string name="galaxy_steering_end">挂断电话</string>
++    <string name="galaxy_steering_watch_title">实物键观察与标注</string>
++    <string name="galaxy_steering_watch_hint">先在这里按一次方控并标注实际按键，形成证据，再回到上方学习并确认映射。本区只观察和记录，不修改映射、不发送测试按键。</string>
 +</resources>
 --- /dev/null
 +++ b/galaxy/common/src/main/res/values/galaxy_storage.xml
@@ -30996,11 +31068,13 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +}
 --- a/common/src/main/java/com/shilapi/xcertplay/AsyncDiagnosticLog.kt
 +++ b/common/src/main/java/com/shilapi/xcertplay/AsyncDiagnosticLog.kt
-@@ -2,2 +2,3 @@
+@@ -1,19 +1,60 @@
+ package com.shilapi.xcertplay
  
 +import java.io.File
  import java.text.SimpleDateFormat
-@@ -6,12 +7,52 @@
+ import java.util.Date
+ import java.util.Locale
  
 -/** Queued entries retain only their exact file target and a redacted, bounded metadata string. */
 +/** 队列只捕获所属文件、配置证据与已脱敏正文；关闭文件和清理代次分别拒绝迟到记录。 */
@@ -31058,9 +31132,13 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        }
 +        runCatching { SessionLogFile.storageChanged?.invoke(File(folder, "diplay.log"), true) }
      }
+ 
+     internal fun awaitIdle(timeoutMillis: Long): Boolean = writer.awaitIdle(timeoutMillis)
 --- a/common/src/main/java/com/shilapi/xcertplay/CarPlayHostActivity.kt
 +++ b/common/src/main/java/com/shilapi/xcertplay/CarPlayHostActivity.kt
-@@ -153,2 +153,12 @@
+@@ -151,6 +151,16 @@
+         val triggerDelayMillis: Int,
+     )
  
 +    private val product by lazy {
 +        HostProductBindings.factory?.invoke(this, HostProductActions(
@@ -31073,53 +31151,92 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +    }
 +    private var productChrome: HostChromeBinding? = null
      private var connectionPanel: View? = null
-@@ -194,3 +204,3 @@
+     private var connectionInstructionsView: TextView? = null
+     private var connectionHelpView: TextView? = null
+@@ -192,7 +202,7 @@
+         remoteMfiServer = remoteMfiServer.trim().takeIf { it.isNotEmpty() },
+         remoteMfiToken = remoteMfiToken.takeIf { it.isNotEmpty() },
          identification = Iap2IdentificationConfig(
 -            name = "DiPlay",
 +            name = product?.name ?: "DiPlay",
              modelIdentifier = normalizedModel(),
-@@ -206,3 +216,3 @@
+             manufacturer = normalizedManufacturer(),
+             serialNumber = "DIPLAY-" + DiPlayBootstrap.deviceId(airPlayIdentity).replace(":", ""),
+@@ -204,13 +214,14 @@
+             chargingConnectors = com.shilapi.xcertplay.hud.BydOutputSettings.chargingConnectors(this),
+             vehicleSpeedEnabled = locationReportingEnabled && com.shilapi.xcertplay.hud.BydOutputSettings.wheelSpeedToIphoneActive(this),
          ),
 -        label = "DiPlay",
 +        label = product?.name ?: "DiPlay",
          hostName = "diplay-" + DiPlayBootstrap.deviceId(airPlayIdentity).replace(":", "").lowercase(),
-@@ -213,2 +223,3 @@
+         hostMac = DiPlayBootstrap.deviceId(airPlayIdentity).split(":").map { it.toInt(16).toByte() }.toByteArray(),
+         wirelessBluetoothDeviceAddress = DiPlayPreferences.phoneAddress(this),
+         transport = if (wirelessEnabled) CarPlayTransport.WIRELESS else CarPlayTransport.WIRED,
+         wirelessHotspotMode = wirelessHotspotMode,
          wifiP2pPreferredChannel = AirPlayPersistence.loadWifiP2pPreferredChannel(this),
 +        wifiP2pAllowedChannels = product?.wifiP2pAllowedChannels(),
          manualHotspotSsid = manualHotspotSsid,
-@@ -804,2 +815,3 @@
+         manualHotspotPassphrase = manualHotspotPassphrase,
+         manualHotspotBand = manualHotspotBand,
+@@ -802,6 +813,7 @@
+ 
+     override fun onCreate(savedInstanceState: Bundle?) {
          super.onCreate(savedInstanceState)
 +        if (product?.enterHost() == false) return
          NavigationWidgetUpdater.attach(applicationContext)
-@@ -814,3 +826,3 @@
+         CarPlayCallKeys.install(applicationContext)
+         CenterMapOverlay.requestShow = ::showCenterMap
+@@ -812,7 +824,7 @@
+             AirPlayPersistence.saveWirelessEnabled(this, false)
+         }
          if (runCatching { DiPlayBootstrap.ensure(this, AirPlayPersistence.loadMfiTarget(this)) }.isFailure) {
 -            OwnScreenStart.start(this, Intent(this, DiPlayActivity::class.java), ::appendLog)
 +            OwnScreenStart.start(this, product?.homeIntent("home") ?: Intent(this, DiPlayActivity::class.java), ::appendLog)
              finish(); return
-@@ -841,2 +853,4 @@
+         }
+         window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+@@ -839,6 +851,8 @@
+                         closePicturePanel()
+                     } else if (menuOpen) {
                          if (safeAreaEditorActive) closeSafeAreaEditor() else leaveSettingsMenu()
 +                    } else if (productChrome != null) {
 +                        productChrome?.showMenu?.invoke()
                      } else {
-@@ -881,4 +895,4 @@
+                         showDiPlayHome()
+                     }
+@@ -879,8 +893,8 @@
+         gestureFingerCount = AirPlayPersistence.loadSettingsGestureFingers(this)
+         displayScalePercent = AirPlayPersistence.loadDisplayScalePercent(this)
          displayScaleTenths = CarPlayDisplayScale.sanitize((displayScalePercent + 5) / 10)
 -        // Size is now chosen only through CarPlaySize; ignore the canvas scale older builds stored.
 -        uiScalePercent = CarPlayUiScale.DEFAULT
 +        // Product-specific icon scale is supplied separately; ordinary hosts retain CarPlaySize.
 +        uiScalePercent = product?.uiScalePercent() ?: CarPlayUiScale.DEFAULT
          hevcEnabled = AirPlayPersistence.loadHevcEnabled(this)
-@@ -1156,4 +1170,6 @@
+         hevcSoftwareDecoderEnabled =
+             Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q &&
+@@ -1154,8 +1168,10 @@
+         nightModeController.resume(systemNight)
+         AppAppearanceRuntime.publishHost(this, darkMode)
          refreshAppAppearance()
 +        productChrome?.refresh?.invoke()
          if (!menuOpen) {
              displayScalePercent = AirPlayPersistence.loadDisplayScalePercent(this)
 +            product?.let { uiScalePercent = it.uiScalePercent() }
              displayScaleTenths = CarPlayDisplayScale.sanitize((displayScalePercent + 5) / 10)
-@@ -1583,2 +1599,3 @@
+             updateResolutionMenu()
+         }
+@@ -1581,6 +1597,7 @@
+ 
+     // Hardware navigation belongs to the iPhone-rendered CarPlay UI, not Android View focus.
      override fun dispatchKeyEvent(event: KeyEvent): Boolean {
 +        if (product?.onHardwareKey(controller, event) == true) return true
          val physicalKey = Triple(event.deviceId, event.keyCode, event.scanCode)
-@@ -1987,11 +2004,3 @@
+         val downOrUp = event.action == KeyEvent.ACTION_DOWN || event.action == KeyEvent.ACTION_UP
+         if (downOrUp && physicalKey in legacySiriPresses) {
+@@ -1985,15 +2002,7 @@
+         val retry = DiPlayButton(this).apply {
+             text = getString(R.string.retry_carplay_connection)
              visibility = View.GONE
 -            setOnClickListener {
 -                if (!CarPlayBackgroundSession.isOwner(this@CarPlayHostActivity) ||
@@ -31132,7 +31249,11 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 -            }
 +            setOnClickListener { retryConnection() }
              startupRetryButton = this
-@@ -2108,4 +2117,23 @@
+         }
+         panel.addView(retry, LinearLayout.LayoutParams(dp(300), dp(64)).apply { bottomMargin = dp(12) })
+@@ -2106,8 +2115,27 @@
+         connectionInstructionsView = instructions
+         connectionHelpView = help
          connectionPanel = viewport
 +        product?.installChrome(root, viewport, sidePanelBlur, wirelessEnabled, ::retryConnection)?.let { binding ->
 +            productChrome = binding
@@ -31156,26 +31277,44 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        startupRetryButton?.visibility = View.GONE
 +        restartCarPlay(getString(R.string.connecting_to_your_iphone))
      }
-@@ -4814,3 +4842,3 @@
+ 
+     // DiPlay's side panel: placed over the part of the stream CarPlay leaves black (placeSidePanel), so it
+@@ -4812,7 +4840,7 @@
+ 
+     private fun createAirPlayConfig(size: DisplaySize): AirPlayConfig {
          // The home settings page can change the name while this host stays alive.
 -        if (!menuOpen) oemLabel = AirPlayPersistence.loadOemLabel(this)
 +        if (!menuOpen) oemLabel = product?.oemLabel() ?: AirPlayPersistence.loadOemLabel(this)
          val safeWidth = (size.width / 2 * 2).coerceAtLeast(2)
-@@ -4839,3 +4867,4 @@
+         val safeHeight = (size.height / 2 * 2).coerceAtLeast(2)
+         val alignedSize = DisplaySize(safeWidth, safeHeight)
+@@ -4837,7 +4865,8 @@
+         val requestedResolutionDisplay = CarPlayDisplayScale.applyPercent(baseDisplay, requestedResolutionPercent)
+         var resolutionDisplay = requestedResolutionDisplay
          val requestedPercent = uiScalePercent
 -        var scaledDisplay = CarPlayUiScale.apply(resolutionDisplay, uiScalePercent)
 +        var scaledDisplay = product?.scaleIcons(resolutionDisplay, uiScalePercent)
 +            ?: CarPlayUiScale.apply(resolutionDisplay, uiScalePercent)
          val candidate = scaledDisplay
-@@ -5027,2 +5056,3 @@
+         var support = when {
+             uiScalePercent < CarPlayUiScale.DEFAULT && scaledDisplay === resolutionDisplay ->
+@@ -5025,6 +5054,7 @@
+     }
+ 
      private fun loadAirPlayIcon(): AirPlayIcon {
 +        product?.icon()?.let { return it }
          val customBytes = try {
-@@ -5188,2 +5218,3 @@
+             AirPlayPersistence.loadCustomAirPlayIconFile(this)?.readBytes()
+         } catch (_: Exception) {
+@@ -5186,16 +5216,18 @@
+     ): AndroidMediaSink {
+         // Capture this session's log: late decoder shutdown must not write into a new session.
          val diagnosticLog = sessionLog
 +        val audio = product?.audioConfiguration()
          return AndroidMediaSink(
-@@ -5193,7 +5224,8 @@
+             surface = null,
+             videoWidth = videoWidth,
+             videoHeight = videoHeight,
              preferSoftwareHevcDecoder = hevcSoftwareDecoderEnabled,
 -            advancedAudioChannelMapping = advancedAudioChannelMapping,
 -            audioFocusEnabled = AirPlayPersistence.loadAudioFocusEnabled(this),
@@ -31188,14 +31327,22 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +            mediaChannel = audio?.mediaChannel ?: AirPlayPersistence.loadMediaAudioChannel(this),
 +            navigationChannel = audio?.navigationChannel ?: AirPlayPersistence.loadNavigationAudioChannel(this),
              navigationAttenuationDb = AirPlayPersistence.loadNavigationAudioAttenuationDb(this),
-@@ -5212,3 +5244,5 @@
+             context = this,
+             navigationStreamType = navigationStreamType,
+@@ -5210,7 +5242,9 @@
+                     diagnosticLog?.append(formattedLogLine(message, System.currentTimeMillis()))
+                 }
              },
 -            onMediaAudioChanged = CarPlayMediaKeys::onMediaAudioChanged,
 +            onMediaAudioChanged = { active ->
 +                if (product == null) CarPlayMediaKeys.onMediaAudioChanged(active)
 +            },
              callEchoCancellation = AirPlayPersistence.loadCallEchoCancellation(this),
-@@ -5221,2 +5255,7 @@
+             callVoiceFilter = AirPlayPersistence.loadCallVoiceFilter(this),
+             callSpeakerphone = { AirPlayPersistence.loadCallSpeakerphone(this) },
+@@ -5219,6 +5253,11 @@
+             mainVideoFrameRate = fps,
+             vendorLowLatencyDecoder = AirPlayPersistence.loadLowLatencyDecoder(this),
              mtkDecoderTuningEnabled = AirPlayPersistence.loadMtkDecoderTuning(this),
 +            platformAdaptation = audio?.platform ?: com.shilapi.xcertplay.media.MediaPlatformAdaptation.NONE,
 +            assistantChannel = audio?.assistantChannel ?: 0,
@@ -31203,71 +31350,126 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +            callProcessingEnabled = audio?.callProcessingEnabled ?: true,
 +            localMediaAudioEnabled = audio?.localMediaAudioEnabled ?: true,
          )
-@@ -5257,2 +5296,3 @@
+     }
+ 
+@@ -5255,6 +5294,7 @@
+                         installIphoneCornerMask(session, pending.second.first, pending.second.second)
+                     } else clearIphoneCornerMask()
                      CarPlayBackgroundSession.active = true
 +                    product?.sessionStateChanged(controller, true)
                      showConnectionHelp(null)
-@@ -5301,2 +5341,3 @@
+                     callPopupSessionReady = true
+                     updateCallPopupGuard()
+@@ -5299,6 +5339,7 @@
+                     activeAirPlaySession = null
+                     clearIphoneCornerMask()
                      CarPlayBackgroundSession.active = false
 +                    product?.sessionStateChanged(controller, false)
                      callPopupSessionReady = false
-@@ -5318,2 +5359,3 @@
+                     updateCallPopupGuard()
+                     if (menuOpen) {
+@@ -5316,6 +5357,7 @@
+             override fun onTransportError(message: String) {
+                 runOnUiThread {
                      if (controllerGeneration != restartGeneration || startupRetryStopped) return@runOnUiThread
 +                    product?.sessionStateChanged(controller, false)
                      callPopupSessionReady = false
-@@ -5450,2 +5492,6 @@
+                     updateCallPopupGuard()
+                     startupRetryBudget.disconnected()
+@@ -5448,6 +5490,10 @@
+         }
+ 
          val generation = restartGeneration
 +        product?.let {
 +            it.bindMedia(snapshot.sink, snapshot.controller)
 +            it.sessionStateChanged(snapshot.controller, CarPlayBackgroundSession.active)
 +        }
          snapshot.controller.attachUi(
-@@ -5571,3 +5617,3 @@
+             createSessionListener(generation),
+             createStatusReporter(generation),
+@@ -5569,7 +5615,7 @@
+         controller = next
+         resetSidePanel() // a new session starts without the side panel
          updateClusterMapShown()
 -        CarPlayMediaKeys.attach(this, next)
 +        product?.bindMedia(renderer, next) ?: CarPlayMediaKeys.attach(this, next)
          if (airPlayConfig.videoInCar) CarPlayVideo.attach(this, next)
-@@ -5587,2 +5633,3 @@
+         val display = CarPlaySessionDisplay(
+             airPlayConfig.main.widthPixels, airPlayConfig.main.heightPixels,
+@@ -5585,6 +5631,7 @@
+                 finish()
+             }
          }
 +        product?.sessionStored(next)
          try {
-@@ -5852,2 +5899,5 @@
+             ContextCompat.startForegroundService(this, Intent(this, DiPlaySessionService::class.java))
+             next.start()
+@@ -5850,6 +5897,9 @@
+                 postTranslate(content.left, content.top)
+             })
          }
 +        product?.observeVideoLayout(restartGeneration, viewWidth, viewHeight,
 +            sessionDisplay?.width ?: viewWidth, sessionDisplay?.height ?: viewHeight,
 +            content, sessionHevc && hevcSoftwareDecoderEnabled)
          if (sidePanelShown) placeSidePanel(viewWidth, viewHeight)
-@@ -5993,3 +6043,3 @@
+         placeSidePanelTab(viewWidth, viewHeight)
+     }
+@@ -5991,7 +6041,7 @@
+         updateCallPopupGuard()
+         val oldController = controller
          val oldSink = sink
 -        CarPlayMediaKeys.detach(oldController)
 +        product?.detachMedia(oldController) ?: CarPlayMediaKeys.detach(oldController)
          CarPlayBackgroundSession.clear(oldController, keepOwner = true)
-@@ -6026,4 +6076,4 @@
+         controller = null
+         oldSink?.let(retiringSinks::add)
+@@ -6024,8 +6074,8 @@
+ 
+     private fun showDiPlayHome(page: String = "home") {
          controller?.sendTouch(emptyList())
 -        OwnScreenStart.start(this, Intent(this, DiPlayActivity::class.java)
 -            .putExtra("page", page).addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT), ::appendLog)
 +        val destination = product?.homeIntent(page) ?: Intent(this, DiPlayActivity::class.java).putExtra("page", page)
 +        OwnScreenStart.start(this, destination.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT), ::appendLog)
      }
-@@ -6040,2 +6090,3 @@
+ 
+     /** Keep a timed-out sink visible to surface teardown until its codecs have actually been released. */
+@@ -6038,6 +6088,7 @@
+     }
+ 
      private fun openSettingsMenu() {
 +        productChrome?.let { it.showMenu(); return }
          cancelTemporarySystemBars()
-@@ -6202,3 +6253,3 @@
+         if (menuOpen) return
+         controller?.sendTouch(emptyList())
+@@ -6200,7 +6251,7 @@
+         mainHandler.removeCallbacks(applyDisplaySize)
+         val oldController = controller
          val oldSink = sink
 -        CarPlayMediaKeys.detach(oldController)
 +        product?.detachMedia(oldController) ?: CarPlayMediaKeys.detach(oldController)
          CarPlayBackgroundSession.clear(oldController)
-@@ -6542,3 +6593,3 @@
+         controller = null
+         oldSink?.let(retiringSinks::add)
+@@ -6540,13 +6591,14 @@
+     /** [englishMessage] is [message] in English, which [friendlyStage] reads for its keywords. */
+     private fun setConnectionStage(message: String, englishMessage: String = message) {
          latestStage = message
 -        stageStatusView?.text = friendlyStage(message, englishMessage)
 +        stageStatusView?.text = product?.connectionStage(message, englishMessage) ?: friendlyStage(message, englishMessage)
          updateDebugOverlays()
-@@ -6549,2 +6600,3 @@
+     }
+ 
+     private fun updateDebugOverlays() {
+         statusScrollView?.visibility = View.GONE
          connectionPanel?.visibility = if (activeScreenStreamTypes.isEmpty()) View.VISIBLE else View.GONE
 +        productChrome?.connected?.invoke(SCREEN_TYPE_MAIN in activeScreenStreamTypes)
      }
-@@ -6780,17 +6832,2 @@
+ 
+     // The keywords are English; matching the English text keeps the result the same in every UI language.
+@@ -6778,21 +6830,6 @@
+     )
+ }
  
 -internal data class CarPlaySessionDisplay(
 -    val width: Int,
@@ -31285,7 +31487,11 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 -)
 -
  /**
-@@ -6804,77 +6841 @@
+  * The driver keeps the status bar, and another window (the head unit's reversing camera) hid it: the window
+  * grew by the bar only for a while. A new session at that size stayed scaled down below the returning bar (#643).
+@@ -6802,79 +6839,3 @@
+     !display.hideTopBar && display.statusBarShown == true && statusBarShown == false &&
+         width == display.windowWidth && height > display.windowHeight
  
 -/** Process-local hand-off for keeping the CarPlay session alive while no Activity is visible. */
 -internal object CarPlayBackgroundSession {
@@ -31365,7 +31571,9 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 -}
 --- a/common/src/main/java/com/shilapi/xcertplay/DiagnosticExportStore.kt
 +++ b/common/src/main/java/com/shilapi/xcertplay/DiagnosticExportStore.kt
-@@ -144,7 +144,13 @@
+@@ -142,11 +142,17 @@
+     }
+ 
      @RequiresApi(Build.VERSION_CODES.Q)
 -    fun saveToDownloads(resolver: ContentResolver, fileName: String, report: String): Uri {
 +    fun saveToDownloads(
@@ -31382,15 +31590,23 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +            put(MediaStore.Downloads.MIME_TYPE, mimeType)
 +            put(MediaStore.Downloads.RELATIVE_PATH, "${Environment.DIRECTORY_DOWNLOADS}/$directory")
              put(MediaStore.Downloads.IS_PENDING, 1)
+         }
+         val uri = resolver.insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values)
 --- a/common/src/main/java/com/shilapi/xcertplay/DiagnosticRedactor.kt
 +++ b/common/src/main/java/com/shilapi/xcertplay/DiagnosticRedactor.kt
-@@ -4,2 +4,5 @@
+@@ -2,6 +2,9 @@
+ 
+ /** Diagnostics describe state transitions; protocol payloads and credentials are never exported. */
  internal object DiagnosticRedactor {
 +    const val MAX_LINE = 700
 +    // 保留带下划线的结构化事件名；只拒绝行首/空白后的原始手机与协议转储标记。
 +    private val rawDump = Regex("(?:^|\\s)(?:TRACE|PHONE)\\s|-----\\s*(?:BEGIN|END)\\b")
      private val secret = Regex("(?i)(pass(word|phrase)?|token|private.?key|certificate|pair.?record|ssid|body=|payload=|hex=)")
-@@ -11,6 +14,6 @@
+     private val mac = Regex("(?i)(?<![0-9a-f])(?:[0-9a-f]{2}:){5}[0-9a-f]{2}(?![0-9a-f])")
+     private val identifier = Regex("(?i)\\b[0-9a-f]{24,}\\b|\\b[0-9a-f]{8}-[0-9a-f-]{27,}\\b")
+@@ -9,9 +12,9 @@
+     private val namedDevice = Regex("(?i)(phone|device|peer|host)?name[=:]")
+     private val ipv6 = Regex("(?i)(?:[0-9a-f]{1,4}:)*[0-9a-f]{0,4}::[0-9a-f:]*(?:%[a-z0-9_.-]+)?|(?:[0-9a-f]{1,4}:){7}[0-9a-f]{1,4}")
      fun redact(line: String): String? {
 -        if (line.contains("TRACE ") || line.contains("PHONE ") || line.contains('\n') || line.contains('\r')) return null
 +        if (rawDump.containsMatchIn(line) || line.any { it.code < 32 && it != '\t' || it.code == 127 }) return null
@@ -31399,9 +31615,12 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 -            .replace(address, "[ip]").replace(ipv6, "[ip]").take(700)
 +            .replace(address, "[ip]").replace(ipv6, "[ip]").take(MAX_LINE)
      }
+ }
 --- a/common/src/main/java/com/shilapi/xcertplay/SessionLogFile.kt
 +++ b/common/src/main/java/com/shilapi/xcertplay/SessionLogFile.kt
-@@ -5,6 +5,23 @@
+@@ -3,41 +3,82 @@
+ import java.io.Closeable
+ import java.io.File
  
 -/** Bounded, private diagnostics. Each write is redacted before touching storage. */
 -internal class SessionLogFile(val file: File) : Closeable {
@@ -31428,12 +31647,14 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +    }
 +
      fun reset(header: String) = synchronized(lock) {
-@@ -14,2 +31,4 @@
+         if (!closed) {
+             file.parentFile?.mkdirs()
+             rotate()
              file.writeText("")
 +            writtenConfiguration = null
 +            notifyStorage(true)
              append(header)
-@@ -17,11 +36,26 @@
+         }
      }
 -    fun append(line: String) = synchronized(lock) {
 +
@@ -31463,7 +31684,7 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +            file.appendBytes(bytes)
 +            notifyStorage(rotated)
          }
-@@ -29,13 +63,20 @@
+         Unit
      }
 +
      private fun rotate() {
@@ -31488,40 +31709,58 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        internal val storageLock = Any()
 +        @Volatile internal var storageChanged: ((File, Boolean) -> Unit)? = null
          const val MAX_BYTES = 512 * 1024L
+         private val ARCHIVE_NAMES = listOf("previous.log") + (2..7).map { "previous-$it.log" }
+         val REPORT_NAMES = ARCHIVE_NAMES.reversed() + "diplay.log"
 --- a/common/src/test/java/com/shilapi/xcertplay/DiagnosticRedactorTest.kt
 +++ b/common/src/test/java/com/shilapi/xcertplay/DiagnosticRedactorTest.kt
-@@ -106,3 +106,3 @@
+@@ -104,7 +104,7 @@
+                     it.append("password=secret")
+                 }
              }
 -            val history = SessionLogFile.REPORT_NAMES.map { folder.resolve(it).readText() }
 +            val history = SessionLogFile.REPORT_NAMES.mapNotNull { folder.resolve(it).takeIf(java.io.File::isFile)?.readText() }
              assertEquals(8, folder.listFiles()!!.size)
+             assertTrue(history.first().contains("session=2"))
+             assertTrue(history.last().contains("session=9"))
 --- a/common/src/test/java/com/shilapi/xcertplay/TraditionalChineseTranslationsTest.kt
 +++ b/common/src/test/java/com/shilapi/xcertplay/TraditionalChineseTranslationsTest.kt
-@@ -12,3 +12,5 @@
+@@ -10,7 +10,9 @@
+     private val argument = Regex("%(?:%|n|(?:\\d+\\$)?[-#+0,(<]*\\d*(?:\\.\\d+)?(?:[tT][a-zA-Z]|[bBhHsScCdoxXeEfgGaA]))")
+ 
      @Test fun everyUserFacingStringHasATraditionalChineseTranslationWithMatchingArguments() {
 -        for (module in listOf(File("."), File("../shared"), File("../samples/home"), File("../samples/maphost"))) {
 +        // 本产品不引入上游 samples 示例模块（与旧 GalaxyPlay 的处理一致），检查范围只保留实际
 +        // 编译进产品的 common 与 shared；否则对不存在目录的 listFiles 返回 null 会让本用例误失败。
 +        for (module in listOf(File("."), File("../shared"))) {
              val english = load(File(module, "src/main/res/values"))
+             val traditional = load(File(module, "src/main/res/values-zh-rTW"))
+             assertEquals("$module: Traditional Chinese resource keys", english.keys, traditional.keys)
 --- a/galaxy/mobile/src/debug/AndroidManifest.xml
 +++ b/galaxy/mobile/src/debug/AndroidManifest.xml
-@@ -0,0 +1,4 @@
+@@ -1,7 +1,4 @@
+-<manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
+-    <uses-permission android:name="android.permission.BYDAUTO_INSTRUMENT_COMMON" />
+-<queries><package android:name="com.byd.clusterdebug" /></queries>
+-    <application android:label="DiPlay HUD Test" tools:replace="android:label">
+-    <receiver android:name="com.shilapi.xcertplay.hud.StarterBridgeReceiver" android:exported="true" android:permission="android.permission.DUMP" />
+-    <activity android:name="com.shilapi.xcertplay.hud.StandaloneHudDemoActivity" android:exported="true" android:permission="android.permission.DUMP" />
+-    </application></manifest>
 +<?xml version="1.0" encoding="utf-8"?>
 +<!-- 产品调试包与正式入口一致，不继承上游BYD实验入口和HUD Test名称。 -->
 +<manifest />
 +
 --- a/galaxy/mobile/src/main/res/values/config.xml
 +++ b/galaxy/mobile/src/main/res/values/config.xml
-@@ -0,0 +1,4 @@
-+<resources>
-+    <bool name="config_advanced_audio_channel_mapping">true</bool>
+@@ -1,3 +1,4 @@
+ <resources>
+     <bool name="config_advanced_audio_channel_mapping">true</bool>
 +    <bool name="config_l7_product_ui">true</bool>
-+</resources>
+ </resources>
 --- a/galaxy/mobile/src/main/res/values/strings.xml
 +++ b/galaxy/mobile/src/main/res/values/strings.xml
-@@ -0,0 +1,33 @@
-+<resources>
+@@ -1,3 +1,33 @@
+ <resources>
+-    <string name="app_name">DiPlay</string>
 +    <string name="changes_the_size_of_carplay_icons_and_text_applying_a_size">调整 CarPlay 图标和文字的大小，保存后在下次连接时应用。</string>
 +    <string name="app_name">CarPlay</string>
 +    <string name="app_description">GalaxyPlay 是面向吉利银河 L7／L6 安卓车机的 CarPlay 接收端，支持无线与 USB 连接，提供音频、画面、方向盘按键和车型偏好设置。使用需要兼容的车机、系统权限与认证配置。当前为测试版本，原车媒体／导航显示、蓝牙交接及稳定性仍需按车型与固件验证。</string>
@@ -31553,16 +31792,22 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +    <string name="s_1_open_car_hotspot_settings_turn_the_hotspot_on_and_sele">1. 打开车机热点设置，开启热点，如有 5 GHz 请选择。\n2. 在下方准确复制热点名称和密码。\n3. 连接时保持车机热点开启。GalaxyPlay 通过蓝牙发送热点信息，iPhone 会自动加入。</string>
 +    <string name="ready_when_you_are">等待连接</string>
 +    <string name="msg_car_hotspot_off">车机热点 %1$s 尚未开启，请先到系统设置中开启。</string>
-+</resources>
+ </resources>
 --- a/shared/build.gradle
 +++ b/shared/build.gradle
-@@ -18,3 +18,4 @@
+@@ -16,7 +16,8 @@
+ 
+         externalNativeBuild {
              ndkBuild {
 -                arguments 'APP_PLATFORM=android-24'
 +                // 产品最低Android10，已迁入的NDK probe使用API28+，不改官方native源码。
 +                arguments 'APP_PLATFORM=android-29'
              }
-@@ -27,4 +28,11 @@
+         }
+ 
+@@ -25,8 +26,15 @@
+     ndkVersion = '28.2.13676358'
+     externalNativeBuild {
          ndkBuild {
 -            path = file('src/main/jni/Android.mk')
 +            path = rootProject.file('galaxy/shared/src/main/jni/Product.mk')
@@ -31575,9 +31820,13 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        test.java.directories.add(rootProject.file('galaxy/shared/src/test/java').path)
 +        test.kotlin.directories.add(rootProject.file('galaxy/shared/src/test/java').path)
      }
+     buildFeatures {
+         // Geely/Lynk head-unit input API (com.geely.inputservice); declarations in src/main/aidl.
 --- a/shared/src/main/java/com/shilapi/xcertplay/airplay/AirPlaySession.kt
 +++ b/shared/src/main/java/com/shilapi/xcertplay/airplay/AirPlaySession.kt
-@@ -363,5 +363,7 @@
+@@ -361,9 +361,11 @@
+     fun sendKnobSelect(down: Boolean) =
+         sendHidReport(AirPlayHid.KNOB_HID_UID, AirPlayHid.knobReport(AirPlayKnobState(select = down)))
  
 -    fun sendMedia(index: Int) {
 -        sendHidReport(AirPlayHid.MEDIA_HID_UID, AirPlayHid.mediaReport(index))
@@ -31588,9 +31837,13 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        val released = sendHidReport(AirPlayHid.MEDIA_HID_UID, AirPlayHid.mediaReport(0))
 +        pressed && released
      }
+ 
+     fun sendTelephony(index: Int) {
 --- a/shared/src/main/java/com/shilapi/xcertplay/hud/BydHudRouteState.kt
 +++ b/shared/src/main/java/com/shilapi/xcertplay/hud/BydHudRouteState.kt
-@@ -86,2 +86,12 @@
+@@ -84,6 +84,16 @@
+             distanceMeters, maneuver.type, maneuver.drivingSide,
+             roadFor(maneuver), remainingSeconds, remainingMeters, arrivalEpochSeconds,
          )
 +    }
 +
@@ -31603,35 +31856,54 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        if (noRoute != null && nanoTime() - noRoute >= noRouteHideNs) return null
 +        return activeManeuver()?.let(::roadFor) ?: currentRoad
      }
+ 
+     fun clear(): Boolean {
 --- a/shared/src/main/java/com/shilapi/xcertplay/media/AndroidMediaSink.kt
 +++ b/shared/src/main/java/com/shilapi/xcertplay/media/AndroidMediaSink.kt
-@@ -37,6 +37,2 @@
+@@ -35,17 +35,15 @@
+ import java.util.concurrent.atomic.AtomicLong
+ import java.util.concurrent.TimeUnit
  
 -/** AudioTrack's attributes getter is only available from Android 10. */
 -internal fun audioTrackAttributesForFocus(track: AudioTrack, configured: AudioAttributes): AudioAttributes =
 -    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) track.audioAttributes else configured
 -
  /** Owns one focus request for all eligible tracks in a CarPlay sink. */
-@@ -47,3 +43,5 @@
+ internal class AudioFocusCoordinator(
+     context: Context?,
+     private val enabled: Boolean,
+     private val muteMediaOnTransientLoss: Boolean = true,
      private val report: (String) -> Unit = {},
 +    private val adaptation: AudioFocusController? = null,
  ) {
 +    // 默认保持官方焦点逻辑；产品通过通用接口注入会话策略，核心不构造厂商实现。
      private data class Entry(val channel: AudioChannel, val attributes: AudioAttributes, var appliedVolume: Float = FULL_VOLUME)
-@@ -58,3 +56,3 @@
+ 
+     private val manager = context?.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
+@@ -56,7 +54,7 @@
+     private var closed = false
+     private var focusGeneration = 0L
      private var currentListener = listenerFor(focusGeneration)
 -    internal val listener: AudioManager.OnAudioFocusChangeListener get() = currentListener
 +    internal val listener: AudioManager.OnAudioFocusChangeListener get() = adaptation?.listener ?: currentListener
  
-@@ -93,2 +91,3 @@
+     private fun listenerFor(generation: Long) = AudioManager.OnAudioFocusChangeListener { change ->
+         synchronized(this) {
+@@ -91,6 +89,7 @@
+ 
+     @Synchronized
      fun acquire(track: AudioTrack, channel: AudioChannel, attributes: AudioAttributes) {
 +        adaptation?.let { it.acquire(track, channel, attributes); return }
          if (closed || !enabled || manager == null || channel == AudioChannel.NAVIGATION) return
-@@ -101,2 +100,3 @@
+         active[track] = Entry(channel, attributes)
+         refreshRequest()
+@@ -99,16 +98,23 @@
+ 
+     @Synchronized
      fun release(track: AudioTrack) {
 +        adaptation?.let { it.release(track); return }
          if (active.remove(track) != null) refreshRequest()
-@@ -104,3 +104,8 @@
+     }
  
 +    fun resumeMedia() { adaptation?.resumeMedia() }
 +    fun communicationStarted() { adaptation?.communicationStarted() }
@@ -31640,25 +31912,44 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
      fun onExternalFocusChange(change: Int) {
 +        adaptation?.let { it.onExternalFocusChange(change); return }
          val current = synchronized(this) { currentListener }
-@@ -111,2 +116,3 @@
+         current.onAudioFocusChange(change)
+     }
+ 
+     @Synchronized
      fun close() {
 +        adaptation?.let { it.close(); return }
          if (closed) return
-@@ -135,2 +141,3 @@
+         closed = true
+         active.clear()
+@@ -133,6 +139,7 @@
+             AudioChannel.MEDIA -> AudioManager.AUDIOFOCUS_GAIN
+             AudioChannel.PHONE -> AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
              AudioChannel.ASSISTANT -> AudioManager.AUDIOFOCUS_GAIN_TRANSIENT_MAY_DUCK
 +            AudioChannel.RINGTONE -> AudioManager.AUDIOFOCUS_GAIN_TRANSIENT
              AudioChannel.NAVIGATION -> return
-@@ -164,3 +171,3 @@
+         }
+         currentListener = listenerFor(focusGeneration)
+@@ -162,7 +169,7 @@
+     private fun AudioChannel.focusPriority(): Int = when (this) {
+         AudioChannel.MEDIA -> 3
          AudioChannel.PHONE -> 2
 -        AudioChannel.ASSISTANT -> 1
 +        AudioChannel.ASSISTANT, AudioChannel.RINGTONE -> 1
          AudioChannel.NAVIGATION -> 0
-@@ -199,3 +206,3 @@
+     }
+ 
+@@ -197,7 +204,7 @@
+     private val mediaBufferMillis: Int = MediaAudioBuffer.DEFAULT_MILLIS,
+     private val onAudioDiagnostic: (String) -> Unit = {},
      /** True while any music ("media") audio stream is running; called from media threads. */
 -    private val onMediaAudioChanged: (Boolean) -> Unit = {},
 +    onMediaAudioChanged: (Boolean) -> Unit = {},
      /** Opt-in call echo cancellation, replacing a controllable platform canceller while available. */
-@@ -221,3 +228,13 @@
+     private val callEchoCancellation: Boolean = false,
+     /** Cut the bass that head units add when they play a call as music. */
+@@ -219,22 +226,50 @@
+     private val vendorLowLatencyDecoder: Boolean = false,
+     /** Opt-in MTK ACodec low-latency/no-reorder modes, with per-session automatic fallback. */
      private val mtkDecoderTuningEnabled: Boolean = false,
 +    platformAdaptation: MediaPlatformAdaptation = MediaPlatformAdaptation.NONE,
 +    private val assistantChannel: Int = 0,
@@ -31672,17 +31963,23 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +    fun resumeMediaAudioFocus() { audioFocusCoordinator.resumeMedia() }
 +
      // Each downlink publishes its own reference; a mic must match that stream and sample rate.
-@@ -227,2 +244,5 @@
+     private val callEchoReferences = ConcurrentHashMap<AudioStreamId, EchoReference>()
+     private val appContext = context?.applicationContext
+     private val ambientSinkToken = AmbientMusicController.openSink(appContext)
      private val audioManager = appContext?.getSystemService(AudioManager::class.java)
 +    private val factoryAudio = platformAdaptation.profile
 +    private val audioRoutingTemplate = platformAdaptation.template
 +    private val audioRouting = platformAdaptation.audioRoutes(appContext, onAudioDiagnostic)
      private val audioFocusCoordinator = AudioFocusCoordinator(
-@@ -232,2 +252,3 @@
+         appContext,
+         audioFocusEnabled,
+         audioFocusAutoYield,
          onAudioDiagnostic,
 +        adaptation = platformAdaptation.audioFocus(appContext, audioFocusEnabled, onAudioDiagnostic),
      )
-@@ -237,2 +258,16 @@
+ 
+     /** The media-key session may own Android's current focus request for this same sink. */
+     fun onMediaAudioFocusChanged(change: Int) {
          audioFocusCoordinator.onExternalFocusChange(change)
 +    }
 +
@@ -31699,24 +31996,40 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +            if (communicationFocusOwners.remove(owner) && communicationFocusOwners.isEmpty()) audioFocusCoordinator.communicationEnded()
 +        }
      }
-@@ -248,3 +283,3 @@
+ 
+     private val screenStateLock = Any()
+@@ -246,7 +281,7 @@
+     // Surface capture, worker publication, retirement and detach snapshots share one ownership boundary.
+     // Native codec work and waits never run under this lock.
      private val videoOwnershipLock = Any()
 -    private var videoClosed = false
 +    @Volatile private var videoClosed = false
      private val videoReleasedListeners = ArrayList<() -> Unit>()
-@@ -259,2 +294,6 @@
+     // Closed decoders whose workers may still hold a codec on a surface until they exit; a surface
+     // detach also waits for them.
+@@ -257,6 +292,10 @@
+     internal var detachGraceNanos = 500_000_000L
+     private val mediaAudioTypes = mutableSetOf<AudioStreamId>()
      private val audioRenderers = ConcurrentHashMap<AudioStreamId, AudioRenderer>()
 +    private val assistantMicrophoneStreams = ConcurrentHashMap.newKeySet<AudioStreamId>()
 +    fun isAssistantAudioActive(): Boolean = !videoClosed && (assistantMicrophoneStreams.isNotEmpty() ||
 +        audioRenderers.values.any { it.format.audioType.equals("speechrecognition", true) })
 +    fun hasMicrophoneUplink(): Boolean = !videoClosed && microphoneUplinks.values.any { it.isActive() }
      @Volatile private var navigationAttenuationDb = NavigationAudioGain.clamp(navigationAttenuationDb)
-@@ -532,3 +571,3 @@
+ 
+     /** Apply a saved Audio setting to existing navigation tracks without reconnecting CarPlay. */
+@@ -530,7 +569,7 @@
+             if (active) mediaAudioTypes.add(id) else mediaAudioTypes.remove(id)
+             before to mediaAudioTypes.isNotEmpty()
          }
 -        if (before != after) onMediaAudioChanged(after)
 +        if (before != after) mediaAudioChanged(after)
      }
-@@ -540,7 +579,13 @@
+ 
+     override fun onMicrophoneStarted(id: AudioStreamId, config: MicrophoneConfig) {
+@@ -538,15 +577,23 @@
+         try {
+             val speakerphoneCall = config.audioType == "telephony" &&
                  appContext != null && BydBluetoothSuspend.isSuspendedByUs(appContext)
 -            if (config.audioType == "telephony" && !speakerphoneCall) enterCommunicationMode(id)
 +            if (callProcessingEnabled && config.audioType == "telephony" && !speakerphoneCall) enterCommunicationMode(id)
@@ -31732,41 +32045,64 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +                    onCaptureStarted = { if (config.audioType == TELEPHONY_AUDIO_TYPE) communicationFocusStarted(owner) },
 +                    onCaptureReleased = { communicationFocusReleased(owner) })
              }
-@@ -549,2 +594,4 @@
+             if (!uplink.start()) {
+                 microphoneUplinks.remove(id, uplink)
                  restoreAudioMode(id)
 +            } else if (config.audioType.equals("speechrecognition", true)) {
 +                assistantMicrophoneStreams.add(id)
              }
-@@ -558,2 +605,3 @@
+         } catch (error: Exception) {
+             Log.e("xcertplay-usb", "microphone start failed stream=$id", error)
+@@ -556,6 +603,7 @@
+     }
+ 
      override fun onMicrophoneStopped(id: AudioStreamId) {
 +        assistantMicrophoneStreams.remove(id)
          try {
-@@ -654,3 +702,4 @@
+             microphoneUplinks.remove(id)?.close()
+         } finally {
+@@ -652,11 +700,13 @@
+         audioRenderers.clear()
+         callEchoReferences.clear()
          val hadMedia = synchronized(mediaAudioTypes) { mediaAudioTypes.isNotEmpty().also { mediaAudioTypes.clear() } }
 -        if (hadMedia) onMediaAudioChanged(false)
 +        if (hadMedia) mediaAudioChanged(false)
 +        runCatching { audioRouting?.close() }
          try {
-@@ -659,2 +708,3 @@
+             microphoneUplinks.values.forEach(MicrophoneUplink::close)
+         } finally {
              microphoneUplinks.clear()
 +            assistantMicrophoneStreams.clear()
              restoreAudioMode(null)
-@@ -693,2 +743,3 @@
+         }
+     }
+@@ -691,6 +741,7 @@
+         // Keep the experimental MTK mode on the main CarPlay picture only. Mirrors and the
+         // cluster have separate timing and must retain their established decoder configuration.
          mtkDecoderTuningEnabled = mtkDecoderTuningEnabled && type == MAIN_SCREEN_TYPE && statsLabel == null,
 +        preferredAvcDecoder = preferredAvcDecoder,
      ).also { if (startImmediately) it.start() }
-@@ -709,2 +760,3 @@
+ 
+     @Synchronized
+@@ -707,12 +758,13 @@
+             callEchoReferences.remove(id)
+             null
          }
 +        val communicationOwner = Any()
          return AudioRenderer(
-@@ -713,4 +765,4 @@
+             format,
+             advancedAudioChannelMapping,
              audioFocusEnabled,
 -            mediaChannel,
 -            navigationChannel,
 +            audioRoutingTemplate?.choice(AudioOutputRole.MEDIA) ?: mediaChannel,
 +            audioRoutingTemplate?.choice(AudioOutputRole.NAVIGATION) ?: navigationChannel,
              audioFocusCoordinator,
-@@ -724,2 +776,9 @@
+             navigationStreamType,
+             mediaBufferMillis,
+@@ -722,6 +774,13 @@
+                 appContext != null && BydBluetoothSuspend.isSuspendedByUs(appContext),
+             echoReference = echoReference,
              voiceFilter = callVoiceFilter && format.audioType == TELEPHONY_AUDIO_TYPE,
 +            assistantChannel = audioRoutingTemplate?.choice(AudioOutputRole.ASSISTANT) ?: assistantChannel,
 +            factoryAudio = factoryAudio,
@@ -31776,7 +32112,11 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +            onStarted = { if (format.audioType == TELEPHONY_AUDIO_TYPE) communicationFocusStarted(communicationOwner) },
 +            onReleased = { communicationFocusReleased(communicationOwner) },
          ).also {
-@@ -813,3 +872,10 @@
+             it.setNavigationAttenuationDb(navigationAttenuationDb)
+             if (format.audioType == TELEPHONY_AUDIO_TYPE) it.onRoutedToEarpiece = { moveCallToLoudspeaker(id) }
+@@ -811,7 +870,14 @@
+     softwareDecoder: String?,
+     lowLatencyDecoder: String? = null,
      maximumMtkMode: MtkDecoderMode = MtkDecoderMode.NONE,
 +    preferredHardwareDecoder: String? = null,
  ): List<DecoderAttempt> = buildList {
@@ -31787,20 +32127,36 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        add(DecoderAttempt(it, tuned = false))
 +    }
      if (operatingRate > 0) lowLatencyDecoder?.let { add(DecoderAttempt(it, tuned = true, operatingRate)) }
-@@ -823,3 +889,3 @@
+     lowLatencyDecoder?.let { add(DecoderAttempt(it, tuned = true)) }
+     val mtkModes = maximumMtkMode.attempts()
+@@ -821,7 +887,7 @@
+     mtkModes.forEach { add(DecoderAttempt(null, tuned = true, mtkMode = it)) }
+     add(DecoderAttempt(codecName = null, tuned = false))
      softwareDecoder?.let { add(DecoderAttempt(it, tuned = false)) }
 -}
 +}.let { attempts -> if (preferredHardwareDecoder == null) attempts else attempts.distinct() }
  
-@@ -893,2 +959,3 @@
+ /**
+  * The operating rate to ask for at the next configure: none once a later attempt ([used]) worked after
+@@ -891,6 +957,7 @@
+      */
+     private val framesAtOnce: Boolean = false,
      private val mtkDecoderTuningEnabled: Boolean = false,
 +    private val preferredAvcDecoder: String? = null,
  ) : Closeable {
-@@ -933,2 +1000,3 @@
+     private val pacer = FramePacer()
+     private val pacingDelay = if (pacingDelayNanos > 0) PacingDelay(pacingDelayNanos) else null
+@@ -931,6 +998,7 @@
+     // Likewise the low-latency decoder, not tried again once another decoder had to take over; and what the
+     // codec that tryConfigure started last was given.
      private var lowLatencyDecoderRefused = false
 +    private var preferredAvcDecoderRefused = false
      private var startedLowLatency = false
-@@ -1185,4 +1253,15 @@
+     private var startedPictureOrder = false
+     private var submittedFrameLogged = false
+@@ -1183,14 +1251,27 @@
+             ?: if (atOnce && !lowLatencyDecoderRefused) findLowLatencyDecoder(mime) else null
+         val requestedMtkMode = if (mtkDecoderTuningEnabled &&
              MtkDecoderTuning.legacyAcodecDecoderName(mime) != null) maximumMtkMode else MtkDecoderMode.NONE
 +        val requestedPreferred = if (mime == MediaFormat.MIMETYPE_VIDEO_AVC && !preferredAvcDecoderRefused &&
 +            preferredAvcDecoder != null) {
@@ -31816,13 +32172,19 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
          var used: DecoderAttempt? = null
 +        val attemptedNames = mutableSetOf<String?>()
          for (attempt in videoDecoderAttempts(
-@@ -1192,3 +1271,5 @@
+             requestedRate,
+             softwareDecoderName(mime),
+             requestedLowLatency,
              requestedMtkMode,
 +            preferredHardwareDecoder = requestedPreferred,
          )) {
 +            attemptedNames.add(attempt.codecName)
              configured = tryConfigure(mime, csd, surface, attempt, atOnce)
-@@ -1201,3 +1282,9 @@
+             if (configured != null) { used = attempt; break }
+         }
+@@ -1199,7 +1280,13 @@
+             report("decoder configuration failed mime=$mime size=${width}x$height")
+         }
          if (nextOperatingRate(requestedRate, used) != requestedRate) dropOperatingRate("refused at configure")
 -        if (nextLowLatencyDecoder(requestedLowLatency, used) != requestedLowLatency) {
 +        if (requestedPreferred != null && nextLowLatencyDecoder(requestedPreferred, used) != requestedPreferred) {
@@ -31833,7 +32195,11 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        if ((requestedPreferred == null || requestedLowLatency in attemptedNames) &&
 +            nextLowLatencyDecoder(requestedLowLatency, used) != requestedLowLatency) {
              report("low-latency decoder $requestedLowLatency dropped: refused at configure")
-@@ -1745,2 +1832,9 @@
+             lowLatencyDecoderRefused = true
+         }
+@@ -1743,6 +1830,13 @@
+     /** Receives the played call audio so the call microphone can cancel its echo. */
+     private val echoReference: EchoReference? = null,
      voiceFilter: Boolean = false,
 +    private val assistantChannel: Int = 0,
 +    private val factoryAudio: PlatformAudioProfile? = null,
@@ -31843,104 +32209,177 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +    private val onStarted: () -> Unit = {},
 +    private val onReleased: () -> Unit = {},
  ) : Closeable {
-@@ -1764,2 +1858,3 @@
+     private data class AudioPacket(val rtp: ByteArray, val sample: Int)
+ 
+@@ -1762,6 +1856,7 @@
+     @Volatile private var started = false
+     private var codec: MediaCodec? = null
      private var track: AudioTrack? = null
 +    private var routeBinding: AudioRouteBinding? = null
      @Volatile private var navigationAttenuationDb = 0
-@@ -1866,2 +1961,3 @@
+     private var appliedNavigationAttenuationDb: Int? = null
+     private var pcm = ByteArray(64 * 1024)
+@@ -1864,6 +1959,7 @@
+     private fun run() {
+         runCatching { android.os.Process.setThreadPriority(android.os.Process.THREAD_PRIORITY_AUDIO) }
          try {
 +            onStarted()
              runCatching { report("Audio: starting api=${Build.VERSION.SDK_INT} " +
-@@ -1954,2 +2050,4 @@
+                 "audioType=${format.audioType} codec=${format.codec} rate=${format.sampleRate} channels=${format.channels} " +
+                 "mapping=${if (advancedAudioChannelMapping) "automotive" else "mobile"} " +
+@@ -1952,6 +2048,8 @@
+     }
+ 
      private fun createTrack() {
 +        // 原车播放本地音乐时仍消费协议音频，但不创建第二个本地音乐输出。
 +        if (!renderAudio) return
          diagnosticStage = "track-buffer-size"
-@@ -1969,3 +2067,3 @@
+         val encoding = AndroidAudioFormat.ENCODING_PCM_16BIT
+         val channelMask = if (format.channels >= 2) AndroidAudioFormat.CHANNEL_OUT_STEREO
+@@ -1967,7 +2065,7 @@
+         val selection = mappedSelection()
+         mappedChannel = selection.channel
          val streamOverride = channelOverride(selection.channel)
 -        actualLegacyStreamType = streamOverride.takeIf { it != 0 }
 +        actualLegacyStreamType = streamOverride.takeIf { AudioOutputPolicy.isLegacy(it) }
          var attributes = audioAttributesFor(selection, streamOverride)
-@@ -1978,4 +2076,4 @@
+         trackAttributes = attributes
+         val plan = MediaAudioBuffer.plan(selection.channel == AudioChannel.MEDIA,
+@@ -1976,8 +2074,8 @@
+         val built: AudioTrack
+         var routeLabel: String
          diagnosticStage = "track-build"
 -        if (streamOverride == 0) {
 -            attributes = audioAttributesFor(selection)
 +        if (streamOverride == 0 || factoryAudio != null && !AudioOutputPolicy.isLegacy(streamOverride)) {
 +            attributes = if (factoryAudio != null) audioAttributesFor(selection, streamOverride) else audioAttributesFor(selection)
              routeLabel = "usage"
-@@ -2013,2 +2111,6 @@
+             built = AudioTrack.Builder()
+                 .setAudioAttributes(attributes)
+@@ -2011,6 +2109,10 @@
+             )
+         }
          track = built
 +        routeBinding = audioRouting?.bind(built,
 +            if (selection.channel == AudioChannel.NAVIGATION) selection.channel
 +            else AudioOutputPolicy.routingChannel(selection.channel, streamOverride),
 +            false, format.sampleRate, format.channels, useBus = !AudioOutputPolicy.isLegacy(streamOverride))
          if (mappedChannel == AudioChannel.PHONE) {
-@@ -2065,3 +2167,5 @@
+             val listener = AudioRouting.OnRoutingChangedListener { routing -> checkCallRoute(routing.routedDevice) }
+             if (runCatching { built.addOnRoutingChangedListener(listener, Handler(Looper.getMainLooper())) }.isSuccess) {
+@@ -2063,7 +2165,9 @@
+     private fun channelOverride(channel: AudioChannel): Int = when (channel) {
+         AudioChannel.MEDIA -> mediaChannel
          AudioChannel.NAVIGATION -> navigationChannel
 -        else -> 0
 +        AudioChannel.ASSISTANT -> assistantChannel
 +        AudioChannel.PHONE -> routingTemplate?.choice(AudioOutputRole.PHONE) ?: 0
 +        AudioChannel.RINGTONE -> 0
      }
-@@ -2099,2 +2203,3 @@
+ 
+     fun setNavigationAttenuationDb(db: Int) {
+@@ -2097,6 +2201,7 @@
+         selection: AudioChannelSelection,
+         streamOverride: Int,
      ): AudioAttributes {
 +        factoryAudio?.let { return it.attributes(selection.channel, contentTypeFor(selection.contentType), streamOverride) }
          if (streamOverride in AudioManager.STREAM_SYSTEM..AudioManager.STREAM_ACCESSIBILITY) {
-@@ -2116,2 +2221,5 @@
+             // Android accepts only its defined legacy stream IDs here. BYD audio policy can
+             // map these standard streams to vehicle outputs; arbitrary channel numbers are
+@@ -2114,6 +2219,9 @@
+     }
+ 
      private fun mappedSelection(): AudioChannelSelection {
 +        if (factoryAudio != null && format.audioType.equals("alert", true)) {
 +            return AudioChannelSelection(AudioChannel.RINGTONE, AudioContentType.SPEECH)
 +        }
          val mode = if (advancedAudioChannelMapping) {
-@@ -2130,3 +2238,3 @@
+             AudioChannelMappingMode.AUTOMOTIVE_BUS
+         } else {
+@@ -2128,7 +2236,7 @@
+     }
+ 
      private fun audioAttributesFor(selection: AudioChannelSelection): AudioAttributes =
 -        AudioAttributes.Builder()
 +        factoryAudio?.attributes(selection.channel, contentTypeFor(selection.contentType), 0) ?: AudioAttributes.Builder()
              .setUsage(usageFor(selection.channel))
-@@ -2142,3 +2250,3 @@
+             .setContentType(contentTypeFor(selection.contentType))
+             .build()
+@@ -2140,7 +2248,7 @@
+     private fun requestAudioFocus() {
+         val channel = mappedChannel ?: return
          val attributes = trackAttributes ?: return
 -        if (channel == AudioChannel.NAVIGATION) {
 +        if (channel == AudioChannel.NAVIGATION && factoryAudio == null) {
              Log.i(TAG, "audio focus skipped channel=NAVIGATION; overlays without ducking")
-@@ -2191,2 +2299,3 @@
+             return
+         }
+@@ -2189,6 +2297,7 @@
+             AudioAttributes.USAGE_MEDIA
+         }
          AudioChannel.NAVIGATION -> AudioAttributes.USAGE_ASSISTANCE_NAVIGATION_GUIDANCE
 +        AudioChannel.RINGTONE -> AudioAttributes.USAGE_NOTIFICATION_RINGTONE
      }
-@@ -2608,2 +2717,4 @@
+ 
+     private fun contentTypeFor(contentType: AudioContentType): Int = when (contentType) {
+@@ -2606,6 +2715,8 @@
+         NavigationPlayback.close(navigationPlaybackToken)
+         AmbientMusicController.closeRenderer(ambientRendererToken)
          abandonAudioFocus()
 +        runCatching { routeBinding?.close() }
 +        routeBinding = null
          val codec = codec
-@@ -2643,2 +2754,4 @@
+         this.codec = null
+         if (codec != null) {
+@@ -2641,6 +2752,8 @@
+                 // Best effort.
+             }
          }
 +        // 只在本worker真正交还codec/track后释放通话焦点所有权。
 +        onReleased()
      }
+ 
+     private companion object {
 --- a/shared/src/main/java/com/shilapi/xcertplay/media/AudioChannelMapping.kt
 +++ b/shared/src/main/java/com/shilapi/xcertplay/media/AudioChannelMapping.kt
-@@ -9,3 +9,3 @@
+@@ -7,11 +7,13 @@
+     AUTOMOTIVE_BUS,
+ }
  
 -internal enum class AudioChannel {
 +enum class AudioChannel {
      MEDIA,
-@@ -14,2 +14,4 @@
+     PHONE,
+     ASSISTANT,
      NAVIGATION,
 +    /** 仅由车型音频适配显式识别；默认协议映射保持上游行为。 */
 +    RINGTONE,
  }
+ 
+ internal enum class AudioContentType {
 --- a/shared/src/main/java/com/shilapi/xcertplay/media/CarPlayPlaybackStatus.kt
 +++ b/shared/src/main/java/com/shilapi/xcertplay/media/CarPlayPlaybackStatus.kt
-@@ -16,2 +16,4 @@
+@@ -14,6 +14,8 @@
+     val durationMillis: Long? = null,
+     val elapsedMillis: Long? = null,
      val playing: Boolean = false,
 +    /** 只有合法STATUS到达才变为true，标题/进度不能推定手机正在播放或暂停。 */
 +    val playbackKnown: Boolean = false,
  )
-@@ -45,2 +47,4 @@
+ 
+ /**
+@@ -43,6 +45,8 @@
+             durationMillis = media.updatedU32(DURATION, previous.durationMillis),
+             elapsedMillis = playback.updatedU32(ELAPSED, previous.elapsedMillis),
              playing = playback.updatedStatus(previous.playing),
 +            playbackKnown = previous.playbackKnown ||
 +                runCatching { playback?.optionalU8(STATUS) != null }.getOrDefault(false),
          )
-@@ -53,5 +57,5 @@
+         if (next == previous) return null
+         nowPlaying = next
+@@ -51,16 +55,16 @@
+ 
+     /** The new state when [frame] changed it, otherwise null. */
      fun accept(frame: Iap2Frame): Boolean? {
 -        val previous = playing
 -        val next = acceptUpdate(frame)?.playing ?: return null
@@ -31949,7 +32388,8 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        val next = acceptUpdate(frame) ?: return null
 +        return next.playing.takeIf { next.playbackKnown && (!previous.playbackKnown || it != previous.playing) }
      }
-@@ -60,5 +64,5 @@
+ 
+     /** The session ended: nothing plays any more. */
      fun clear(): Boolean? {
 -        if (!playing) return null
 -        nowPlaying = nowPlaying.copy(playing = false)
@@ -31958,9 +32398,13 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        nowPlaying = nowPlaying.copy(playing = false, playbackKnown = false)
 +        return if (wasPlaying) false else null
      }
+ 
+     /** Clears all retained metadata at the end of a CarPlay session. */
 --- a/shared/src/main/java/com/shilapi/xcertplay/media/MicrophoneUplink.kt
 +++ b/shared/src/main/java/com/shilapi/xcertplay/media/MicrophoneUplink.kt
-@@ -45,2 +45,7 @@
+@@ -43,18 +43,26 @@
+         )
+     },
      private val noAudioRestartMillis: Long = NO_AUDIO_RESTART_MILLIS,
 +    private val factorySource: Int? = null,
 +    private val audioRouting: AudioRouteProvider? = null,
@@ -31968,21 +32412,35 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +    private val onCaptureStarted: () -> Unit = {},
 +    private val onCaptureReleased: () -> Unit = {},
  ) : Closeable {
-@@ -51,2 +56,3 @@
+     private val running = AtomicBoolean(false)
+     private val stats = MicrophoneCaptureStats(config, report = { message ->
+         Log.i(TAG, message)
+         onDiagnostic(message)
      })
 +    @Volatile private var routeBinding: AudioRouteBinding? = null
      @Volatile private var recorder: AudioRecord? = null
-@@ -57,2 +63,4 @@
+     @Volatile private var socket: DatagramSocket? = null
+     @Volatile private var opusEncoder: MicrophoneOpusEncoder? = null
+     @Volatile private var effects: List<AudioEffect> = emptyList()
+     @Volatile private var echoCanceller: CallEchoCanceller? = null
      private var thread: Thread? = null
 +    internal fun isActive(): Boolean = running.get() &&
 +        runCatching { recorder?.recordingState == AudioRecord.RECORDSTATE_RECORDING }.getOrDefault(false)
  
-@@ -78,3 +86,3 @@
+     fun start(): Boolean {
+         if (!running.compareAndSet(false, true)) return true
+@@ -76,7 +84,7 @@
+             return false
+         }
  
 -        val source = when {
 +        val standardSource = when {
              config.audioType == "telephony" -> telephonyMicrophoneSource(
-@@ -112,9 +120,9 @@
+                 speakerphoneCall = speakerphoneCall,
+                 carPhoneState = PhoneAudioRoute.carPlayCallsUseCarAudio(),
+@@ -110,13 +118,13 @@
+             runCatching { onDiagnostic(message) }
+         }
          val bufferSize = maxOf(minBuffer * 2, config.frameBytes * 4)
 -        // Some head units throw on VOICE_RECOGNITION at build(); VOICE_COMMUNICATION works there.
 -        val nextRecorder = createRecorder(source, channelMask, bufferSize)
@@ -31999,12 +32457,19 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +                if (source == MediaRecorder.AudioSource.VOICE_COMMUNICATION) stats.useVoiceCommunicationSource()
 +                createRecorder(source, channelMask, bufferSize)
              }
-@@ -144,3 +152,3 @@
+         if (nextRecorder == null) {
+             nextEncoder?.close()
+@@ -142,14 +150,22 @@
+         socket = nextSocket
+         opusEncoder = nextEncoder
          return try {
 -            if (config.audioType == "telephony") {
 +            if (callProcessingEnabled && config.audioType == "telephony") {
                  echoCanceller = createEchoCanceller()
-@@ -151,3 +159,11 @@
+                 if (!speakerphoneCall) effects = voiceEffects(nextRecorder.audioSessionId)
+                 if (echoReference != null) {
+                     Log.i(TAG, "microphone echo canceller enabled=${echoCanceller != null} tail=${ECHO_TAIL_MILLIS}ms")
+                 }
              }
 +            val channel = when (config.audioType.lowercase()) {
 +                "telephony" -> AudioChannel.PHONE
@@ -32016,18 +32481,30 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +            onCaptureStarted()
 +            routeBinding?.reportActual()
              stats.started(routeType(nextRecorder))
-@@ -482,2 +498,4 @@
+             thread = Thread({ capture(nextRecorder, nextSocket) }, "carplay-mic").apply {
+                 isDaemon = true
+@@ -480,6 +496,8 @@
+     @Synchronized
+     private fun release() {
          running.set(false)
 +        runCatching { routeBinding?.close() }
 +        routeBinding = null
          val currentEffects = effects
-@@ -504,2 +522,3 @@
+         effects = emptyList()
+         currentEffects.forEach(::releaseEffect)
+@@ -502,6 +520,7 @@
+         val currentEncoder = opusEncoder
+         opusEncoder = null
          currentEncoder?.close()
 +        onCaptureReleased()
      }
+ 
+     private companion object {
 --- a/shared/src/main/java/com/shilapi/xcertplay/network/P2pStartupRecovery.kt
 +++ b/shared/src/main/java/com/shilapi/xcertplay/network/P2pStartupRecovery.kt
-@@ -54,3 +54,6 @@
+@@ -52,7 +52,10 @@
+     fun plan(stationFrequency: Int?, preferred: P2pCreationRequest? = null,
+              preferredChannel: Int = WifiP2pChannels.AUTO,
               bandRequests: Boolean = true,
 -             fiveGhz: Boolean = true): List<P2pCreationRequest> = buildList {
 +             fiveGhz: Boolean = true,
@@ -32035,7 +32512,11 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        if (allowedChannels != null) scopedPlan(stationFrequency, preferred, preferredChannel, fiveGhz, allowedChannels)
 +        else buildList {
          WifiP2pChannels.frequencyMhz(preferredChannel)?.let {
-@@ -97,2 +100,52 @@
+             add(P2pCreationRequest(P2pCreationMode.PREFERRED_CHANNEL, it))
+             return@buildList
+@@ -95,6 +98,56 @@
+         if (none { it.mode == P2pCreationMode.SYSTEM_DEFAULT }) add(P2pCreationRequest(P2pCreationMode.SYSTEM_DEFAULT))
+     }
  
 +    /** 部署传入的是具体信道及优先顺序；核心不读取地区，也不请求无约束系统默认组。 */
 +    private fun scopedPlan(station: Int?, remembered: P2pCreationRequest?, manual: Int,
@@ -32088,7 +32569,11 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +    }
 +
      /**
-@@ -123,5 +176,6 @@
+      * Auto inside one band: never leaves the band, never uses the remembered Auto result and
+      * never ends with the unpinned default, which may pick the other band. The driver chooses
+@@ -121,9 +174,10 @@
+         bandRequests: Boolean = true,
+         fiveGhz: Boolean = true,
          busyCause: (P2pCreateRejected) -> IOException? = { null },
 +        allowedChannels: List<Int>? = null,
          request: (P2pCreationRequest) -> Unit,
@@ -32096,15 +32581,23 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 -        val modes = plan(stationFrequency, preferred, preferredChannel, bandRequests, fiveGhz)
 +        val modes = plan(stationFrequency, preferred, preferredChannel, bandRequests, fiveGhz, allowedChannels)
          var lastRejection: P2pCreateRejected? = null
-@@ -134,2 +188,5 @@
+         for ((index, mode) in modes.withIndex()) {
+             var retriedBusy = false
+@@ -132,6 +186,9 @@
+                     request(mode)
+                     return mode
                  } catch (failure: P2pConfigBuildCompatibilityFailure) {
 +                    if (allowedChannels != null) throw WirelessStartupException(
 +                        WirelessStartupFailure.HOTSPOT_CONFIGURATION,
 +                        "Wi-Fi Direct cannot preserve the selected channel policy on this framework").apply { initCause(failure) }
                      if (preferredChannel != WifiP2pChannels.AUTO) {
+                         throw P2pChannelUnavailableException(preferredChannel, failure.message.orEmpty(), failure)
+                     }
 --- a/shared/src/main/java/com/shilapi/xcertplay/network/WifiP2pGroupManager.kt
 +++ b/shared/src/main/java/com/shilapi/xcertplay/network/WifiP2pGroupManager.kt
-@@ -44,4 +44,10 @@
+@@ -42,8 +42,14 @@
+     context: Context,
+     private val diagnostic: (String) -> Unit = {},
      private val preferredChannel: Int = WifiP2pChannels.AUTO,
 +    allowedChannels: List<Int>? = null,
  ) : WirelessHotspotManager {
@@ -32115,23 +32608,39 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +                channels.all { it in WifiP2pChannels.channels }) { "Invalid Wi-Fi Direct allowed channels" }
 +        }
          require(WifiP2pChannels.isValid(preferredChannel)) { "Unsupported Wi-Fi Direct channel: $preferredChannel" }
-@@ -146,3 +152,4 @@
+     }
+     private val appContext = context.applicationContext
+@@ -144,7 +150,8 @@
+                 WifiP2pChannels.band(preferredChannel) != null -> "Wi-Fi P2P remembered skipped=band_preference"
+                 preferredChannel != WifiP2pChannels.AUTO -> "Wi-Fi P2P remembered skipped=manual_channel"
                  preferred != null -> {
 -                    val position = if (P2pStartupRecovery.plan(stationFrequency, preferred.request).first() == preferred.request)
 +                    val position = if (P2pStartupRecovery.plan(stationFrequency, preferred.request,
 +                            fiveGhz = fiveGhz, allowedChannels = allowedChannels).first() == preferred.request)
                          "first" else "deferred"
-@@ -190,2 +197,3 @@
+                     "Wi-Fi P2P remembered $position mode=${preferred.request.mode} frequencyMHz=${preferred.request.frequencyMHz ?: "auto"}"
+                 }
+@@ -188,6 +195,7 @@
+                 // Band-only requests need the API 29 WifiP2pConfig; the legacy path pins channels.
+                 bandRequests = !legacyChannels,
                  fiveGhz = fiveGhz,
 +                allowedChannels = allowedChannels,
                  beforeRetry = {
-@@ -275,2 +283,3 @@
+                     ensureStartActive(attempt)
+                     // Do not cancel discovery, toggle Wi-Fi, or remove a newly observed group.
+@@ -273,6 +281,7 @@
+                 diagnostic("Wi-Fi P2P channel requestedMHz=${creation.frequencyMHz ?: "auto"} " +
+                     "actualMHz=unavailable matched=unverified")
              } else {
 +                P2pStartupRecovery.validateCreatedFrequency(group.frequencyMHz, allowedChannels)
                  diagnostic("Wi-Fi P2P channel requestedMHz=${creation.frequencyMHz ?: "auto"} actualMHz=${group.frequencyMHz} matched=${creation.frequencyMHz?.let { it == group.frequencyMHz } ?: "system_selected"}")
+                 val band = WifiP2pChannels.band(preferredChannel)
+                 if (band != null) {
 --- a/shared/src/main/java/com/shilapi/xcertplay/orchestration/CarPlayRuntimeConfig.kt
 +++ b/shared/src/main/java/com/shilapi/xcertplay/orchestration/CarPlayRuntimeConfig.kt
-@@ -72,4 +72,16 @@
+@@ -70,8 +70,20 @@
+     val wifiP2pPreferredChannel: Int = WifiP2pChannels.AUTO,
+     val existingWifiSsid: String = "",
      val existingWifiPassphrase: String = "",
 +    /** 可选部署信道集合及优先顺序；null保持核心默认计划，不读取产品地区或系统国家码。 */
 +    wifiP2pAllowedChannels: List<Int>? = null,
@@ -32148,9 +32657,13 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +            }
 +        }
          require(iphoneDevices.all { it.vendorId == APPLE_VENDOR_ID }) {
+             "iPhone USB identities must use Apple vendor ID 0x${APPLE_VENDOR_ID.toString(16)}"
+         }
 --- a/shared/src/test/java/com/shilapi/xcertplay/media/AudioClockTrimTest.kt
 +++ b/shared/src/test/java/com/shilapi/xcertplay/media/AudioClockTrimTest.kt
-@@ -40,6 +40,6 @@
+@@ -38,10 +38,10 @@
+                 .build())
+             .setBufferSizeInBytes(96_000)
              .build()
 -        renderer = type.declaredConstructors.single { it.parameterCount == 13 }.apply { isAccessible = true }
 +        renderer = type.declaredConstructors.single { !it.isSynthetic }.apply { isAccessible = true }
@@ -32159,9 +32672,13 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 -                0, 500, { message: String -> reports.add(message) }, 0L, false, null, false)
 +                0, 500, { message: String -> reports.add(message) }, 0L, false, null, false, 0, null, null, null, true, {}, {})
          set("track", track)
+         set("mappedChannel", AudioChannel.MEDIA)
+         set("playbackStarted", true)
 --- a/shared/src/test/java/com/shilapi/xcertplay/media/AudioCodecOutputReleaseTest.kt
 +++ b/shared/src/test/java/com/shilapi/xcertplay/media/AudioCodecOutputReleaseTest.kt
-@@ -55,19 +55,10 @@
+@@ -53,23 +53,14 @@
+             .setBufferSizeInBytes(4096).build()
+         val type = Class.forName("com.shilapi.xcertplay.media.AudioRenderer")
          val constructor = type.declaredConstructors.single { !it.isSynthetic }.apply { isAccessible = true }
 -        val arguments = mutableListOf<Any?>(
 +        // 接缝新增的产品注入参数按中性值补齐，保持本用例原有的“实际写出 PCM”语义。
@@ -32187,9 +32704,13 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 -        val renderer = constructor.newInstance(*arguments.toTypedArray())
 +        val renderer = constructor.newInstance(*arguments)
          fun set(name: String, value: Any) = type.getDeclaredField(name).apply { isAccessible = true }.set(renderer, value)
+         set("track", track)
+         set("fadeApplied", true)
 --- a/shared/src/test/java/com/shilapi/xcertplay/media/AudioRebufferCapacityTest.kt
 +++ b/shared/src/test/java/com/shilapi/xcertplay/media/AudioRebufferCapacityTest.kt
-@@ -31,6 +31,6 @@
+@@ -29,10 +29,10 @@
+                     .setChannelMask(android.media.AudioFormat.CHANNEL_OUT_STEREO).build())
+                 .setBufferSizeInBytes(plan.trackBufferBytes).build()
              val type = Class.forName("com.shilapi.xcertplay.media.AudioRenderer")
 -            val renderer = type.declaredConstructors.single { it.parameterCount == 13 }
 +            val renderer = type.declaredConstructors.single { !it.isSynthetic }
@@ -32198,45 +32719,711 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 -                    AudioFocusCoordinator(null, false, false), 0, millis, { _: String -> }, 0L, false, null, false)
 +                    AudioFocusCoordinator(null, false, false), 0, millis, { _: String -> }, 0L, false, null, false, 0, null, null, null, true, {}, {})
              fun set(name: String, value: Any) = type.getDeclaredField(name).apply { isAccessible = true }.set(renderer, value)
+             fun get(name: String) = type.getDeclaredField(name).apply { isAccessible = true }.get(renderer)
+             try {
 --- a/shared/src/test/java/com/shilapi/xcertplay/media/AudioRebufferDiagnosticsTest.kt
 +++ b/shared/src/test/java/com/shilapi/xcertplay/media/AudioRebufferDiagnosticsTest.kt
-@@ -41,3 +41,3 @@
+@@ -39,13 +39,14 @@
+             .build()
+ 
          val type = Class.forName("com.shilapi.xcertplay.media.AudioRenderer")
 -        val renderer = type.declaredConstructors.single { it.parameterCount == 13 }
 +        val renderer = type.declaredConstructors.single { !it.isSynthetic }
              .apply { isAccessible = true }
-@@ -47,3 +47,4 @@
+             .newInstance(
+                 AudioFormat(AudioCodecKind.LPCM, 48_000, 2, 96, "media"),
+                 false, false, 0, 0,
                  AudioFocusCoordinator(null, false, false),
 -                0, 500, { msg: String -> reports.add(msg) }, 0L, false, null, false
 +                0, 500, { msg: String -> reports.add(msg) }, 0L, false, null, false,
 +                0, null, null, null, true, {}, {}
              )
-@@ -114,3 +115,3 @@
+ 
+         fun set(name: String, value: Any?) = type.getDeclaredField(name).apply { isAccessible = true }.set(renderer, value)
+@@ -112,13 +113,14 @@
+             .build()
+ 
          val type = Class.forName("com.shilapi.xcertplay.media.AudioRenderer")
 -        val renderer = type.declaredConstructors.single { it.parameterCount == 13 }
 +        val renderer = type.declaredConstructors.single { !it.isSynthetic }
              .apply { isAccessible = true }
-@@ -120,3 +121,4 @@
+             .newInstance(
+                 AudioFormat(AudioCodecKind.LPCM, 48_000, 2, 96, "media"),
+                 false, false, 0, 0,
                  AudioFocusCoordinator(null, false, false),
 -                0, 500, { msg: String -> reports.add(msg) }, 0L, false, null, false
 +                0, 500, { msg: String -> reports.add(msg) }, 0L, false, null, false,
 +                0, null, null, null, true, {}, {}
              )
+ 
+         fun set(name: String, value: Any?) = type.getDeclaredField(name).apply { isAccessible = true }.set(renderer, value)
 --- a/shared/src/test/java/com/shilapi/xcertplay/media/CarPlayPlaybackStatusTest.kt
 +++ b/shared/src/test/java/com/shilapi/xcertplay/media/CarPlayPlaybackStatusTest.kt
-@@ -61,2 +61,3 @@
+@@ -59,6 +59,7 @@
+                 durationMillis = 257_000,
+                 elapsedMillis = 12_500,
                  playing = true,
 +                playbackKnown = true,
              ),
+             status.acceptUpdate(update {
+                 group(1) {
 --- a/shared/src/test/java/com/shilapi/xcertplay/media/NavigationAudioGainTest.kt
 +++ b/shared/src/test/java/com/shilapi/xcertplay/media/NavigationAudioGainTest.kt
-@@ -85,3 +85,3 @@
+@@ -83,7 +83,7 @@
+         val streamBefore = manager.getStreamVolume(AudioManager.STREAM_MUSIC)
+         val sink = AndroidMediaSink()
          val type = Class.forName("com.shilapi.xcertplay.media.AudioRenderer")
 -        val constructor = type.declaredConstructors.single { it.parameterCount == 13 }
 +        val constructor = type.declaredConstructors.single { !it.isSynthetic }
              .apply { isAccessible = true }
-@@ -93,3 +93,3 @@
+         val tracks = mutableListOf<AudioTrack>()
+         try {
+@@ -91,7 +91,7 @@
+                 val renderer = constructor.newInstance(
+                     AudioFormat(AudioCodecKind.LPCM, 48_000, 1, 96, "media"),
                      false, false, 0, 0, AudioFocusCoordinator(null, false, false), 0, 300,
 -                    { _: String -> }, 0L, false, null, false)
 +                    { _: String -> }, 0L, false, null, false, 0, null, null, null, true, {}, {})
                  val track = track().also(tracks::add)
+                 type.getDeclaredField("mappedChannel").apply { isAccessible = true }.set(renderer, channel)
+                 type.getDeclaredField("track").apply { isAccessible = true }.set(renderer, track)
+--- /dev/null
++++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxySteeringBinding.kt
+@@ -0,0 +1,76 @@
++package com.shilapi.xcertplay
++
++import android.content.Context
++import android.os.Handler
++import android.os.Looper
++import com.shilapi.xcertplay.orchestration.CarPlayController
++import com.shilapi.xcertplay.steering.GalaxySteeringMediaDispatch
++import com.shilapi.xcertplay.steering.GalaxySteeringSessions
++import java.io.Closeable
++
++/**
++ * 投屏会话 → 方控监听的唯一装配点。
++ *
++ * 接点：`GalaxyProductHostAdapter.bindMedia/sessionStored` 建立会话时挂接，`detachMedia`
++ * 与会话结束（无活动手机会话的 active=false）时解绑。重复挂接、重复解绑、会话重建
++ * 都按控制器身份幂等：同一控制器只保留一个句柄，替换控制器时先关旧句柄再挂新句柄。
++ * 线程：`GalaxySteeringSessions` 要求主线程持有 attach/observe/close，而宿主回调来自
++ * 连接与断开链路，因此这里统一投递到主线程执行。
++ * 幂等与迟到回调：每次挂接/解绑都递增 `generation`，排队中的旧任务在代次不匹配时直接丢弃，
++ * close 之后到达的回调不会重新建立监听；媒体出口也自行记录 closed，close 后不派发。
++ * 释放：`GalaxySteeringSessions` 在最后一个句柄释放后注销Binder订阅并退出worker，本类不额外持有。
++ */
++internal object GalaxySteeringBinding {
++    private val main = Handler(Looper.getMainLooper())
++    private var generation = 0L
++    private var controller: CarPlayController? = null
++    private var handle: Closeable? = null
++    private var media: GalaxySteeringMediaDispatch? = null
++
++    /** 会话/媒体建立时挂接；同一控制器重复调用为空操作。 */
++    fun attach(context: Context, next: CarPlayController) {
++        val app = context.applicationContext
++        val ticket = ++generation
++        main.post {
++            if (ticket != generation) return@post
++            if (controller === next && handle != null) return@post
++            release()
++            val dispatch = GalaxySteeringMediaDispatch(next)
++            val attached = runCatching { GalaxySteeringSessions.attach(app, next, dispatch::send) }.getOrNull()
++            if (attached == null) {
++                // 挂接失败时不保留半挂接状态，下一会话重新尝试；不在这里禁用方控。
++                dispatch.close()
++                return@post
++            }
++            controller = next
++            media = dispatch
++            handle = attached
++        }
++    }
++
++    /** 媒体/会话解绑；`expected` 为空表示释放当前句柄，非当前控制器的解绑请求被忽略。 */
++    fun detach(expected: CarPlayController?) {
++        val ticket = ++generation
++        main.post {
++            if (ticket != generation) return@post
++            if (expected != null && controller !== expected) return@post
++            release()
++        }
++    }
++
++    /** 手机会话结束但应用未重启（断线重连前）时释放监听；仍有活动会话的迟到false不动。 */
++    fun onSessionEnded(expected: CarPlayController) {
++        if (expected.hasActiveSession()) return
++        detach(expected)
++    }
++
++    private fun release() {
++        val closing = handle
++        val dispatch = media
++        handle = null
++        media = null
++        controller = null
++        closing?.let { runCatching { it.close() } }
++        dispatch?.close()
++    }
++}--- /dev/null
++++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/steering/GalaxySteeringMediaDispatch.kt
+@@ -0,0 +1,43 @@
++package com.shilapi.xcertplay.steering
++
++import android.os.SystemClock
++import com.shilapi.xcertplay.CarPlayBackgroundSession
++import com.shilapi.xcertplay.orchestration.CarPlayController
++import java.util.concurrent.atomic.AtomicBoolean
++
++/**
++ * 方控媒体动作的运行时出口：跨源窗口 → 上游蓝牙等待闸门 → 手机媒体命令。
++ *
++ * 线程：只由方控会话在主线程的派发/心跳中调用；`close` 由会话解绑触发，close 后迟到的
++ *      派发直接返回false，不再触碰控制器。
++ * 返回值：只有命令真的交给控制器发送才为true。“等蓝牙媒体独占解除”“旧会话”“窗口内重复”
++ *      都返回false，让学习页与状态行如实反映本次按键是否已经生效，而不是无条件成功。
++ */
++internal class GalaxySteeringMediaDispatch(
++    private val controller: CarPlayController,
++    private val deduplicator: SteeringMediaCommandDeduplicator = GalaxySteeringMediaWindow.deduplicator,
++    private val clock: () -> Long = SystemClock::elapsedRealtime,
++) {
++    private val closed = AtomicBoolean(false)
++
++    fun send(index: Int): Boolean {
++        if (closed.get()) return false
++        val action = GalaxySteeringMediaWindow.action(index) ?: return false
++        // 控制器已关闭或手机会话已经更替时不再发送；owner 在发送时重新读取，不用旧快照。
++        if (controller.isClosed()) return false
++        val owner = controller.activeMediaSessionOwner() ?: return false
++        val now = clock()
++        if (!deduplicator.allowed(action, GalaxySteeringMediaWindow.STEERING, now)) return false
++        var sent = false
++        // 上游既有路径：媒体独占时PLAY要等A2DP断开，旧控制器在这里被丢弃。
++        CarPlayBackgroundSession.beforeMediaCommand(controller, index,
++            { sent = controller.sendMediaButton(index, owner) }) { }
++        if (!sent) return false
++        deduplicator.accept(action, GalaxySteeringMediaWindow.STEERING, now)
++        return true
++    }
++
++    fun close() {
++        closed.set(true)
++    }
++}--- /dev/null
++++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/steering/GalaxySteeringMediaWindow.kt
+@@ -0,0 +1,53 @@
++package com.shilapi.xcertplay.steering
++
++import com.shilapi.xcertplay.airplay.CarPlayMediaButton
++
++/**
++ * 方控与原车媒体中心两条入口共享的媒体命令窗口（M05：跨源250ms）。
++ *
++ * 边界：只处理“同一次实体按键被方控HardKey与原车媒体中心各回送一次”的重复，同一入口的
++ * 连按与不同动作原样放行；电话接听/挂断与Siri没有第二个回送入口，不进入此窗口。
++ * 记录时机：窗口只在命令真的交给手机后才写入，被拒绝或未发出的命令不占窗口，
++ * 避免把紧随其后的合法命令误判成重复。
++ */
++internal object GalaxySteeringMediaWindow {
++    /** 方控HardKey（Autolink）入口来源。 */
++    const val STEERING = "steering-hardkey"
++
++    /** 原车媒体中心/窗口按键回送CarPlay的来源。 */
++    const val VEHICLE = "oem-media-center"
++
++    /** 进程内唯一窗口：方控出口与原车入口必须共享同一份记录才有跨源语义。 */
++    internal val deduplicator = SteeringMediaCommandDeduplicator()
++
++    /** 方控动作到CarPlay媒体索引；PLAY_PAUSE不在学习动作表内，播放/暂停各自显式映射。 */
++    fun index(action: SteeringAction): Int? = when (action) {
++        SteeringAction.PLAY -> CarPlayMediaButton.PLAY
++        SteeringAction.PAUSE -> CarPlayMediaButton.PAUSE
++        SteeringAction.PREVIOUS -> CarPlayMediaButton.PREVIOUS
++        SteeringAction.NEXT -> CarPlayMediaButton.NEXT
++        else -> null
++    }
++
++    /** 媒体索引反查方控动作；非四类媒体索引返回null，由调用方按原逻辑处理。 */
++    fun action(index: Int): SteeringAction? = when (index) {
++        CarPlayMediaButton.PLAY -> SteeringAction.PLAY
++        CarPlayMediaButton.PAUSE -> SteeringAction.PAUSE
++        CarPlayMediaButton.PREVIOUS -> SteeringAction.PREVIOUS
++        CarPlayMediaButton.NEXT -> SteeringAction.NEXT
++        else -> null
++    }
++
++    /**
++     * 原车媒体中心入口：窗口内刚被方控发过的同一动作不再转发。
++     * `send` 返回false时说明命令没有真正发出（无会话/队列拒绝），此时不占用窗口。
++     */
++    fun acceptVehicleMedia(index: Int, clock: () -> Long, send: () -> Boolean): Boolean {
++        val action = action(index) ?: return send()
++        val now = clock()
++        if (!deduplicator.allowed(action, VEHICLE, now)) return false
++        if (!send()) return false
++        deduplicator.accept(action, VEHICLE, now)
++        return true
++    }
++}--- /dev/null
++++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/steering/SteeringActionDispatch.kt
+@@ -0,0 +1,26 @@
++package com.shilapi.xcertplay.steering
++
++import com.shilapi.xcertplay.orchestration.CarPlayController
++
++/**
++ * 方控动作 → CarPlay 控制器的唯一映射。
++ *
++ * 播放/暂停/上一曲/下一曲经 `media`（运行时是 [GalaxySteeringMediaDispatch]，含跨源窗口与
++ * 上游蓝牙等待闸门）；Siri/接听/挂断走控制器对应方法。控制器已关闭或手机会话已经更替
++ * （owner不再是本会话）时一律不发送，避免把旧动作打到新手机的会话上。
++ */
++internal object SteeringActionDispatch {
++    fun dispatch(controller: CarPlayController, owner: Any, media: ((Int) -> Boolean)?,
++                 action: SteeringAction): Boolean {
++        if (controller.isClosed()) return false
++        if (controller.activeMediaSessionOwner() !== owner) return false
++        val index = GalaxySteeringMediaWindow.index(action)
++        if (index != null) return media?.invoke(index) ?: controller.sendMediaButton(index, owner)
++        return when (action) {
++            SteeringAction.SIRI -> controller.requestSiri()
++            SteeringAction.ANSWER_CALL -> controller.answerCall()
++            SteeringAction.END_CALL -> controller.endCall()
++            else -> false
++        }
++    }
++}--- /dev/null
++++ b/galaxy/common/src/test/java/com/shilapi/xcertplay/GalaxySteeringBindingTest.kt
+@@ -0,0 +1,149 @@
++package com.shilapi.xcertplay
++
++import android.content.Context
++import android.os.Looper
++import com.shilapi.xcertplay.orchestration.CarPlayController
++import com.shilapi.xcertplay.steering.GalaxySteeringSessions
++import com.shilapi.xcertplay.steering.SteeringAction
++import com.shilapi.xcertplay.steering.SteeringBinding
++import com.shilapi.xcertplay.steering.SteeringConfiguration
++import com.shilapi.xcertplay.steering.SteeringConfigurationStore
++import com.shilapi.xcertplay.steering.SteeringGesture
++import org.junit.After
++import org.junit.Assert.*
++import org.junit.Before
++import org.junit.Test
++import org.junit.runner.RunWith
++import org.mockito.Mockito.doReturn
++import org.mockito.Mockito.mock
++import org.robolectric.RobolectricTestRunner
++import org.robolectric.RuntimeEnvironment
++import org.robolectric.Shadows.shadowOf
++import org.robolectric.annotation.Config
++import org.robolectric.util.ReflectionHelpers
++
++/**
++ * 投屏会话与方控监听的装配回归：同一会话重复挂接只登记一个目标，解绑重复调用无副作用，
++ * 排队中被取代的挂接不再建立监听，控制器替换时先释放旧登记。
++ * 断言直接读 GalaxySteeringSessions 的目标表，避免为测试新增产品侧查询接口。
++ */
++@RunWith(RobolectricTestRunner::class)
++@Config(sdk = [30], manifest = Config.NONE)
++class GalaxySteeringBindingTest {
++    private val context: Context get() = RuntimeEnvironment.getApplication()
++
++    @Before fun idleMain() {
++        // 关闭方控开关：本组用例只验证目标登记，不发起真实Binder订阅。
++        productPreferences().edit().putBoolean("galaxy_steering_enabled", false).commit()
++        GalaxySteeringBinding.detach(null)
++        idle()
++    }
++
++    @After fun release() {
++        GalaxySteeringBinding.detach(null)
++        idle()
++        productPreferences().edit().clear().commit()
++        context.getSharedPreferences("galaxy_steering_learning", 0).edit().clear().commit()
++    }
++
++    private fun productPreferences() = context.getSharedPreferences("xcertplay_airplay", 0)
++    private fun idle() = shadowOf(Looper.getMainLooper()).idle()
++    private fun controller(active: Boolean = true): CarPlayController = mock(CarPlayController::class.java).also {
++        doReturn(active).`when`(it).hasActiveSession()
++    }
++
++    private fun targets(): Map<Long, Any> =
++        ReflectionHelpers.getField(requireNotNull(ReflectionHelpers.getField<Any?>(GalaxySteeringSessions, "runtime")), "targets")
++
++    private fun targetControllerOf(target: Any): CarPlayController =
++        ReflectionHelpers.getField(target, "controller")
++
++    @Test fun repeatedAttachForTheSameControllerKeepsOneRegistration() {
++        val controller = controller()
++        GalaxySteeringBinding.attach(context, controller)
++        idle()
++        assertEquals(1, targets().size)
++        // 真实入口会从 bindMedia/sessionStored/sessionStateChanged 多次调用挂接。
++        GalaxySteeringBinding.attach(context, controller)
++        GalaxySteeringBinding.attach(context, controller)
++        idle()
++        assertEquals(1, targets().size)
++        assertSame(controller, targetControllerOf(targets().values.single()))
++    }
++
++    @Test fun repeatedDetachIsIdempotentAndReleasesTheRegistration() {
++        val controller = controller()
++        GalaxySteeringBinding.attach(context, controller)
++        idle()
++        GalaxySteeringBinding.detach(controller)
++        idle()
++        assertTrue(targets().isEmpty())
++        GalaxySteeringBinding.detach(controller)
++        GalaxySteeringBinding.detach(null)
++        idle()
++        assertTrue(targets().isEmpty())
++    }
++
++    @Test fun queuedAttachCancelledByDetachNeverOpensAListener() {
++        val controller = controller()
++        // 挂接还没在主线程执行就收到解绑：迟到的挂接必须丢弃，不能留下无主的监听。
++        GalaxySteeringBinding.attach(context, controller)
++        GalaxySteeringBinding.detach(controller)
++        idle()
++        assertTrue(targets().isEmpty())
++    }
++
++    @Test fun replacingTheControllerReleasesThePreviousRegistration() {
++        val first = controller()
++        val second = controller()
++        GalaxySteeringBinding.attach(context, first)
++        idle()
++        GalaxySteeringBinding.attach(context, second)
++        idle()
++        assertEquals(1, targets().size)
++        assertSame(second, targetControllerOf(targets().values.single()))
++    }
++
++    @Test fun detachForAnOlderControllerDoesNotRemoveTheCurrentSession() {
++        val first = controller()
++        val second = controller()
++        GalaxySteeringBinding.attach(context, first)
++        idle()
++        GalaxySteeringBinding.attach(context, second)
++        idle()
++        GalaxySteeringBinding.detach(first)
++        idle()
++        assertEquals(1, targets().size)
++        assertSame(second, targetControllerOf(targets().values.single()))
++    }
++
++    @Test fun sessionEndedReleasesOnlyWhenNoPhoneSessionRemains() {
++        val controller = controller()
++        GalaxySteeringBinding.attach(context, controller)
++        idle()
++        // 仍有活动会话的迟到false不能撤掉监听。
++        GalaxySteeringBinding.onSessionEnded(controller)
++        idle()
++        assertEquals(1, targets().size)
++        doReturn(false).`when`(controller).hasActiveSession()
++        GalaxySteeringBinding.onSessionEnded(controller)
++        idle()
++        assertTrue(targets().isEmpty())
++    }
++
++    @Test fun switchReadsTheExistingProductKeyAndWritesBothForCompatibility() {
++        val store = SteeringConfigurationStore(context)
++        productPreferences().edit().putBoolean("galaxy_steering_enabled", false).commit()
++        // D11：用户此前的关闭选择必须被新入口读到，而不是被新文件默认值覆盖。
++        assertFalse(store.enabled())
++        store.setEnabled(true)
++        assertTrue(store.enabled())
++        assertTrue(productPreferences().getBoolean("galaxy_steering_enabled", false))
++        assertTrue(context.getSharedPreferences("galaxy_steering_learning", 0).getBoolean("enabled", false))
++        // 旧文件里已确认的映射照常读回，切换开关不覆盖映射。
++        val binding = SteeringBinding(0x2F, SteeringGesture.CLICK, SteeringAction.NEXT)
++        store.save(SteeringConfiguration(listOf(binding)))
++        store.setEnabled(false)
++        assertEquals(listOf(binding), store.load().bindings)
++    }
++}--- /dev/null
++++ b/galaxy/common/src/test/java/com/shilapi/xcertplay/GalaxySteeringCommandTest.kt
+@@ -0,0 +1,183 @@
++package com.shilapi.xcertplay
++
++import com.shilapi.xcertplay.airplay.CarPlayMediaButton
++import com.shilapi.xcertplay.media.AndroidMediaSink
++import com.shilapi.xcertplay.orchestration.CarPlayController
++import com.shilapi.xcertplay.steering.GalaxySteeringMediaDispatch
++import com.shilapi.xcertplay.steering.GalaxySteeringMediaWindow
++import com.shilapi.xcertplay.steering.SteeringAction
++import com.shilapi.xcertplay.steering.SteeringActionDispatch
++import com.shilapi.xcertplay.steering.SteeringBinding
++import com.shilapi.xcertplay.steering.SteeringConfiguration
++import com.shilapi.xcertplay.steering.SteeringConnection
++import com.shilapi.xcertplay.steering.SteeringEdge
++import com.shilapi.xcertplay.steering.SteeringGesture
++import com.shilapi.xcertplay.steering.SteeringKeyEvent
++import com.shilapi.xcertplay.steering.SteeringLearningEngine
++import org.junit.After
++import org.junit.Assert.*
++import org.junit.Before
++import org.junit.Test
++import org.junit.runner.RunWith
++import org.mockito.Mockito.doReturn
++import org.mockito.Mockito.mock
++import org.mockito.Mockito.never
++import org.mockito.Mockito.times
++import org.mockito.Mockito.verify
++import org.mockito.Mockito.`when`
++import org.robolectric.RobolectricTestRunner
++import org.robolectric.annotation.Config
++
++/**
++ * 方控运行时出口回归：按键→CarPlay动作的七个映射、跨源250ms去重、蓝牙等待闸门之后的
++ * 真实返回值，以及关闭/会话更替后不再派发。控制器是mock，不连接车机或手机。
++ *
++ * 断言只用具体实参的 verify：`any()`/`eq()` 会给 Kotlin 非空参数传null，
++ * 在 `sendMediaButton(index, owner)` 这种签名上会直接抛NPE而不是完成匹配。
++ */
++@RunWith(RobolectricTestRunner::class)
++@Config(sdk = [30], manifest = Config.NONE)
++class GalaxySteeringCommandTest {
++    private var now = 0L
++    private val owner: Any = Any()
++    private lateinit var controller: CarPlayController
++    private lateinit var media: GalaxySteeringMediaDispatch
++    private val mediaIndices = listOf(CarPlayMediaButton.PLAY, CarPlayMediaButton.PAUSE,
++        CarPlayMediaButton.PLAY_PAUSE, CarPlayMediaButton.NEXT, CarPlayMediaButton.PREVIOUS)
++
++    @Before fun storeSession() {
++        GalaxySteeringMediaWindow.deduplicator.clear()
++        controller = mock(CarPlayController::class.java).also {
++            `when`(it.activeMediaSessionOwner()).thenReturn(owner)
++            `when`(it.hasActiveSession()).thenReturn(true)
++            `when`(it.isClosed()).thenReturn(false)
++            listOf(CarPlayMediaButton.PLAY, CarPlayMediaButton.PAUSE, CarPlayMediaButton.PREVIOUS,
++                CarPlayMediaButton.NEXT).forEach { index -> doReturn(true).`when`(it).sendMediaButton(index, owner) }
++            `when`(it.requestSiri()).thenReturn(true)
++            `when`(it.answerCall()).thenReturn(true)
++            `when`(it.endCall()).thenReturn(true)
++        }
++        media = GalaxySteeringMediaDispatch(controller, GalaxySteeringMediaWindow.deduplicator) { now }
++        // 媒体动作要经上游蓝牙等待闸门，因此必须有当前会话快照（真实运行时由sessionStored建立）。
++        CarPlayBackgroundSession.store(controller, mock(AndroidMediaSink::class.java), 10, 10, Any()) {}
++    }
++
++    @After fun clearSession() {
++        if (::media.isInitialized) media.close()
++        CarPlayBackgroundSession.clear()
++        GalaxySteeringMediaWindow.deduplicator.clear()
++    }
++
++    private fun engine(configuration: SteeringConfiguration): SteeringLearningEngine =
++        SteeringLearningEngine(configuration, { now }) { action ->
++            SteeringActionDispatch.dispatch(controller, owner, media::send, action)
++        }.also { it.connection(SteeringConnection.REGISTERED, "registered") }
++
++    private fun click(engine: SteeringLearningEngine, code: Int, at: Long) {
++        now = at
++        engine.receive(SteeringKeyEvent(code, SteeringEdge.PRESS, at))
++        engine.receive(SteeringKeyEvent(code, SteeringEdge.RELEASE, at + 20))
++        now = at + 500
++        engine.tick()
++    }
++
++    /** 断言没有任何媒体/Siri/电话动作到达控制器（逐个索引验证，避免给非空参数传匹配器）。 */
++    private fun assertNothingDispatched() {
++        mediaIndices.forEach { index ->
++            verify(controller, never()).sendMediaButton(index, owner)
++            verify(controller, never()).sendMediaButton(index)
++        }
++        verify(controller, never()).requestSiri()
++        verify(controller, never()).answerCall()
++        verify(controller, never()).endCall()
++    }
++
++    @Test fun sevenLearnedActionsReachTheMatchingCarPlayEntry() {
++        val bindings = listOf(
++            SteeringBinding(71, SteeringGesture.CLICK, SteeringAction.PLAY),
++            SteeringBinding(72, SteeringGesture.CLICK, SteeringAction.PAUSE),
++            SteeringBinding(73, SteeringGesture.CLICK, SteeringAction.PREVIOUS),
++            SteeringBinding(74, SteeringGesture.CLICK, SteeringAction.NEXT),
++            SteeringBinding(75, SteeringGesture.CLICK, SteeringAction.SIRI),
++            SteeringBinding(76, SteeringGesture.CLICK, SteeringAction.ANSWER_CALL),
++            SteeringBinding(77, SteeringGesture.CLICK, SteeringAction.END_CALL),
++        )
++        val engine = engine(SteeringConfiguration(bindings))
++        bindings.forEachIndexed { index, binding -> click(engine, binding.keyCode, index * 1_000L) }
++
++        verify(controller).sendMediaButton(CarPlayMediaButton.PLAY, owner)
++        verify(controller).sendMediaButton(CarPlayMediaButton.PAUSE, owner)
++        verify(controller).sendMediaButton(CarPlayMediaButton.PREVIOUS, owner)
++        verify(controller).sendMediaButton(CarPlayMediaButton.NEXT, owner)
++        verify(controller, times(1)).requestSiri()
++        verify(controller, times(1)).answerCall()
++        verify(controller, times(1)).endCall()
++        assertEquals(true, engine.snapshot.lastAccepted)
++    }
++
++    @Test fun mediaResultOnlyReportsCommandsThatWereActuallyHandedToThePhone() {
++        doReturn(false).`when`(controller).sendMediaButton(CarPlayMediaButton.NEXT, owner)
++        val engine = engine(SteeringConfiguration(listOf(
++            SteeringBinding(74, SteeringGesture.CLICK, SteeringAction.NEXT))))
++        click(engine, 74, 0)
++        // 控制器拒绝（旧会话/事件通道不可用）时学习页显示的状态必须是“未生效”。
++        assertEquals(false, engine.snapshot.lastAccepted)
++        verify(controller).sendMediaButton(CarPlayMediaButton.NEXT, owner)
++    }
++
++    @Test fun crossSourceDuplicateInside250msIsDroppedForBothDirections() {
++        // 原车媒体中心先回送一次下一曲（真实来源由 GalaxyMediaKeys 在接入口记录）。
++        assertTrue(GalaxySteeringMediaWindow.deduplicator.accept(
++            SteeringAction.NEXT, GalaxySteeringMediaWindow.VEHICLE, 1_000))
++        now = 1_100
++        assertFalse(media.send(CarPlayMediaButton.NEXT))
++        verify(controller, never()).sendMediaButton(CarPlayMediaButton.NEXT, owner)
++        // 窗口过后同一动作重新放行。
++        now = 1_400
++        assertTrue(media.send(CarPlayMediaButton.NEXT))
++        verify(controller).sendMediaButton(CarPlayMediaButton.NEXT, owner)
++        // 反向：方控刚发出后，原车入口的同动作在窗口内被抑制。
++        var vehicleSent = false
++        now = 1_500
++        assertFalse(GalaxySteeringMediaWindow.acceptVehicleMedia(CarPlayMediaButton.NEXT, { now }) {
++            vehicleSent = true; true
++        })
++        assertFalse(vehicleSent)
++        now = 2_000
++        assertTrue(GalaxySteeringMediaWindow.acceptVehicleMedia(CarPlayMediaButton.NEXT, { now }) {
++            vehicleSent = true; true
++        })
++        assertTrue(vehicleSent)
++    }
++
++    @Test fun rebuiltPhoneSessionStopsSendingToTheOldOwner() {
++        val engine = engine(SteeringConfiguration(listOf(
++            SteeringBinding(74, SteeringGesture.CLICK, SteeringAction.NEXT))))
++        // 手机重连后 owner 变了：派发必须丢弃，不能把旧动作打到新会话。
++        `when`(controller.activeMediaSessionOwner()).thenReturn(Any())
++        click(engine, 74, 0)
++        assertEquals(false, engine.snapshot.lastAccepted)
++        assertNothingDispatched()
++    }
++
++    @Test fun closedControllerAndClosedDispatcherDoNotDispatch() {
++        now = 0
++        `when`(controller.isClosed()).thenReturn(true)
++        assertFalse(media.send(CarPlayMediaButton.PLAY))
++        `when`(controller.isClosed()).thenReturn(false)
++        media.close()
++        assertFalse(media.send(CarPlayMediaButton.PLAY))
++        assertNothingDispatched()
++    }
++
++    @Test fun emptySessionSnapshotDropsMediaInsteadOfPretendingToSend() {
++        CarPlayBackgroundSession.clear()
++        assertFalse(media.send(CarPlayMediaButton.PLAY))
++        assertNothingDispatched()
++    }
++
++    @Test fun unknownMediaIndexIsNotForwarded() {
++        assertFalse(media.send(CarPlayMediaButton.PLAY_PAUSE))
++        assertNothingDispatched()
++    }
++}--- /dev/null
++++ b/galaxy/common/src/test/java/com/shilapi/xcertplay/GalaxySteeringSettingsTest.kt
+@@ -0,0 +1,95 @@
++package com.shilapi.xcertplay
++
++import android.view.View
++import android.view.ViewGroup
++import android.widget.LinearLayout
++import android.widget.Switch
++import android.widget.TextView
++import androidx.activity.ComponentActivity
++import com.shilapi.xcertplay.steering.GalaxySteeringSessions
++import org.junit.After
++import org.junit.Assert.*
++import org.junit.Before
++import org.junit.Test
++import org.junit.runner.RunWith
++import org.robolectric.Robolectric
++import org.robolectric.RobolectricTestRunner
++import org.robolectric.RuntimeEnvironment
++import org.robolectric.annotation.Config
++import org.robolectric.util.ReflectionHelpers
++
++/**
++ * 方控设置入口回归：合并后仍能看到学习/确认/保存/删除/开关，且实物键观察是同一页的下半部分。
++ * GalaxySettingsActivity 只声明一个方控页字段（类型为 GalaxySteeringSettings），不再单独挂调试页。
++ */
++@RunWith(RobolectricTestRunner::class)
++@Config(sdk = [30], qualifiers = "zh-rCN")
++class GalaxySteeringSettingsTest {
++    @Before fun seedConfirmedMapping() {
++        // 已确认映射走与产品相同的存储在文件键；同时关闭监听，页面不发起Binder订阅。
++        RuntimeEnvironment.getApplication().getSharedPreferences("galaxy_steering_learning", 0).edit()
++            .putBoolean("enabled", false)
++            .putString("configuration", """
++                {"version":1,"clickWindowMs":400,"longPressMs":800,
++                 "bindings":[{"keyCode":47,"gesture":"CLICK","action":"NEXT"}]}
++            """.trimIndent())
++            .commit()
++        RuntimeEnvironment.getApplication().getSharedPreferences("xcertplay_airplay", 0).edit()
++            .putBoolean("galaxy_steering_enabled", false).commit()
++        // 目标表与配置在进程内单例里；重置以便本页从上面的存储重新读取。
++        ReflectionHelpers.setField(GalaxySteeringSessions, "runtime", null)
++    }
++
++    @After fun clearPreferences() {
++        ReflectionHelpers.setField(GalaxySteeringSessions, "runtime", null)
++        RuntimeEnvironment.getApplication().getSharedPreferences("galaxy_steering_learning", 0).edit().clear().commit()
++        RuntimeEnvironment.getApplication().getSharedPreferences("xcertplay_airplay", 0).edit().clear().commit()
++    }
++
++    private fun activity() = Robolectric.buildActivity(ComponentActivity::class.java).setup().get().apply {
++        setTheme(android.R.style.Theme_Material_Light_NoActionBar)
++    }
++
++    private fun texts(root: View): List<String> = buildList {
++        if (root is TextView) root.text?.toString()?.takeIf { it.isNotEmpty() }?.let(::add)
++        if (root is ViewGroup) (0 until root.childCount).forEach { addAll(texts(root.getChildAt(it))) }
++    }
++
++    private fun switches(root: View): List<Switch> = buildList {
++        if (root is Switch) add(root)
++        if (root is ViewGroup) (0 until root.childCount).forEach { addAll(switches(root.getChildAt(it))) }
++    }
++
++    @Test fun mergedEntryShowsLearningConfirmSaveRemoveSwitchAndObservation() {
++        val activity = activity()
++        val parent = LinearLayout(activity).apply { orientation = LinearLayout.VERTICAL }
++        val page = GalaxySteeringSettings(activity, parent, {})
++        val values = texts(parent)
++        fun has(text: String) = values.any { it.contains(text) }
++
++        assertTrue("缺少学习分区标题", has("方控学习与映射"))
++        assertTrue("缺少监听开关", has("监听方控"))
++        assertTrue("缺少服务状态", has("服务状态"))
++        assertTrue("缺少开始学习", has("开始学习"))
++        assertTrue("缺少确认映射", has("确认映射"))
++        assertTrue("缺少映射分区", has("已确认的映射"))
++        assertTrue("已有映射未显示", has("按键 47 · 单击 → 下一曲"))
++        assertTrue("缺少删除映射入口", has("点击后确认删除此映射"))
++        assertTrue("缺少实物键观察分区", has("实物键观察与标注"))
++        assertEquals("监听开关只应有一个", 1, switches(parent).size)
++        // 关闭监听时开关显示为关，与既有产品键一致。
++        assertFalse(switches(parent).single().isChecked)
++
++        page.close()
++        page.close() // 关闭幂等：重复close不抛异常
++        activity.finish()
++    }
++
++    @Test fun settingsActivityKeepsExactlyOneSteeringEntry() {
++        val fields = GalaxySettingsActivity::class.java.declaredFields
++        assertTrue("调试方控页不应再被设置页单独持有",
++            fields.none { it.type == L7SteeringDebugPage::class.java })
++        assertEquals("方控入口应只有一个挂载字段",
++            1, fields.count { it.type == GalaxySteeringSettings::class.java })
++    }
++}

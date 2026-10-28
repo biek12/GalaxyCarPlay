@@ -5,10 +5,12 @@ import android.content.Intent
 import android.media.session.MediaSession
 import android.os.Handler
 import android.os.Looper
+import android.os.SystemClock
 import android.view.KeyEvent
 import com.shilapi.xcertplay.airplay.CarPlayMediaButton
 import com.shilapi.xcertplay.media.CarPlayNowPlaying
 import com.shilapi.xcertplay.orchestration.CarPlayController
+import com.shilapi.xcertplay.steering.GalaxySteeringMediaWindow
 
 /** 唯一产品媒体绑定；焦点归Sink，媒体注册/封面/回调随真实手机会话代次释放。 */
 internal object GalaxyMediaKeys {
@@ -130,7 +132,12 @@ internal object GalaxyMediaKeys {
     private fun dispatcher(next: CarPlayController) = L7MediaCommandDispatcher(
         next::activeMediaSessionOwner,
         { synchronized(this) { controller === next } },
-        { index, source -> synchronized(this) { commandGate.accept(index, source) } },
+        // 方控HardKey与原车媒体中心可能回送同一次按键；共享M05的250ms跨源窗口后再走原有入口闸门。
+        { index, source -> synchronized(this) {
+            GalaxySteeringMediaWindow.acceptVehicleMedia(index, SystemClock::elapsedRealtime) {
+                commandGate.accept(index, source)
+            }
+        } },
         { index, action -> CarPlayBackgroundSession.beforeMediaCommand(next, index, action) },
         CarPlayVideo::onMediaKey,
         { index, expected -> next.sendMediaButton(index, expected) },

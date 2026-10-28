@@ -1850,7 +1850,7 @@
     {
       "path": "galaxy/common/src/main/res/xml/usb_device_filter.xml",
       "sha256": "fd2aeda55d46f3430b506d586e3774068bee96affdfb165030504aa54f51a896",
-      "action": "导入"
+      "action": "导入后删除（与上游同名资源重复（M03去重））"
     },
     {
       "path": "galaxy/mobile/src/main/AndroidManifest.xml",

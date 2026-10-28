@@ -2,7 +2,7 @@
     <string name="galaxy_steering_learning_title">方控学习与映射</string>
     <string name="galaxy_steering_learning_boundary">只监听已核验的 Autolink 按键信号。未知按键不执行动作，不拦截原车按键；映射须观察后主动确认。</string>
     <string name="galaxy_steering_listening">监听方控</string>
-    <string name="galaxy_steering_listening_hint">投屏与前台学习页共用一个监听；关闭后注销，不执行已保存映射。</string>
+    <string name="galaxy_steering_listening_hint">投屏与前台学习页共用一个监听，原车按键回送 CarPlay 也受此开关控制；关闭后注销监听、不执行已保存映射。</string>
     <string name="galaxy_steering_service">服务状态</string>
     <string name="galaxy_steering_recent">最近真实输入</string>
     <string name="galaxy_steering_candidate">本次学习按键</string>
@@ -38,4 +38,6 @@
     <string name="galaxy_steering_siri">Siri</string>
     <string name="galaxy_steering_answer">接听电话</string>
     <string name="galaxy_steering_end">挂断电话</string>
+    <string name="galaxy_steering_watch_title">实物键观察与标注</string>
+    <string name="galaxy_steering_watch_hint">先在这里按一次方控并标注实际按键，形成证据，再回到上方学习并确认映射。本区只观察和记录，不修改映射、不发送测试按键。</string>
 </resources>

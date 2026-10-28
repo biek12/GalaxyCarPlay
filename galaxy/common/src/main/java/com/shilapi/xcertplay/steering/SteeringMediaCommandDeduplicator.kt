@@ -12,6 +12,13 @@ internal class SteeringMediaCommandDeduplicator(private val windowMs: Long = 250
 
     private val lastByAction = mutableMapOf<SteeringAction, Last>()
 
+    /** 只查询窗口是否允许该动作，不写入记录；调用方在命令真的发出后再调用 [accept]。 */
+    @Synchronized
+    fun allowed(action: SteeringAction, source: String, nowMs: Long): Boolean {
+        val last = lastByAction[action] ?: return true
+        return !(last.source != source && nowMs - last.atMs in 0 until windowMs)
+    }
+
     @Synchronized
     fun accept(action: SteeringAction, source: String, nowMs: Long): Boolean {
         val last = lastByAction[action]
@@ -21,5 +28,11 @@ internal class SteeringMediaCommandDeduplicator(private val windowMs: Long = 250
         }
         lastByAction[action] = Last(source, nowMs)
         return true
+    }
+
+    /** 仅供回归测试清理窗口，产品路径不调用。 */
+    @Synchronized
+    fun clear() {
+        lastByAction.clear()
     }
 }

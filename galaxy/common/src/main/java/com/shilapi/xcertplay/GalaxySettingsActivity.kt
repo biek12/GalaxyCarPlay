@@ -88,7 +88,7 @@ class GalaxySettingsActivity : ComponentActivity() {
     private var adbCheckGeneration = 0
     private var diagnosticSettings: L7DiagnosticSettings? = null
     private var debugPage: L7DebugPage? = null
-    private var steeringDebugPage: L7SteeringDebugPage? = null
+    private var steeringPage: GalaxySteeringSettings? = null
     private var reportingTestPage: L7ReportingTestPage? = null
     private var codecProbePage: GalaxyCodecProbePage? = null
     private var fullDebugPage: GalaxyFullDebugPage? = null
@@ -244,7 +244,7 @@ class GalaxySettingsActivity : ComponentActivity() {
     }
     override fun onResume() {
         super.onResume()
-        steeringDebugPage?.resume()
+        steeringPage?.resume()
         reportingTestPage?.resume(); debugPage?.resume(); scenarioDebugPage?.resume()
         if (!L7Agreement.require(this)) return
         voiceDebugPage?.resume()
@@ -292,7 +292,7 @@ class GalaxySettingsActivity : ComponentActivity() {
     private var logView: L7LogView? = null
 
     override fun onPause() {
-        steeringDebugPage?.background()
+        steeringPage?.background()
         debugPage?.background(); scenarioDebugPage?.background()
         reportingTestPage?.background()
         voiceDebugPage?.background()
@@ -320,7 +320,7 @@ class GalaxySettingsActivity : ComponentActivity() {
     override fun onDestroy() {
         configurationPage?.close(); configurationPage = null
         codecProbeController.close()
-        steeringDebugPage?.close(); steeringDebugPage = null
+        steeringPage?.close(); steeringPage = null
         debugPage?.close(); scenarioDebugPage?.close(); scenarioDebugPage = null
         audioModelConfirmation.close()
         reportingTestPage?.close(); reportingTestPage = null
@@ -351,7 +351,7 @@ class GalaxySettingsActivity : ComponentActivity() {
         }
         configurationPage?.close(); configurationPage = null
         if (!L7Agreement.require(this)) return
-        steeringDebugPage?.close(); steeringDebugPage = null
+        steeringPage?.close(); steeringPage = null
         debugPage?.close(); scenarioDebugPage?.close(); scenarioDebugPage = null
         reportingTestPage?.close(); reportingTestPage = null
         voiceDebugPage?.close(); voiceDebugPage = null
@@ -365,7 +365,7 @@ class GalaxySettingsActivity : ComponentActivity() {
         renderedPage?.let { scrollPositions[it] = contentScroll?.scrollY ?: 0 }
         contentScroll = null; desktopPermissionHint = null; homePanel = null; usbButton = null
         reconnectRow = null
-        status = null; connectButton = null; disconnectButton = null; lastRunning = null; diagnosticSettings = null; exportButton = null; debugPage = null; steeringDebugPage = null
+        status = null; connectButton = null; disconnectButton = null; lastRunning = null; diagnosticSettings = null; exportButton = null; debugPage = null; steeringPage = null
         if (l7Ui) {
             renderL7()
             return
@@ -407,7 +407,8 @@ class GalaxySettingsActivity : ComponentActivity() {
                 { if (CarPlayBackgroundSession.hasSession()) openProjection() else connect(false) }, ::stopFromHome)
             "settings-auth", "settings-display", "settings-audio", "settings-general", "settings-permissions" -> settings(content)
             "settings-debug-scenario" -> scenarioDebugPage = GalaxyScenarioDebugPage(this, content) { page = "settings-logs"; render() }
-            "settings-debug-steering" -> steeringDebugPage = L7SteeringDebugPage(this, content) { page = "settings-logs"; render() }
+            // 方控唯一入口：学习/确认/保存/删除/开关与实物键观察合并于一页（GalaxySteeringSettings）。
+            "settings-debug-steering" -> steeringPage = GalaxySteeringSettings(this, content) { page = "settings-logs"; render() }
             "settings-debug-codec" -> codecProbePage = GalaxyCodecProbePage(this, content, codecProbeController, ::codecProbeOccupied) { page = "settings-logs"; render() }
             "settings-debug-full" -> {
                 val startNow = pendingFullDebugStart; pendingFullDebugStart = false
@@ -518,7 +519,7 @@ class GalaxySettingsActivity : ComponentActivity() {
         "settings-debug-history" -> R.string.l7_probe_history
         "settings-debug-scenario" -> R.string.debug_guide_scenario
         "settings-debug-full" -> R.string.full_debug_title
-        "settings-debug-steering" -> R.string.l7_steering_title
+        "settings-debug-steering" -> R.string.galaxy_steering_learning_title
         "settings-debug-codec" -> R.string.codec_probe_title
         "settings-debug-voice" -> R.string.l7_voice_title
         "settings-debug-media" -> R.string.l7_report_media_title
@@ -949,7 +950,7 @@ class GalaxySettingsActivity : ComponentActivity() {
     private fun refreshStatus() {
         diagnosticSettings?.update(exportInProgress)
         debugPage?.update()
-        steeringDebugPage?.update()
+        steeringPage?.update()
         reportingTestPage?.update()
         voiceDebugPage?.update()
         codecProbePage?.update()

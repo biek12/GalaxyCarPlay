@@ -78,6 +78,8 @@ private class GalaxyProductHostAdapter(
 
     override fun bindMedia(sink: AndroidMediaSink, controller: CarPlayController) {
         GalaxyMediaKeys.attach(activity, controller, sink::resumeMediaAudioFocus, sink::isAssistantAudioActive)
+        // 投屏媒体建立即挂上方控；本类回调来自连接链路，GalaxySteeringBinding内部投递到主线程。
+        GalaxySteeringBinding.attach(activity, controller)
         val app = activity.applicationContext
         sink.setMediaAudioChangedListener { active ->
             // Sink可能脱离Activity继续后台播放；仅持有Application和本代控制器/音频对象。
@@ -92,15 +94,25 @@ private class GalaxyProductHostAdapter(
     override fun sessionStateChanged(controller: CarPlayController?, active: Boolean) {
         controller ?: return
         GalaxyMediaKeys.onSessionStateChanged(controller, active)
-        if (active) L7StartupGuard.connected(activity.applicationContext) {
-            actions.currentController() === controller && controller.hasActiveSession()
-        }
+        if (active) {
+            GalaxySteeringBinding.attach(activity, controller)
+            L7StartupGuard.connected(activity.applicationContext) {
+                actions.currentController() === controller && controller.hasActiveSession()
+            }
+        } else GalaxySteeringBinding.onSessionEnded(controller)
     }
 
     override fun sessionStored(controller: CarPlayController) {
         CarPlayBackgroundSession.setConfiguration(controller, GalaxyProfiles(activity).refresh())
+        // 媒体命令要经 CarPlayBackgroundSession 的蓝牙等待闸门，因此在 store 之后再确认一次挂接；
+        // 与 bindMedia 的同控制器重复调用是空操作。
+        GalaxySteeringBinding.attach(activity, controller)
     }
-    override fun detachMedia(controller: CarPlayController?) = GalaxyMediaKeys.detach(controller)
+
+    override fun detachMedia(controller: CarPlayController?) {
+        GalaxyMediaKeys.detach(controller)
+        GalaxySteeringBinding.detach(controller)
+    }
 
     override fun observeVideoLayout(generation: Int, viewWidth: Int, viewHeight: Int,
                                     canvasWidth: Int, canvasHeight: Int, layout: CarPlayVideoLayout,

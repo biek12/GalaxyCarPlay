@@ -4,7 +4,6 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import com.shilapi.xcertplay.airplay.CarPlayMediaButton
 import com.shilapi.xcertplay.orchestration.CarPlayController
 import java.io.Closeable
 import java.util.concurrent.atomic.AtomicBoolean
@@ -193,25 +192,11 @@ object GalaxySteeringSessions {
             }
         }
 
+        /** 按键只经当前目标控制器执行；动作映射与 owner 校验集中在 [SteeringActionDispatch]。 */
         private fun dispatch(action: SteeringAction): Boolean {
             val target = targets.values.lastOrNull() ?: return false
-            val controller = target.controller
             val owner = targetOwner ?: return false
-            if (controller !== targetController || controller.activeMediaSessionOwner() !== owner || controller.isClosed()) return false
-            val mediaIndex = when (action) {
-                SteeringAction.PLAY -> CarPlayMediaButton.PLAY
-                SteeringAction.PAUSE -> CarPlayMediaButton.PAUSE
-                SteeringAction.PREVIOUS -> CarPlayMediaButton.PREVIOUS
-                SteeringAction.NEXT -> CarPlayMediaButton.NEXT
-                else -> null
-            }
-            if (mediaIndex != null) return target.mediaCommand?.invoke(mediaIndex) ?: controller.sendMediaButton(mediaIndex, owner)
-            return when (action) {
-                SteeringAction.SIRI -> controller.requestSiri()
-                SteeringAction.ANSWER_CALL -> controller.answerCall()
-                SteeringAction.END_CALL -> controller.endCall()
-                else -> false
-            }
+            return SteeringActionDispatch.dispatch(target.controller, owner, target.mediaCommand, action)
         }
 
         private fun publish() {

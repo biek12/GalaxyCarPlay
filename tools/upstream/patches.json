@@ -22,7 +22,7 @@
     {
       "id": "P002",
       "patch": "tools/upstream/patches/P002-product-foundation.patch",
-      "sha256": "3885a8fc2b78799a1bd2a5a3ebf2881e09e7d6437e886f0f12185aadf54e4d49",
+      "sha256": "91d297da6c2cd8b432ed135329afdcecea2b123c7430d198464b4c68a2e5d34c",
       "source": "DiPlay v0.2.21 / 49bf3bc2b011cb5ee7c7f4da9b99b18cbd3a23a2；GalaxyPlay基础适配",
       "purpose": "沿旧Galaxy产品目录组织适配，根mobile剔除，应用唯一入口为galaxy/mobile",
       "defaultBehavior": "仅填缺失车型与MANUAL偏好；保留显式P2P、认证和外部签名校验",
@@ -65,7 +65,7 @@
     {
       "id": "P004",
       "patch": "tools/upstream/patches/P004-remove-phone-lab-capture.patch",
-      "sha256": "2fe5f1d1f4a77d02ebd435e294d299a27a7cffd3ff87c01d5b8e46dce5047be6",
+      "sha256": "215a8c6e5de17da6d4a373a443784f7952b603f67288702be21ee7ed133ebd33",
       "source": "DiPlay v0.2.21 / 49bf3bc2b011cb5ee7c7f4da9b99b18cbd3a23a2；GalaxyPlay基础适配",
       "purpose": "删除上游临时手机认证syslog采集",
       "defaultBehavior": "正常Lockdown/CarKit连接顺序不变，不启动采集线程",
@@ -80,7 +80,7 @@
     {
       "id": "P005",
       "patch": "tools/upstream/patches/P005-galaxy-migration.patch",
-      "sha256": "45f3d2666f3750456fa16c27847ab866c344de13683c8447405928d0f54fe59b",
+      "sha256": "f0a57cbe7dedffb5861cbe6ff972c8255f8f4688a9339032d0402dfef1e53957",
       "source": "旧GalaxyPlay galaxy目录完整迁入 + v0.2.21核心接缝（CarPlayHostActivity抽取CarPlayBackgroundSession/CarPlayHostProduct、音频平台适配注入）",
       "purpose": "按D03学习旧Galaxy产品组织：galaxy/mobile唯一应用、galaxy/common产品适配、galaxy/shared音频/网络策略；核心只保留中性接缝",
       "defaultBehavior": "无产品注入时核心沿用上游默认（HostProductBindings为空、MediaPlatformAdaptation.NONE）",
@@ -292,7 +292,7 @@
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyHostAdapter.kt": {
           "baselineSha256": null,
-          "productSha256": "c58587c43a231b6cd9e34c212f92e674b12c9b5d630adbcb1ce40ae41c26a8da"
+          "productSha256": "7be3acd9d0bc6f646b73bc07983ed268b72be5368438f500f91e7fd55d8d69c5"
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyHostChrome.kt": {
           "baselineSha256": null,
@@ -324,7 +324,7 @@
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyMediaKeys.kt": {
           "baselineSha256": null,
-          "productSha256": "0c705f11baa8e80142a4d2a2db2c9427a3afa337def83d90d3654f5f4ca89340"
+          "productSha256": "c7bbc84372dcd5257877caaf8efabbbf382d73fea3359080a1610a0010b426d9"
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyMediaReportingChannel.kt": {
           "baselineSha256": null,
@@ -400,7 +400,7 @@
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxySettingsActivity.kt": {
           "baselineSha256": null,
-          "productSha256": "4b4c04b24f55a267f92ab0faf1fd154c46cfa12b2b093ad091de50dc64aae746"
+          "productSha256": "8ae4130d18c344538db53bd17952f2cc8ac27da96cad60f9d57dd7b5e18e8855"
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxySoftwareVideoOutput.kt": {
           "baselineSha256": null,
@@ -412,7 +412,7 @@
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxySteeringSettings.kt": {
           "baselineSha256": null,
-          "productSha256": "4147d565db01046638d1e8bec7910b606b3f2e9936b766233bb298b700a05e23"
+          "productSha256": "aa6d02997a6f924d35881a0a0bc9971a2954b866dd9308d6c9a70079da3c7360"
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyStorageMaintenance.kt": {
           "baselineSha256": null,
@@ -1032,11 +1032,11 @@
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/steering/GalaxySteeringSessions.kt": {
           "baselineSha256": null,
-          "productSha256": "e0792020857d47f74379a7b6fcb47473d2b1d677d718085b54dbde478c24f7b2"
+          "productSha256": "c0849aeb5518a0a0f67237485de51e656408c6a461848a230877760add80e4d9"
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/steering/SteeringConfigurationStore.kt": {
           "baselineSha256": null,
-          "productSha256": "89a8160e8cf3f977d8fc5bc4c1712d6c673bf3d91558427fd02002842a58755c"
+          "productSha256": "2ca981ebcec28492f255842502229ac8ac2e329c02be04cf1a7d6a895945250d"
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/steering/SteeringLearningEngine.kt": {
           "baselineSha256": null,
@@ -1044,7 +1044,7 @@
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/steering/SteeringMediaCommandDeduplicator.kt": {
           "baselineSha256": null,
-          "productSha256": "c3ff4387e94dbf14e5ceaa6fe752599780f8bb6ae98d867b0051ab051e80a0ef"
+          "productSha256": "4436d0c4e3fbaf32bea3c1fddb98e0476653ea897873bd128a4b75bca4f585d6"
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/steering/SteeringModel.kt": {
           "baselineSha256": null,
@@ -1292,7 +1292,7 @@
         },
         "galaxy/common/src/main/res/values-en/galaxy_steering_learning.xml": {
           "baselineSha256": null,
-          "productSha256": "6664a1e24a26da283cb6b1afcbe03accabeb343bb2ba7e45d2eaefc27a3a5184"
+          "productSha256": "d282275e6b7813c2dd6f8aba3aa22c6502cdd3865d9d99de424d688aae75aa24"
         },
         "galaxy/common/src/main/res/values-en/galaxy_storage.xml": {
           "baselineSha256": null,
@@ -1472,7 +1472,7 @@
         },
         "galaxy/common/src/main/res/values/galaxy_steering_learning.xml": {
           "baselineSha256": null,
-          "productSha256": "b403b9a8e0928935030c6b73b2bae5a38b3699632f8d8634c0c4063dfe0995b3"
+          "productSha256": "f0ec2928271e8e3a6842b67010d334ab792776d914c4f790cc60e21ae6d06bf8"
         },
         "galaxy/common/src/main/res/values/galaxy_storage.xml": {
           "baselineSha256": null,
@@ -1885,8 +1885,37 @@
         "shared/src/test/java/com/shilapi/xcertplay/media/NavigationAudioGainTest.kt": {
           "baselineSha256": "5f516ea8711f21b845e2e72510c20a65fdbbafe02002885689d98aae3915d346",
           "productSha256": "612edb3e4944b3abdd63225aee22991628f46fbf79147a84eb4b8efa935aacf2"
+        },
+        "galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxySteeringBinding.kt": {
+          "baselineSha256": null,
+          "productSha256": "8e64dc3629a11130e2266e1250ee4805b24e6a68a767198da51e0bdbc9e13f60"
+        },
+        "galaxy/common/src/main/java/com/shilapi/xcertplay/steering/GalaxySteeringMediaDispatch.kt": {
+          "baselineSha256": null,
+          "productSha256": "683debda84672889f4d2d06a4774772565fc82de64c8cb7ba1abb71df676ee40"
+        },
+        "galaxy/common/src/main/java/com/shilapi/xcertplay/steering/GalaxySteeringMediaWindow.kt": {
+          "baselineSha256": null,
+          "productSha256": "cccf895e18001f34a4a81a7e3f94b190f3b85a2a56fc3e903de7e76970241807"
+        },
+        "galaxy/common/src/main/java/com/shilapi/xcertplay/steering/SteeringActionDispatch.kt": {
+          "baselineSha256": null,
+          "productSha256": "2b6afe3a19403569c5733b74530b75c4379145bad6ff716e4a72e2680b1c6424"
+        },
+        "galaxy/common/src/test/java/com/shilapi/xcertplay/GalaxySteeringBindingTest.kt": {
+          "baselineSha256": null,
+          "productSha256": "86725d67634836ef61da2adf9e99468922402caacb46c6294408813b9832b6ee"
+        },
+        "galaxy/common/src/test/java/com/shilapi/xcertplay/GalaxySteeringCommandTest.kt": {
+          "baselineSha256": null,
+          "productSha256": "7d523e34b1f4414d4b9ca34e23e379b38a0d8addc408a4eafb92f88bdf8096e0"
+        },
+        "galaxy/common/src/test/java/com/shilapi/xcertplay/GalaxySteeringSettingsTest.kt": {
+          "baselineSha256": null,
+          "productSha256": "70d87a810e90c165effc3ca0f6ae1bc913a2fd466fb8248b2485ecc16f4cd492"
         }
       }
     }
-  ]
+  ],
+  "deletions": []
 }

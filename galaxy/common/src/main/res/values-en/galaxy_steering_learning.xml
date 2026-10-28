@@ -2,7 +2,7 @@
     <string name="galaxy_steering_learning_title">Steering wheel learning</string>
     <string name="galaxy_steering_learning_boundary">Observe the verified Autolink key service only. Unknown keys do nothing; original car keys are not intercepted. Confirm a mapping after observing the key.</string>
     <string name="galaxy_steering_listening">Listen to steering wheel keys</string>
-    <string name="galaxy_steering_listening_hint">Projection and the foreground learning page share one registration. Turning this off unregisters the listener and stops mapped actions.</string>
+    <string name="galaxy_steering_listening_hint">Projection and the foreground learning page share one registration; this switch also gates the original car key pass-through to CarPlay. Turning it off unregisters the listener and stops mapped actions.</string>
     <string name="galaxy_steering_service">Service state</string>
     <string name="galaxy_steering_recent">Recent physical input</string>
     <string name="galaxy_steering_candidate">Key learned this time</string>
@@ -38,4 +38,6 @@
     <string name="galaxy_steering_siri">Siri</string>
     <string name="galaxy_steering_answer">Answer call</string>
     <string name="galaxy_steering_end">End call</string>
+    <string name="galaxy_steering_watch_title">Physical key observation</string>
+    <string name="galaxy_steering_watch_hint">Press a steering wheel key here and label it to keep evidence, then learn and confirm the mapping above. This section only observes and logs; it does not change mappings or send test keys.</string>
 </resources>
