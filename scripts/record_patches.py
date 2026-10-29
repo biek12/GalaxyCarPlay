@@ -76,8 +76,17 @@ def render(product: str, before: bytes | None, after: bytes) -> str:
         return f'Binary files {source} and b/{product} differ\n'
     source = '/dev/null' if before is None else f'a/{product}'
     old_lines = [] if before is None else old_text.splitlines(keepends=True)
-    return ''.join(difflib.unified_diff(old_lines, new_text.splitlines(keepends=True),
-                                        fromfile=source, tofile=f'b/{product}'))
+    diff = difflib.unified_diff(old_lines, new_text.splitlines(keepends=True),
+                                fromfile=source, tofile=f'b/{product}')
+    rendered = []
+    for line in diff:
+        # difflib does not emit Git's no-newline marker. Without it, the next diff
+        # header can concatenate to the final content line and corrupt the patch.
+        if line.endswith('\n'):
+            rendered.append(line)
+        else:
+            rendered.append(line + '\n\\ No newline at end of file\n')
+    return ''.join(rendered)
 
 
 def product_files() -> list[str]:

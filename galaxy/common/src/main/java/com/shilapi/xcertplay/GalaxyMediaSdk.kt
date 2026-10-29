@@ -10,7 +10,7 @@ internal object GalaxyMediaSdk {
         else channel.sdkPackages
 
     fun load(context: Context, channel: GalaxyMediaReportingChannel.Mode): L7VendorSdk.Loaded =
-        L7VendorSdk(context).load(L7ReflectiveMediaCenter.API, packages(L7AudioTemplates.model(context).id, channel)) { loader ->
+        L7VendorSdk(context).load(L7ReflectiveMediaCenter.API, packages(GalaxyVehicleAudioProfiles.model(context).id, channel)) { loader ->
             val api = Class.forName(L7ReflectiveMediaCenter.API, false, loader)
             val client = Class.forName(L7ReflectiveMediaCenter.CLIENT, false, loader)
             val info = Class.forName(L7ReflectiveMediaCenter.INFO, false, loader)

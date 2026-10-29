@@ -64,7 +64,7 @@ internal class GalaxyProfiles(private val context: Context,
         if (selection.baseFile.exists() || File(selection.baseFile.path + ".bak").exists()) return
         folder.mkdirs()
         // 首次捕获必须先完成既有音频迁移；不会确认尚未选择的车型。
-        L7AudioTemplates.mode(context)
+        GalaxyVehicleAudioProfiles.mode(context)
         val labels = AppLocale.wrap(context)
         val initial = GalaxyProfile("current", labels.getString(R.string.profile_migrated), 1,
             System.currentTimeMillis(), GalaxyConfigurationFields.capture(context))
@@ -82,7 +82,7 @@ internal class GalaxyProfiles(private val context: Context,
         val current = refresh()
         check(current.id == expected.id && current.revision == expected.revision) { "CONFIG_EDIT_CONFLICT" }
         val template = GalaxyVehicleTemplates.find(current.template)
-            ?: GalaxyVehicleTemplates.find(L7AudioTemplates.model(context).id)!!
+            ?: GalaxyVehicleTemplates.find(GalaxyVehicleAudioProfiles.model(context).id)!!
         write(current.copy(configuration = template.create(context), templateId = template.id))
     }
     fun draft(model: String, name: String): GalaxyProfile = synchronized(lock) {
@@ -157,13 +157,13 @@ internal class GalaxyProfiles(private val context: Context,
                 configuration.preferences[name].orEmpty().filterKeys { GalaxyConfigurationFields.vehicleAllowed(name, it) }.forEach { (key, value) -> put(edit, key, value) }
                 check(edit.commit()) { "CONFIG_COMPAT_WRITE_FAILED" }
             }
-            L7AudioTemplates.Model.entries.forEach { model ->
+            GalaxyVehicleAudioProfiles.Model.entries.forEach { model ->
                 // 旧损坏文件保留供核对；沿用原播放器的内置回退，并在配置及界面明确标记。
                 if (model.id in configuration.audioRecovery) return@forEach
                 val target = AtomicFile(File(context.filesDir, GalaxyConfigurationFields.audioFile(model.id)))
                 val original = File(target.baseFile.path + ".unreadable")
                 if (target.baseFile.exists() && !original.exists() &&
-                    runCatching { target.openRead().use(L7AudioTemplates::parse) }.isFailure)
+                    runCatching { target.openRead().use(GalaxyVehicleAudioProfiles::parse) }.isFailure)
                     target.baseFile.copyTo(original)
                 configuration.audio[model.id]?.let { persist(target, it) } ?: target.delete()
             }

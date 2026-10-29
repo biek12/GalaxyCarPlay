@@ -14,11 +14,11 @@ internal object GalaxyDebugInputChecks {
                 VehicleSteeringInputLog.initialize(activity)
                 val controller = SteeringListening.controller
                 L7SteeringDiagnostics.freezeListening(activity)
-                controller.start(L7AudioTemplates.model(activity).id)
+                controller.start(GalaxyVehicleAudioProfiles.model(activity).id)
                 var shown = controller.snapshot()
                 object : GalaxyDebugFlow.Attempt {
                     override fun poll(): GalaxyDebugFlow.Evidence {
-                        controller.poll(L7AudioTemplates.model(activity).id)
+                        controller.poll(GalaxyVehicleAudioProfiles.model(activity).id)
                         shown = controller.snapshot()
                         return GalaxyDebugFlow.Evidence(question = true,
                             canConfirm = controller.active() && shown.pending != null,

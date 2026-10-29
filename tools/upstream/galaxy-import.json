@@ -500,12 +500,12 @@
     {
       "path": "galaxy/common/src/main/java/com/shilapi/xcertplay/L7AudioModelConfirmation.kt",
       "sha256": "c16b9d59e2f0525fea2d2aa831713013eecc4539b11379a5833a9f17c7a5107f",
-      "action": "导入"
+      "action": "导入后删除（D11 纯重命名为Galaxy车辆适配职责名）"
     },
     {
       "path": "galaxy/common/src/main/java/com/shilapi/xcertplay/L7AudioModelDetector.kt",
       "sha256": "bb823df060df0f81d709fa137a052f67095f7c7679211a621404f1ebdc481949",
-      "action": "导入"
+      "action": "导入后删除（D11 纯重命名为Galaxy车辆适配职责名）"
     },
     {
       "path": "galaxy/common/src/main/java/com/shilapi/xcertplay/L7AudioRouteDialog.kt",
@@ -530,7 +530,7 @@
     {
       "path": "galaxy/common/src/main/java/com/shilapi/xcertplay/L7AudioTemplates.kt",
       "sha256": "9e1e237053840ac1f3d86110f2d1890f94cadf918c3c38b55af6c49237af7b88",
-      "action": "导入后按本项目适配修改"
+      "action": "导入后删除（D11 纯重命名为Galaxy车辆适配职责名）"
     },
     {
       "path": "galaxy/common/src/main/java/com/shilapi/xcertplay/L7Authentication.kt",

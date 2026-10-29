@@ -9,7 +9,7 @@ import com.shilapi.xcertplay.host.R
 internal object GalaxyVideoDecoderSettings {
     fun add(context: Context, parent: LinearLayout,
             available: Set<String> = GalaxyVideoDecoderPreferences.availableHardwareDecoders()) {
-        val model = L7AudioTemplates.model(context)
+        val model = GalaxyVehicleAudioProfiles.model(context)
         val options = GalaxyVideoDecoderPreferences.Mode.entries
         val usable = GalaxyVideoDecoderPreferences.options(context, available)
         val current = GalaxyVideoDecoderPreferences.load(context, available)

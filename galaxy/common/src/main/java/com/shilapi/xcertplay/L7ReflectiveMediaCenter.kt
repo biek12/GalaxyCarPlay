@@ -16,7 +16,7 @@ internal class L7ReflectiveMediaCenter(
 ) : L7MediaCenterPort {
     private val app = context.applicationContext
     private val channel = GalaxyMediaReportingChannel.load(context)
-    private val vehicle = L7AudioTemplates.model(context).id
+    private val vehicle = GalaxyVehicleAudioProfiles.model(context).id
     private var api: Any? = null
     private var apiType: Class<*>? = null
     private var client: Any? = null

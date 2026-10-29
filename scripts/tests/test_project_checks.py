@@ -56,7 +56,8 @@ class CoreChecksTest(unittest.TestCase):
         original = self.lock['files']['shared/build.gradle']
         (self.root / 'shared/build.gradle').write_text('changed\n')
         patch = self.root / 'tools/upstream/change.patch'
-        patch.write_text('synthetic patch\n')
+        patch.write_text('--- a/shared/build.gradle\n+++ b/shared/build.gradle\n'
+                         '@@ -1 +1 @@\n-shared\n+changed\n')
         self.registry['patches'] = [{'patch': 'tools/upstream/change.patch',
             'sha256': checks.digest(patch), 'files': {'shared/build.gradle': {
                 'baselineSha256': original, 'productSha256': checks.digest(self.root / 'shared/build.gradle')}}}]
@@ -80,6 +81,15 @@ class CoreChecksTest(unittest.TestCase):
         self.register_patch()
         (self.root / 'tools/upstream/change.patch').write_text('tampered\n')
         with self.assertRaisesRegex(AssertionError, '补丁摘要'):
+            checks.check_core(self.root)
+
+    def test_malformed_registered_patch_fails(self):
+        self.register_patch()
+        patch = self.root / 'tools/upstream/change.patch'
+        patch.write_text('patch fragment without header\n')
+        self.registry['patches'][0]['sha256'] = checks.digest(patch)
+        self.save()
+        with self.assertRaisesRegex(AssertionError, '补丁格式无效'):
             checks.check_core(self.root)
 
     def test_duplicate_registration_fails(self):
@@ -184,6 +194,11 @@ class RecordPatchesTest(unittest.TestCase):
 
     def test_unchanged_content_has_no_diff(self):
         self.assertEqual('', self.record.render('common/A.kt', b'same\n', b'same\n'))
+
+    def test_no_final_newline_uses_git_marker_and_keeps_next_header_separate(self):
+        rendered = self.record.render('galaxy/common/A.kt', None, b'class A')
+        self.assertTrue(rendered.endswith('+class A\n\\ No newline at end of file\n'))
+        self.assertIn('\\ No newline at end of file\n--- /dev/null\n', rendered + '--- /dev/null\n')
 
     def test_binary_suffix_and_non_utf8_use_marker(self):
         self.assertEqual('Binary files /dev/null and b/common/icon.png differ\n',

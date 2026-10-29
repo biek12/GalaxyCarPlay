@@ -12,10 +12,10 @@ internal object GalaxyVideoDecoderPreferences {
     private const val PREFS = "xcertplay_airplay"
 
     fun supported(context: Context): Boolean {
-        val model = L7AudioTemplates.model(context)
+        val model = GalaxyVehicleAudioProfiles.model(context)
         val selected = context.getSharedPreferences("l7_audio_templates", Context.MODE_PRIVATE).contains("model")
         // 未识别且未手动选车型时不能把界面的旧 L7 默认值当作硬件识别结果。
-        return model != L7AudioTemplates.Model.CUSTOM && (selected || L7AudioModelDetector.detect() == model)
+        return model != GalaxyVehicleAudioProfiles.Model.CUSTOM && (selected || GalaxyVehicleModelDetector.detect() == model)
     }
 
     fun availableHardwareDecoders(): Set<String> = runCatching {
@@ -37,12 +37,12 @@ internal object GalaxyVideoDecoderPreferences {
         return requested.takeIf { it in options } ?: Mode.DEFAULT
     }
 
-    fun save(context: Context, mode: Mode, expectedModel: L7AudioTemplates.Model) {
-        check(L7AudioTemplates.model(context) == expectedModel)
+    fun save(context: Context, mode: Mode, expectedModel: GalaxyVehicleAudioProfiles.Model) {
+        check(GalaxyVehicleAudioProfiles.model(context) == expectedModel)
         check(mode == Mode.DEFAULT || supported(context))
         check(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
             .putString(key(context), mode.name).commit())
     }
 
-    private fun key(context: Context) = "galaxy_video_decoder_" + L7AudioTemplates.model(context).id
+    private fun key(context: Context) = "galaxy_video_decoder_" + GalaxyVehicleAudioProfiles.model(context).id
 }

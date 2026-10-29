@@ -77,7 +77,7 @@ class GalaxySettingsActivity : ComponentActivity() {
     private var pendingWireless = false
     private var initialLaunch = true
     private val appUpdate = GalaxyAppUpdate(this)
-    private val audioModelConfirmation = L7AudioModelConfirmation(this)
+    private val audioModelConfirmation = GalaxyVehicleModelConfirmation(this)
     private var notificationTransport = true
     private var exportInProgress = false
     private var navigationStreamType = 14
@@ -391,7 +391,7 @@ class GalaxySettingsActivity : ComponentActivity() {
             header.addView(label(getString(R.string.app_name), 24, TEXT, true).apply {
                 setPadding(dp(12), 0, 0, 0)
             }, LinearLayout.LayoutParams(0, dp(48), 1f))
-            header.addView(label(L7AudioModelConfirmation.name(this, L7AudioTemplates.model(this)), 18, MUTED))
+            header.addView(label(GalaxyVehicleModelConfirmation.name(this, GalaxyVehicleAudioProfiles.model(this)), 18, MUTED))
             content.addView(header)
             content.addView(space(24))
         }

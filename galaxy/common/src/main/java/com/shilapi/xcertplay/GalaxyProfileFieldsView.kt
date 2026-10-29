@@ -16,9 +16,9 @@ internal object GalaxyProfileFieldsView {
         R.string.l7_start_wireless, R.string.l7_auth_title, R.string.l7_logs_title)
     fun add(context: Context, parent: LinearLayout, group: Int, keys: Set<String>? = null) {
         if (group == R.string.l7_template_model) {
-            val models = L7AudioTemplates.Model.entries
-            L7Components.choice(parent, context.getString(group), models.map { L7AudioModelConfirmation.name(context, it) },
-                L7AudioTemplates.model(context).ordinal) { L7AudioTemplates.selectModel(context, models[it]) }
+            val models = GalaxyVehicleAudioProfiles.Model.entries
+            L7Components.choice(parent, context.getString(group), models.map { GalaxyVehicleModelConfirmation.name(context, it) },
+                GalaxyVehicleAudioProfiles.model(context).ordinal) { GalaxyVehicleAudioProfiles.selectModel(context, models[it]) }
         }
         if (group == R.string.l7_template_title) {
             L7AudioSettings.page(context, parent) { title, current, _, apply ->

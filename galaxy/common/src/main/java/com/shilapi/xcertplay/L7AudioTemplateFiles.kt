@@ -17,18 +17,18 @@ internal class L7AudioTemplateFiles(private val activity: ComponentActivity,
     }
     @Volatile private var closed = false
     private var exporting: String? = null
-    private var importingModel: L7AudioTemplates.Model? = null
+    private var importingModel: GalaxyVehicleAudioProfiles.Model? = null
     private val importer = activity.registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         val model = importingModel
         importingModel = null
         if (uri != null && !closed) worker.execute {
             val result = runCatching {
-                activity.contentResolver.openInputStream(uri)?.use { L7AudioTemplates.parse(it) }
+                activity.contentResolver.openInputStream(uri)?.use { GalaxyVehicleAudioProfiles.parse(it) }
                     ?: error("文件不可读")
             }
             activity.runOnUiThread {
                 if (!closed && !activity.isFinishing) {
-                    if (model == null || model != L7AudioTemplates.model(activity)) message(R.string.l7_template_model_changed)
+                    if (model == null || model != GalaxyVehicleAudioProfiles.model(activity)) message(R.string.l7_template_model_changed)
                     else result.onSuccess { confirm(it, model) }.onFailure { message(R.string.l7_template_invalid) }
                 }
             }
@@ -51,31 +51,31 @@ internal class L7AudioTemplateFiles(private val activity: ComponentActivity,
     }
 
     fun importFile() {
-        importingModel = L7AudioTemplates.model(activity)
+        importingModel = GalaxyVehicleAudioProfiles.model(activity)
         importer.launch(arrayOf("application/json", "text/plain", "application/octet-stream"))
     }
 
     fun exportFile() {
-        exporting = L7AudioTemplates.load(activity).toJson()
-        exporter.launch("${L7AudioTemplates.model(activity).id}-audio-template.json")
+        exporting = GalaxyVehicleAudioProfiles.load(activity).toJson()
+        exporter.launch("${GalaxyVehicleAudioProfiles.model(activity).id}-audio-template.json")
     }
 
     fun restore(state: Bundle?) {
         exporting = state?.getString("audio_template_export")
-        importingModel = L7AudioTemplates.Model.entries.firstOrNull { it.id == state?.getString("audio_template_import_model") }
+        importingModel = GalaxyVehicleAudioProfiles.Model.entries.firstOrNull { it.id == state?.getString("audio_template_import_model") }
     }
     fun save(state: Bundle) {
         exporting?.let { state.putString("audio_template_export", it) }
         importingModel?.let { state.putString("audio_template_import_model", it.id) }
     }
 
-    private fun confirm(template: AudioRoutingTemplate, model: L7AudioTemplates.Model) {
+    private fun confirm(template: AudioRoutingTemplate, model: GalaxyVehicleAudioProfiles.Model) {
         L7Dialogs.builder(activity).setTitle(R.string.l7_template_import)
             .setMessage(activity.getString(R.string.l7_template_import_confirm, template.name))
             .setNegativeButton(R.string.cancel, null)
             .setPositiveButton(R.string.l7_save_next_connection) { _, _ ->
-                if (model != L7AudioTemplates.model(activity)) message(R.string.l7_template_model_changed)
-                else if (runCatching { L7AudioTemplates.saveCustom(activity, template, model) }.isSuccess) changed()
+                if (model != GalaxyVehicleAudioProfiles.model(activity)) message(R.string.l7_template_model_changed)
+                else if (runCatching { GalaxyVehicleAudioProfiles.saveCustom(activity, template, model) }.isSuccess) changed()
                 else message(R.string.l7_template_save_failed)
             }.show()
     }
