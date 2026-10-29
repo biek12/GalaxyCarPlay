@@ -142,14 +142,14 @@ internal object GalaxyConfigurationFields {
         val recovery = mutableSetOf<String>()
         if (!context.getSharedPreferences(MAIN, 0).contains("display_scale_percent"))
             groups.getValue(MAIN)["display_scale_percent"] = AirPlayPersistence.loadDisplayScalePercent(context)
-        L7AudioTemplates.Model.entries.forEach { model ->
+        GalaxyVehicleAudioProfiles.Model.entries.forEach { model ->
             val file = java.io.File(context.filesDir, audioFile(model.id))
             val atomic = android.util.AtomicFile(file)
             val old = if (file.exists() || java.io.File(file.path + ".bak").exists())
-                runCatching { atomic.openRead().use { L7AudioTemplates.parse(it).toJson() } }
+                runCatching { atomic.openRead().use { GalaxyVehicleAudioProfiles.parse(it).toJson() } }
                     .onFailure { recovery += model.id }.getOrNull() else null
             audio[model.id] = old ?: context.assets.open("audio-templates/${if (model.id == "custom") "system" else model.id}.json")
-                .use { L7AudioTemplates.parse(it).toJson() }
+                .use { GalaxyVehicleAudioProfiles.parse(it).toJson() }
         }
         return GalaxyConfiguration(groups, audio, recovery)
     }
@@ -159,9 +159,9 @@ internal object GalaxyConfigurationFields {
         val groups = defaults(context).mapValues { (_, value) -> value.toMutableMap() }
         groups.getValue("l7_audio_templates")["model"] = model
         groups.getValue("l7_audio_templates")[if (model == "l7") "mode" else "mode_$model"] = if (model == "custom") "custom" else model
-        val templates = L7AudioTemplates.Model.entries.associate { entry -> entry.id to
+        val templates = GalaxyVehicleAudioProfiles.Model.entries.associate { entry -> entry.id to
             context.assets.open("audio-templates/${if (entry.id == "custom") "system" else entry.id}.json")
-                .use { L7AudioTemplates.parse(it).toJson() } }
+                .use { GalaxyVehicleAudioProfiles.parse(it).toJson() } }
         // 明确应用 L7 快速模板才启用已核实的原厂焦点；沿用现有自定义方案格式，旧内置配置不变。
         if (model == "l7") {
             groups.getValue("l7_audio_templates")["mode"] = "custom"

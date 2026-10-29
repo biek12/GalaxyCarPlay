@@ -12,11 +12,11 @@ import androidx.core.content.ContextCompat
 
 /** 其他车型仅观察输入，不消费事件、不猜测按键映射；只读取明确的数字字段。 */
 internal class VehicleSteeringCapture(
-    private val model: () -> L7AudioTemplates.Model,
+    private val model: () -> GalaxyVehicleAudioProfiles.Model,
     private val connected: () -> Boolean,
     private val begin: (String, Int, String) -> L7SteeringTrace,
     private val clock: () -> Long = SystemClock::elapsedRealtime,
-    private val enabled: () -> Boolean = { model() != L7AudioTemplates.Model.L7 },
+    private val enabled: () -> Boolean = { model() != GalaxyVehicleAudioProfiles.Model.L7 },
 ) {
     private var windowAt = Long.MIN_VALUE
     private var count = 0
@@ -71,7 +71,7 @@ internal object VehicleSteeringInputLog {
         if (L7AppExit.exiting || registered) return
         val owner = context.applicationContext
         app = owner
-        capture = VehicleSteeringCapture({ L7AudioTemplates.model(owner) },
+        capture = VehicleSteeringCapture({ GalaxyVehicleAudioProfiles.model(owner) },
             { L7SteeringDiagnostics.store.snapshot().connected }, L7SteeringDiagnostics::begin,
             enabled = SteeringListening::active)
         runCatching {

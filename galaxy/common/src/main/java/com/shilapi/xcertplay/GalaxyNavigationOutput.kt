@@ -9,14 +9,14 @@ import org.json.JSONObject
 
 /** 独立车型偏好，不改模板、传统流或系统路由；草稿确认后保存。 */
 internal object GalaxyNavigationOutput {
-    private fun key(context: Context) = "galaxy_navigation_output_" + L7AudioTemplates.model(context).name
+    private fun key(context: Context) = "galaxy_navigation_output_" + GalaxyVehicleAudioProfiles.model(context).name
     fun load(context: Context): NavigationOutputDevice? = runCatching {
         val raw = context.getSharedPreferences("xcertplay_airplay", 0).getString(key(context), null) ?: return null
         val data = JSONObject(raw)
         NavigationOutputDevice(data.getInt("id"), data.getInt("type"), data.getString("address"), data.getString("name"))
     }.getOrNull()
-    internal fun save(context: Context, device: NavigationOutputDevice?, expectedModel: L7AudioTemplates.Model = L7AudioTemplates.model(context)) {
-        check(L7AudioTemplates.model(context) == expectedModel)
+    internal fun save(context: Context, device: NavigationOutputDevice?, expectedModel: GalaxyVehicleAudioProfiles.Model = GalaxyVehicleAudioProfiles.model(context)) {
+        check(GalaxyVehicleAudioProfiles.model(context) == expectedModel)
         val previous = context.getSharedPreferences("xcertplay_airplay", 0).getString(key(context), null)
         val editor = context.getSharedPreferences("xcertplay_airplay", 0).edit()
         if (device == null) editor.remove(key(context)) else editor.putString(key(context), JSONObject()
@@ -35,7 +35,7 @@ internal object GalaxyNavigationOutput {
                 ?.getDevices(AudioManager.GET_DEVICES_OUTPUTS)?.filter { it.isSink }?.map {
                     NavigationOutputDevice(it.id, it.type, it.address, it.productName.toString())
                 }.orEmpty() }.getOrElse { emptyList() }
-            val expectedModel = L7AudioTemplates.model(context)
+            val expectedModel = GalaxyVehicleAudioProfiles.model(context)
             val stored = load(context)
             val selected = stored?.match(devices) ?: stored
             val options = listOf<NavigationOutputDevice?>(null) + listOfNotNull(selected?.takeIf { it !in devices }) + devices
