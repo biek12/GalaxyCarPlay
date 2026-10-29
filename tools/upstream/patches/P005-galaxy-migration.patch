@@ -3220,7 +3220,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    fun play(channel: Int, role: AudioOutputRole) {
 +        if (closed) return
 +        require(AudioOutputPolicy.valid(channel))
-+        val template = context?.let { L7AudioTemplates.load(it) }
++        val template = context?.let { GalaxyVehicleAudioProfiles.load(it) }
 +        val navigationDevice = context?.let { GalaxyNavigationOutput.load(it) }
 +        val focusEnabled = context?.let { AirPlayPersistence.loadAudioFocusEnabled(it) } ?: true
 +        val request = generation.incrementAndGet()
@@ -4789,14 +4789,14 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        val recovery = mutableSetOf<String>()
 +        if (!context.getSharedPreferences(MAIN, 0).contains("display_scale_percent"))
 +            groups.getValue(MAIN)["display_scale_percent"] = AirPlayPersistence.loadDisplayScalePercent(context)
-+        L7AudioTemplates.Model.entries.forEach { model ->
++        GalaxyVehicleAudioProfiles.Model.entries.forEach { model ->
 +            val file = java.io.File(context.filesDir, audioFile(model.id))
 +            val atomic = android.util.AtomicFile(file)
 +            val old = if (file.exists() || java.io.File(file.path + ".bak").exists())
-+                runCatching { atomic.openRead().use { L7AudioTemplates.parse(it).toJson() } }
++                runCatching { atomic.openRead().use { GalaxyVehicleAudioProfiles.parse(it).toJson() } }
 +                    .onFailure { recovery += model.id }.getOrNull() else null
 +            audio[model.id] = old ?: context.assets.open("audio-templates/${if (model.id == "custom") "system" else model.id}.json")
-+                .use { L7AudioTemplates.parse(it).toJson() }
++                .use { GalaxyVehicleAudioProfiles.parse(it).toJson() }
 +        }
 +        return GalaxyConfiguration(groups, audio, recovery)
 +    }
@@ -4806,9 +4806,9 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        val groups = defaults(context).mapValues { (_, value) -> value.toMutableMap() }
 +        groups.getValue("l7_audio_templates")["model"] = model
 +        groups.getValue("l7_audio_templates")[if (model == "l7") "mode" else "mode_$model"] = if (model == "custom") "custom" else model
-+        val templates = L7AudioTemplates.Model.entries.associate { entry -> entry.id to
++        val templates = GalaxyVehicleAudioProfiles.Model.entries.associate { entry -> entry.id to
 +            context.assets.open("audio-templates/${if (entry.id == "custom") "system" else entry.id}.json")
-+                .use { L7AudioTemplates.parse(it).toJson() } }
++                .use { GalaxyVehicleAudioProfiles.parse(it).toJson() } }
 +        // 明确应用 L7 快速模板才启用已核实的原厂焦点；沿用现有自定义方案格式，旧内置配置不变。
 +        if (model == "l7") {
 +            groups.getValue("l7_audio_templates")["mode"] = "custom"
@@ -4939,9 +4939,9 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        val profile = state.draft ?: return
 +        val active = runCatching { repository.active() }.getOrNull()
 +        val effective = CarPlayBackgroundSession.configuration
-+        val model = L7AudioTemplates.model(activity)
++        val model = GalaxyVehicleAudioProfiles.model(activity)
 +        val name = GalaxyVehicleTemplates.find(active?.template ?: model.id)?.let { text(it.title) }
-+            ?: L7AudioModelConfirmation.name(activity, model)
++            ?: GalaxyVehicleModelConfirmation.name(activity, model)
 +        view.vehicleButton.text = activity.getString(R.string.template_current, name)
 +        val hint = when {
 +            dirty -> text(R.string.config_page_unsaved)
@@ -4984,9 +4984,9 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    private fun resetCurrent() {
 +        if (closed || resetDialog?.isShowing == true || templateDialog?.isShowing == true) return
 +        val profile = state.original ?: return
-+        val model = L7AudioTemplates.model(activity)
++        val model = GalaxyVehicleAudioProfiles.model(activity)
 +        val name = GalaxyVehicleTemplates.find(profile.template)?.let { text(it.title) }
-+            ?: L7AudioModelConfirmation.name(activity, model)
++            ?: GalaxyVehicleModelConfirmation.name(activity, model)
 +        var applied = false
 +        val dialog = L7Dialogs.builder(activity).setTitle(R.string.config_reset_current)
 +            .setMessage(activity.getString(R.string.config_reset_message, name))
@@ -5011,7 +5011,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    private fun chooseTemplate() {
 +        if (closed || templateDialog?.isShowing == true || resetDialog?.isShowing == true) return
 +        val entries = GalaxyVehicleTemplates.entries
-+        var pending = entries.indexOfFirst { it.id == (state.original?.template?.takeUnless { id -> id == "unconfirmed" } ?: L7AudioTemplates.model(activity).id) }
++        var pending = entries.indexOfFirst { it.id == (state.original?.template?.takeUnless { id -> id == "unconfirmed" } ?: GalaxyVehicleAudioProfiles.model(activity).id) }
 +        var applied = false
 +        val dialog = L7Dialogs.builder(activity).setTitle(R.string.template_choose)
 +            .setMessage(R.string.template_overwrite)
@@ -5524,11 +5524,11 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +                VehicleSteeringInputLog.initialize(activity)
 +                val controller = SteeringListening.controller
 +                L7SteeringDiagnostics.freezeListening(activity)
-+                controller.start(L7AudioTemplates.model(activity).id)
++                controller.start(GalaxyVehicleAudioProfiles.model(activity).id)
 +                var shown = controller.snapshot()
 +                object : GalaxyDebugFlow.Attempt {
 +                    override fun poll(): GalaxyDebugFlow.Evidence {
-+                        controller.poll(L7AudioTemplates.model(activity).id)
++                        controller.poll(GalaxyVehicleAudioProfiles.model(activity).id)
 +                        shown = controller.snapshot()
 +                        return GalaxyDebugFlow.Evidence(question = true,
 +                            canConfirm = controller.active() && shown.pending != null,
@@ -5926,7 +5926,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    override fun preferredAvcDecoder(): String? = GalaxyVideoDecoderPreferences.load(activity).decoder
 +
 +    override fun audioConfiguration(): HostAudioConfiguration {
-+        val template = L7AudioTemplates.load(activity)
++        val template = GalaxyVehicleAudioProfiles.load(activity)
 +        return HostAudioConfiguration(
 +            platform = GalaxyMediaPolicy(factoryProfile = true, preferBus = template.preferBus,
 +                template = template, navigationDevice = GalaxyNavigationOutput.load(activity)),
@@ -6513,7 +6513,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        if (GalaxyVehiclePreferences.mediaReporting(app)) startMediaReporting(app, next, expectedOwner, dispatch, traced)
 +        if (GalaxyVehiclePreferences.navigationReporting(app)) startNavigation(app, next, expectedOwner)
 +        // 旧Galaxy的语音广播属于L7；L6监听学习由Autolink链接入，不能套用该广播。
-+        if (GalaxyVehiclePreferences.steering(app) && L7AudioTemplates.model(app) == L7AudioTemplates.Model.L7) {
++        if (GalaxyVehiclePreferences.steering(app) && GalaxyVehicleAudioProfiles.model(app) == GalaxyVehicleAudioProfiles.Model.L7) {
 +            steeringWheel = L7SteeringWheel(app, next::hasActiveSession, { assistantActive() }) {
 +                synchronized(this) { controller === next && owner === expectedOwner && next.requestSiri() }
 +            }.also { it.start() }
@@ -6695,7 +6695,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        else channel.sdkPackages
 +
 +    fun load(context: Context, channel: GalaxyMediaReportingChannel.Mode): L7VendorSdk.Loaded =
-+        L7VendorSdk(context).load(L7ReflectiveMediaCenter.API, packages(L7AudioTemplates.model(context).id, channel)) { loader ->
++        L7VendorSdk(context).load(L7ReflectiveMediaCenter.API, packages(GalaxyVehicleAudioProfiles.model(context).id, channel)) { loader ->
 +            val api = Class.forName(L7ReflectiveMediaCenter.API, false, loader)
 +            val client = Class.forName(L7ReflectiveMediaCenter.CLIENT, false, loader)
 +            val info = Class.forName(L7ReflectiveMediaCenter.INFO, false, loader)
@@ -6734,14 +6734,14 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +
 +/** 独立车型偏好，不改模板、传统流或系统路由；草稿确认后保存。 */
 +internal object GalaxyNavigationOutput {
-+    private fun key(context: Context) = "galaxy_navigation_output_" + L7AudioTemplates.model(context).name
++    private fun key(context: Context) = "galaxy_navigation_output_" + GalaxyVehicleAudioProfiles.model(context).name
 +    fun load(context: Context): NavigationOutputDevice? = runCatching {
 +        val raw = context.getSharedPreferences("xcertplay_airplay", 0).getString(key(context), null) ?: return null
 +        val data = JSONObject(raw)
 +        NavigationOutputDevice(data.getInt("id"), data.getInt("type"), data.getString("address"), data.getString("name"))
 +    }.getOrNull()
-+    internal fun save(context: Context, device: NavigationOutputDevice?, expectedModel: L7AudioTemplates.Model = L7AudioTemplates.model(context)) {
-+        check(L7AudioTemplates.model(context) == expectedModel)
++    internal fun save(context: Context, device: NavigationOutputDevice?, expectedModel: GalaxyVehicleAudioProfiles.Model = GalaxyVehicleAudioProfiles.model(context)) {
++        check(GalaxyVehicleAudioProfiles.model(context) == expectedModel)
 +        val previous = context.getSharedPreferences("xcertplay_airplay", 0).getString(key(context), null)
 +        val editor = context.getSharedPreferences("xcertplay_airplay", 0).edit()
 +        if (device == null) editor.remove(key(context)) else editor.putString(key(context), JSONObject()
@@ -6760,7 +6760,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +                ?.getDevices(AudioManager.GET_DEVICES_OUTPUTS)?.filter { it.isSink }?.map {
 +                    NavigationOutputDevice(it.id, it.type, it.address, it.productName.toString())
 +                }.orEmpty() }.getOrElse { emptyList() }
-+            val expectedModel = L7AudioTemplates.model(context)
++            val expectedModel = GalaxyVehicleAudioProfiles.model(context)
 +            val stored = load(context)
 +            val selected = stored?.match(devices) ?: stored
 +            val options = listOf<NavigationOutputDevice?>(null) + listOfNotNull(selected?.takeIf { it !in devices }) + devices
@@ -7206,9 +7206,9 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        R.string.l7_start_wireless, R.string.l7_auth_title, R.string.l7_logs_title)
 +    fun add(context: Context, parent: LinearLayout, group: Int, keys: Set<String>? = null) {
 +        if (group == R.string.l7_template_model) {
-+            val models = L7AudioTemplates.Model.entries
-+            L7Components.choice(parent, context.getString(group), models.map { L7AudioModelConfirmation.name(context, it) },
-+                L7AudioTemplates.model(context).ordinal) { L7AudioTemplates.selectModel(context, models[it]) }
++            val models = GalaxyVehicleAudioProfiles.Model.entries
++            L7Components.choice(parent, context.getString(group), models.map { GalaxyVehicleModelConfirmation.name(context, it) },
++                GalaxyVehicleAudioProfiles.model(context).ordinal) { GalaxyVehicleAudioProfiles.selectModel(context, models[it]) }
 +        }
 +        if (group == R.string.l7_template_title) {
 +            L7AudioSettings.page(context, parent) { title, current, _, apply ->
@@ -7355,7 +7355,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        if (selection.baseFile.exists() || File(selection.baseFile.path + ".bak").exists()) return
 +        folder.mkdirs()
 +        // 首次捕获必须先完成既有音频迁移；不会确认尚未选择的车型。
-+        L7AudioTemplates.mode(context)
++        GalaxyVehicleAudioProfiles.mode(context)
 +        val labels = AppLocale.wrap(context)
 +        val initial = GalaxyProfile("current", labels.getString(R.string.profile_migrated), 1,
 +            System.currentTimeMillis(), GalaxyConfigurationFields.capture(context))
@@ -7373,7 +7373,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        val current = refresh()
 +        check(current.id == expected.id && current.revision == expected.revision) { "CONFIG_EDIT_CONFLICT" }
 +        val template = GalaxyVehicleTemplates.find(current.template)
-+            ?: GalaxyVehicleTemplates.find(L7AudioTemplates.model(context).id)!!
++            ?: GalaxyVehicleTemplates.find(GalaxyVehicleAudioProfiles.model(context).id)!!
 +        write(current.copy(configuration = template.create(context), templateId = template.id))
 +    }
 +    fun draft(model: String, name: String): GalaxyProfile = synchronized(lock) {
@@ -7448,13 +7448,13 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +                configuration.preferences[name].orEmpty().filterKeys { GalaxyConfigurationFields.vehicleAllowed(name, it) }.forEach { (key, value) -> put(edit, key, value) }
 +                check(edit.commit()) { "CONFIG_COMPAT_WRITE_FAILED" }
 +            }
-+            L7AudioTemplates.Model.entries.forEach { model ->
++            GalaxyVehicleAudioProfiles.Model.entries.forEach { model ->
 +                // 旧损坏文件保留供核对；沿用原播放器的内置回退，并在配置及界面明确标记。
 +                if (model.id in configuration.audioRecovery) return@forEach
 +                val target = AtomicFile(File(context.filesDir, GalaxyConfigurationFields.audioFile(model.id)))
 +                val original = File(target.baseFile.path + ".unreadable")
 +                if (target.baseFile.exists() && !original.exists() &&
-+                    runCatching { target.openRead().use(L7AudioTemplates::parse) }.isFailure)
++                    runCatching { target.openRead().use(GalaxyVehicleAudioProfiles::parse) }.isFailure)
 +                    target.baseFile.copyTo(original)
 +                configuration.audio[model.id]?.let { persist(target, it) } ?: target.delete()
 +            }
@@ -7897,7 +7897,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    private var pendingWireless = false
 +    private var initialLaunch = true
 +    private val appUpdate = GalaxyAppUpdate(this)
-+    private val audioModelConfirmation = L7AudioModelConfirmation(this)
++    private val audioModelConfirmation = GalaxyVehicleModelConfirmation(this)
 +    private var notificationTransport = true
 +    private var exportInProgress = false
 +    private var navigationStreamType = 14
@@ -8211,7 +8211,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +            header.addView(label(getString(R.string.app_name), 24, TEXT, true).apply {
 +                setPadding(dp(12), 0, 0, 0)
 +            }, LinearLayout.LayoutParams(0, dp(48), 1f))
-+            header.addView(label(L7AudioModelConfirmation.name(this, L7AudioTemplates.model(this)), 18, MUTED))
++            header.addView(label(GalaxyVehicleModelConfirmation.name(this, GalaxyVehicleAudioProfiles.model(this)), 18, MUTED))
 +            content.addView(header)
 +            content.addView(space(24))
 +        }
@@ -9298,7 +9298,9 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        watch = null
 +        session.close()
 +    }
-+}--- /dev/null
++}
+\ No newline at end of file
+--- /dev/null
 +++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyStorageMaintenance.kt
 @@ -0,0 +1,26 @@
 +package com.shilapi.xcertplay
@@ -9993,10 +9995,10 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    private const val PREFS = "xcertplay_airplay"
 +
 +    fun supported(context: Context): Boolean {
-+        val model = L7AudioTemplates.model(context)
++        val model = GalaxyVehicleAudioProfiles.model(context)
 +        val selected = context.getSharedPreferences("l7_audio_templates", Context.MODE_PRIVATE).contains("model")
 +        // 未识别且未手动选车型时不能把界面的旧 L7 默认值当作硬件识别结果。
-+        return model != L7AudioTemplates.Model.CUSTOM && (selected || L7AudioModelDetector.detect() == model)
++        return model != GalaxyVehicleAudioProfiles.Model.CUSTOM && (selected || GalaxyVehicleModelDetector.detect() == model)
 +    }
 +
 +    fun availableHardwareDecoders(): Set<String> = runCatching {
@@ -10018,14 +10020,14 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        return requested.takeIf { it in options } ?: Mode.DEFAULT
 +    }
 +
-+    fun save(context: Context, mode: Mode, expectedModel: L7AudioTemplates.Model) {
-+        check(L7AudioTemplates.model(context) == expectedModel)
++    fun save(context: Context, mode: Mode, expectedModel: GalaxyVehicleAudioProfiles.Model) {
++        check(GalaxyVehicleAudioProfiles.model(context) == expectedModel)
 +        check(mode == Mode.DEFAULT || supported(context))
 +        check(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
 +            .putString(key(context), mode.name).commit())
 +    }
 +
-+    private fun key(context: Context) = "galaxy_video_decoder_" + L7AudioTemplates.model(context).id
++    private fun key(context: Context) = "galaxy_video_decoder_" + GalaxyVehicleAudioProfiles.model(context).id
 +}
 --- /dev/null
 +++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyVideoDecoderSettings.kt
@@ -10041,7 +10043,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +internal object GalaxyVideoDecoderSettings {
 +    fun add(context: Context, parent: LinearLayout,
 +            available: Set<String> = GalaxyVideoDecoderPreferences.availableHardwareDecoders()) {
-+        val model = L7AudioTemplates.model(context)
++        val model = GalaxyVehicleAudioProfiles.model(context)
 +        val options = GalaxyVideoDecoderPreferences.Mode.entries
 +        val usable = GalaxyVideoDecoderPreferences.options(context, available)
 +        val current = GalaxyVideoDecoderPreferences.load(context, available)
@@ -10951,109 +10953,6 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    }
 +}
 --- /dev/null
-+++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/L7AudioModelConfirmation.kt
-@@ -0,0 +1,80 @@
-+package com.shilapi.xcertplay
-+
-+import android.app.Activity
-+import android.app.AlertDialog
-+import android.content.Context
-+import android.widget.Toast
-+import com.shilapi.xcertplay.host.R
-+import java.io.Closeable
-+
-+/** 首次识别先确认再应用；已审阅的识别结果不反复弹出，手动复查可重新确认。 */
-+internal class L7AudioModelConfirmation(
-+    private val activity: Activity,
-+    private val detect: () -> L7AudioTemplates.Model? = { L7AudioModelDetector.detect() },
-+) : Closeable {
-+    private var dialog: AlertDialog? = null
-+    private var continuation: (() -> Unit)? = null
-+    private var closed = false
-+
-+    fun ensure(after: () -> Unit): Boolean {
-+        if (closed || activity.isFinishing || activity.isDestroyed) return false
-+        if (dialog?.isShowing == true) { continuation = after; return true }
-+        val model = detect() ?: return false
-+        if (preferences(activity).getString(REVIEWED, null) == model.id) return false
-+        continuation = after
-+        dialog = confirm(activity, model, handled = {
-+            dialog = null
-+            val next = continuation
-+            continuation = null
-+            if (!closed && !activity.isFinishing && !activity.isDestroyed) next?.invoke()
-+        }, current = { !closed })
-+        return true
-+    }
-+
-+    override fun close() {
-+        closed = true
-+        continuation = null
-+        dialog?.dismiss()
-+        dialog = null
-+    }
-+
-+    companion object {
-+        private const val REVIEWED = "detected_model_reviewed"
-+        private fun preferences(context: Context) = context.getSharedPreferences("l7_audio_templates", Context.MODE_PRIVATE)
-+
-+        fun name(context: Context, model: L7AudioTemplates.Model): String = context.getString(
-+            when (model) {
-+                L7AudioTemplates.Model.L7 -> R.string.l7_template_model_l7
-+                L7AudioTemplates.Model.L6 -> R.string.l7_template_model_l6
-+                L7AudioTemplates.Model.CUSTOM -> R.string.l7_template_model_custom
-+            })
-+
-+        fun markReviewed(context: Context, model: L7AudioTemplates.Model? = L7AudioModelDetector.detect()) {
-+            model?.let { check(preferences(context).edit().putString(REVIEWED, it.id).commit()) }
-+        }
-+
-+        fun confirm(context: Context, model: L7AudioTemplates.Model, handled: () -> Unit,
-+                    current: () -> Boolean = { true }): AlertDialog {
-+            L7DebugLog.record("Audio: modelDetection result=RECOGNIZED model=${model.id} applied=false")
-+            fun usable() = current() && !(context is Activity && (context.isFinishing || context.isDestroyed))
-+            fun retain() {
-+                if (!usable()) return
-+                runCatching { markReviewed(context, model) }
-+                L7DebugLog.record("Audio: modelDetection result=RETAINED model=${L7AudioTemplates.model(context).id}")
-+                handled()
-+            }
-+            return L7Dialogs.builder(context).setTitle(R.string.l7_template_detect_title)
-+                .setMessage(context.getString(R.string.l7_template_detect_confirm, name(context, model)))
-+                .setNegativeButton(R.string.l7_template_detect_retain) { _, _ -> retain() }
-+                .setOnCancelListener { retain() }
-+                .setPositiveButton(R.string.l7_save_next_connection) { _, _ ->
-+                    if (!usable()) return@setPositiveButton
-+                    if (runCatching { L7AudioTemplates.selectModel(context, model) }.isSuccess) {
-+                        runCatching { markReviewed(context, model) }
-+                        L7DebugLog.record("Audio: modelDetection result=CONFIRMED model=${model.id} applies=NEXT_CONNECTION")
-+                        handled()
-+                    } else Toast.makeText(context, R.string.l7_template_save_failed, Toast.LENGTH_LONG).show()
-+                }.show()
-+        }
-+    }
-+}
---- /dev/null
-+++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/L7AudioModelDetector.kt
-@@ -0,0 +1,17 @@
-+package com.shilapi.xcertplay
-+
-+import android.os.Build
-+
-+/** 只匹配用户确认的车型标识；冲突和未知保持手动选择，不保存固件原文。 */
-+internal object L7AudioModelDetector {
-+    fun detect(device: String = Build.DEVICE, product: String = Build.PRODUCT,
-+               model: String = Build.MODEL): L7AudioTemplates.Model? {
-+        val values = listOf(device, product, model)
-+        val identifiers = mapOf(L7AudioTemplates.Model.L7 to "g636", L7AudioTemplates.Model.L6 to "g733")
-+        val found = identifiers.filter { (_, code) ->
-+            val token = Regex("(?i)(?:^|[^a-z0-9])$code(?:$|[^a-z0-9])")
-+            values.any { token.containsMatchIn(it) }
-+        }
-+        return found.keys.singleOrNull()
-+    }
-+}
---- /dev/null
 +++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/L7AudioRouteDialog.kt
 @@ -0,0 +1,115 @@
 +package com.shilapi.xcertplay
@@ -11190,17 +11089,17 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        val applyHint = if (context is GalaxyConfigurationContext) "" else text(R.string.l7_setting_apply_hint)
 +        fun refresh() { parent.removeAllViews(); page(context, parent, open) }
 +        L7SettingsSection.add(parent, text(R.string.l7_section_audio_routes),
-+            description = text(if (L7AudioTemplates.customInvalid(context)) R.string.l7_template_recovery
++            description = text(if (GalaxyVehicleAudioProfiles.customInvalid(context)) R.string.l7_template_recovery
 +                else R.string.l7_audio_roles_note), footer = text(R.string.l7_audio_headrest_note)) { card ->
 +            add(context, card, custom = true, open = { title, current, role, apply ->
 +                open(title, current, role) { value -> apply(value); refresh() }
 +            })
-+            val routing = L7AudioTemplates.load(context)
++            val routing = GalaxyVehicleAudioProfiles.load(context)
 +            card.addView(L7Components.switchRow(context, text(R.string.l7_audio_bus),
 +                text(if (routing.hasOutputBuses) R.string.l7_template_bus_custom_note else R.string.l7_template_bus_unconfigured),
 +                routing.preferBus) {
 +                change(context) {
-+                    L7AudioTemplates.saveCustom(context, L7AudioTemplates.load(context).withBusEnabled(it))
++                    GalaxyVehicleAudioProfiles.saveCustom(context, GalaxyVehicleAudioProfiles.load(context).withBusEnabled(it))
 +                }
 +                refresh()
 +            }.apply { isEnabled = routing.hasOutputBuses })
@@ -11226,12 +11125,12 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        L7SettingsSection.add(parent, text(R.string.l7_section_bluetooth_audio)) { L7BluetoothAudioSettings.add(context, it, showExclusive = context !is GalaxyConfigurationContext) }
 +    }
 +
-+    fun modeName(mode: L7AudioTemplates.Mode): Int = when (mode) {
-+        L7AudioTemplates.Mode.L7 -> R.string.l7_template_l7
-+        L7AudioTemplates.Mode.L6 -> R.string.l7_template_l6
-+        L7AudioTemplates.Mode.SYSTEM -> R.string.l7_template_system
-+        L7AudioTemplates.Mode.BUS -> R.string.l7_template_bus
-+        L7AudioTemplates.Mode.CUSTOM -> R.string.l7_template_custom
++    fun modeName(mode: GalaxyVehicleAudioProfiles.Mode): Int = when (mode) {
++        GalaxyVehicleAudioProfiles.Mode.L7 -> R.string.l7_template_l7
++        GalaxyVehicleAudioProfiles.Mode.L6 -> R.string.l7_template_l6
++        GalaxyVehicleAudioProfiles.Mode.SYSTEM -> R.string.l7_template_system
++        GalaxyVehicleAudioProfiles.Mode.BUS -> R.string.l7_template_bus
++        GalaxyVehicleAudioProfiles.Mode.CUSTOM -> R.string.l7_template_custom
 +    }
 +
 +    fun add(context: Context, parent: LinearLayout,
@@ -11247,7 +11146,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +            row = L7Components.valueRow(context, title, label(context, load(context, role, custom))) {
 +                open(title, load(context, role, custom), role) { value ->
 +                    change(context) {
-+                        if (custom) L7AudioTemplates.saveCustom(context, L7AudioTemplates.load(context).withChoice(role, value))
++                        if (custom) GalaxyVehicleAudioProfiles.saveCustom(context, GalaxyVehicleAudioProfiles.load(context).withChoice(role, value))
 +                        else save(context, role, value)
 +                        row.setValue(label(context, value))
 +                    }
@@ -11261,11 +11160,11 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        .get(AudioOutputPolicy.choices.indexOf(value).coerceAtLeast(0))
 +
 +    private fun load(context: Context, role: AudioOutputRole, custom: Boolean): Int =
-+        if (custom) L7AudioTemplates.load(context).choice(role) else when (role) {
++        if (custom) GalaxyVehicleAudioProfiles.load(context).choice(role) else when (role) {
 +        AudioOutputRole.MEDIA -> GalaxyPreferencePolicy.loadMediaAudioChannel(context)
 +        AudioOutputRole.ASSISTANT -> AirPlayPersistence.loadAssistantAudioChannel(context)
 +        AudioOutputRole.NAVIGATION -> GalaxyPreferencePolicy.loadNavigationAudioChannel(context)
-+        AudioOutputRole.PHONE -> L7AudioTemplates.load(context).choice(role)
++        AudioOutputRole.PHONE -> GalaxyVehicleAudioProfiles.load(context).choice(role)
 +    }
 +
 +    private fun change(context: Context, action: () -> Unit) {
@@ -11277,7 +11176,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        AudioOutputRole.MEDIA -> GalaxyPreferencePolicy.saveMediaAudioChannel(context, value)
 +        AudioOutputRole.ASSISTANT -> AirPlayPersistence.saveAssistantAudioChannel(context, value)
 +        AudioOutputRole.NAVIGATION -> GalaxyPreferencePolicy.saveNavigationAudioChannel(context, value)
-+        AudioOutputRole.PHONE -> L7AudioTemplates.saveCustom(context, L7AudioTemplates.load(context).withChoice(role, value))
++        AudioOutputRole.PHONE -> GalaxyVehicleAudioProfiles.saveCustom(context, GalaxyVehicleAudioProfiles.load(context).withChoice(role, value))
 +    }
 +}
 --- /dev/null
@@ -11297,9 +11196,9 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +/** 编辑的是草稿；校验或保存失败时保留原文件和编辑内容。 */
 +internal object L7AudioTemplateEditor {
 +    fun show(context: Context, changed: () -> Unit) {
-+        val model = L7AudioTemplates.model(context)
++        val model = GalaxyVehicleAudioProfiles.model(context)
 +        val editor = EditText(context).apply {
-+            setText(L7AudioTemplates.load(context).toJson())
++            setText(GalaxyVehicleAudioProfiles.load(context).toJson())
 +            typeface = Typeface.MONOSPACE
 +            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_MULTI_LINE
 +            filters = arrayOf(InputFilter.LengthFilter(AudioRoutingTemplate.MAX_BYTES))
@@ -11316,7 +11215,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        dialog.setOnShowListener {
 +            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
 +                if (committed) return@setOnClickListener
-+                if (model != L7AudioTemplates.model(context)) {
++                if (model != GalaxyVehicleAudioProfiles.model(context)) {
 +                    Toast.makeText(context, R.string.l7_template_model_changed, Toast.LENGTH_LONG).show()
 +                    return@setOnClickListener
 +                }
@@ -11325,7 +11224,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +                    editor.error = context.getString(R.string.l7_template_invalid)
 +                    return@setOnClickListener
 +                }
-+                if (runCatching { L7AudioTemplates.saveCustom(context, template, model) }.isFailure) {
++                if (runCatching { GalaxyVehicleAudioProfiles.saveCustom(context, template, model) }.isFailure) {
 +                    Toast.makeText(context, R.string.l7_template_save_failed, Toast.LENGTH_LONG).show()
 +                    return@setOnClickListener
 +                }
@@ -11360,18 +11259,18 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    }
 +    @Volatile private var closed = false
 +    private var exporting: String? = null
-+    private var importingModel: L7AudioTemplates.Model? = null
++    private var importingModel: GalaxyVehicleAudioProfiles.Model? = null
 +    private val importer = activity.registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
 +        val model = importingModel
 +        importingModel = null
 +        if (uri != null && !closed) worker.execute {
 +            val result = runCatching {
-+                activity.contentResolver.openInputStream(uri)?.use { L7AudioTemplates.parse(it) }
++                activity.contentResolver.openInputStream(uri)?.use { GalaxyVehicleAudioProfiles.parse(it) }
 +                    ?: error("文件不可读")
 +            }
 +            activity.runOnUiThread {
 +                if (!closed && !activity.isFinishing) {
-+                    if (model == null || model != L7AudioTemplates.model(activity)) message(R.string.l7_template_model_changed)
++                    if (model == null || model != GalaxyVehicleAudioProfiles.model(activity)) message(R.string.l7_template_model_changed)
 +                    else result.onSuccess { confirm(it, model) }.onFailure { message(R.string.l7_template_invalid) }
 +                }
 +            }
@@ -11394,31 +11293,31 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    }
 +
 +    fun importFile() {
-+        importingModel = L7AudioTemplates.model(activity)
++        importingModel = GalaxyVehicleAudioProfiles.model(activity)
 +        importer.launch(arrayOf("application/json", "text/plain", "application/octet-stream"))
 +    }
 +
 +    fun exportFile() {
-+        exporting = L7AudioTemplates.load(activity).toJson()
-+        exporter.launch("${L7AudioTemplates.model(activity).id}-audio-template.json")
++        exporting = GalaxyVehicleAudioProfiles.load(activity).toJson()
++        exporter.launch("${GalaxyVehicleAudioProfiles.model(activity).id}-audio-template.json")
 +    }
 +
 +    fun restore(state: Bundle?) {
 +        exporting = state?.getString("audio_template_export")
-+        importingModel = L7AudioTemplates.Model.entries.firstOrNull { it.id == state?.getString("audio_template_import_model") }
++        importingModel = GalaxyVehicleAudioProfiles.Model.entries.firstOrNull { it.id == state?.getString("audio_template_import_model") }
 +    }
 +    fun save(state: Bundle) {
 +        exporting?.let { state.putString("audio_template_export", it) }
 +        importingModel?.let { state.putString("audio_template_import_model", it.id) }
 +    }
 +
-+    private fun confirm(template: AudioRoutingTemplate, model: L7AudioTemplates.Model) {
++    private fun confirm(template: AudioRoutingTemplate, model: GalaxyVehicleAudioProfiles.Model) {
 +        L7Dialogs.builder(activity).setTitle(R.string.l7_template_import)
 +            .setMessage(activity.getString(R.string.l7_template_import_confirm, template.name))
 +            .setNegativeButton(R.string.cancel, null)
 +            .setPositiveButton(R.string.l7_save_next_connection) { _, _ ->
-+                if (model != L7AudioTemplates.model(activity)) message(R.string.l7_template_model_changed)
-+                else if (runCatching { L7AudioTemplates.saveCustom(activity, template, model) }.isSuccess) changed()
++                if (model != GalaxyVehicleAudioProfiles.model(activity)) message(R.string.l7_template_model_changed)
++                else if (runCatching { GalaxyVehicleAudioProfiles.saveCustom(activity, template, model) }.isSuccess) changed()
 +                else message(R.string.l7_template_save_failed)
 +            }.show()
 +    }
@@ -11426,165 +11325,6 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    private fun message(id: Int) = Toast.makeText(activity, id, Toast.LENGTH_LONG).show()
 +
 +    override fun close() { closed = true; worker.shutdownNow() }
-+}
---- /dev/null
-+++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/L7AudioTemplates.kt
-@@ -0,0 +1,156 @@
-+package com.shilapi.xcertplay
-+
-+import android.content.Context
-+import android.util.AtomicFile
-+import com.shilapi.xcertplay.media.AudioOutputRole
-+import com.shilapi.xcertplay.media.AudioRoutingTemplate
-+import java.io.File
-+import java.io.InputStream
-+
-+/** 内置资源只读；L7／L6 自动应用适配方案；自定义车型独立保存文件，各文件原子写入。 */
-+internal object L7AudioTemplates {
-+    enum class Model(val id: String) { L7("l7"), L6("l6"), CUSTOM("custom") }
-+    enum class Mode(val id: String) { L7("l7"), BUS("l7-bus"), CUSTOM("custom"), L6("l6"), SYSTEM("system") }
-+    private const val PREFS = "l7_audio_templates"
-+    private const val MODEL = "model"
-+
-+    fun model(context: Context): Model = Model.entries.firstOrNull {
-+        it.id == context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(MODEL, null)
-+    } ?: Model.L6
-+
-+    fun modes(context: Context): List<Mode> = when (model(context)) {
-+        Model.L7 -> listOf(Mode.L7, Mode.BUS, Mode.CUSTOM)
-+        Model.L6 -> listOf(Mode.L6, Mode.CUSTOM)
-+        Model.CUSTOM -> listOf(Mode.SYSTEM, Mode.CUSTOM)
-+    }
-+
-+    fun defaultMode(context: Context): Mode = defaultMode(model(context))
-+
-+    private fun defaultMode(model: Model): Mode = when (model) {
-+        Model.L7 -> Mode.L7
-+        Model.L6 -> Mode.L6
-+        Model.CUSTOM -> Mode.SYSTEM
-+    }
-+
-+    @Synchronized fun selectModel(context: Context, model: Model) {
-+        // 先迁移旧 L7 配置；重新选车型自动填入适配方案，但不删除已编辑的文件。
-+        mode(context)
-+        val preset = builtin(context, defaultMode(model))
-+        if (model == Model.CUSTOM && !customExists(context, model)) writeCustom(context, preset, model)
-+        val selected = if (model == Model.CUSTOM) Mode.CUSTOM else defaultMode(model)
-+        check(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-+            .putString(MODEL, model.id).putString(modeKey(model), selected.id).commit())
-+    }
-+
-+    private fun modeKey(model: Model): String = when (model) {
-+        Model.L7 -> "mode"
-+        Model.L6 -> "mode_l6"
-+        Model.CUSTOM -> "mode_custom"
-+    }
-+
-+    @Synchronized fun mode(context: Context): Mode {
-+        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
-+        prefs.getString(modeKey(model(context)), null)?.let { id ->
-+            return modes(context).firstOrNull { it.id == id } ?: defaultMode(context)
-+        }
-+        val selected = if (model(context) == Model.L7) migrateLegacy(context) else defaultMode(context)
-+        check(prefs.edit().putString(modeKey(model(context)), selected.id).commit())
-+        return selected
-+    }
-+
-+    private fun migrateLegacy(context: Context): Mode {
-+        val choices = mapOf(AudioOutputRole.MEDIA to GalaxyPreferencePolicy.loadMediaAudioChannel(context),
-+            AudioOutputRole.NAVIGATION to GalaxyPreferencePolicy.loadNavigationAudioChannel(context),
-+            AudioOutputRole.ASSISTANT to AirPlayPersistence.loadAssistantAudioChannel(context))
-+        val default = builtin(context, Mode.L7)
-+        return if (choices.any { (role, value) -> value != default.choice(role) }) {
-+            var legacy = builtin(context, Mode.BUS).withBusEnabled(AirPlayPersistence.loadL7AudioBusEnabled(context))
-+            choices.forEach { (role, value) -> legacy = legacy.withChoice(role, value) }
-+            writeCustom(context, legacy)
-+            Mode.CUSTOM
-+        } else if (AirPlayPersistence.loadL7AudioBusEnabled(context)) Mode.BUS else Mode.L7
-+    }
-+
-+    @Synchronized fun load(context: Context): AudioRoutingTemplate = when (val mode = mode(context)) {
-+        Mode.CUSTOM -> runCatching { readCustom(context) }.getOrElse { builtin(context, defaultMode(context)) }
-+        else -> builtin(context, mode)
-+    }
-+
-+    @Synchronized fun select(context: Context, mode: Mode) {
-+        require(mode in modes(context))
-+        if (mode == Mode.CUSTOM && !customExists(context)) {
-+            // 新建自定义草稿沿用当前方案；已有文件一律保留。
-+            writeCustom(context, load(context))
-+        }
-+        check(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(modeKey(model(context)), mode.id).commit())
-+    }
-+
-+    @Synchronized fun saveCustom(context: Context, template: AudioRoutingTemplate, expectedModel: Model = model(context)) {
-+        check(model(context) == expectedModel) { "AUDIO_TEMPLATE_MODEL_CHANGED" }
-+        writeCustom(context, AudioRoutingTemplate.parse(template.toJson()))
-+        select(context, Mode.CUSTOM)
-+    }
-+
-+    @Synchronized fun customInvalid(context: Context): Boolean =
-+        mode(context) == Mode.CUSTOM && ((context is GalaxyConfigurationContext && model(context).id in context.audioRecovery) ||
-+            runCatching { readCustom(context) }.isFailure)
-+
-+    fun builtin(context: Context, mode: Mode): AudioRoutingTemplate {
-+        require(mode != Mode.CUSTOM)
-+        return context.assets.open("audio-templates/${mode.id}.json").use { parse(it) }
-+    }
-+
-+    fun parse(input: InputStream): AudioRoutingTemplate {
-+        val bytes = input.readBytesBounded()
-+        val decoder = Charsets.UTF_8.newDecoder()
-+        return AudioRoutingTemplate.parse(decoder.decode(java.nio.ByteBuffer.wrap(bytes)).toString())
-+    }
-+
-+    private fun InputStream.readBytesBounded(): ByteArray {
-+        val out = java.io.ByteArrayOutputStream()
-+        val buffer = ByteArray(2048)
-+        while (true) {
-+            val count = read(buffer)
-+            if (count < 0) return out.toByteArray()
-+            require(out.size() + count <= AudioRoutingTemplate.MAX_BYTES)
-+            out.write(buffer, 0, count)
-+        }
-+    }
-+
-+    private fun customExists(context: Context, targetModel: Model = model(context)): Boolean {
-+        if (context is GalaxyConfigurationContext) return targetModel.id in context.audio
-+        val base = file(context, targetModel).baseFile
-+        // Android 10/11 的 AtomicFile 可从备份恢复，切换方案不能抢先覆盖该备份。
-+        return base.exists() || File(base.path + ".bak").exists()
-+    }
-+
-+    private fun readCustom(context: Context): AudioRoutingTemplate = if (context is GalaxyConfigurationContext)
-+        AudioRoutingTemplate.parse(context.audio.getValue(model(context).id))
-+    else file(context).openRead().use { parse(it) }
-+
-+    private fun file(context: Context, targetModel: Model = model(context)): AtomicFile =
-+        AtomicFile(File(context.filesDir, when (targetModel) {
-+            Model.L7 -> "audio-template.json"
-+            Model.L6 -> "audio-template-l6.json"
-+            Model.CUSTOM -> "audio-template-custom.json"
-+        }))
-+
-+    private fun writeCustom(context: Context, template: AudioRoutingTemplate, targetModel: Model = model(context)) {
-+        if (context is GalaxyConfigurationContext) {
-+            context.audio[targetModel.id] = template.toJson()
-+            context.audioRecovery.remove(targetModel.id)
-+            context.onChanged?.invoke()
-+            return
-+        }
-+        val target = file(context, targetModel)
-+        val stream = target.startWrite()
-+        try {
-+            stream.write(template.toJson().toByteArray(Charsets.UTF_8))
-+            target.finishWrite(stream)
-+            GalaxyProfiles.changed(context)
-+        } catch (error: Exception) {
-+            target.failWrite(stream)
-+            throw error
-+        }
-+    }
 +}
 --- /dev/null
 +++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/L7Authentication.kt
@@ -18271,7 +18011,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +) : L7MediaCenterPort {
 +    private val app = context.applicationContext
 +    private val channel = GalaxyMediaReportingChannel.load(context)
-+    private val vehicle = L7AudioTemplates.model(context).id
++    private val vehicle = GalaxyVehicleAudioProfiles.model(context).id
 +    private var api: Any? = null
 +    private var apiType: Class<*>? = null
 +    private var client: Any? = null
@@ -19849,13 +19589,13 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +                else if (L7Agreement.canUse(activity) && !L7AppExit.exiting) {
 +                    L7SteeringDiagnostics.initialize(activity)
 +                    L7SteeringDiagnostics.freezeListening(activity)
-+                    controller.start(L7AudioTemplates.model(activity).id)
++                    controller.start(GalaxyVehicleAudioProfiles.model(activity).id)
 +                }
 +                update()
 +            }.also(card::addView)
 +            card.addView(L7Components.actionRow(activity, text(R.string.l7_listen_no_input), text(R.string.l7_listen_no_input_hint)) {
 +                if (!disposed && foreground && controller.active()) {
-+                    L7SteeringDiagnostics.record("SteeringListen stage=USER_NO_INPUT run=${controller.snapshot().run} model=${L7AudioTemplates.model(activity).id}")
++                    L7SteeringDiagnostics.record("SteeringListen stage=USER_NO_INPUT run=${controller.snapshot().run} model=${GalaxyVehicleAudioProfiles.model(activity).id}")
 +                    noInput?.setFeedback(text(R.string.l7_listen_no_input_saved))
 +                    guide.missing()
 +                }
@@ -19879,7 +19619,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    fun update() {
 +        if (disposed) return
 +        guide.update()
-+        controller.poll(L7AudioTemplates.model(activity).id)
++        controller.poll(GalaxyVehicleAudioProfiles.model(activity).id)
 +        val value = controller.snapshot()
 +        val active = controller.active()
 +        val key = SteeringListeningController.LABELS.take(7).getOrNull(guide.currentStep - 2)
@@ -19895,7 +19635,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +            SteeringListeningController.Phase.LABEL -> R.string.l7_listen_received
 +            SteeringListeningController.Phase.STOPPED -> R.string.l7_listen_stopped
 +        }))
-+        status.setFeedback(L7AudioModelConfirmation.name(activity, L7AudioTemplates.model(activity)))
++        status.setFeedback(GalaxyVehicleModelConfirmation.name(activity, GalaxyVehicleAudioProfiles.model(activity)))
 +        if (revision != value.revision) {
 +            revision = value.revision
 +            records.removeAllViews()
@@ -20031,7 +19771,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    val store = L7SteeringTraceStore(SystemClock::elapsedRealtime, ::record,
 +        model = { listeningModel ?: CarPlayBackgroundSession.configuration?.let {
 +            it.model.takeIf { value -> value in setOf("l7", "l6", "custom") } ?: "l7"
-+        } ?: app?.let { L7AudioTemplates.model(it).id } ?: "unknown" },
++        } ?: app?.let { GalaxyVehicleAudioProfiles.model(it).id } ?: "unknown" },
 +        logger = {
 +            val context = app
 +            val effective = CarPlayBackgroundSession.configuration
@@ -20055,7 +19795,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    fun freezeListening(context: android.content.Context) {
 +        initialize(context)
 +        listeningConfiguration = runCatching { GalaxyConfigurationEvidence.capture(context) }.getOrNull()
-+        listeningModel = L7AudioTemplates.model(context).id
++        listeningModel = GalaxyVehicleAudioProfiles.model(context).id
 +    }
 +    fun endListening() { listeningConfiguration = null; listeningModel = null }
 +    fun begin(source: String, index: Int, detail: String = ""): L7SteeringTrace =
@@ -20603,8 +20343,8 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +/** 车型选择独立于音频参数；沿用确认与下次连接应用契约。 */
 +internal object L7VehicleSettings {
 +    fun page(context: Context, parent: LinearLayout, profileChanged: (() -> Unit)? = null) {
-+        val model = L7AudioTemplates.model(context)
-+        val modelNames = L7AudioTemplates.Model.entries.map { L7AudioModelConfirmation.name(context, it) }
++        val model = GalaxyVehicleAudioProfiles.model(context)
++        val modelNames = GalaxyVehicleAudioProfiles.Model.entries.map { GalaxyVehicleModelConfirmation.name(context, it) }
 +        fun text(id: Int) = context.getString(id)
 +        fun refresh() { parent.removeAllViews(); page(context, parent, profileChanged) }
 +        L7SettingsSection.add(parent, description = text(R.string.l7_vehicle_settings_note)) { card ->
@@ -20612,23 +20352,23 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +                L7Components.select(context, text(R.string.l7_template_model), modelNames, model.ordinal,
 +                    text(R.string.l7_save_next_connection)) { selected ->
 +                    change(context) {
-+                        L7AudioTemplates.selectModel(context, L7AudioTemplates.Model.entries[selected])
-+                        L7AudioModelConfirmation.markReviewed(context)
++                        GalaxyVehicleAudioProfiles.selectModel(context, GalaxyVehicleAudioProfiles.Model.entries[selected])
++                        GalaxyVehicleModelConfirmation.markReviewed(context)
 +                        refresh()
 +                    }
 +                }
 +            })
 +            card.addView(L7SettingRow(context, text(R.string.l7_vehicle_profile),
-+                text(if (model == L7AudioTemplates.Model.CUSTOM) R.string.l7_vehicle_custom_note
++                text(if (model == GalaxyVehicleAudioProfiles.Model.CUSTOM) R.string.l7_vehicle_custom_note
 +                    else R.string.l7_vehicle_preset_note)).apply {
-+                setValue(text(L7AudioSettings.modeName(L7AudioTemplates.mode(context))))
++                setValue(text(L7AudioSettings.modeName(GalaxyVehicleAudioProfiles.mode(context))))
 +            })
-+            val detected = L7AudioModelDetector.detect()
++            val detected = GalaxyVehicleModelDetector.detect()
 +            card.addView(L7Components.valueRow(context, text(R.string.l7_template_detect),
-+                detected?.let { L7AudioModelConfirmation.name(context, it) } ?: text(R.string.l7_template_detect_unknown)) {
++                detected?.let { GalaxyVehicleModelConfirmation.name(context, it) } ?: text(R.string.l7_template_detect_unknown)) {
 +                if (detected == null) Toast.makeText(context,
 +                    R.string.l7_template_detect_unknown, Toast.LENGTH_LONG).show()
-+                else L7AudioModelConfirmation.confirm(context, detected, ::refresh)
++                else GalaxyVehicleModelConfirmation.confirm(context, detected, ::refresh)
 +            })
 +        }
 +    }
@@ -23174,11 +22914,11 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +
 +/** 其他车型仅观察输入，不消费事件、不猜测按键映射；只读取明确的数字字段。 */
 +internal class VehicleSteeringCapture(
-+    private val model: () -> L7AudioTemplates.Model,
++    private val model: () -> GalaxyVehicleAudioProfiles.Model,
 +    private val connected: () -> Boolean,
 +    private val begin: (String, Int, String) -> L7SteeringTrace,
 +    private val clock: () -> Long = SystemClock::elapsedRealtime,
-+    private val enabled: () -> Boolean = { model() != L7AudioTemplates.Model.L7 },
++    private val enabled: () -> Boolean = { model() != GalaxyVehicleAudioProfiles.Model.L7 },
 +) {
 +    private var windowAt = Long.MIN_VALUE
 +    private var count = 0
@@ -23233,7 +22973,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        if (L7AppExit.exiting || registered) return
 +        val owner = context.applicationContext
 +        app = owner
-+        capture = VehicleSteeringCapture({ L7AudioTemplates.model(owner) },
++        capture = VehicleSteeringCapture({ GalaxyVehicleAudioProfiles.model(owner) },
 +            { L7SteeringDiagnostics.store.snapshot().connected }, L7SteeringDiagnostics::begin,
 +            enabled = SteeringListening::active)
 +        runCatching {
@@ -23704,7 +23444,9 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        private const val PRODUCT_PREFERENCES = "xcertplay_airplay"
 +        private const val LEGACY_ENABLED = "galaxy_steering_enabled"
 +    }
-+}--- /dev/null
++}
+\ No newline at end of file
+--- /dev/null
 +++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/steering/SteeringLearningEngine.kt
 @@ -0,0 +1,142 @@
 +package com.shilapi.xcertplay.steering
@@ -24223,7 +23965,9 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +  <path
 +      android:pathData="M1 9l2 2c4.97 -4.97 13.03 -4.97 18 0l2 -2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3 -3c-1.65 -1.66 -4.34 -1.66 -6 0zm-4 -4l2 2c2.76 -2.76 7.24 -2.76 10 0l2 -2C15.14 9.14 8.87 9.14 5 13z"
 +      android:fillColor="#fff" />
-+</vector>--- /dev/null
++</vector>
+\ No newline at end of file
+--- /dev/null
 +++ b/galaxy/common/src/main/res/drawable/ic_dp_diagnostics.xml
 @@ -0,0 +1 @@
 +<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24"><path android:fillColor="#FFFFFFFF" android:fillType="evenOdd" android:pathData="M5,2 L15,2 L20,7 L20,22 L4,22 L4,2 Z M14,4 L14,8 L18,8 Z M7,11 L17,11 L17,13 L7,13 Z M7,15 L17,15 L17,17 L7,17 Z M7,19 L14,19 L14,20 L7,20 Z"/></vector>
@@ -29181,7 +28925,7 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        activity.getSharedPreferences("l7_audio_templates", 0).edit().clear().commit()
 +        activity.getSharedPreferences("xcertplay_airplay", 0).edit().clear().commit()
 +        val audio = adapter(activity).audioConfiguration()
-+        assertEquals(L7AudioTemplates.Model.L6, L7AudioTemplates.model(activity))
++        assertEquals(GalaxyVehicleAudioProfiles.Model.L6, GalaxyVehicleAudioProfiles.model(activity))
 +        assertEquals(101, audio.mediaChannel)
 +        assertEquals(103, audio.navigationChannel)
 +        assertEquals(102, audio.assistantChannel)
@@ -32865,7 +32609,9 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        closing?.let { runCatching { it.close() } }
 +        dispatch?.close()
 +    }
-+}--- /dev/null
++}
+\ No newline at end of file
+--- /dev/null
 +++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/steering/GalaxySteeringMediaDispatch.kt
 @@ -0,0 +1,43 @@
 +package com.shilapi.xcertplay.steering
@@ -32910,7 +32656,9 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +    fun close() {
 +        closed.set(true)
 +    }
-+}--- /dev/null
++}
+\ No newline at end of file
+--- /dev/null
 +++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/steering/GalaxySteeringMediaWindow.kt
 @@ -0,0 +1,53 @@
 +package com.shilapi.xcertplay.steering
@@ -32965,7 +32713,9 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        deduplicator.accept(action, VEHICLE, now)
 +        return true
 +    }
-+}--- /dev/null
++}
+\ No newline at end of file
+--- /dev/null
 +++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/steering/SteeringActionDispatch.kt
 @@ -0,0 +1,26 @@
 +package com.shilapi.xcertplay.steering
@@ -32993,7 +32743,9 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +            else -> false
 +        }
 +    }
-+}--- /dev/null
++}
+\ No newline at end of file
+--- /dev/null
 +++ b/galaxy/common/src/test/java/com/shilapi/xcertplay/GalaxySteeringBindingTest.kt
 @@ -0,0 +1,149 @@
 +package com.shilapi.xcertplay
@@ -33144,7 +32896,9 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        store.setEnabled(false)
 +        assertEquals(listOf(binding), store.load().bindings)
 +    }
-+}--- /dev/null
++}
+\ No newline at end of file
+--- /dev/null
 +++ b/galaxy/common/src/test/java/com/shilapi/xcertplay/GalaxySteeringCommandTest.kt
 @@ -0,0 +1,183 @@
 +package com.shilapi.xcertplay
@@ -33329,7 +33083,9 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        assertFalse(media.send(CarPlayMediaButton.PLAY_PAUSE))
 +        assertNothingDispatched()
 +    }
-+}--- /dev/null
++}
+\ No newline at end of file
+--- /dev/null
 +++ b/galaxy/common/src/test/java/com/shilapi/xcertplay/GalaxySteeringSettingsTest.kt
 @@ -0,0 +1,95 @@
 +package com.shilapi.xcertplay
@@ -33425,5 +33181,268 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +            fields.none { it.type == L7SteeringDebugPage::class.java })
 +        assertEquals("方控入口应只有一个挂载字段",
 +            1, fields.count { it.type == GalaxySteeringSettings::class.java })
++    }
++}
+\ No newline at end of file
+--- /dev/null
++++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyVehicleAudioProfiles.kt
+@@ -0,0 +1,156 @@
++package com.shilapi.xcertplay
++
++import android.content.Context
++import android.util.AtomicFile
++import com.shilapi.xcertplay.media.AudioOutputRole
++import com.shilapi.xcertplay.media.AudioRoutingTemplate
++import java.io.File
++import java.io.InputStream
++
++/** 内置资源只读；L7／L6 自动应用适配方案；自定义车型独立保存文件，各文件原子写入。 */
++internal object GalaxyVehicleAudioProfiles {
++    enum class Model(val id: String) { L7("l7"), L6("l6"), CUSTOM("custom") }
++    enum class Mode(val id: String) { L7("l7"), BUS("l7-bus"), CUSTOM("custom"), L6("l6"), SYSTEM("system") }
++    private const val PREFS = "l7_audio_templates"
++    private const val MODEL = "model"
++
++    fun model(context: Context): Model = Model.entries.firstOrNull {
++        it.id == context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getString(MODEL, null)
++    } ?: Model.L6
++
++    fun modes(context: Context): List<Mode> = when (model(context)) {
++        Model.L7 -> listOf(Mode.L7, Mode.BUS, Mode.CUSTOM)
++        Model.L6 -> listOf(Mode.L6, Mode.CUSTOM)
++        Model.CUSTOM -> listOf(Mode.SYSTEM, Mode.CUSTOM)
++    }
++
++    fun defaultMode(context: Context): Mode = defaultMode(model(context))
++
++    private fun defaultMode(model: Model): Mode = when (model) {
++        Model.L7 -> Mode.L7
++        Model.L6 -> Mode.L6
++        Model.CUSTOM -> Mode.SYSTEM
++    }
++
++    @Synchronized fun selectModel(context: Context, model: Model) {
++        // 先迁移旧 L7 配置；重新选车型自动填入适配方案，但不删除已编辑的文件。
++        mode(context)
++        val preset = builtin(context, defaultMode(model))
++        if (model == Model.CUSTOM && !customExists(context, model)) writeCustom(context, preset, model)
++        val selected = if (model == Model.CUSTOM) Mode.CUSTOM else defaultMode(model)
++        check(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
++            .putString(MODEL, model.id).putString(modeKey(model), selected.id).commit())
++    }
++
++    private fun modeKey(model: Model): String = when (model) {
++        Model.L7 -> "mode"
++        Model.L6 -> "mode_l6"
++        Model.CUSTOM -> "mode_custom"
++    }
++
++    @Synchronized fun mode(context: Context): Mode {
++        val prefs = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
++        prefs.getString(modeKey(model(context)), null)?.let { id ->
++            return modes(context).firstOrNull { it.id == id } ?: defaultMode(context)
++        }
++        val selected = if (model(context) == Model.L7) migrateLegacy(context) else defaultMode(context)
++        check(prefs.edit().putString(modeKey(model(context)), selected.id).commit())
++        return selected
++    }
++
++    private fun migrateLegacy(context: Context): Mode {
++        val choices = mapOf(AudioOutputRole.MEDIA to GalaxyPreferencePolicy.loadMediaAudioChannel(context),
++            AudioOutputRole.NAVIGATION to GalaxyPreferencePolicy.loadNavigationAudioChannel(context),
++            AudioOutputRole.ASSISTANT to AirPlayPersistence.loadAssistantAudioChannel(context))
++        val default = builtin(context, Mode.L7)
++        return if (choices.any { (role, value) -> value != default.choice(role) }) {
++            var legacy = builtin(context, Mode.BUS).withBusEnabled(AirPlayPersistence.loadL7AudioBusEnabled(context))
++            choices.forEach { (role, value) -> legacy = legacy.withChoice(role, value) }
++            writeCustom(context, legacy)
++            Mode.CUSTOM
++        } else if (AirPlayPersistence.loadL7AudioBusEnabled(context)) Mode.BUS else Mode.L7
++    }
++
++    @Synchronized fun load(context: Context): AudioRoutingTemplate = when (val mode = mode(context)) {
++        Mode.CUSTOM -> runCatching { readCustom(context) }.getOrElse { builtin(context, defaultMode(context)) }
++        else -> builtin(context, mode)
++    }
++
++    @Synchronized fun select(context: Context, mode: Mode) {
++        require(mode in modes(context))
++        if (mode == Mode.CUSTOM && !customExists(context)) {
++            // 新建自定义草稿沿用当前方案；已有文件一律保留。
++            writeCustom(context, load(context))
++        }
++        check(context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit().putString(modeKey(model(context)), mode.id).commit())
++    }
++
++    @Synchronized fun saveCustom(context: Context, template: AudioRoutingTemplate, expectedModel: Model = model(context)) {
++        check(model(context) == expectedModel) { "AUDIO_TEMPLATE_MODEL_CHANGED" }
++        writeCustom(context, AudioRoutingTemplate.parse(template.toJson()))
++        select(context, Mode.CUSTOM)
++    }
++
++    @Synchronized fun customInvalid(context: Context): Boolean =
++        mode(context) == Mode.CUSTOM && ((context is GalaxyConfigurationContext && model(context).id in context.audioRecovery) ||
++            runCatching { readCustom(context) }.isFailure)
++
++    fun builtin(context: Context, mode: Mode): AudioRoutingTemplate {
++        require(mode != Mode.CUSTOM)
++        return context.assets.open("audio-templates/${mode.id}.json").use { parse(it) }
++    }
++
++    fun parse(input: InputStream): AudioRoutingTemplate {
++        val bytes = input.readBytesBounded()
++        val decoder = Charsets.UTF_8.newDecoder()
++        return AudioRoutingTemplate.parse(decoder.decode(java.nio.ByteBuffer.wrap(bytes)).toString())
++    }
++
++    private fun InputStream.readBytesBounded(): ByteArray {
++        val out = java.io.ByteArrayOutputStream()
++        val buffer = ByteArray(2048)
++        while (true) {
++            val count = read(buffer)
++            if (count < 0) return out.toByteArray()
++            require(out.size() + count <= AudioRoutingTemplate.MAX_BYTES)
++            out.write(buffer, 0, count)
++        }
++    }
++
++    private fun customExists(context: Context, targetModel: Model = model(context)): Boolean {
++        if (context is GalaxyConfigurationContext) return targetModel.id in context.audio
++        val base = file(context, targetModel).baseFile
++        // Android 10/11 的 AtomicFile 可从备份恢复，切换方案不能抢先覆盖该备份。
++        return base.exists() || File(base.path + ".bak").exists()
++    }
++
++    private fun readCustom(context: Context): AudioRoutingTemplate = if (context is GalaxyConfigurationContext)
++        AudioRoutingTemplate.parse(context.audio.getValue(model(context).id))
++    else file(context).openRead().use { parse(it) }
++
++    private fun file(context: Context, targetModel: Model = model(context)): AtomicFile =
++        AtomicFile(File(context.filesDir, when (targetModel) {
++            Model.L7 -> "audio-template.json"
++            Model.L6 -> "audio-template-l6.json"
++            Model.CUSTOM -> "audio-template-custom.json"
++        }))
++
++    private fun writeCustom(context: Context, template: AudioRoutingTemplate, targetModel: Model = model(context)) {
++        if (context is GalaxyConfigurationContext) {
++            context.audio[targetModel.id] = template.toJson()
++            context.audioRecovery.remove(targetModel.id)
++            context.onChanged?.invoke()
++            return
++        }
++        val target = file(context, targetModel)
++        val stream = target.startWrite()
++        try {
++            stream.write(template.toJson().toByteArray(Charsets.UTF_8))
++            target.finishWrite(stream)
++            GalaxyProfiles.changed(context)
++        } catch (error: Exception) {
++            target.failWrite(stream)
++            throw error
++        }
++    }
++}
+--- /dev/null
++++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyVehicleModelConfirmation.kt
+@@ -0,0 +1,80 @@
++package com.shilapi.xcertplay
++
++import android.app.Activity
++import android.app.AlertDialog
++import android.content.Context
++import android.widget.Toast
++import com.shilapi.xcertplay.host.R
++import java.io.Closeable
++
++/** 首次识别先确认再应用；已审阅的识别结果不反复弹出，手动复查可重新确认。 */
++internal class GalaxyVehicleModelConfirmation(
++    private val activity: Activity,
++    private val detect: () -> GalaxyVehicleAudioProfiles.Model? = { GalaxyVehicleModelDetector.detect() },
++) : Closeable {
++    private var dialog: AlertDialog? = null
++    private var continuation: (() -> Unit)? = null
++    private var closed = false
++
++    fun ensure(after: () -> Unit): Boolean {
++        if (closed || activity.isFinishing || activity.isDestroyed) return false
++        if (dialog?.isShowing == true) { continuation = after; return true }
++        val model = detect() ?: return false
++        if (preferences(activity).getString(REVIEWED, null) == model.id) return false
++        continuation = after
++        dialog = confirm(activity, model, handled = {
++            dialog = null
++            val next = continuation
++            continuation = null
++            if (!closed && !activity.isFinishing && !activity.isDestroyed) next?.invoke()
++        }, current = { !closed })
++        return true
++    }
++
++    override fun close() {
++        closed = true
++        continuation = null
++        dialog?.dismiss()
++        dialog = null
++    }
++
++    companion object {
++        private const val REVIEWED = "detected_model_reviewed"
++        private fun preferences(context: Context) = context.getSharedPreferences("l7_audio_templates", Context.MODE_PRIVATE)
++
++        fun name(context: Context, model: GalaxyVehicleAudioProfiles.Model): String = context.getString(
++            when (model) {
++                GalaxyVehicleAudioProfiles.Model.L7 -> R.string.l7_template_model_l7
++                GalaxyVehicleAudioProfiles.Model.L6 -> R.string.l7_template_model_l6
++                GalaxyVehicleAudioProfiles.Model.CUSTOM -> R.string.l7_template_model_custom
++            })
++
++        fun markReviewed(context: Context, model: GalaxyVehicleAudioProfiles.Model? = GalaxyVehicleModelDetector.detect()) {
++            model?.let { check(preferences(context).edit().putString(REVIEWED, it.id).commit()) }
++        }
++
++        fun confirm(context: Context, model: GalaxyVehicleAudioProfiles.Model, handled: () -> Unit,
++                    current: () -> Boolean = { true }): AlertDialog {
++            L7DebugLog.record("Audio: modelDetection result=RECOGNIZED model=${model.id} applied=false")
++            fun usable() = current() && !(context is Activity && (context.isFinishing || context.isDestroyed))
++            fun retain() {
++                if (!usable()) return
++                runCatching { markReviewed(context, model) }
++                L7DebugLog.record("Audio: modelDetection result=RETAINED model=${GalaxyVehicleAudioProfiles.model(context).id}")
++                handled()
++            }
++            return L7Dialogs.builder(context).setTitle(R.string.l7_template_detect_title)
++                .setMessage(context.getString(R.string.l7_template_detect_confirm, name(context, model)))
++                .setNegativeButton(R.string.l7_template_detect_retain) { _, _ -> retain() }
++                .setOnCancelListener { retain() }
++                .setPositiveButton(R.string.l7_save_next_connection) { _, _ ->
++                    if (!usable()) return@setPositiveButton
++                    if (runCatching { GalaxyVehicleAudioProfiles.selectModel(context, model) }.isSuccess) {
++                        runCatching { markReviewed(context, model) }
++                        L7DebugLog.record("Audio: modelDetection result=CONFIRMED model=${model.id} applies=NEXT_CONNECTION")
++                        handled()
++                    } else Toast.makeText(context, R.string.l7_template_save_failed, Toast.LENGTH_LONG).show()
++                }.show()
++        }
++    }
++}
+--- /dev/null
++++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyVehicleModelDetector.kt
+@@ -0,0 +1,17 @@
++package com.shilapi.xcertplay
++
++import android.os.Build
++
++/** 只匹配用户确认的车型标识；冲突和未知保持手动选择，不保存固件原文。 */
++internal object GalaxyVehicleModelDetector {
++    fun detect(device: String = Build.DEVICE, product: String = Build.PRODUCT,
++               model: String = Build.MODEL): GalaxyVehicleAudioProfiles.Model? {
++        val values = listOf(device, product, model)
++        val identifiers = mapOf(GalaxyVehicleAudioProfiles.Model.L7 to "g636", GalaxyVehicleAudioProfiles.Model.L6 to "g733")
++        val found = identifiers.filter { (_, code) ->
++            val token = Regex("(?i)(?:^|[^a-z0-9])$code(?:$|[^a-z0-9])")
++            values.any { token.containsMatchIn(it) }
++        }
++        return found.keys.singleOrNull()
 +    }
 +}

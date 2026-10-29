@@ -43,7 +43,7 @@ private class GalaxyProductHostAdapter(
     override fun preferredAvcDecoder(): String? = GalaxyVideoDecoderPreferences.load(activity).decoder
 
     override fun audioConfiguration(): HostAudioConfiguration {
-        val template = L7AudioTemplates.load(activity)
+        val template = GalaxyVehicleAudioProfiles.load(activity)
         return HostAudioConfiguration(
             platform = GalaxyMediaPolicy(factoryProfile = true, preferBus = template.preferBus,
                 template = template, navigationDevice = GalaxyNavigationOutput.load(activity)),

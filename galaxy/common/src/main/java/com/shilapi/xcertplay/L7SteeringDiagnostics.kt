@@ -77,7 +77,7 @@ internal object L7SteeringDiagnostics {
     val store = L7SteeringTraceStore(SystemClock::elapsedRealtime, ::record,
         model = { listeningModel ?: CarPlayBackgroundSession.configuration?.let {
             it.model.takeIf { value -> value in setOf("l7", "l6", "custom") } ?: "l7"
-        } ?: app?.let { L7AudioTemplates.model(it).id } ?: "unknown" },
+        } ?: app?.let { GalaxyVehicleAudioProfiles.model(it).id } ?: "unknown" },
         logger = {
             val context = app
             val effective = CarPlayBackgroundSession.configuration
@@ -101,7 +101,7 @@ internal object L7SteeringDiagnostics {
     fun freezeListening(context: android.content.Context) {
         initialize(context)
         listeningConfiguration = runCatching { GalaxyConfigurationEvidence.capture(context) }.getOrNull()
-        listeningModel = L7AudioTemplates.model(context).id
+        listeningModel = GalaxyVehicleAudioProfiles.model(context).id
     }
     fun endListening() { listeningConfiguration = null; listeningModel = null }
     fun begin(source: String, index: Int, detail: String = ""): L7SteeringTrace =

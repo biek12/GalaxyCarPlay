@@ -42,7 +42,7 @@ internal class GalaxyAudioChannelPreview(
     fun play(channel: Int, role: AudioOutputRole) {
         if (closed) return
         require(AudioOutputPolicy.valid(channel))
-        val template = context?.let { L7AudioTemplates.load(it) }
+        val template = context?.let { GalaxyVehicleAudioProfiles.load(it) }
         val navigationDevice = context?.let { GalaxyNavigationOutput.load(it) }
         val focusEnabled = context?.let { AirPlayPersistence.loadAudioFocusEnabled(it) } ?: true
         val request = generation.incrementAndGet()

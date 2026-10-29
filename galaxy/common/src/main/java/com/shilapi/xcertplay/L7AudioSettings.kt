@@ -14,17 +14,17 @@ internal object L7AudioSettings {
         val applyHint = if (context is GalaxyConfigurationContext) "" else text(R.string.l7_setting_apply_hint)
         fun refresh() { parent.removeAllViews(); page(context, parent, open) }
         L7SettingsSection.add(parent, text(R.string.l7_section_audio_routes),
-            description = text(if (L7AudioTemplates.customInvalid(context)) R.string.l7_template_recovery
+            description = text(if (GalaxyVehicleAudioProfiles.customInvalid(context)) R.string.l7_template_recovery
                 else R.string.l7_audio_roles_note), footer = text(R.string.l7_audio_headrest_note)) { card ->
             add(context, card, custom = true, open = { title, current, role, apply ->
                 open(title, current, role) { value -> apply(value); refresh() }
             })
-            val routing = L7AudioTemplates.load(context)
+            val routing = GalaxyVehicleAudioProfiles.load(context)
             card.addView(L7Components.switchRow(context, text(R.string.l7_audio_bus),
                 text(if (routing.hasOutputBuses) R.string.l7_template_bus_custom_note else R.string.l7_template_bus_unconfigured),
                 routing.preferBus) {
                 change(context) {
-                    L7AudioTemplates.saveCustom(context, L7AudioTemplates.load(context).withBusEnabled(it))
+                    GalaxyVehicleAudioProfiles.saveCustom(context, GalaxyVehicleAudioProfiles.load(context).withBusEnabled(it))
                 }
                 refresh()
             }.apply { isEnabled = routing.hasOutputBuses })
@@ -50,12 +50,12 @@ internal object L7AudioSettings {
         L7SettingsSection.add(parent, text(R.string.l7_section_bluetooth_audio)) { L7BluetoothAudioSettings.add(context, it, showExclusive = context !is GalaxyConfigurationContext) }
     }
 
-    fun modeName(mode: L7AudioTemplates.Mode): Int = when (mode) {
-        L7AudioTemplates.Mode.L7 -> R.string.l7_template_l7
-        L7AudioTemplates.Mode.L6 -> R.string.l7_template_l6
-        L7AudioTemplates.Mode.SYSTEM -> R.string.l7_template_system
-        L7AudioTemplates.Mode.BUS -> R.string.l7_template_bus
-        L7AudioTemplates.Mode.CUSTOM -> R.string.l7_template_custom
+    fun modeName(mode: GalaxyVehicleAudioProfiles.Mode): Int = when (mode) {
+        GalaxyVehicleAudioProfiles.Mode.L7 -> R.string.l7_template_l7
+        GalaxyVehicleAudioProfiles.Mode.L6 -> R.string.l7_template_l6
+        GalaxyVehicleAudioProfiles.Mode.SYSTEM -> R.string.l7_template_system
+        GalaxyVehicleAudioProfiles.Mode.BUS -> R.string.l7_template_bus
+        GalaxyVehicleAudioProfiles.Mode.CUSTOM -> R.string.l7_template_custom
     }
 
     fun add(context: Context, parent: LinearLayout,
@@ -71,7 +71,7 @@ internal object L7AudioSettings {
             row = L7Components.valueRow(context, title, label(context, load(context, role, custom))) {
                 open(title, load(context, role, custom), role) { value ->
                     change(context) {
-                        if (custom) L7AudioTemplates.saveCustom(context, L7AudioTemplates.load(context).withChoice(role, value))
+                        if (custom) GalaxyVehicleAudioProfiles.saveCustom(context, GalaxyVehicleAudioProfiles.load(context).withChoice(role, value))
                         else save(context, role, value)
                         row.setValue(label(context, value))
                     }
@@ -85,11 +85,11 @@ internal object L7AudioSettings {
         .get(AudioOutputPolicy.choices.indexOf(value).coerceAtLeast(0))
 
     private fun load(context: Context, role: AudioOutputRole, custom: Boolean): Int =
-        if (custom) L7AudioTemplates.load(context).choice(role) else when (role) {
+        if (custom) GalaxyVehicleAudioProfiles.load(context).choice(role) else when (role) {
         AudioOutputRole.MEDIA -> GalaxyPreferencePolicy.loadMediaAudioChannel(context)
         AudioOutputRole.ASSISTANT -> AirPlayPersistence.loadAssistantAudioChannel(context)
         AudioOutputRole.NAVIGATION -> GalaxyPreferencePolicy.loadNavigationAudioChannel(context)
-        AudioOutputRole.PHONE -> L7AudioTemplates.load(context).choice(role)
+        AudioOutputRole.PHONE -> GalaxyVehicleAudioProfiles.load(context).choice(role)
     }
 
     private fun change(context: Context, action: () -> Unit) {
@@ -101,6 +101,6 @@ internal object L7AudioSettings {
         AudioOutputRole.MEDIA -> GalaxyPreferencePolicy.saveMediaAudioChannel(context, value)
         AudioOutputRole.ASSISTANT -> AirPlayPersistence.saveAssistantAudioChannel(context, value)
         AudioOutputRole.NAVIGATION -> GalaxyPreferencePolicy.saveNavigationAudioChannel(context, value)
-        AudioOutputRole.PHONE -> L7AudioTemplates.saveCustom(context, L7AudioTemplates.load(context).withChoice(role, value))
+        AudioOutputRole.PHONE -> GalaxyVehicleAudioProfiles.saveCustom(context, GalaxyVehicleAudioProfiles.load(context).withChoice(role, value))
     }
 }

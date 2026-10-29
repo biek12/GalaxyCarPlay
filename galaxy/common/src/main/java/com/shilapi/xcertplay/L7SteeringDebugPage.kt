@@ -60,13 +60,13 @@ internal class L7SteeringDebugPage(private val activity: Activity, parent: Linea
                 else if (L7Agreement.canUse(activity) && !L7AppExit.exiting) {
                     L7SteeringDiagnostics.initialize(activity)
                     L7SteeringDiagnostics.freezeListening(activity)
-                    controller.start(L7AudioTemplates.model(activity).id)
+                    controller.start(GalaxyVehicleAudioProfiles.model(activity).id)
                 }
                 update()
             }.also(card::addView)
             card.addView(L7Components.actionRow(activity, text(R.string.l7_listen_no_input), text(R.string.l7_listen_no_input_hint)) {
                 if (!disposed && foreground && controller.active()) {
-                    L7SteeringDiagnostics.record("SteeringListen stage=USER_NO_INPUT run=${controller.snapshot().run} model=${L7AudioTemplates.model(activity).id}")
+                    L7SteeringDiagnostics.record("SteeringListen stage=USER_NO_INPUT run=${controller.snapshot().run} model=${GalaxyVehicleAudioProfiles.model(activity).id}")
                     noInput?.setFeedback(text(R.string.l7_listen_no_input_saved))
                     guide.missing()
                 }
@@ -90,7 +90,7 @@ internal class L7SteeringDebugPage(private val activity: Activity, parent: Linea
     fun update() {
         if (disposed) return
         guide.update()
-        controller.poll(L7AudioTemplates.model(activity).id)
+        controller.poll(GalaxyVehicleAudioProfiles.model(activity).id)
         val value = controller.snapshot()
         val active = controller.active()
         val key = SteeringListeningController.LABELS.take(7).getOrNull(guide.currentStep - 2)
@@ -106,7 +106,7 @@ internal class L7SteeringDebugPage(private val activity: Activity, parent: Linea
             SteeringListeningController.Phase.LABEL -> R.string.l7_listen_received
             SteeringListeningController.Phase.STOPPED -> R.string.l7_listen_stopped
         }))
-        status.setFeedback(L7AudioModelConfirmation.name(activity, L7AudioTemplates.model(activity)))
+        status.setFeedback(GalaxyVehicleModelConfirmation.name(activity, GalaxyVehicleAudioProfiles.model(activity)))
         if (revision != value.revision) {
             revision = value.revision
             records.removeAllViews()

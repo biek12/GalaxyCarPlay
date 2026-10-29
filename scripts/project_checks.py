@@ -4,6 +4,7 @@ from pathlib import Path
 import hashlib
 import json
 import re
+import subprocess
 import sys
 import xml.etree.ElementTree as ET
 
@@ -49,6 +50,9 @@ def check_core(root):
         patch_file = root / patch['patch']
         assert patch_file.is_file(), f"补丁不存在: {patch['patch']}"
         assert digest(patch_file) == patch['sha256'], f"补丁摘要不符: {patch['patch']}"
+        parsed = subprocess.run(['git', 'apply', '--stat', str(patch_file)], cwd=root,
+                                capture_output=True, text=True)
+        assert parsed.returncode == 0, f"补丁格式无效: {patch['patch']}: {parsed.stderr.strip()}"
         for path, entry in patch['files'].items():
             assert path not in registered, f'同一核心文件重复登记: {path}'
             # 新增产品文件以null原始摘要登记，不伪造上游已存在该文件。

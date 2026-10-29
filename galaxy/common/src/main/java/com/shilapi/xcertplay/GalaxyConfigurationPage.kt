@@ -47,9 +47,9 @@ internal class GalaxyConfigurationPage(private val activity: ComponentActivity,
         val profile = state.draft ?: return
         val active = runCatching { repository.active() }.getOrNull()
         val effective = CarPlayBackgroundSession.configuration
-        val model = L7AudioTemplates.model(activity)
+        val model = GalaxyVehicleAudioProfiles.model(activity)
         val name = GalaxyVehicleTemplates.find(active?.template ?: model.id)?.let { text(it.title) }
-            ?: L7AudioModelConfirmation.name(activity, model)
+            ?: GalaxyVehicleModelConfirmation.name(activity, model)
         view.vehicleButton.text = activity.getString(R.string.template_current, name)
         val hint = when {
             dirty -> text(R.string.config_page_unsaved)
@@ -92,9 +92,9 @@ internal class GalaxyConfigurationPage(private val activity: ComponentActivity,
     private fun resetCurrent() {
         if (closed || resetDialog?.isShowing == true || templateDialog?.isShowing == true) return
         val profile = state.original ?: return
-        val model = L7AudioTemplates.model(activity)
+        val model = GalaxyVehicleAudioProfiles.model(activity)
         val name = GalaxyVehicleTemplates.find(profile.template)?.let { text(it.title) }
-            ?: L7AudioModelConfirmation.name(activity, model)
+            ?: GalaxyVehicleModelConfirmation.name(activity, model)
         var applied = false
         val dialog = L7Dialogs.builder(activity).setTitle(R.string.config_reset_current)
             .setMessage(activity.getString(R.string.config_reset_message, name))
@@ -119,7 +119,7 @@ internal class GalaxyConfigurationPage(private val activity: ComponentActivity,
     private fun chooseTemplate() {
         if (closed || templateDialog?.isShowing == true || resetDialog?.isShowing == true) return
         val entries = GalaxyVehicleTemplates.entries
-        var pending = entries.indexOfFirst { it.id == (state.original?.template?.takeUnless { id -> id == "unconfirmed" } ?: L7AudioTemplates.model(activity).id) }
+        var pending = entries.indexOfFirst { it.id == (state.original?.template?.takeUnless { id -> id == "unconfirmed" } ?: GalaxyVehicleAudioProfiles.model(activity).id) }
         var applied = false
         val dialog = L7Dialogs.builder(activity).setTitle(R.string.template_choose)
             .setMessage(R.string.template_overwrite)

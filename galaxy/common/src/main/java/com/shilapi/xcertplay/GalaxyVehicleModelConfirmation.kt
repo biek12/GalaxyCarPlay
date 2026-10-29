@@ -8,9 +8,9 @@ import com.shilapi.xcertplay.host.R
 import java.io.Closeable
 
 /** 首次识别先确认再应用；已审阅的识别结果不反复弹出，手动复查可重新确认。 */
-internal class L7AudioModelConfirmation(
+internal class GalaxyVehicleModelConfirmation(
     private val activity: Activity,
-    private val detect: () -> L7AudioTemplates.Model? = { L7AudioModelDetector.detect() },
+    private val detect: () -> GalaxyVehicleAudioProfiles.Model? = { GalaxyVehicleModelDetector.detect() },
 ) : Closeable {
     private var dialog: AlertDialog? = null
     private var continuation: (() -> Unit)? = null
@@ -42,25 +42,25 @@ internal class L7AudioModelConfirmation(
         private const val REVIEWED = "detected_model_reviewed"
         private fun preferences(context: Context) = context.getSharedPreferences("l7_audio_templates", Context.MODE_PRIVATE)
 
-        fun name(context: Context, model: L7AudioTemplates.Model): String = context.getString(
+        fun name(context: Context, model: GalaxyVehicleAudioProfiles.Model): String = context.getString(
             when (model) {
-                L7AudioTemplates.Model.L7 -> R.string.l7_template_model_l7
-                L7AudioTemplates.Model.L6 -> R.string.l7_template_model_l6
-                L7AudioTemplates.Model.CUSTOM -> R.string.l7_template_model_custom
+                GalaxyVehicleAudioProfiles.Model.L7 -> R.string.l7_template_model_l7
+                GalaxyVehicleAudioProfiles.Model.L6 -> R.string.l7_template_model_l6
+                GalaxyVehicleAudioProfiles.Model.CUSTOM -> R.string.l7_template_model_custom
             })
 
-        fun markReviewed(context: Context, model: L7AudioTemplates.Model? = L7AudioModelDetector.detect()) {
+        fun markReviewed(context: Context, model: GalaxyVehicleAudioProfiles.Model? = GalaxyVehicleModelDetector.detect()) {
             model?.let { check(preferences(context).edit().putString(REVIEWED, it.id).commit()) }
         }
 
-        fun confirm(context: Context, model: L7AudioTemplates.Model, handled: () -> Unit,
+        fun confirm(context: Context, model: GalaxyVehicleAudioProfiles.Model, handled: () -> Unit,
                     current: () -> Boolean = { true }): AlertDialog {
             L7DebugLog.record("Audio: modelDetection result=RECOGNIZED model=${model.id} applied=false")
             fun usable() = current() && !(context is Activity && (context.isFinishing || context.isDestroyed))
             fun retain() {
                 if (!usable()) return
                 runCatching { markReviewed(context, model) }
-                L7DebugLog.record("Audio: modelDetection result=RETAINED model=${L7AudioTemplates.model(context).id}")
+                L7DebugLog.record("Audio: modelDetection result=RETAINED model=${GalaxyVehicleAudioProfiles.model(context).id}")
                 handled()
             }
             return L7Dialogs.builder(context).setTitle(R.string.l7_template_detect_title)
@@ -69,7 +69,7 @@ internal class L7AudioModelConfirmation(
                 .setOnCancelListener { retain() }
                 .setPositiveButton(R.string.l7_save_next_connection) { _, _ ->
                     if (!usable()) return@setPositiveButton
-                    if (runCatching { L7AudioTemplates.selectModel(context, model) }.isSuccess) {
+                    if (runCatching { GalaxyVehicleAudioProfiles.selectModel(context, model) }.isSuccess) {
                         runCatching { markReviewed(context, model) }
                         L7DebugLog.record("Audio: modelDetection result=CONFIRMED model=${model.id} applies=NEXT_CONNECTION")
                         handled()

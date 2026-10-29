@@ -8,7 +8,7 @@ import java.io.File
 import java.io.InputStream
 
 /** 内置资源只读；L7／L6 自动应用适配方案；自定义车型独立保存文件，各文件原子写入。 */
-internal object L7AudioTemplates {
+internal object GalaxyVehicleAudioProfiles {
     enum class Model(val id: String) { L7("l7"), L6("l6"), CUSTOM("custom") }
     enum class Mode(val id: String) { L7("l7"), BUS("l7-bus"), CUSTOM("custom"), L6("l6"), SYSTEM("system") }
     private const val PREFS = "l7_audio_templates"

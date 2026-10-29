@@ -115,7 +115,7 @@ internal object GalaxyMediaKeys {
         if (GalaxyVehiclePreferences.mediaReporting(app)) startMediaReporting(app, next, expectedOwner, dispatch, traced)
         if (GalaxyVehiclePreferences.navigationReporting(app)) startNavigation(app, next, expectedOwner)
         // 旧Galaxy的语音广播属于L7；L6监听学习由Autolink链接入，不能套用该广播。
-        if (GalaxyVehiclePreferences.steering(app) && L7AudioTemplates.model(app) == L7AudioTemplates.Model.L7) {
+        if (GalaxyVehiclePreferences.steering(app) && GalaxyVehicleAudioProfiles.model(app) == GalaxyVehicleAudioProfiles.Model.L7) {
             steeringWheel = L7SteeringWheel(app, next::hasActiveSession, { assistantActive() }) {
                 synchronized(this) { controller === next && owner === expectedOwner && next.requestSiri() }
             }.also { it.start() }

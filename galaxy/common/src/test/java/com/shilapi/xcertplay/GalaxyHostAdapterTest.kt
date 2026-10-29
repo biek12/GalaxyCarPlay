@@ -42,7 +42,7 @@ class GalaxyHostAdapterTest {
         activity.getSharedPreferences("l7_audio_templates", 0).edit().clear().commit()
         activity.getSharedPreferences("xcertplay_airplay", 0).edit().clear().commit()
         val audio = adapter(activity).audioConfiguration()
-        assertEquals(L7AudioTemplates.Model.L6, L7AudioTemplates.model(activity))
+        assertEquals(GalaxyVehicleAudioProfiles.Model.L6, GalaxyVehicleAudioProfiles.model(activity))
         assertEquals(101, audio.mediaChannel)
         assertEquals(103, audio.navigationChannel)
         assertEquals(102, audio.assistantChannel)
