@@ -1,0 +1,89 @@
+{
+  "recordedAt": "2026-10-30T11:51:48.328775+08:00",
+  "validatedAt": "2026-10-30T11:51:20.818126+08:00",
+  "command": "scripts/verify_auto_platform.sh",
+  "jvmTests": 54,
+  "habAndProvisionTests": 15,
+  "lintRun": false,
+  "installed": false,
+  "deviceTested": false,
+  "qnxNativeChanged": false,
+  "apps": {
+    "mobile": {
+      "package": "com.ecarx.carplay",
+      "sha256": "efbbbf774af0a0ea926ce192c580326c3f5d2f9e3b76b4fb118fd737299bd011",
+      "bytes": 61045475,
+      "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121"
+    },
+    "service": {
+      "package": "com.ecarx.autoservice",
+      "sha256": "43756d5c9cd35e96404e9972f31590caf2bbc6a889f27ac705db2eda3fe48d10",
+      "bytes": 13613279,
+      "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121"
+    },
+    "cluster": {
+      "package": "com.galaxy.autocluster",
+      "sha256": "a3b7d8f0f83e5ea5cc625853474dadf8f93104be9a92f44edadf162b03c7521f",
+      "bytes": 2691459,
+      "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121"
+    }
+  },
+  "sources": [
+    {
+      "path": "tools/hab/qnx_probe.c",
+      "sha256": "bb01ddaa910e8e5d3f9a83d89384717fa13a9df124651fb47b03934d4b754c76"
+    },
+    {
+      "path": "galaxy/service/src/main/cpp/hab/galaxy_hab_linux.c",
+      "sha256": "167017addcbf11b7e47cffc953cd5a2be0c51998bede1fee1b74e55057a19007"
+    },
+    {
+      "path": "galaxy/service/src/main/cpp/hab/galaxy_hab_sender.c",
+      "sha256": "4c70d259e1c8e71b0368cd3106d33899476230d13d5c60182301a8097386484d"
+    },
+    {
+      "path": "galaxy/service/src/main/cpp/hab/galaxy_hab_qnx.c",
+      "sha256": "66ef89d1fba0d7fd8302b6c1a53760fecb166d3ab04743c5d9edab8a889f24b6"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/AutoService.kt",
+      "sha256": "c8ff717f5852495cef03e994f89b18dab88ec9302421acc2a8a29469533b6563"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabComposition.kt",
+      "sha256": "56b312f64bdba06758efa011801503acdca2afc659d8e2fda0835a6d0604f846"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabProcess.kt",
+      "sha256": "31c4279162391a00a8425b7f840a1478dfa1ce32ff402b97511b02bf94be4fdb"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabSessionStart.kt",
+      "sha256": "c2ca1c3ffa6f75ccd9746bc3cff94a69ab9f10c2ab84fb2590ced00f408682e7"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootHabProcess.kt",
+      "sha256": "fb65c60dac2dd0f00f6dc6f019ab9889238d9b94b24b5c28cba13688eab5cd45"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootHabSession.kt",
+      "sha256": "ebfa3122fb9847f3437b77faacf31d568abf5e05b08b87069b0f75a215c1c737"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/PlatformCoordinator.kt",
+      "sha256": "767ca958fefa721c2a9dc3ad9d1af23e1b1eb56ba7ba47bed3abd54b3cef33de"
+    },
+    {
+      "path": "galaxy/service/src/test/java/com/ecarx/autoservice/projection/GalaxyHabProcessTest.kt",
+      "sha256": "5f1d628f615db39d9c41e8e69df5b098c038763594c97eef706ff2e321265572"
+    },
+    {
+      "path": "galaxy/service/src/test/java/com/ecarx/autoservice/projection/GalaxyHabSessionStartTest.kt",
+      "sha256": "4decf36215b6e1bc25de62a8118be0077f6824b4ec2a25db919344415fa4350c"
+    },
+    {
+      "path": "docs/HAB连接稳定性修复-20261030.md",
+      "sha256": "03aa72a6b4cca81aefc8c8ec1de8cf919371a90744b263010ddf23450f788a45"
+    }
+  ]
+}

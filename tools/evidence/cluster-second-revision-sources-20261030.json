@@ -1,0 +1,128 @@
+{
+  "date": "2026-10-30",
+  "vehicle_tested": false,
+  "sources": [
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/telemetry-live-20261025/sdk-sources/sources/ecarx/car/hardware/signal/CarSignalManager.java",
+      "sha256": "1ab8589a0ff8b8bf6134a1543124103661c17aaeae7174fc7f907f8ee65c1d23",
+      "kind": "reference-only; not bundled OEM implementation",
+      "anchors": [
+        {
+          "line": 550,
+          "text": "public static final int SignalId_CrsCtrlrSts = 557874311;"
+        },
+        {
+          "line": 923,
+          "text": "public static final int SignalId_EgyRgnLvlSet = 557874243;"
+        }
+      ]
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/telemetry-live-20261025/sdk-sources/sources/ecarx/car/hardware/annotation/CrsCtrlrSts1.java",
+      "sha256": "f485961eb97ec5663a6f9240be24207630893aa7f489299f347b4da01877a29b",
+      "kind": "reference-only; not bundled OEM implementation",
+      "anchors": [
+        {
+          "line": 8,
+          "text": "public static final int Actv = 3;"
+        },
+        {
+          "line": 9,
+          "text": "public static final int Off = 1;"
+        },
+        {
+          "line": 10,
+          "text": "public static final int Stb = 2;"
+        }
+      ]
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/telemetry-live-20261025/sdk-sources/sources/ecarx/car/hardware/annotation/EgyRgnLvlSet.java",
+      "sha256": "dfa83a3cc74ca3370ece8e724cb0efe1a9f850e2c9d28074ba49dc9073711f16",
+      "kind": "reference-only; not bundled OEM implementation",
+      "anchors": [
+        {
+          "line": 8,
+          "text": "public static final int Level1 = 0;"
+        },
+        {
+          "line": 9,
+          "text": "public static final int Level2 = 1;"
+        },
+        {
+          "line": 10,
+          "text": "public static final int Level3 = 2;"
+        },
+        {
+          "line": 11,
+          "text": "public static final int Level4 = 3;"
+        }
+      ]
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/telemetry-live-20261025/sdk-sources/sources/ecarx/car/hardware/annotation/BltLockSt1.java",
+      "sha256": "7c254ba015cd9e1daffe4e6a5f013be5be49408b2bf1b469340e0c6854a5573a",
+      "kind": "reference-only; not bundled OEM implementation",
+      "anchors": [
+        {
+          "line": 8,
+          "text": "public static final int Lock = 1;"
+        },
+        {
+          "line": 9,
+          "text": "public static final int Unlock = 0;"
+        }
+      ]
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/telemetry-live-20261025/sdk-sources/sources/com/ecarx/xui/adaptapi/car/vehicle/Vehicle.java",
+      "sha256": "cfa9caf87a85f3e9a3552cd2696f56fc402a20e1ff2ec22302ad22085a9775a7",
+      "kind": "reference-only; not bundled OEM implementation",
+      "anchors": [
+        {
+          "line": 257,
+          "text": "Pairs<Integer, Integer> convertEgyLvl2VP = Pairs.of(Integer.valueOf(IVehicle.ENERGY_REGENERATION_LEVEL_LOW), 0).add(Integer.valueOf(IVehicle.ENERGY_REGENERATION_LEVEL_MID), 1).add(Integer.valueOf(IVehicle.ENERGY_REGENERATION_LEVEL_HIGH), 2).add(Integer.valueOf(IVehicle.ENERGY_REGENERATION_LEVEL_AUTO), 3);"
+        }
+      ]
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/CarProxyService/sources/android/hardware/automotive/vehicle/V2_0/VehicleProperty.java",
+      "sha256": "ecd950f63b2913229f02ca782f5e36ad9cc23bac0a75389f767dd329dd971c62",
+      "kind": "reference-only; not bundled OEM implementation",
+      "anchors": [
+        {
+          "line": 399,
+          "text": "public static final int CLUSTER_ADAS_DRVRACCRSSETSPDREQDRVRCRSSETSPDREQ = 557849309;"
+        },
+        {
+          "line": 1126,
+          "text": "public static final int CLUSTER_POWERFLOW_DISPELECPWRABS = 557850038;"
+        },
+        {
+          "line": 1127,
+          "text": "public static final int CLUSTER_POWERFLOW_DISPELECPWRSTS = 557850039;"
+        }
+      ]
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/.local/decoded/AutoDisplay-v3.6.2/jadx/sources/com/simplerbit/autodisplay/vehicle/b.java",
+      "sha256": "6e224cccf5c6bb9721711aed3998b7da5235e97ffa1e2f3d0875bc215020f886",
+      "kind": "reference-only; not bundled OEM implementation",
+      "anchors": [
+        {
+          "line": 458,
+          "text": "if (i5 == 10037) {"
+        },
+        {
+          "line": 505,
+          "text": "if (tirePressureKeyBinding == 1 ? i9 == 6 : !(tirePressureKeyBinding != 2 || i9 != 18)) {"
+        }
+      ]
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/instrument-reference-revision-3/01-main-final.png",
+      "sha256": "49f842ba559325fd1b28626476517e6036c985b7129bb24e0e9b6d17376049ca",
+      "kind": "reference-only; not bundled OEM implementation"
+    }
+  ]
+}

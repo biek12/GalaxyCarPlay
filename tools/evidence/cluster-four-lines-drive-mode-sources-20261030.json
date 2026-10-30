@@ -1,0 +1,61 @@
+{
+  "date": "2026-10-30",
+  "current_vehicle_tested": false,
+  "source_origin": "本机星枢既有G733实测记录与只读PA合同；本轮未执行任何车辆写入",
+  "sources": [
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/adaptation/vehicle/geely/galaxy8155/G733SystemProfile.kt",
+      "sha256": "18f13ddbeac91902cfceb8f87de6107a21bd7df4fa33d6b0d9662f5ae428eb36",
+      "anchors": [
+        {
+          "line": 23,
+          "text": "pa(\"vehicle.drive_mode\", 0x21708A97, 0x214085B1, enums(\"RANGE_EXTENDER\" to 1, \"PURE\" to 2, \"PERFORMANCE\" to 3, \"SMART\" to 6), 1.0, 6.0, 1.0),"
+        }
+      ]
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/domain/automation/RuntimeValues.kt",
+      "sha256": "df9ddbb29fb52a82638ad73cbe8cbe66636cf46a36af48853c201d4760bfb402",
+      "anchors": [
+        {
+          "line": 49,
+          "text": "require(value is RuntimeValue.Bytes && value.value.size == 16) { \"PA 状态包需要 16 字节原始负载\" }"
+        },
+        {
+          "line": 51,
+          "text": "val availability = buffer.int"
+        },
+        {
+          "line": 52,
+          "text": "val data = buffer.int"
+        },
+        {
+          "line": 53,
+          "text": "val format = buffer.int"
+        },
+        {
+          "line": 54,
+          "text": "val status = buffer.int"
+        },
+        {
+          "line": 55,
+          "text": "require(availability == 1 && format == 0 && (status == 0 || encoding == SignalEncoding.ECARX_FAN && status == 1)) {"
+        },
+        {
+          "line": 111,
+          "text": "val responseId: Int? = null, val responseAreaId: Int? = null, val statusCode: Int? = null,"
+        }
+      ]
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/docs/progress/system-api-vehicle-control-handoff-20261019.md",
+      "sha256": "d0f0b347cf6305c156d94fb4ebf44437b5258b3549aee238c7cdd883f0314103",
+      "anchors": [
+        {
+          "line": 62,
+          "text": "| 驾驶模式 | 0x21708A97 | 0x214085B1 | 增程1 / 纯电2 / 性能3 / 智能6；禁止用8当本车纯电 |"
+        }
+      ]
+    }
+  ]
+}

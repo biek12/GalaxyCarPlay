@@ -1,0 +1,560 @@
+{
+  "recorded_at": "2026-10-30T13:49:57.318731+08:00",
+  "scope": "static local research and design drafts; no runtime edits or vehicle operations",
+  "apk_sample": {
+    "app": "EVCC",
+    "version": "3.3.3",
+    "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/inputs/EVCC_v3.3.3.apk",
+    "sha256": "61c7dd79926640778d1628110b3c6bf221de099806cad4ead703bd9b75023237",
+    "kind": "existing local sample; selected static paths only"
+  },
+  "files": [
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/ci4.java",
+      "sha256": "ef9658c1f9c5533ee7061b02cca566e7ac677acff9d124603824bc02c767fbe6",
+      "anchors": [
+        {
+          "symbol_or_key": "new ai4(\"simple_drive\"",
+          "line": 23
+        },
+        {
+          "symbol_or_key": "new ai4(\"neon_stack\"",
+          "line": 57
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/ai4.java",
+      "sha256": "0adc95d0085613b0800727526e97ae4a2758e173431f12e1940a33a82d122b30",
+      "anchors": [
+        {
+          "symbol_or_key": "public ai4(",
+          "line": 15
+        },
+        {
+          "symbol_or_key": "NetworkScreenTheme(id=",
+          "line": 39
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/bi4.java",
+      "sha256": "fd1795a609cf7f398bb9cff9f188765be88d83d93074f31b2df55f0b44c9fbe2",
+      "anchors": [
+        {
+          "symbol_or_key": "public bi4(",
+          "line": 36
+        },
+        {
+          "symbol_or_key": "new Canvas(bitmapCreateBitmap)",
+          "line": 51
+        },
+        {
+          "symbol_or_key": "Bitmap ll(zh4",
+          "line": 92
+        },
+        {
+          "symbol_or_key": "kc6Var instanceof hc6",
+          "line": 298
+        },
+        {
+          "symbol_or_key": "kc6Var instanceof gc6",
+          "line": 311
+        },
+        {
+          "symbol_or_key": "kc6Var instanceof ic6",
+          "line": 346
+        },
+        {
+          "symbol_or_key": "kc6Var instanceof jc6",
+          "line": 380
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/ch4.java",
+      "sha256": "75cd42cea21ca8b66528b49a0a1cd30c25383e91f9228a39e03f15c65558fb6a",
+      "anchors": [
+        {
+          "symbol_or_key": "int iIl3 = zv4.Il(this.OO, 1, 30)",
+          "line": 94
+        },
+        {
+          "symbol_or_key": "fpsLimit=",
+          "line": 108
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/qk6.java",
+      "sha256": "b4f50b7b4e1c14b12c91cf121e66e2a0d9389afeb52f44025f5dd7595e83bf81",
+      "anchors": [
+        {
+          "symbol_or_key": "void IIIl(Context context, ch4",
+          "line": 643
+        },
+        {
+          "symbol_or_key": "getInt(\"fpsLimit\", 10)",
+          "line": 1678
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/qh4.java",
+      "sha256": "de91338a7d618c275d4bd23ff066c2f4d40244fabc1da363ceb6dbad7d3a5a08",
+      "anchors": [
+        {
+          "symbol_or_key": "this.I1 = 1000 /",
+          "line": 68
+        },
+        {
+          "symbol_or_key": "boolean I1(List",
+          "line": 93
+        },
+        {
+          "symbol_or_key": "void II()",
+          "line": 141
+        },
+        {
+          "symbol_or_key": "void Il(long",
+          "line": 162
+        },
+        {
+          "symbol_or_key": "perf: fps=",
+          "line": 194
+        },
+        {
+          "symbol_or_key": "void O0()",
+          "line": 210
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/oh4.java",
+      "sha256": "4c4394686958da03e474a605a2fd7302ce88f9516542039db34d85ed86a59eef",
+      "anchors": [
+        {
+          "symbol_or_key": "qh4Var3.lI1 = null",
+          "line": 87
+        },
+        {
+          "symbol_or_key": "qh4Var3.l11 = SystemClock.elapsedRealtime()",
+          "line": 90
+        },
+        {
+          "symbol_or_key": "Bitmap bitmapLl =",
+          "line": 92
+        },
+        {
+          "symbol_or_key": "compress(Bitmap.CompressFormat.JPEG",
+          "line": 96
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/ak.java",
+      "sha256": "c4a77dc657f8e403f5441dc38e839091ba24942de545bb64a35498f30917aa0e",
+      "anchors": [
+        {
+          "symbol_or_key": "qh4Var.lI1 = zh4Var",
+          "line": 307
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/com/kooo/evcc/networkscreen/NetworkScreenService.java",
+      "sha256": "9ff70bc8e4b5b98928c2b1cc8fdd2aad124e485e3a865b16b56d56fb82565cc4",
+      "anchors": [
+        {
+          "symbol_or_key": "if (nh4.ll())",
+          "line": 83
+        },
+        {
+          "symbol_or_key": "!z ? 100L",
+          "line": 94
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/ke0.java",
+      "sha256": "cacb3a4dbd2272e62aa84281380d2c504b784befc20cc1fa1dc656ab62956154",
+      "anchors": [
+        {
+          "symbol_or_key": "getInt(\"fps\", 30)",
+          "line": 2742
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/gh6.java",
+      "sha256": "4618a17ef4f6c3d60a730b4fbb4a55ed2ef2067fc490e90f342d8b3f911e5d9b",
+      "anchors": [
+        {
+          "symbol_or_key": "optInt(\"fps\", 30)",
+          "line": 1786
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/yo2.java",
+      "sha256": "b3ecd62e9f0f62e68ae8561f453e7d83bdda8dc8ee49e606af21fd7bee2f1c42",
+      "anchors": [
+        {
+          "symbol_or_key": "setInteger(\"frame-rate\", i)",
+          "line": 59
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/com/kooo/evcc/dashboard/DashboardGridLayout.java",
+      "sha256": "d9baa77198cb32db0d43446428515ae121edc01aa2c7c6d501b6ea08dde52993",
+      "anchors": [
+        {
+          "symbol_or_key": "this.llI = 33L",
+          "line": 252
+        },
+        {
+          "symbol_or_key": "setAnimationFrameIntervalMs(dashboardGridLayout2.llI)",
+          "line": 5917
+        },
+        {
+          "symbol_or_key": "void setChartAnimationFrameIntervalMs(long",
+          "line": 9874
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/b61.java",
+      "sha256": "a7360db06f28a345106e3a4f93a4e480ba13f6e09cc2485bff9b6a8647669d6a",
+      "anchors": [
+        {
+          "symbol_or_key": "setChartAnimationFrameIntervalMs(50L)",
+          "line": 4565
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/co0.java",
+      "sha256": "7e91dd528495d6e1ecd6e973cfb70e6ea5623ee2fa095762a7b1dd27e5b13e4d",
+      "anchors": [
+        {
+          "symbol_or_key": "void doFrame(long",
+          "line": 26
+        },
+        {
+          "symbol_or_key": "jElapsedRealtime - bo0Var.lll >= j2",
+          "line": 45
+        },
+        {
+          "symbol_or_key": "postFrameCallback(this)",
+          "line": 58
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/u40.java",
+      "sha256": "bdf5a4c8c537e576d30ffd31b5ade0f7e15f7a6a29b0b841c6075e819f466437",
+      "anchors": [
+        {
+          "symbol_or_key": "void Il(Canvas canvas)",
+          "line": 85
+        },
+        {
+          "symbol_or_key": "int O0(int",
+          "line": 120
+        },
+        {
+          "symbol_or_key": "int OO(int",
+          "line": 131
+        },
+        {
+          "symbol_or_key": "void ll(float f, float f2",
+          "line": 192
+        },
+        {
+          "symbol_or_key": "void onDetachedFromWindow()",
+          "line": 249
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/rs5.java",
+      "sha256": "71d4c4280f586f6ba4b802624ce81647ddde06bc24872a1b05d82fa4e12fe0a6",
+      "anchors": [
+        {
+          "symbol_or_key": "jSONObject.put(\"shareDayNight\"",
+          "line": 47
+        },
+        {
+          "symbol_or_key": "vs5 ll(boolean",
+          "line": 55
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/vs5.java",
+      "sha256": "d196db36417821f8afd36d25020d965f80b656e3493095ca57dea6ad14366328",
+      "anchors": [
+        {
+          "symbol_or_key": "jSONObject2.put(\"widgetOverrides\"",
+          "line": 341
+        },
+        {
+          "symbol_or_key": "SkinMode(colors=",
+          "line": 357
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/us5.java",
+      "sha256": "892a6f293a5ad6ed0f15edfd91e8b4459928833815bcf6d93c1e9e82aec76d48",
+      "anchors": [
+        {
+          "symbol_or_key": "void I1()",
+          "line": 23
+        },
+        {
+          "symbol_or_key": "current.evccskin",
+          "line": 63
+        },
+        {
+          "symbol_or_key": "jt6 O0(String",
+          "line": 99
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/is4.java",
+      "sha256": "9cd2e19f71ed5dfee38f2ecfb20b05c0b96f189d1a326cc98e1aa3752dddfa0c",
+      "anchors": [
+        {
+          "symbol_or_key": "rs5 ll1(JSONObject",
+          "line": 317
+        },
+        {
+          "symbol_or_key": "Object llll(String",
+          "line": 393
+        },
+        {
+          "symbol_or_key": "schemaVersion\", 0)",
+          "line": 401
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/com/kooo/evcc/theme/ThemeManager.java",
+      "sha256": "06e90497029522fb43e2f05b46ed8996b89d34987a0fc92dd133e68c4e97d8c7",
+      "anchors": [
+        {
+          "symbol_or_key": "boolean ll1()",
+          "line": 157
+        },
+        {
+          "symbol_or_key": "getConfiguration().uiMode & 48",
+          "line": 126
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/lc6.java",
+      "sha256": "d8b0b56853fdc661773686595a90ea8d5a92b2e6ad8842fd0b062a828108c3de",
+      "anchors": [
+        {
+          "symbol_or_key": "new lc6(\"DAY\"",
+          "line": 20
+        },
+        {
+          "symbol_or_key": "new lc6(\"NIGHT\"",
+          "line": 22
+        },
+        {
+          "symbol_or_key": "EvccApiContract.Source.AUTO",
+          "line": 24
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/a81.java",
+      "sha256": "af7afb0c25c40cac519540c0d689c4883ca359590e9140f959fb6ecb67116ba9",
+      "anchors": [
+        {
+          "symbol_or_key": "put(\"propertyChannel\"",
+          "line": 263
+        },
+        {
+          "symbol_or_key": "put(\"writePropertyChannel\"",
+          "line": 266
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/ot6.java",
+      "sha256": "fd3fe5be704589e967d2fae75934ded7eda468ce779f89146a5ee730ec8bced2",
+      "anchors": [
+        {
+          "symbol_or_key": "LIGHT_LANGUAGE",
+          "line": 41
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/zh4.java",
+      "sha256": "b0804de30e064985ed93e30924fe80705e7c10a6baff02654ed1df6588174629",
+      "anchors": [
+        {
+          "symbol_or_key": "rh4 ll(String",
+          "line": 33
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/hc6.java",
+      "sha256": "0f4f1cbd65008b90a07a4862c24e8a05e4960a8fd4a0e0f972f4e6b26d44a2c1",
+      "anchors": [
+        {
+          "symbol_or_key": "Card(x=",
+          "line": 46
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/gc6.java",
+      "sha256": "dbdc7396e3dfe893a943e20cdcaa8a122bd0e972dcb94650fa20932480b14847",
+      "anchors": [
+        {
+          "symbol_or_key": "Bar(x=",
+          "line": 61
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/ic6.java",
+      "sha256": "c9b7b4b8e51a67dbc5f28ee070d701692ff98994e20bc2f60b0e6f6d053ebafb",
+      "anchors": [
+        {
+          "symbol_or_key": "Ring(cx=",
+          "line": 51
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/jc6.java",
+      "sha256": "85e7e6bc9321ee1c4236ab7bb8da743879c1840ce48d45c93fe43c8a6ecf1687",
+      "anchors": [
+        {
+          "symbol_or_key": "Text(x=",
+          "line": 75
+        }
+      ]
+    }
+  ],
+  "comparisons": [
+    {
+      "kind": "ordered numeric/string literal sequence, comments removed",
+      "old": ".local/decoded/EVCC-v2.9.46/jadx/sources/defpackage/pw2.java",
+      "new": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/ci4.java",
+      "old_count": 637,
+      "new_count": 637,
+      "equal": true,
+      "sequence_sha256": "edb218add4aaf577c0e22ef821e120021dd1b59120792cfca571cd93e46d62e1",
+      "limit": "not a complete semantic equivalence proof"
+    },
+    {
+      "kind": "string literal set",
+      "old": ".local/decoded/EVCC-v2.9.46/jadx/sources/defpackage/qx3.java",
+      "new": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/vs5.java",
+      "old_count": 80,
+      "new_count": 80,
+      "equal": true,
+      "limit": "matching strings does not prove all behavior unchanged"
+    },
+    {
+      "kind": "string literal set",
+      "old": ".local/decoded/EVCC-v2.9.46/jadx/sources/defpackage/mx3.java",
+      "new": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/rs5.java",
+      "old_count": 15,
+      "new_count": 15,
+      "equal": true,
+      "limit": "matching strings does not prove all behavior unchanged"
+    },
+    {
+      "kind": "string literal set",
+      "old": ".local/decoded/EVCC-v2.9.46/jadx/sources/defpackage/om4.java",
+      "new": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/jt6.java",
+      "old_count": 20,
+      "new_count": 20,
+      "equal": true,
+      "limit": "matching strings does not prove all behavior unchanged"
+    },
+    {
+      "kind": "string literal set",
+      "old": ".local/decoded/EVCC-v2.9.46/jadx/sources/defpackage/ox3.java",
+      "new": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/ts5.java",
+      "old_count": 13,
+      "new_count": 13,
+      "equal": true,
+      "limit": "matching strings does not prove all behavior unchanged"
+    },
+    {
+      "kind": "string literal set",
+      "old": ".local/decoded/EVCC-v2.9.46/jadx/sources/defpackage/wx3.java",
+      "new": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/at5.java",
+      "old_count": 10,
+      "new_count": 10,
+      "equal": true,
+      "limit": "matching strings does not prove all behavior unchanged"
+    }
+  ],
+  "observed_fps": {
+    "network_screen": {
+      "default": 10,
+      "config_range": [
+        1,
+        30
+      ],
+      "default_size": [
+        320,
+        820
+      ]
+    },
+    "dashcast_config_default": 30,
+    "dashboard_constructor_interval_ms": 33,
+    "dashboard_main_page_interval_ms": 50,
+    "actual_vehicle_fps_measured": false
+  },
+  "limits": [
+    "JADX has incomplete enum/type/conditional reconstruction",
+    "No autonomous load-driven FPS governor found in inspected paths",
+    "NetworkScreen themes and Dashboard skins have separate render paths",
+    "No EVCC code/assets copied to product"
+  ]
+}

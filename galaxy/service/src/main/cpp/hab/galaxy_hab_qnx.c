@@ -1,9 +1,14 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
+#ifndef _QNX_SOURCE
+#define _QNX_SOURCE 1
+#endif
 #include "galaxy_hab_qnx.h"
+#include "galaxy_hab_owned.h"
 #include <errno.h>
 #include <limits.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/mman.h>
 
 /* 目标libuhab-qvmhost: import VA0x2ee4 / unimport VA0x3580及现场配套释放记录。
  * flags=0x10000返回PMEM opaque handle，不能按Linux fd关闭或把handle当映射地址。
@@ -51,6 +56,27 @@ static int cancellation(struct galaxy_hab_qnx *q)
     return q->cancelled && q->cancelled(q->cancel_context) ? -EINTR : 0;
 }
 
+/* HAB消息到达只给出发布顺序，不替导入映射做CPU cache维护。目标PMEM库在
+ * 0x59b0/0x6d04使用同一CACHE_ONLY|INVALIDATE组合；这里只操作本次import。
+ * 必须先失效再复制私有快照，不能把DMB或重算hash冒充跨VM数据可见性。
+ */
+static int synchronize_import(struct galaxy_hab_qnx *q, size_t offset, size_t bytes)
+{
+    int result;
+    if (!q->mapping || offset > q->receiver.layout.total_bytes ||
+        !bytes || bytes > q->receiver.layout.total_bytes - offset) return -EINVAL;
+    result = cancellation(q);
+    if (result) return result;
+    trace(q, "msync imported frame cache", INT_MIN);
+    result = platform_result(msync((uint8_t *)q->mapping + offset, bytes,
+                                  MS_CACHE_ONLY | MS_INVALIDATE));
+    trace(q, "msync imported frame cache", result);
+    ++q->cache_syncs;
+    q->cache_last_error = result;
+    if (result) ++q->cache_failures;
+    return result;
+}
+
 void galaxy_hab_qnx_init(struct galaxy_hab_qnx *q, galaxy_hab_sign sign, void *context)
 {
     memset(q, 0, sizeof(*q));
@@ -76,9 +102,6 @@ int galaxy_hab_qnx_close(struct galaxy_hab_qnx *q)
     if (q->context) RELEASE(screen_destroy_context(q->context));
     q->context = NULL;
     galaxy_hab_receiver_close(&q->receiver);
-    free(q->pixels);
-    q->pixels = NULL;
-    q->pixel_capacity = 0;
     if (q->mapping) RELEASE(pmem_unmap_handle(q->import_handle, q->mapping));
     q->mapping = NULL;
     if (q->imported) RELEASE(habmm_unimport(q->vcid, q->export_id, q->import_handle, PMEM_HANDLE_IMPORT));
@@ -206,12 +229,10 @@ int galaxy_hab_qnx_open(struct galaxy_hab_qnx *q, const struct galaxy_hab_target
     if (q->receiver.layout.count != count) { result = -EPROTO; goto failed; }
     for (i = 0; i < count; ++i) {
         const struct galaxy_hab_target *received = &q->receiver.layout.streams[i].target;
-        size_t bytes = (size_t)q->receiver.layout.streams[i].stride * received->height;
         if (received->display_id != targets[i].display_id || received->width != targets[i].width ||
             received->height != targets[i].height || received->z_order != targets[i].z_order) {
             result = -EPROTO; goto failed;
         }
-        if (bytes > q->pixel_capacity) q->pixel_capacity = bytes;
     }
     q->export_id = q->receiver.export_id;
     OPEN(habmm_import(q->vcid, &q->import_handle, q->receiver.layout.total_bytes,
@@ -224,10 +245,10 @@ int galaxy_hab_qnx_open(struct galaxy_hab_qnx *q, const struct galaxy_hab_target
     if (!q->mapping || mapped != q->receiver.layout.total_bytes) { result = -EFAULT; goto failed; }
     length = GALAXY_HAB_PACKET_SIZE;
     OPEN(habmm_socket_recv(q->vcid, packet, &length, timeout, 0));
+    result = synchronize_import(q, 0, mapped);
+    if (result) goto failed;
     result = galaxy_hab_receiver_start(&q->receiver, packet, length, q->mapping, mapped, ack);
     if (result) goto failed;
-    q->pixels = malloc(q->pixel_capacity);
-    if (!q->pixels) { result = -ENOMEM; goto failed; }
     result = prepare_windows(q);
     if (result) goto failed;
     result = cancellation(q);
@@ -260,23 +281,49 @@ int galaxy_hab_qnx_step_timeout(struct galaxy_hab_qnx *q, uint32_t timeout_ms)
         trace(q, "frame/control size", (int)length);
         result = -EPROTO; goto failed;
     }
-    if (word(packet + 8) == 2) {
+    if (word(packet) == GALAXY_HAB_OWNED_MAGIC) {
+        uint8_t reply[GALAXY_HAB_PACKET_SIZE];
+        result = galaxy_hab_receiver_enable_consumption(&q->receiver, packet, length, reply);
+        if (!result) result = platform_result(habmm_socket_send(q->vcid, reply, sizeof(reply), 0));
+        if (result) goto failed;
+    } else if (word(packet + 8) == 2) {
         struct galaxy_hab_frame_info info;
         screen_buffer_t buffer;
         uint8_t *destination;
         int stride, visible = 1;
-        uint32_t y;
-        trace(q, "galaxy_hab_receiver_frame", INT_MIN);
-        result = galaxy_hab_receiver_frame(&q->receiver, packet, length,
-                                           q->pixels, q->pixel_capacity, &info);
-        trace(q, "galaxy_hab_receiver_frame", result);
+        uint32_t stream = word(packet + 0x3c);
+        if (stream >= q->receiver.layout.count) { result = -EPROTO; goto failed; }
+        const struct galaxy_hab_stream_layout *layout = &q->receiver.layout.streams[stream];
+        size_t offset = layout->base + (size_t)(word(packet + 0x0c) % layout->slots) * layout->slot_bytes;
+        result = synchronize_import(q, offset, layout->slot_bytes);
         if (result) goto failed;
-        result = writable_buffer(q, q->windows[info.stream], &q->receiver.layout.streams[info.stream],
+        result = writable_buffer(q, q->windows[stream], &q->receiver.layout.streams[stream],
                                   &buffer, &destination, &stride);
         if (result) goto failed;
-        for (y = 0; y < info.height; ++y)
-            memcpy(destination + (size_t)y * (unsigned)stride,
-                   q->pixels + (size_t)y * info.stride, info.stride);
+        trace(q, "galaxy_hab_receiver_frame", INT_MIN);
+        result = galaxy_hab_receiver_frame_strided(&q->receiver, packet, length,
+            destination, (size_t)(unsigned)stride * q->receiver.layout.streams[stream].target.height,
+            (unsigned)stride, &info);
+        trace(q, "galaxy_hab_receiver_frame", result);
+        if (result == -EBADMSG && q->receiver.owned_consumption) {
+            uint8_t reply[GALAXY_HAB_PACKET_SIZE];
+            uint32_t sequence = word(packet + 0x0c);
+            ++q->checksum_mismatches;
+            q->checksum_expected = q->receiver.expected_hash;
+            q->checksum_observed = q->receiver.observed_hash;
+            if (q->checksum_sequence == sequence && q->checksum_stream == stream) ++q->checksum_attempts;
+            else { q->checksum_sequence = sequence; q->checksum_stream = stream; q->checksum_attempts = 1; }
+            /* 保留最后一张已验证画面；只有同会话HMAC绑定的RETRY允许sender重写同一slot。
+             * 不跳过hash、不对坏帧发POSTED。两次仍失败按原有释放路径退出。 */
+            if (q->checksum_attempts <= 2) {
+                result = galaxy_hab_owned_encode(reply, GALAXY_HAB_OWNED_RETRY, sequence,
+                    q->receiver.export_id, stream, q->receiver.session, q->receiver.sign, q->receiver.sign_context);
+                if (!result) result = platform_result(habmm_socket_send(q->vcid, reply, sizeof(reply), 0));
+                if (!result) return 0;
+            }
+        }
+        if (result) goto failed;
+        q->checksum_attempts = 0;
         result = platform_result(screen_set_window_property_iv(q->windows[info.stream],
                                                                SCREEN_PROPERTY_VISIBLE, &visible));
         if (!result) {
@@ -285,6 +332,15 @@ int galaxy_hab_qnx_step_timeout(struct galaxy_hab_qnx *q, uint32_t timeout_ms)
             trace(q, "screen_post_window", result);
         }
         if (result) goto failed;
+        ++q->posted_frames;
+        if (q->receiver.owned_consumption) {
+            uint8_t reply[GALAXY_HAB_PACKET_SIZE];
+            result = galaxy_hab_owned_encode(reply, GALAXY_HAB_OWNED_POSTED,
+                info.sequence, q->receiver.export_id, info.stream, q->receiver.session,
+                q->receiver.sign, q->receiver.sign_context);
+            if (!result) result = platform_result(habmm_socket_send(q->vcid, reply, sizeof(reply), 0));
+            if (result) goto failed;
+        }
     } else {
         struct galaxy_hab_control_event event;
         result = galaxy_hab_receiver_control(&q->receiver, packet, length, &event);

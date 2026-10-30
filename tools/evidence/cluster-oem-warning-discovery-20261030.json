@@ -1,0 +1,69 @@
+{
+  "date": "2026-10-30",
+  "vehicle_connected": false,
+  "source_archive": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/g733-offline-environment-20261025/rootfs/apps/cluster/FX11_HEV/bin/hmi/GLY_G733/ClusterHMI/warning.kzb",
+  "source_sha256": "b8b7c1c47a6a06e69c8353df413226cef805e95aef5d9148a26ab7fe5ecc6671",
+  "png_crc_valid_count": 291,
+  "png_directory_mapping_verified": false,
+  "warning_state_mapping_verified": false,
+  "bundled_into_apk": false,
+  "notes": "PNG顺序与文本资源目录不是同一排序；不能按数组序号命名。已查看三个候选，不能作为目录映射。",
+  "sources": [
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/g733-offline-environment-20261025/rootfs/apps/cluster/FX11_HEV/bin/hmi/GLY_G733/ClusterHMI/warning.kzb.txt",
+      "sha256": "81e929c7d208ff1a69220ff59d2f992486395cc44a46650dc365b3906aa01c40",
+      "anchors": [
+        {
+          "line": 424,
+          "text": "Textures/WarningC/left_front_door_open"
+        },
+        {
+          "line": 429,
+          "text": "Textures/WarningC/right_front_door_open"
+        },
+        {
+          "line": 430,
+          "text": "Textures/WarningC/seat_belt_red"
+        }
+      ]
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/g733-offline-environment-20261025/rootfs/apps/cluster/FX11_HEV/bin/hmi/GLY_G733/ClusterHMI/ClusterDataSource.xml",
+      "sha256": "9a38b5a5332be8424bf5f754354dc03c055e31a6fd4cb27cfb5301bd736cc682",
+      "anchors": [
+        {
+          "line": 46,
+          "text": "<ElecPowerValue type=\"string\"></ElecPowerValue>"
+        },
+        {
+          "line": 47,
+          "text": "<ElecPowerUnit type=\"string\"></ElecPowerUnit>"
+        },
+        {
+          "line": 48,
+          "text": "<PowerMeterPercentage type=\"int\">0</PowerMeterPercentage>"
+        },
+        {
+          "line": 51,
+          "text": "<PowerMeterUnit type=\"string\"></PowerMeterUnit>"
+        },
+        {
+          "line": 160,
+          "text": "<FLDoorState type=\"int\">0</FLDoorState>"
+        },
+        {
+          "line": 161,
+          "text": "<FRDoorState type=\"int\">0</FRDoorState>"
+        },
+        {
+          "line": 166,
+          "text": "<FLSafetyBeltState type=\"int\">0</FLSafetyBeltState>"
+        },
+        {
+          "line": 167,
+          "text": "<FRSafetyBeltState type=\"int\">0</FRSafetyBeltState>"
+        }
+      ]
+    }
+  ]
+}

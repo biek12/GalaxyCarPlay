@@ -1,0 +1,520 @@
+{
+  "recorded_at": "2026-10-30T12:56:11.298481+08:00",
+  "scope": "research and proposal only; no runtime implementation, APK build, target connection or execution",
+  "decompilation_limits": [
+    "AutoService classes0.jar view incomplete in prior decode",
+    "JADX enum/control flow errors; xb lyric branch not directly usable",
+    "physical local file lines, not JADX original-source line comments"
+  ],
+  "reference_repo": {
+    "path": "references/upstream/DiPlay-ECARX",
+    "commit": "b46ff9be5f1674999dd910792a368bfdcd34fcf1",
+    "url": "https://github.com/jiopia/DiPlay-ECARX"
+  },
+  "apk_samples": [
+    {
+      "app": "AutoService",
+      "version": "0.1.0",
+      "path": ".local/research/geely-third-party-software-analysis/apps/AutoService/AutoService_v0.1.0_20_макет_интерфейса_подписанный.apk",
+      "sha256": "60249ef37b033eb3217348e8426b9e5de907900288172c956443c8ffcbad5d4e",
+      "kind": "existing static APK sample; not executed"
+    },
+    {
+      "app": "AutoDisplay",
+      "version": "3.6.2",
+      "path": ".local/research/geely-third-party-software-analysis/apps/AutoDisplay/AutoDisplay_v3.6.2_50_макет_интерфейса_подписанный.apk",
+      "sha256": "39c676b4f1943d2871c4558f4e8934901badf56ec02b72a57d5fafb5a000bc6e",
+      "kind": "existing static APK sample; not executed"
+    },
+    {
+      "app": "EVCC",
+      "version": "2.9.46",
+      "path": ".local/research/geely-third-party-software-analysis/apps/EVCC/EVCC_v2.9.46_разблокированный_подписанный.apk",
+      "sha256": "5ee838b1940c1d9f20b4b4ac67b244218764abe09856a6951a26d3b0afd47a4c",
+      "kind": "existing static APK sample; not executed"
+    },
+    {
+      "app": "EVCC",
+      "version": "3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/inputs/EVCC_v3.3.3.apk",
+      "sha256": "61c7dd79926640778d1628110b3c6bf221de099806cad4ead703bd9b75023237",
+      "kind": "existing local sample; selected static paths only"
+    }
+  ],
+  "files": [
+    {
+      "source": "autoservice-0.1.0",
+      "path": ".local/decoded/AutoService-v0.1.0/jadx/sources/defpackage/x5.java",
+      "sha256": "1763fd5af07df9ec4651869a6e0e2974d45a98e1571d8625ae602686841e9a6f",
+      "anchors": [
+        {
+          "symbol_or_key": "void subscribe(",
+          "line": 79
+        },
+        {
+          "symbol_or_key": "void unsubscribe(",
+          "line": 100
+        }
+      ]
+    },
+    {
+      "source": "autoservice-0.1.0",
+      "path": ".local/decoded/AutoService-v0.1.0/jadx/sources/com/simplerbit/autoservice/contract/CarPropertyValue.java",
+      "sha256": "6ba1e9e26517759441f52017983aa8ca9606106e8fa7237415024e22fde400dc",
+      "anchors": [
+        {
+          "symbol_or_key": "public int status",
+          "line": 31
+        },
+        {
+          "symbol_or_key": "public long localUpdateTimestampMillis",
+          "line": 28
+        }
+      ]
+    },
+    {
+      "source": "autodisplay-3.6.2",
+      "path": ".local/decoded/AutoDisplay-v3.6.2/jadx/sources/com/simplerbit/autodisplay/vehicle/b.java",
+      "sha256": "6e224cccf5c6bb9721711aed3998b7da5235e97ffa1e2f3d0875bc215020f886",
+      "anchors": [
+        {
+          "symbol_or_key": "void c(CarPropertyValue",
+          "line": 400
+        }
+      ]
+    },
+    {
+      "source": "autodisplay-3.6.2",
+      "path": ".local/decoded/AutoDisplay-v3.6.2/jadx/sources/com/simplerbit/autodisplay/model/OverlayPlacement.java",
+      "sha256": "64e352e96d60ff04dcf37353442a6f81bf413a18f4ca57431f5d78802487e59a",
+      "anchors": [
+        {
+          "symbol_or_key": "private final RectSpec bounds",
+          "line": 27
+        },
+        {
+          "symbol_or_key": "private int lyricAnimationMode",
+          "line": 68
+        },
+        {
+          "symbol_or_key": "private int speedIndicatorAnimationMs",
+          "line": 96
+        }
+      ]
+    },
+    {
+      "source": "autodisplay-3.6.2",
+      "path": ".local/decoded/AutoDisplay-v3.6.2/jadx/sources/defpackage/ym.java",
+      "sha256": "bc09496a7db0ae7805ba5427fb76901df9560bcb9466296eef6c58f4acf1c32d",
+      "anchors": [
+        {
+          "symbol_or_key": "void b(OverlayPlacement",
+          "line": 110
+        },
+        {
+          "symbol_or_key": "JSONObject h(DisplayConfiguration",
+          "line": 393
+        },
+        {
+          "symbol_or_key": "jSONObject.put(\"formatVersion\", 2)",
+          "line": 395
+        }
+      ]
+    },
+    {
+      "source": "autodisplay-3.6.2",
+      "path": ".local/decoded/AutoDisplay-v3.6.2/jadx/sources/defpackage/tn.java",
+      "sha256": "4498cac59712f0e077540bd637554c7aec04e31684d1ccdc9527b317d18ad19d",
+      "anchors": [
+        {
+          "symbol_or_key": "void b(OverlayKind",
+          "line": 134
+        },
+        {
+          "symbol_or_key": "void k(DisplayConfiguration",
+          "line": 341
+        },
+        {
+          "symbol_or_key": "pb pbVar = new pb",
+          "line": 741
+        }
+      ]
+    },
+    {
+      "source": "autodisplay-3.6.2",
+      "path": ".local/decoded/AutoDisplay-v3.6.2/jadx/sources/defpackage/pb.java",
+      "sha256": "390411519915b48f6c0c1ecb988e473f4987fa1e82d48a2ae95f975a64c8547a",
+      "anchors": [
+        {
+          "symbol_or_key": "tc getGaugeStyle()",
+          "line": 763
+        },
+        {
+          "symbol_or_key": "void D()",
+          "line": 959
+        },
+        {
+          "symbol_or_key": "(SystemClock.uptimeMillis() - pbVar.G1) / 420.0f",
+          "line": 1755
+        },
+        {
+          "symbol_or_key": "pbVar.g.a(canvas, width, height, pbVar.M",
+          "line": 1791
+        },
+        {
+          "symbol_or_key": "void setText(String",
+          "line": 2865
+        },
+        {
+          "symbol_or_key": "void onDetachedFromWindow()",
+          "line": 1663
+        }
+      ]
+    },
+    {
+      "source": "autodisplay-3.6.2",
+      "path": ".local/decoded/AutoDisplay-v3.6.2/jadx/sources/defpackage/lb.java",
+      "sha256": "e9254c8b2ecb9a070c808458ddfaeb2bacc95e0bbf81f3fb7c7ec097665e4284",
+      "anchors": [
+        {
+          "symbol_or_key": "float fMin = Math.min(0.05f",
+          "line": 53
+        },
+        {
+          "symbol_or_key": "pbVar.postOnAnimation(this)",
+          "line": 94
+        }
+      ]
+    },
+    {
+      "source": "autodisplay-3.6.2",
+      "path": ".local/decoded/AutoDisplay-v3.6.2/jadx/sources/defpackage/xb.java",
+      "sha256": "c9ee6a3ff2a57994b1379c04425648cb4e978a12b0d59686a1a2e716198f5d67",
+      "anchors": [
+        {
+          "symbol_or_key": "void a(Canvas canvas",
+          "line": 37
+        },
+        {
+          "symbol_or_key": "if (i4 == 1)",
+          "line": 88
+        }
+      ]
+    },
+    {
+      "source": "autodisplay-3.6.2",
+      "path": ".local/decoded/AutoDisplay-v3.6.2/jadx/sources/defpackage/u9.java",
+      "sha256": "42f5c495fbfbdbe2c1a668307f27784a161c7a54e5836b972bf645ad1ff618f4",
+      "anchors": [
+        {
+          "symbol_or_key": "tc g(String",
+          "line": 169
+        },
+        {
+          "symbol_or_key": "optJSONObject(\"needle\")",
+          "line": 209
+        }
+      ]
+    },
+    {
+      "source": "autodisplay-3.6.2",
+      "path": ".local/decoded/AutoDisplay-v3.6.2/jadx/resources/assets/gauges/speed/mercedes_blue/theme.gauge.json",
+      "sha256": "0451be6a2f6c9ef414ab06de316b09fc76ec9944910f98f3d908183bd2490524",
+      "anchors": [
+        {
+          "symbol_or_key": "\"format\"",
+          "line": 2
+        },
+        {
+          "symbol_or_key": "\"range\"",
+          "line": 7
+        },
+        {
+          "symbol_or_key": "\"pivotX\"",
+          "line": 38
+        }
+      ]
+    },
+    {
+      "source": "diplay-ecarx",
+      "path": "references/upstream/DiPlay-ECARX/common/src/main/java/com/shilapi/xcertplay/EcarxClusterPresentation.kt",
+      "sha256": "e43885cb967ddd0d08b07a2111bc04070a54418a70a5ee34412edb793d3d8e0e",
+      "anchors": [
+        {
+          "symbol_or_key": "internal class EcarxClusterPresentation",
+          "line": 35
+        },
+        {
+          "symbol_or_key": "override fun onStop()",
+          "line": 52
+        }
+      ]
+    },
+    {
+      "source": "diplay-ecarx",
+      "path": "references/upstream/DiPlay-ECARX/common/src/main/java/com/shilapi/xcertplay/ClusterMusicView.kt",
+      "sha256": "3f6067ddf06dce68e01a2cf2e776c0a50e37f2c00e4ab9e14ee653e501a0001f",
+      "anchors": [
+        {
+          "symbol_or_key": "override fun onAttachedToWindow()",
+          "line": 38
+        },
+        {
+          "symbol_or_key": "override fun onDraw(canvas",
+          "line": 77
+        }
+      ]
+    },
+    {
+      "source": "diplay-ecarx",
+      "path": "references/upstream/DiPlay-ECARX/shared/src/main/java/com/shilapi/xcertplay/airplay/ClusterSpeedometerOverlay.kt",
+      "sha256": "812592cf5088598bba2fda149801c64aa8fc5e0bdb94febd9517abb4fc5953e1",
+      "anchors": [
+        {
+          "symbol_or_key": "fun rect(",
+          "line": 27
+        }
+      ]
+    },
+    {
+      "source": "evcc-2.9.46",
+      "path": ".local/decoded/EVCC-v2.9.46/jadx/sources/defpackage/px3.java",
+      "sha256": "1c648e78aab4432b29874950f7686100dd268a6200df71d6756fe2be64ce806f",
+      "anchors": [
+        {
+          "symbol_or_key": "void II(Context",
+          "line": 43
+        },
+        {
+          "symbol_or_key": "Object ll(String",
+          "line": 140
+        },
+        {
+          "symbol_or_key": "notifyChange(Uri.parse(ConfigProviderContract.URI_CURRENT_SKIN)",
+          "line": 34
+        }
+      ]
+    },
+    {
+      "source": "evcc-2.9.46",
+      "path": ".local/decoded/EVCC-v2.9.46/jadx/sources/defpackage/tn0.java",
+      "sha256": "ad7ba1d5caaca4c4d24f3558e5c8c44e5a8f2914d222dc7a0c372cfacf2e9f23",
+      "anchors": [
+        {
+          "symbol_or_key": "JSONObject ll1()",
+          "line": 238
+        },
+        {
+          "symbol_or_key": "jSONObject.put(\"gridCol\"",
+          "line": 265
+        }
+      ]
+    },
+    {
+      "source": "evcc-2.9.46",
+      "path": ".local/decoded/EVCC-v2.9.46/jadx/sources/com/kooo/evcc/dashboard/DashboardGridLayout.java",
+      "sha256": "cd923f178c027d567d7608fcc1e979ce8fe6bb746d76ff9191946474a62d1418",
+      "anchors": [
+        {
+          "symbol_or_key": "void onLayout(",
+          "line": 2854
+        },
+        {
+          "symbol_or_key": "v50VarValueOf = v50.valueOf(str16)",
+          "line": 6184
+        },
+        {
+          "symbol_or_key": "ct1 ct1Var = new ct1",
+          "line": 6594
+        },
+        {
+          "symbol_or_key": "bt1 bt1Var = new bt1",
+          "line": 7004
+        }
+      ]
+    },
+    {
+      "source": "evcc-2.9.46",
+      "path": ".local/decoded/EVCC-v2.9.46/jadx/sources/defpackage/au.java",
+      "sha256": "44ba625fce8d10058e33073736a2a333ccce8267b13c4a4d3f777a84398a2442",
+      "anchors": [
+        {
+          "symbol_or_key": "void Il(Canvas canvas)",
+          "line": 88
+        },
+        {
+          "symbol_or_key": "void ll(float f, float f2",
+          "line": 195
+        },
+        {
+          "symbol_or_key": "void onDetachedFromWindow()",
+          "line": 252
+        }
+      ]
+    },
+    {
+      "source": "evcc-2.9.46",
+      "path": ".local/decoded/EVCC-v2.9.46/jadx/sources/defpackage/y50.java",
+      "sha256": "766b4009819538991924bbdb74ccefc59fb511ba398edf2c6363ef40cbb18184",
+      "anchors": [
+        {
+          "symbol_or_key": "void doFrame(long",
+          "line": 26
+        },
+        {
+          "symbol_or_key": "postFrameCallback(this)",
+          "line": 58
+        }
+      ]
+    },
+    {
+      "source": "evcc-2.9.46",
+      "path": ".local/decoded/EVCC-v2.9.46/jadx/sources/defpackage/bt1.java",
+      "sha256": "60dc84109a476d3f6046953688f730498b015e4da919b4414e93df62d965d346",
+      "anchors": [
+        {
+          "symbol_or_key": "void onDraw(Canvas canvas)",
+          "line": 230
+        }
+      ]
+    },
+    {
+      "source": "evcc-2.9.46",
+      "path": ".local/decoded/EVCC-v2.9.46/jadx/sources/defpackage/qx3.java",
+      "sha256": "c95e1976140cbe6c7bc24c591955e38d8a14c0b8ece66474ae9c1016b68892e1",
+      "anchors": [
+        {
+          "symbol_or_key": "ox3.ll(jSONObject4, \"gaugeNeedle\"",
+          "line": 80
+        }
+      ]
+    },
+    {
+      "source": "evcc-2.9.46",
+      "path": ".local/decoded/EVCC-v2.9.46/jadx/sources/defpackage/pw2.java",
+      "sha256": "eb10e6e67bc26b49651af9acde94df275da1e54a1dcd6fc1ceea388bd03232fa",
+      "anchors": [
+        {
+          "symbol_or_key": "new nw2(\"simple_drive\"",
+          "line": 23
+        },
+        {
+          "symbol_or_key": "new nw2(\"neon_stack\"",
+          "line": 57
+        }
+      ]
+    },
+    {
+      "source": "evcc-2.9.46",
+      "path": ".local/decoded/EVCC-v2.9.46/jadx/sources/defpackage/nw2.java",
+      "sha256": "34295f3094a0ccff2032dff3ed7d570017b6cd3dbf9ebb7467d16a019a62fb5b",
+      "anchors": [
+        {
+          "symbol_or_key": "public nw2(",
+          "line": 15
+        },
+        {
+          "symbol_or_key": "NetworkScreenTheme(id=",
+          "line": 39
+        }
+      ]
+    },
+    {
+      "source": "evcc-2.9.46",
+      "path": ".local/decoded/EVCC-v2.9.46/jadx/sources/defpackage/ow2.java",
+      "sha256": "f6d60fbffc35d895e9aa73dac02b9070405a7fd4074977c48bfe126842b2c068",
+      "anchors": [
+        {
+          "symbol_or_key": "public ow2(",
+          "line": 36
+        },
+        {
+          "symbol_or_key": "Bitmap ll(mw2",
+          "line": 95
+        }
+      ]
+    },
+    {
+      "source": "evcc-2.9.46",
+      "path": ".local/decoded/EVCC-v2.9.46/jadx/sources/defpackage/ew2.java",
+      "sha256": "56060e310ed173afdb179c825d1c77e7f81bbce4ebba13c814d51b11d24c4714",
+      "anchors": [
+        {
+          "symbol_or_key": "new ow2(",
+          "line": 65
+        },
+        {
+          "symbol_or_key": "new HandlerThread(\"NetScreenTx\")",
+          "line": 72
+        },
+        {
+          "symbol_or_key": "void O0()",
+          "line": 207
+        }
+      ]
+    },
+    {
+      "source": "evcc-2.9.46",
+      "path": ".local/decoded/EVCC-v2.9.46/jadx/sources/com/kooo/evcc/dashcast/cards/DashcastCardService.java",
+      "sha256": "6b16ab8f2eb609fcd644974d2cfa6fbc5007301a2a533630b4d0fd53deb436df",
+      "anchors": [
+        {
+          "symbol_or_key": "getString(\"cards_preset\"",
+          "line": 263
+        }
+      ]
+    },
+    {
+      "source": "evcc-2.9.46",
+      "path": ".local/decoded/EVCC-v2.9.46/jadx/sources/defpackage/jp0.java",
+      "sha256": "1f88f31b62185e3ce829a65b28f87817c1812bea50cab4a91f38249ab3b2c363",
+      "anchors": [
+        {
+          "symbol_or_key": "auto re-applying last preset",
+          "line": 106
+        },
+        {
+          "symbol_or_key": "(P5 stub)",
+          "line": 124
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/ao0.java",
+      "sha256": "1f481e3e8149674a24d45811b2b97323204e2cc27afdcb7496b70c5e1676fd50",
+      "anchors": [
+        {
+          "symbol_or_key": "GAUGE(\"",
+          "line": 21
+        },
+        {
+          "symbol_or_key": "GAUGE_ARC(\"",
+          "line": 23
+        }
+      ]
+    },
+    {
+      "source": "evcc-3.3.3",
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/references/materials/artifacts/jadx/EVCC-3.3.3/sources/defpackage/r41.java",
+      "sha256": "28d5f1c808471924cfa7fee229fc30b28bc51c05f47bfdaa97706a5ce3f7bd25",
+      "anchors": [
+        {
+          "symbol_or_key": "编辑完成后:",
+          "line": 147
+        }
+      ]
+    }
+  ],
+  "verification": {
+    "recorded_at": "2026-10-30T12:58:07.183375+08:00",
+    "command": "python3 scripts/verify_theme_proposal.py",
+    "result": "passed",
+    "xml_examples": 2,
+    "document_links_checked": 52,
+    "static_files_checked": 29,
+    "runtime_implemented": false,
+    "apk_build_run": false,
+    "device_operations": false
+  }
+}

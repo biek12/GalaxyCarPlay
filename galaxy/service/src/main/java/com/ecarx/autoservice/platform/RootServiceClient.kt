@@ -6,13 +6,16 @@ import android.net.LocalSocketAddress
 import org.json.JSONObject
 import java.io.DataInputStream
 import java.io.DataOutputStream
+import com.ecarx.autoservice.settings.ServiceFeatures
 
 /** 控制连接短用即关；车辆通道复用，避免每轮socket/认证。取消可从其它线程关闭阻塞I/O。 */
 internal object RootServiceClient {
     private val vehicleLock = Any()
     @Volatile private var vehicleSocket: LocalSocket? = null
     fun socketName(context: Context) = RootOwner.current().socketName
-    fun connect(context: Context, timeout: Int = 5000): LocalSocket {
+    fun connect(context: Context, timeout: Int = 5000): LocalSocket = connectOwned(context, timeout, false)
+    private fun connectOwned(context: Context, timeout: Int, stopping: Boolean): LocalSocket {
+        check(stopping || ServiceFeatures.read(context).root) { "root_disabled" }
         val socket = LocalSocket()
         try {
             socket.connect(LocalSocketAddress(socketName(context))); socket.soTimeout = timeout
@@ -28,21 +31,28 @@ internal object RootServiceClient {
             RootWire.read(DataInputStream(socket.inputStream)).also { check(it.has("samples")) }
         } catch (error: Exception) { closeVehicle(); throw error }
     }
-    fun request(context: Context, operation: Int, payload: JSONObject, timeout: Int = 35000): JSONObject = connect(context, timeout).use { socket ->
-        DataOutputStream(socket.outputStream).apply {
-            writeInt(operation)
-            if (operation in 3..5 || operation == 7) {
-                val bytes = payload.toString().toByteArray(Charsets.UTF_8); require(bytes.size <= 16384)
-                writeInt(bytes.size); write(bytes)
+    fun request(context: Context, operation: Int, payload: JSONObject, timeout: Int = 35000, work: ControlWork? = null): JSONObject {
+        check(operation != 7 || ServiceFeatures.read(context).adb) { "adb_disabled" }
+        val socket = connect(context, timeout)
+        val owned = java.io.Closeable { socket.close() }
+        work?.own(owned)
+        try { return socket.use {
+            DataOutputStream(socket.outputStream).apply {
+                writeInt(operation)
+                if (operation in 3..5 || operation == 7) {
+                    val bytes = payload.toString().toByteArray(Charsets.UTF_8); require(bytes.size <= 16384)
+                    writeInt(bytes.size); write(bytes)
+                }
+                flush()
             }
-            flush()
-        }
-        RootWire.read(DataInputStream(socket.inputStream))
+            RootWire.read(DataInputStream(socket.inputStream))
+        } } finally { work?.release(owned) }
     }
     fun closeVehicle() { val socket = vehicleSocket; vehicleSocket = null; runCatching { socket?.close() } }
     fun stop(context: Context) {
         closeVehicle()
-        connect(context).use { socket ->
+        // 关闭开关已经落盘，释放旧helper仍须通过原认证通道，不能被业务入口的开关门控挡住。
+        connectOwned(context, 5000, true).use { socket ->
             DataOutputStream(socket.outputStream).apply { writeInt(2); flush() }
             check(DataInputStream(socket.inputStream).readInt() == 0)
         }

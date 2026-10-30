@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="service_background">#28313C</color>
+    <color name="service_navigation">#1E2732</color>
+    <color name="service_surface">#303A47</color>
+    <color name="service_border">#3B4756</color>
+    <color name="service_foreground">#EDF2F9</color>
+    <color name="service_secondary">#A6B4C6</color>
+    <color name="service_accent">#4A9AFF</color>
+    <color name="service_accent_soft">#263F60</color>
+    <color name="service_track">#596676</color>
+    <color name="service_success">#65C7A0</color>
+    <style name="ServiceTheme" parent="android:style/Theme.Material.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">@color/service_accent</item>
+        <item name="android:windowLightStatusBar">false</item>
+        <item name="android:statusBarColor">@color/service_background</item>
+        <item name="android:navigationBarColor">@color/service_background</item>
+        <item name="android:windowLightNavigationBar">false</item>
+        <item name="android:windowBackground">@color/service_background</item>
+    </style>
+</resources>

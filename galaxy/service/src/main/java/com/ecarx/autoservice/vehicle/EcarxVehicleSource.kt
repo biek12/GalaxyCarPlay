@@ -10,7 +10,7 @@ import java.lang.reflect.Method
 
 /** 只读源：运行时目录＋本机SDK信号定义＋已核验车型映射。拒绝/缺失保留状态，不猜ID或写属性。 */
 internal class EcarxVehicleSource : Closeable {
-    private data class Property(val id: Int, val area: Int, val name: String, val origin: String, val access: Int, val type: String)
+    private data class Property(val id: Int, val area: Int, val name: String, val origin: String, val access: Int, val type: String, val mapped: Boolean = true)
     private var subscription: AutoCloseable? = null
     private var binder: IBinder? = null
     private var proxy: Any? = null
@@ -31,13 +31,28 @@ internal class EcarxVehicleSource : Closeable {
         val sample = samples.compute(key) { _, previous ->
             if (epoch != ticket) previous else Sample(value, status, error, area, android.os.SystemClock.elapsedRealtime(), ticket, sampleSequence.incrementAndGet())
         } ?: return
-        if (sample.epoch == ticket) record(key, sample)
+        if (sample.epoch == ticket && epoch == ticket) {
+            record(key, sample)
+            if(key.first==289475088&&status=="VALID"){
+                val values=when(value){is IntArray->value;is Array<*>->value.filterIsInstance<Int>().toIntArray();else->intArrayOf()}
+                if(values.size>=2)synchronized(keyEvents){
+                    if(epoch!=ticket)return@synchronized
+                    if(keyEvents.size>=128){keyEvents.clear();keyEvents.add(JSONObject().put("reset",true).put("sequence",++keySequence))}
+                    keyEvents.add(JSONObject().put("action",values[0]).put("key",values[1]).put("at",sample.receivedAt).put("sequence",++keySequence))
+                }
+            }
+        }
     }
     private val dirty = java.util.concurrent.ConcurrentHashMap<Pair<Int, Int>, Sample>()
     private var propertiesByKey = emptyMap<Pair<Int, Int>, Property>()
+    private val keyEvents=java.util.ArrayDeque<JSONObject>()
+    private var keySequence=0L
     private var semanticProperties = emptyMap<Int, Property>()
     private val methods = java.util.concurrent.ConcurrentHashMap<Pair<Class<*>, String>, Method>()
     private val knownAreaNormalization = (0x21708998..0x217089A9).toSet() + setOf(0x21607A66, 0x21607A67)
+    // 原厂CarSignalManager用area1读全局信号；CarPropertyUtils保留HAL的area0包装。
+    // VehicleArea.GLOBAL/MASK来自目标服务自身声明，不将座椅/车门区域混成全局。
+    private fun globalArea(id: Int) = id and 0x0f000000 == 0x01000000 || id in knownAreaNormalization
     private fun Any.call(name: String): Any? = methods.getOrPut(javaClass to name) { javaClass.getMethod(name) }.invoke(this)
     private fun connect(specs: List<SignalSpec>) {
         if (binder?.isBinderAlive == true && proxy != null) return
@@ -59,13 +74,23 @@ internal class EcarxVehicleSource : Closeable {
         proxy = current; binder = signal; ++epoch
         val properties = linkedMapOf<Pair<Int, Int>, Property>()
         // 读取本车已安装SDK的符号表；它是来源声明，绝不标成运行时已支持。
-        runCatching {
-            val names = Class.forName("ecarx.car.hardware.property.SigPropertyIdString", true, loader)
-                .getField("sigIdToStringMap").get(null) as Map<*, *>
-            names.forEach { (id, name) -> if (id is Int && name is String)
-                properties[id to 1] = Property(id, 1, name, "firmware_declared", -1, "unknown") }
+        for ((type, field) in listOf("SigPropertyIdString" to "sigIdToStringMap", "MgrPropertyIdString" to "mgrIdToStringMap")) {
+            runCatching {
+                val names = Class.forName("ecarx.car.hardware.property.$type", true, loader)
+                    .getField(field).get(null) as Map<*, *>
+                names.forEach { (id, name) -> if (id is Int && name is String)
+                    properties[id to 1] = Property(id, 1, name, "firmware_declared", -1, "unknown") }
+            }.onFailure { com.ecarx.autoservice.ServiceTrace.event("vehicle_symbols_$type", it) }
         }
-        specs.forEach { properties[it.propertyId to 1] = Property(it.propertyId, 1, it.name, "model_mapping", -1, "number") }
+        fun symbol(name: String) = name.replace("_", "").lowercase(java.util.Locale.ROOT)
+        val declaredByName = properties.values.associateBy { symbol(it.name) }
+        specs.forEach {
+            val declared = declaredByName[symbol(it.name)]
+            if (declared != null) {
+                properties[declared.id to it.area] = declared.copy(area = it.area)
+                if (it.area != 1) properties.remove(declared.id to 1)
+            } else properties.putIfAbsent(it.propertyId to it.area, Property(it.propertyId, it.area, it.name, "model_mapping", -1, if(it.payload=="ecarx-pa-enum")"bytes"else"number"))
+        }
         val listed = runCatching { type.getMethod("getPropertyList").invoke(current) as? List<*> }
         discovery = when { listed.isFailure -> "catalog_rejected"; listed.getOrNull() == null -> "catalog_null"; else -> "runtime_catalog" }
         listed.getOrNull()?.filterNotNull()?.forEach { config ->
@@ -77,9 +102,18 @@ internal class EcarxVehicleSource : Closeable {
             val valueType = (config.call("getPropertyType") as Class<*>).name
             areas.forEach { area -> properties[id to area] = Property(id, area, name, "runtime_catalog", access, valueType) }
         }
-        inventory = properties.values.toList(); cursor = 0
-        propertiesByKey = properties.toMap()
-        semanticProperties = specs.mapNotNull { spec -> inventory.firstOrNull { it.id == spec.propertyId && (it.access == -1 || it.access and 1 != 0) }?.let { spec.propertyId to it } }.toMap()
+        // 本车CarSignalService.sendLatestValueToListener会对filter每项调用getProperty，
+        // 未映射ID会抛异常中断整次注册。读取当前固件自身的纯ID映射，不把声明表当支持表。
+        val mappingLoader = dalvik.system.PathClassLoader("/system/priv-app/ECarXCarService/ECarXCarService.apk", loader)
+        val mappingType = Class.forName("com.ecarx.car.hal.HalPropertyIdTransformation", true, mappingLoader)
+        val mapping = mappingType.getDeclaredField("mHaltoMgrPropIdMap").apply { isAccessible = true }.get(null)
+        val halId = mapping.javaClass.getDeclaredMethod("getHalPropId", Int::class.javaPrimitiveType).apply { isAccessible = true }
+        inventory = properties.values.map { it.copy(mapped = (halId.invoke(mapping, it.id) as Int) != -1) }; cursor = 0
+        propertiesByKey = inventory.associateBy { it.id to it.area }
+        semanticProperties = specs.mapNotNull { spec ->
+            val resolvedId = declaredByName[symbol(spec.name)]?.id ?: spec.propertyId
+            inventory.firstOrNull { it.id == resolvedId && (it.access == -1 || it.access and 1 != 0) }?.let { spec.propertyId to it }
+        }.toMap()
         val ticket = epoch
         // 原厂读取依赖信号注册后刷新缓存；按已核验Manager调用顺序订阅，并配套注销。
         runCatching {
@@ -101,7 +135,7 @@ internal class EcarxVehicleSource : Closeable {
                                 val id = (wrapper.call("getPropertyId") as Number).toInt()
                                 val area = (wrapper.call("getAreaId") as Number).toInt()
                                 val key = if (propertiesByKey.containsKey(id to area)) id to area
-                                    else if (area == 0 && id in knownAreaNormalization && propertiesByKey.containsKey(id to 1)) id to 1 else return@runCatching
+                                    else if (area == 0 && globalArea(id) && propertiesByKey.containsKey(id to 1)) id to 1 else return@runCatching
                                 val value = wrapper.call("getValue")
                                 if (epoch == ticket) {
                                     acceptEvent(key, value, if (value == null) "UNAVAILABLE" else "VALID", "", area, ticket)
@@ -124,7 +158,7 @@ internal class EcarxVehicleSource : Closeable {
                 val filterType = Class.forName("ecarx.car.hardware.signal.SignalFilter", true, loader)
                 val filter = filterType.getConstructor().newInstance()
                 val add = filterType.getMethod("add", Int::class.javaObjectType)
-                inventory.filter { it.access == -1 || it.access and 1 != 0 }.map { it.id }.distinct().forEach { add.invoke(filter, it) }
+                inventory.filter { it.mapped && (it.access == -1 || it.access and 1 != 0) }.map { it.id }.distinct().forEach { add.invoke(filter, it) }
                 managerType.getMethod("registerCallback", callbackType).invoke(manager, callback)
                 try { managerType.getMethod("registerSignals", filterType).invoke(manager, filter) }
                 catch (error: Exception) { runCatching { managerType.getMethod("unregisterCallback", callbackType).invoke(manager, callback) }; throw error }
@@ -134,7 +168,13 @@ internal class EcarxVehicleSource : Closeable {
                     thread.quitSafely()
                 }
             } catch (error: Exception) { thread.quitSafely(); throw error }
-        }.onFailure { discovery += ":subscription_rejected" }
+        }.onSuccess {
+            com.ecarx.autoservice.ServiceTrace.event("vehicle_subscription_ready")
+        }.onFailure {
+            val cause = (it as? InvocationTargetException)?.targetException ?: it
+            discovery += ":subscription_${cause.javaClass.simpleName}"
+            com.ecarx.autoservice.ServiceTrace.event("vehicle_subscription_failed", it)
+        }
     }
     fun cycle(specs: List<SignalSpec>, now: Long, model: String): JSONObject {
         if (model != lastModel) { close(); lastModel = model }
@@ -142,6 +182,7 @@ internal class EcarxVehicleSource : Closeable {
         val raw = JSONArray()
         try {
             connect(specs)
+            val semanticIds = semanticProperties.values.mapTo(HashSet()) { it.id }
             val selected = linkedMapOf<Pair<Int, Int>, Property>()
             semanticProperties.values.forEach { selected[it.id to it.area] = it }
             // 每轮最多推进32个通用属性，避免把数千个信号一次阻塞在主线程/IPC里。
@@ -152,7 +193,7 @@ internal class EcarxVehicleSource : Closeable {
             dirty.keys.toList().take(128).forEach { key -> propertiesByKey[key]?.let { selected[key] = it } }
             selected.values.forEach { property ->
                 val key = property.id to property.area
-                val maxAge = if (semanticProperties.containsKey(property.id)) 500L else maxOf(2000L, ((inventory.size + 31) / 32) * 500L)
+                val maxAge = if (property.id in semanticIds) 500L else maxOf(2000L, ((inventory.size + 31) / 32) * 500L)
                 val cached = samples[key]?.takeIf { it.epoch == epoch }
                 if (cached != null && now - cached.receivedAt in 0 until maxAge) return@forEach
                 var value: Any? = null
@@ -160,7 +201,9 @@ internal class EcarxVehicleSource : Closeable {
                 var error = ""
                 var responseArea = -1
                 try {
-                    if (property.access != -1 && property.access and 1 == 0) {
+                    if (!property.mapped) {
+                        status = "REJECTED"; error = "firmware_unmapped"
+                    } else if (property.access != -1 && property.access and 1 == 0) {
                         status = "REJECTED"; error = "not_readable"
                     } else {
                         val wrapper = reader!!.invoke(proxy, property.id, property.area) ?: error("empty_value")
@@ -168,7 +211,7 @@ internal class EcarxVehicleSource : Closeable {
                         responseArea = (wrapper.call("getAreaId") as Number).toInt()
                         value = wrapper.call("getValue")
                         val areaValid = responseArea == property.area ||
-                            (property.area == 1 && responseArea == 0 && property.id in knownAreaNormalization)
+                            (property.area == 1 && responseArea == 0 && property.mapped && globalArea(property.id))
                         status = if (!areaValid) "REJECTED" else if (value != null) "VALID" else "UNAVAILABLE"
                         if (!areaValid) error = "area_mismatch"
                     }
@@ -191,6 +234,7 @@ internal class EcarxVehicleSource : Closeable {
                 raw.put(JSONObject().apply {
                     put("propertyId", property.id); put("areaId", property.area); put("responseAreaId", sample.responseArea)
                     put("name", property.name); put("origin", property.origin); put("access", property.access)
+                    put("firmwareMapped", property.mapped)
                     put("type", value?.javaClass?.name ?: property.type); put("receivedAt", sample.receivedAt)
                     put("maxAgeMillis", maxOf(2000L, ((inventory.size + 31) / 32) * 500L))
                     put("status", sample.status); put("error", sample.error); put("value", encode(value))
@@ -206,10 +250,11 @@ internal class EcarxVehicleSource : Closeable {
                 val status = if (state == "VALID" && normalized == null) "UNAVAILABLE" else state
                 aliases.put(JSONObject().apply {
                     put("key", spec.key); put("value", normalized ?: JSONObject.NULL); put("unit", spec.unit)
-                    put("property", spec.propertyId); put("receivedAt", sample?.receivedAt ?: now); put("epoch", epoch); put("status", status)
+                    put("property", property?.id ?: spec.propertyId); put("receivedAt", sample?.receivedAt ?: now); put("epoch", epoch); put("status", status)
                 })
             }
-        } catch (_: Exception) {
+        } catch (failure: Exception) {
+            com.ecarx.autoservice.ServiceTrace.event("vehicle_cycle_failed", failure)
             discovery = "not_connected"
             specs.forEach { spec -> aliases.put(JSONObject().apply {
                 put("key", spec.key); put("value", JSONObject.NULL); put("unit", spec.unit); put("property", spec.propertyId)
@@ -217,6 +262,7 @@ internal class EcarxVehicleSource : Closeable {
             }) }
         }
         return JSONObject().apply {
+            put("keyEvents",synchronized(keyEvents){JSONArray().apply { while(keyEvents.isNotEmpty())put(keyEvents.removeFirst()) }})
             put("samples", aliases); put("properties", raw); put("discovery", discovery)
             put("total", inventory.size); put("cursor", cursor); put("session", "$model:$instance:$epoch")
         }
@@ -229,5 +275,5 @@ internal class EcarxVehicleSource : Closeable {
         value is Number || value is Boolean || value is String -> value.toString()
         else -> "unsupported:${value.javaClass.name}"
     }
-    override fun close() { ++epoch; samples.clear(); dirty.clear(); propertiesByKey = emptyMap(); semanticProperties = emptyMap(); runCatching { subscription?.close() }; subscription = null; binder = null; proxy = null; reader = null; inventory = emptyList(); cursor = 0 }
+    override fun close() { ++epoch;synchronized(keyEvents){keyEvents.clear();keySequence=0}; samples.clear(); dirty.clear(); propertiesByKey = emptyMap(); semanticProperties = emptyMap(); runCatching { subscription?.close() }; subscription = null; binder = null; proxy = null; reader = null; inventory = emptyList(); cursor = 0 }
 }

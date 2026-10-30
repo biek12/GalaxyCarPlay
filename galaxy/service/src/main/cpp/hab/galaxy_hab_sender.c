@@ -2,6 +2,7 @@
 #define _POSIX_C_SOURCE 200112L
 #include "galaxy_hab_sender.h"
 #include "galaxy_hab_pixels.h"
+#include "galaxy_hab_owned.h"
 #include <errno.h>
 #include <stdatomic.h>
 #include <stdlib.h>
@@ -34,6 +35,8 @@ int galaxy_hab_sender_close(struct galaxy_hab_sender *s)
     s->session = 0;
     s->sign = NULL;
     s->sign_context = NULL;
+    s->owned_consumption = 0;
+    s->owned_failed = 0;
     return first_error;
 }
 
@@ -96,20 +99,83 @@ int galaxy_hab_sender_frame(struct galaxy_hab_sender *s, uint32_t index,
     const struct galaxy_hab_stream_layout *stream;
     uint32_t hash = 0;
     int result;
+    unsigned attempt;
+    size_t received;
     if (!s || !s->ready) return -ENOTCONN;
+    if (s->owned_failed) return -EPIPE;
     if (index >= s->layout.count || !source || !capacity) return -EINVAL;
     stream = &s->layout.streams[index];
     ++s->sequence; /* 样本为全局u32序号，首帧slot1，转换错误也消耗已分配的序号。 */
     slot = s->memory + stream->base + (size_t)(s->sequence % stream->slots) * stream->slot_bytes;
-    result = galaxy_hab_pack_bgra(slot, stream->slot_bytes, stream->stride,
-                                  source, capacity, row_stride, pixel_stride,
-                                  stream->target.width, stream->target.height);
-    if (result) return result;
-    atomic_thread_fence(memory_order_seq_cst); /* AArch64编译为DMB ISH，对标样本提交前屏障。 */
-    if (s->sequence % 30u == 0) hash = galaxy_hab_sample_hash(slot, stream->slot_bytes);
-    result = galaxy_hab_encode_frame(packet, &s->layout, s->export_id, s->sequence, index, hash);
-    if (result) return result;
-    return galaxy_hab_transport_send(&s->transport, packet, sizeof(packet));
+    for (attempt = 0; attempt < 3; ++attempt) {
+        if (attempt) {
+            /* POSTED前本owner不会写slot；重传请求到达时先核对自身映射是否也变了。
+             * 本地已变即保留证据并退出，不能重算期望值把损坏的帧洗成有效帧。 */
+            s->checksum_local = galaxy_hab_sample_hash(slot, stream->slot_bytes);
+            if (s->checksum_local != hash) {
+                ++s->local_hash_failures;
+                s->owned_failed = 1;
+                return -EBADMSG;
+            }
+        }
+        result = galaxy_hab_pack_bgra(slot, stream->slot_bytes, stream->stride,
+            source, capacity, row_stride, pixel_stride, stream->target.width, stream->target.height);
+        if (result) return result;
+        /* 协议hash包含页对齐尾部；每次发布都使非像素部分确定，不依赖前一代内容。 */
+        size_t image_bytes = (size_t)stream->stride * stream->target.height;
+        memset(slot + image_bytes, 0, stream->slot_bytes - image_bytes);
+        atomic_thread_fence(memory_order_seq_cst); /* AArch64 DMB ISH，对标样本提交前屏障。 */
+        if (s->owned_consumption || s->sequence % 30u == 0) {
+            uint32_t packed_hash = galaxy_hab_sample_hash(slot, stream->slot_bytes);
+            if (attempt && packed_hash != hash) {
+                s->checksum_local = packed_hash;
+                ++s->local_hash_failures;
+                s->owned_failed = 1;
+                return -EBADMSG;
+            }
+            hash = packed_hash;
+        }
+        result = galaxy_hab_encode_frame(packet, &s->layout, s->export_id, s->sequence, index, hash);
+        if (result) return result;
+        result = galaxy_hab_transport_send(&s->transport, packet, sizeof(packet));
+        if (!s->owned_consumption) return result;
+        if (result) { s->owned_failed = 1; return result; }
+        result = galaxy_hab_transport_receive(&s->transport, packet, sizeof(packet), 0, &received);
+        if (result) { s->owned_failed = 1; return result; }
+        result = galaxy_hab_owned_check(packet, received, GALAXY_HAB_OWNED_POSTED,
+            s->sequence, s->export_id, index, s->session, s->sign, s->sign_context);
+        if (!result) return 0;
+        if (attempt < 2 && !galaxy_hab_owned_check(packet, received, GALAXY_HAB_OWNED_RETRY,
+            s->sequence, s->export_id, index, s->session, s->sign, s->sign_context)) {
+            s->checksum_sequence = s->sequence;
+            s->checksum_expected = hash;
+            ++s->checksum_retries;
+            continue;
+        }
+        s->owned_failed = 1;
+        return result;
+    }
+    s->owned_failed = 1;
+    return -EBADMSG;
+}
+
+int galaxy_hab_sender_enable_consumption(struct galaxy_hab_sender *s)
+{
+    uint8_t packet[GALAXY_HAB_PACKET_SIZE];
+    size_t received;
+    int result;
+    if (!s || !s->ready) return -ENOTCONN;
+    if (s->owned_failed) return -EPIPE;
+    if (s->owned_consumption) return -EALREADY;
+    result = galaxy_hab_owned_encode(packet, GALAXY_HAB_OWNED_HELLO, 0,
+        s->export_id, 0, s->session, s->sign, s->sign_context);
+    if (!result) result = galaxy_hab_transport_send(&s->transport, packet, sizeof(packet));
+    if (!result) result = galaxy_hab_transport_receive(&s->transport, packet, sizeof(packet), 0, &received);
+    if (!result) result = galaxy_hab_owned_check(packet, received, GALAXY_HAB_OWNED_READY,
+        0, s->export_id, 0, s->session, s->sign, s->sign_context);
+    if (!result) s->owned_consumption = 1;
+    else s->owned_failed = 1;
+    return result;
 }
 
 int galaxy_hab_sender_z_order(struct galaxy_hab_sender *s, int32_t index, int32_t z_order)

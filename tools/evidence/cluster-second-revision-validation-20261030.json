@@ -1,0 +1,65 @@
+{
+  "recorded_at": "2026-10-30T17:42:10.860192+08:00",
+  "command": "bash scripts/verify_cluster_preflight.sh --package",
+  "passed": true,
+  "jvm_test_count": 117,
+  "python_tool_tests": 48,
+  "native_contract_groups": 11,
+  "browser_interaction_groups": 8,
+  "checks": [
+    "platform",
+    "tools",
+    "source-contracts",
+    "review-assets",
+    "browser-review",
+    "theme-evidence",
+    "copy-benchmark",
+    "native-address-undefined-sanitizers"
+  ],
+  "apps": {
+    "mobile": {
+      "package": "com.ecarx.carplay",
+      "sha256": "67311ee653efa4f155fc2490bd019eac4d2ecde68c80b750429fe75aef37bd87",
+      "bytes": 61067931,
+      "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121"
+    },
+    "service": {
+      "package": "com.ecarx.autoservice",
+      "sha256": "7c6a6adb6df4fe94053271ad3203ff9159c33a46f72d9493b87d3ac141a1337b",
+      "bytes": 13802010,
+      "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121"
+    },
+    "cluster": {
+      "package": "com.galaxy.autocluster",
+      "sha256": "7b553b22f69a502c40239f3217a0806fb7b096d1b3fb54241f5cacd5fe912976",
+      "bytes": 3425064,
+      "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121"
+    }
+  },
+  "gpu_test": {
+    "sha256": "5c2c573513a4fc3a1699de7ddeb73965d7fd758ea8bdf22aafe196de6576e1e7",
+    "bytes": 145276,
+    "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121",
+    "executed": false
+  },
+  "qnx_receiver_sha256": "1faa808e73b262bb06985db62a887e4831362872d2d3288b7e386eb83df69b86",
+  "test_bundle": ".work/vehicle-test/cluster-editor-20261030-174212",
+  "bundle_file_count": 2146,
+  "bundle_manifest_sha256": "ae8e2f33b99ff53287cca1672d76a6b8ac6139c81f8447ab06281be82b8e3ef6",
+  "source_manifest_sha256": "409141fb29186739db3ebdf57ccc518626c5168db19e0e123cdfe608aaa31755",
+  "components": 24,
+  "presets": 72,
+  "builtin_themes": 6,
+  "lint_run": false,
+  "vehicle_connected": false,
+  "installed": false,
+  "qnx_sdk_build_complete": false,
+  "not_verified": [
+    "Android real EGL/SurfaceTexture/ImageReader driver execution",
+    "8155 CPU/PSS/threads/FD and measured display FPS",
+    "CarPlay native111 live content and QNX Screen visible output",
+    "OEM image transmission warning root cause/absence",
+    "OEM tire/range layout calibration",
+    "Cruise target units and independent regenerative power kW source"
+  ]
+}

@@ -19,7 +19,7 @@ def main():
         parser.error("NDK 28.2.13676358未安装；不自动下载")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     sources = [HAB / f"galaxy_hab_{name}.c" for name in
-               ("transport", "linux", "pixels", "protocol", "sender", "hmac", "bridge")]
+               ("transport", "linux", "pixels", "protocol", "owned", "sender", "hmac", "bridge")]
     subprocess.run([str(compiler), "-std=c11", "-O2", "-g", "-fPIE", "-pie",
                     "-fno-omit-frame-pointer", "-Wall", "-Wextra", "-Wpedantic", "-Werror",
                     "-I", str(HAB), *map(str, sources), "-o", str(args.output)], check=True)

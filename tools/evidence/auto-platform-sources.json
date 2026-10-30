@@ -1,0 +1,34 @@
+{
+  "date": "2026-10-30",
+  "reference_only": true,
+  "sources": [
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/.local/decoded/AutoService-v0.1.0/jadx/resources/assets/vhal_fs12_signal_mapping.json",
+      "sha256": "8fb86ab8c3cabcc32e1fbf45f9814d777e35c9bf4ae201aae771b9fea1eb3935"
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/.local/decoded/AutoService-v0.1.0/jadx/resources/assets/vhal_fx12_signal_mapping.json",
+      "sha256": "59d0db36d0d5b0d928b0a2a016359192483bfbc37ad5d218a7813b7b8b403351"
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/.local/decoded/AutoService-v0.1.0/jadx/resources/assets/car_properties.json",
+      "sha256": "3934976c8189292e834cdfb9dbbd78d398b9d894b87a6f6153f7810dc02bdc51"
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/.local/decoded/AutoService-v0.1.0/jadx/sources/defpackage/r8.java",
+      "sha256": "25c5dfac92335e83253ead2914b767800a568cabff6434be62d06a9ad9b7c168"
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/.local/decoded/AutoDisplay-v3.6.2/jadx/sources/defpackage/an.java",
+      "sha256": "57a9c90c3eafbca424b59e768c4e3787a32e833b6dd70ecc128b0b4f19364e98"
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/telemetry-live-20261025/sdk-sources/sources/ecarx/car/hardware/property/IECarXCarProperty.java",
+      "sha256": "9391093d62f61e750baff66335319147aaf8298e3d60ba30dd62f04af3017c90"
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/adaptation/vehicle/geely/galaxy8155/AidlCarPropertyAdapter.kt",
+      "sha256": "dbfff220114b0250969de708bd76b0a2634f3b3cce5707b15342582411adf286"
+    }
+  ]
+}

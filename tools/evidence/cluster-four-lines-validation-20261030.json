@@ -1,0 +1,63 @@
+{
+  "completed_at": "2026-10-30T18:20:13.947336+08:00",
+  "passed": true,
+  "jvm_test_count": 124,
+  "checks": [
+    "platform",
+    "tools",
+    "source-contracts",
+    "review-assets",
+    "browser-review",
+    "theme-evidence",
+    "copy-benchmark",
+    "native-address-undefined-sanitizers"
+  ],
+  "apps": {
+    "mobile": {
+      "package": "com.ecarx.carplay",
+      "sha256": "67311ee653efa4f155fc2490bd019eac4d2ecde68c80b750429fe75aef37bd87",
+      "bytes": 61067931,
+      "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121"
+    },
+    "service": {
+      "package": "com.ecarx.autoservice",
+      "sha256": "66559f1a6e84a363395a55186b0be76f94c2439e5c506348d5165944f5e5863b",
+      "bytes": 13804298,
+      "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121"
+    },
+    "cluster": {
+      "package": "com.galaxy.autocluster",
+      "sha256": "b498774076b0e266103eadc420d6c352c0d8935293fa2d557963fa5946787266",
+      "bytes": 3576220,
+      "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121"
+    }
+  },
+  "gpu_test": {
+    "sha256": "5c2c573513a4fc3a1699de7ddeb73965d7fd758ea8bdf22aafe196de6576e1e7",
+    "bytes": 145276,
+    "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121",
+    "executed": false
+  },
+  "qnx_receiver_sha256": "1faa808e73b262bb06985db62a887e4831362872d2d3288b7e386eb83df69b86",
+  "not_verified": [
+    "Android real EGL/SurfaceTexture/ImageReader driver execution",
+    "8155 CPU/PSS/threads/FD and measured display FPS",
+    "CarPlay native111 live content and QNX Screen visible output",
+    "OEM image transmission warning root cause/absence"
+  ],
+  "command": "bash scripts/verify_cluster_preflight.sh --package",
+  "python_tool_tests": 48,
+  "test_bundle": ".work/vehicle-test/cluster-editor-20261030-182015",
+  "bundle_file_count": 2155,
+  "bundle_zip_sha256": "2f319fb1be30bef039681d4b94daddb8fb86bc5396673fc47b18831e088032d3",
+  "vehicle_connected": false,
+  "installed": false,
+  "lint_run": false,
+  "lyrics_rows": 4,
+  "past_rows": 1,
+  "future_rows": 2,
+  "progress_width": 220,
+  "drive_mode_read_property": 561023639,
+  "drive_mode_read_area": 0,
+  "mode_current_vehicle_tested": false
+}

@@ -1,0 +1,57 @@
+{
+  "validatedAt": "2026-10-30T12:06:29.201848+08:00",
+  "command": "scripts/verify_auto_platform.sh",
+  "jvmTests": 64,
+  "habAndProvisionTests": 15,
+  "lintRun": false,
+  "installed": false,
+  "deviceTested": false,
+  "qnxNativeChanged": false,
+  "scenarios": [
+    "installed_receiver_idle_exit_wakes_without_copy",
+    "qnx_reboot_wakes_existing_binary",
+    "reused_pid_does_not_terminate_foreign_process",
+    "first_install_then_running_reuse",
+    "invalid_binary_never_started",
+    "demand_expedites_root_backoff",
+    "inflight_root_recovery_is_shared",
+    "stopped_mode_rejects_late_demand"
+  ],
+  "apps": {
+    "mobile": {
+      "package": "com.ecarx.carplay",
+      "sha256": "efbbbf774af0a0ea926ce192c580326c3f5d2f9e3b76b4fb118fd737299bd011",
+      "bytes": 61045475,
+      "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121"
+    },
+    "service": {
+      "package": "com.ecarx.autoservice",
+      "sha256": "f0991c9d748ca09a54152430c99cfe54b6461a47c61017d6655d30b9aad20321",
+      "bytes": 13619099,
+      "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121"
+    },
+    "cluster": {
+      "package": "com.galaxy.autocluster",
+      "sha256": "a3b7d8f0f83e5ea5cc625853474dadf8f93104be9a92f44edadf162b03c7521f",
+      "bytes": 2691459,
+      "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121"
+    }
+  },
+  "sourceSha256": {
+    "galaxy/service/src/main/java/com/ecarx/autoservice/AutoService.kt": "c8ff717f5852495cef03e994f89b18dab88ec9302421acc2a8a29469533b6563",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/FoundationRecovery.kt": "36018b5393c58a83018b48c88acf81d6bc991de2e0a19cf040b383ce5a8e179d",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/PlatformCoordinator.kt": "22f1086bc80f3848e8188cd537f2e8bb5073c3a1c8f9a064823d49ab5f35af30",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxReceiverDeployer.kt": "e6753cadc301537933b009734b7f6703c78bb2280ae36b52497f04b6e144b999",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxReceiverLifecycle.kt": "bca5880daf509457176fb2a69185fd72eaa8f1cf46e007cfdfcc77f910101044",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxReceiverRemote.kt": "9142946b29b304409e6b77b11e1bdcda4e08499f2e524f027791f60c1f4d9ebe",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabComposition.kt": "56b312f64bdba06758efa011801503acdca2afc659d8e2fda0835a6d0604f846",
+    "galaxy/service/src/test/java/com/ecarx/autoservice/platform/FoundationRecoveryTest.kt": "d2b75a70ebf413a59cda3dad3a58dac6b76b6f04ccb2a77113dbcfca1a9b77ed",
+    "galaxy/service/src/test/java/com/ecarx/autoservice/platform/QnxReceiverLifecycleTest.kt": "a61118c9ccac742a8a0c272e0512d403f78f1b9ea2804884360c33ccd27b8173",
+    "galaxy/service/src/test/java/com/ecarx/autoservice/platform/QnxReceiverRemoteTest.kt": "715fc97b27136cc7c725a757e5dea67cee8bfa211b9b6da47136cce482007f10"
+  },
+  "limitations": [
+    "POSIX shell fixture substitutes pidin and kill; not a QNX runtime test",
+    "QNX candidate uses reconstructed ABI; no new SDP build or physical wake/display acceptance",
+    "No new vehicle installation or CPU/memory measurements"
+  ]
+}

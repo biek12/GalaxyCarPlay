@@ -8,6 +8,7 @@ add_library(galaxy_hab STATIC
     galaxy_hab_linux.c
     galaxy_hab_pixels.c
     galaxy_hab_protocol.c
+    galaxy_hab_owned.c
     galaxy_hab_sender.c
     galaxy_hab_hmac.c
     galaxy_hab_receiver.c

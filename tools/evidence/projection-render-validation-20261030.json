@@ -1,0 +1,237 @@
+{
+  "recorded_at": "2026-10-30T12:31:34.094734+08:00",
+  "branch": "feat/autoservice-cluster",
+  "validation_commands": [
+    {
+      "command": "GALAXY_QNX_ROOTFS=<existing local captured rootfs> scripts/verify_projection.sh",
+      "log": ".work/logs/verify-projection.log",
+      "result": "passed; 11 native + 2 sampling tests; JVM/3 APK; host synthetic benchmark"
+    },
+    {
+      "command": "scripts/verify_autoservice_remediation.sh",
+      "log": ".work/logs/verify-projection-jvm-final.log",
+      "result": "passed after event-driven frame wake change"
+    }
+  ],
+  "jvm": {
+    "service": {
+      "tests": 52,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "cluster": {
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "artifacts": [
+    {
+      "path": "galaxy/service/build/outputs/apk/debug/service-debug.apk",
+      "sha256": "c774214272d2b2d1e60ee420b740436b06aea06d76b231aa0dc3c9498eff6f32",
+      "bytes": 13755187
+    },
+    {
+      "path": "galaxy/cluster/build/outputs/apk/debug/cluster-debug.apk",
+      "sha256": "cee0cda8701c5ad8c1169c6f4397c25c99a8e742bcfdda0b0a84cc3ffa5d47e7",
+      "bytes": 2691847
+    },
+    {
+      "path": "galaxy/mobile/build/outputs/apk/debug/mobile-debug.apk",
+      "sha256": "efbbbf774af0a0ea926ce192c580326c3f5d2f9e3b76b4fb118fd737299bd011",
+      "bytes": 61045475
+    }
+  ],
+  "qnx_candidate": {
+    "name": "galaxy_hab_qnx_probe-candidate",
+    "sha256": "bed82fdc74c6d1d30ece735f5d2f3981b46baacb5c3a2afccde6f10f2c686fd9",
+    "bytes": 105344,
+    "build_class": "qnx-reconstructed-abi-candidate-not-sdk",
+    "target": "aarch64le",
+    "interpreter": "/usr/lib/ldqnx-64.so.2",
+    "needed": [
+      "libc.so.4",
+      "libuhab-qvmhost.so",
+      "libpmem_client.so",
+      "libscreen.so.1"
+    ],
+    "entry": "0x1fdc",
+    "undefined_symbols": [
+      "__get_errno_ptr",
+      "_init_libc",
+      "close",
+      "exit",
+      "free",
+      "habmm_import",
+      "habmm_socket_close",
+      "habmm_socket_open",
+      "habmm_socket_recv",
+      "habmm_socket_send",
+      "habmm_unimport",
+      "malloc",
+      "memcmp",
+      "memcpy",
+      "memset",
+      "open",
+      "pmem_deinit",
+      "pmem_init",
+      "pmem_map_handle",
+      "pmem_unmap_handle",
+      "read",
+      "screen_create_context",
+      "screen_create_window",
+      "screen_create_window_buffers",
+      "screen_destroy_context",
+      "screen_destroy_window",
+      "screen_flush_context",
+      "screen_get_buffer_property_iv",
+      "screen_get_buffer_property_pv",
+      "screen_get_context_property_iv",
+      "screen_get_context_property_pv",
+      "screen_get_display_property_iv",
+      "screen_get_window_property_iv",
+      "screen_get_window_property_pv",
+      "screen_post_window",
+      "screen_set_window_property_iv",
+      "screen_set_window_property_pv",
+      "signal",
+      "strcmp",
+      "strlen",
+      "write"
+    ],
+    "system_library_evidence": [
+      {
+        "soname": "libc.so.4",
+        "sha256": "ce94da81ea340fbf94637953ba5fc9004b7596f3c2b6e624253cb7ea30d77c86",
+        "imported_symbols": {
+          "_init_libc": "0x7fe98",
+          "__get_errno_ptr": "0x80ce8",
+          "exit": "0x3f1e0",
+          "malloc": "0x38968",
+          "free": "0x38b70",
+          "memset": "0x7ce28",
+          "memcpy": "0x7c958",
+          "memcmp": "0x7c380",
+          "strcmp": "0x7bef8",
+          "strlen": "0x78fb8",
+          "read": "0x291f8",
+          "write": "0x2a848",
+          "open": "0x27d00",
+          "close": "0x27da8",
+          "signal": "0x27340"
+        }
+      },
+      {
+        "soname": "libuhab-qvmhost.so",
+        "sha256": "489109f6c0e3b741a820f36c7212194bd6842faaa3ae86acc01e55bcc98e981e",
+        "imported_symbols": {
+          "habmm_socket_open": "0x18c8",
+          "habmm_socket_recv": "0x2764",
+          "habmm_socket_send": "0x2528",
+          "habmm_socket_close": "0x21d0",
+          "habmm_import": "0x2ee4",
+          "habmm_unimport": "0x3580"
+        }
+      },
+      {
+        "soname": "libpmem_client.so",
+        "sha256": "5163764d71aed85b5cf953c963bc6847e553df47c0260a8de22b9ed0b62f63a6",
+        "imported_symbols": {
+          "pmem_init": "0x5578",
+          "pmem_deinit": "0x5580",
+          "pmem_map_handle": "0x7c4c",
+          "pmem_unmap_handle": "0x7e48"
+        }
+      },
+      {
+        "soname": "libscreen.so.1",
+        "sha256": "439ef7a9bcd24ff198478d123c84a5ef1b1de6962e0b1fcf172ef5798e0c4f84",
+        "imported_symbols": {
+          "screen_create_context": "0x6b88",
+          "screen_destroy_context": "0x6e78",
+          "screen_flush_context": "0x70b0",
+          "screen_get_context_property_iv": "0x7240",
+          "screen_get_context_property_pv": "0x73e8",
+          "screen_get_display_property_iv": "0xaea0",
+          "screen_create_window": "0x123a8",
+          "screen_destroy_window": "0x125a8",
+          "screen_set_window_property_iv": "0x133c8",
+          "screen_set_window_property_pv": "0x13590",
+          "screen_create_window_buffers": "0x123c0",
+          "screen_get_window_property_iv": "0x128c8",
+          "screen_get_window_property_pv": "0x12b10",
+          "screen_get_buffer_property_iv": "0x45b8",
+          "screen_get_buffer_property_pv": "0x48d8",
+          "screen_post_window": "0x12e30"
+        }
+      }
+    ],
+    "sdk_build_complete": false
+  },
+  "host_copy_benchmark": {
+    "scope": "host synthetic receiver copy only",
+    "width": 1920,
+    "height": 532,
+    "results": [
+      {
+        "path": "before",
+        "frames": 600,
+        "cpu_ms": 1276.184,
+        "wall_ms": 1297.282,
+        "frame_p50_ms": 1.947,
+        "frame_p95_ms": 3.968,
+        "frame_p99_ms": 4.632,
+        "staging_bytes": 4085760
+      },
+      {
+        "path": "after",
+        "frames": 600,
+        "cpu_ms": 1087.515,
+        "wall_ms": 1126.672,
+        "frame_p50_ms": 1.699,
+        "frame_p95_ms": 3.616,
+        "frame_p99_ms": 5.257,
+        "staging_bytes": 0
+      },
+      {
+        "path": "after",
+        "frames": 600,
+        "cpu_ms": 1337.098,
+        "wall_ms": 1421.946,
+        "frame_p50_ms": 2.127,
+        "frame_p95_ms": 5.015,
+        "frame_p99_ms": 7.505,
+        "staging_bytes": 0
+      },
+      {
+        "path": "before",
+        "frames": 600,
+        "cpu_ms": 1319.296,
+        "wall_ms": 1360.274,
+        "frame_p50_ms": 2.003,
+        "frame_p95_ms": 4.041,
+        "frame_p99_ms": 5.307,
+        "staging_bytes": 4085760
+      }
+    ],
+    "recorded_at": "2026-10-30T12:26:20.514896+08:00",
+    "host": "Darwin x86_64",
+    "target_vehicle_measured": false,
+    "excludes": [
+      "GPU rendering/readback",
+      "pipe",
+      "HAB transport",
+      "QNX Screen post/scanout",
+      "target CPU/PSS/threads/FD",
+      "OEM fault monitoring"
+    ]
+  },
+  "device_connected": false,
+  "apk_installed": false,
+  "oem_services_changed": false,
+  "oem_warning_resolved": false,
+  "target_performance_accepted": false,
+  "lint_run": false
+}

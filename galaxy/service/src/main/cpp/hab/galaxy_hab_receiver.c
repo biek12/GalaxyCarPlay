@@ -1,5 +1,6 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 #include "galaxy_hab_receiver.h"
+#include "galaxy_hab_owned.h"
 #include <errno.h>
 #include <stdatomic.h>
 #include <stdlib.h>
@@ -140,16 +141,42 @@ int galaxy_hab_receiver_start(struct galaxy_hab_receiver *r,
     return 0;
 }
 
+int galaxy_hab_receiver_enable_consumption(struct galaxy_hab_receiver *r,
+    const uint8_t *packet, size_t size, uint8_t *reply)
+{
+    int result;
+    if (!r || !r->ready) return -ENOTCONN;
+    if (r->owned_consumption) return -EALREADY;
+    if (!reply || !private_output(r, reply, GALAXY_HAB_PACKET_SIZE)) return -EINVAL;
+    result = galaxy_hab_owned_check(packet, size, GALAXY_HAB_OWNED_HELLO,
+        0, r->export_id, 0, r->session, r->sign, r->sign_context);
+    if (result) return result;
+    result = galaxy_hab_owned_encode(reply, GALAXY_HAB_OWNED_READY,
+        0, r->export_id, 0, r->session, r->sign, r->sign_context);
+    if (result) return result;
+    /* 实车GLC2直读共享slot出现EBADMSG；恢复私有快照，校验与post只消费同一份字节。 */
+    r->owned_consumption = 1;
+    return 0;
+}
+
 int galaxy_hab_receiver_frame(struct galaxy_hab_receiver *r,
                               const uint8_t *packet, size_t size,
                               uint8_t *output, size_t capacity,
+                              struct galaxy_hab_frame_info *info)
+{
+    return galaxy_hab_receiver_frame_strided(r, packet, size, output, capacity, 0, info);
+}
+
+int galaxy_hab_receiver_frame_strided(struct galaxy_hab_receiver *r,
+                              const uint8_t *packet, size_t size,
+                              uint8_t *output, size_t capacity, size_t output_stride,
                               struct galaxy_hab_frame_info *info)
 {
     uint8_t input[GALAXY_HAB_PACKET_SIZE], canonical[GALAXY_HAB_PACKET_SIZE];
     struct galaxy_hab_frame_info candidate;
     const struct galaxy_hab_stream_layout *stream;
     uint32_t index, sequence, hash;
-    size_t offset, bytes;
+    size_t offset, bytes, required, row;
     int result;
     if (!r || !r->ready) return -ENOTCONN;
     if (!packet || size != sizeof(input) || !output || !info) return -EINVAL;
@@ -163,23 +190,33 @@ int galaxy_hab_receiver_frame(struct galaxy_hab_receiver *r,
     if (!equal_bytes(input, canonical, sizeof(input))) return -EPROTO;
     stream = &r->layout.streams[index];
     bytes = (size_t)stream->stride * stream->target.height;
-    if (capacity < bytes) return -EMSGSIZE;
-    if (!private_output(r, output, bytes) || !private_output(r, info, sizeof(*info)) ||
-        overlap(output, bytes, info, sizeof(*info))) return -EINVAL;
+    if (!output_stride) output_stride = stream->stride;
+    if (output_stride < stream->stride ||
+        stream->target.height - 1 > (SIZE_MAX - stream->stride) / output_stride) return -EINVAL;
+    required = (stream->target.height - 1) * output_stride + stream->stride;
+    if (capacity < required) return -EMSGSIZE;
+    if (!private_output(r, output, required) || !private_output(r, info, sizeof(*info)) ||
+        overlap(output, required, info, sizeof(*info))) return -EINVAL;
     offset = stream->base + (size_t)(sequence % stream->slots) * stream->slot_bytes;
     if (offset > r->mapping_size || stream->slot_bytes > r->mapping_size - offset ||
         stream->slot_bytes > r->scratch_size) return -EPROTO;
     atomic_thread_fence(memory_order_acquire);
     memcpy(r->scratch, r->mapping + offset, stream->slot_bytes);
-    if (sequence % 30u == 0 && galaxy_hab_sample_hash(r->scratch, stream->slot_bytes) != hash)
-        return -EBADMSG;
+    const uint8_t *source = r->scratch;
+    if (r->owned_consumption || sequence % 30u == 0) {
+        r->expected_hash = hash;
+        r->observed_hash = galaxy_hab_sample_hash(source, stream->slot_bytes);
+        if (r->observed_hash != hash) return -EBADMSG;
+    }
     /* 未声称未采样帧不会撕裂，也不回写消费标志或制造frame ACK。 */
     memset(&candidate, 0, sizeof(candidate));
     candidate.sequence = sequence; candidate.stream = index;
     candidate.width = stream->target.width; candidate.height = stream->target.height;
     candidate.stride = stream->stride; candidate.display_id = stream->target.display_id;
     candidate.bytes = bytes;
-    memcpy(output, r->scratch, bytes);
+    if (output_stride == stream->stride) memcpy(output, source, bytes);
+    else for (row = 0; row < stream->target.height; ++row)
+        memcpy(output + row * output_stride, source + row * stream->stride, stream->stride);
     *info = candidate;
     return 0;
 }

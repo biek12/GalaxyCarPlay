@@ -13,6 +13,8 @@ internal class AdbConnection(
 ) : AdbSession {
     private var client: Kadb? = null
     private var owner: Closeable? = null
+    var connectedPort: Int? = null
+        private set
     override fun connect() {
         if (client != null) return
         AdbIdentity.configure(context)
@@ -25,6 +27,7 @@ internal class AdbConnection(
                 owner = Closeable { runCatching { next.close() }; work.release(gate) }.also(work::own)
                 check(next.supportsFeature("shell_v2")) { "shell_v2_unavailable" }
                 client = next
+                connectedPort = endpoint.port
                 return
             } catch (error: Exception) {
                 val failure = gate.failure
@@ -41,7 +44,7 @@ internal class AdbConnection(
         if (!RootServiceClient.healthy(context)) return@runCatching false
         val key = java.io.File(context.noBackupFilesDir, "adb/client.pub").readText().trim()
         work.checkActive()
-        val reply = RootServiceClient.request(context, 7, org.json.JSONObject().put("publicKey", key), 10000)
+        val reply = RootServiceClient.request(context, 7, org.json.JSONObject().put("publicKey", key).put("forceReload", true), 10000)
         reply.optString("state") in setOf("authorized", "already_authorized")
     }.getOrDefault(false)
     override fun shell(command: String, limit: Int): ShellV2Output {
@@ -65,5 +68,5 @@ internal class AdbConnection(
     }
     fun execute(command: String, timeout: Int): org.json.JSONObject { connect(); return AdbShellExecutor.execute(client!!, command, timeout) }
     override fun root(): String { connect(); return client!!.root() }
-    override fun close() { owner?.let(work::release); owner = null; client = null }
+    override fun close() { owner?.let(work::release); owner = null; client = null; connectedPort = null }
 }

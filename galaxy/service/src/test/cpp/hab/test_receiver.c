@@ -2,6 +2,7 @@
 #include "galaxy_hab_receiver.h"
 #include "galaxy_hab_sender.h"
 #include "galaxy_hab_hmac.h"
+#include "galaxy_hab_owned.h"
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
@@ -16,6 +17,7 @@ struct bridge {
     struct galaxy_hab_frame_info frame;
     struct galaxy_hab_control_event event;
     int opens, closes, exports, unexports, receives, frames, ack_ready;
+    int corrupt_posted;
 };
 static uint32_t word(const uint8_t *p)
 {
@@ -67,6 +69,11 @@ static int control(void *context, int fd, uint32_t operation, void *argument)
             if (q->size == 184) return galaxy_hab_receiver_auth(&b->receiver, packet, q->size);
             assert(q->size == 64);
             memcpy(b->last_packet, packet, 64);
+            if (word(packet) == GALAXY_HAB_OWNED_MAGIC) {
+                int result = galaxy_hab_receiver_enable_consumption(&b->receiver, packet, 64, b->ack);
+                b->ack_ready = result == 0;
+                return result;
+            }
             switch (word(packet + 8)) {
                 case 1: {
                     int result = galaxy_hab_receiver_start(&b->receiver, packet, 64,
@@ -77,7 +84,15 @@ static int control(void *context, int fd, uint32_t operation, void *argument)
                 case 2: {
                     int result = galaxy_hab_receiver_frame(&b->receiver, packet, 64,
                         b->output, sizeof(b->output), &b->frame);
-                    if (!result) ++b->frames;
+                    if (!result) {
+                        ++b->frames;
+                        if (b->receiver.owned_consumption) {
+                            result = galaxy_hab_owned_encode(b->ack, GALAXY_HAB_OWNED_POSTED,
+                                b->frame.sequence, b->receiver.export_id, b->frame.stream,
+                                b->receiver.session, galaxy_hab_hmac_sign, &b->key);
+                            b->ack_ready = result == 0;
+                        }
+                    }
                     return result;
                 }
                 case 3: case 5:
@@ -88,6 +103,10 @@ static int control(void *context, int fd, uint32_t operation, void *argument)
         case GALAXY_HAB_RECV: {
             struct galaxy_hab_data_request *q = argument;
             assert(b->ack_ready && q->size == 64);
+            if (b->frames && b->corrupt_posted == 3) return -EIO;
+            if (b->frames && b->corrupt_posted == 2) assert(galaxy_hab_owned_encode(b->ack, GALAXY_HAB_OWNED_POSTED,
+                b->frame.sequence, b->receiver.export_id, b->frame.stream, b->receiver.session + 1, galaxy_hab_hmac_sign, &b->key) == 0);
+            if (b->frames && b->corrupt_posted == 1) b->ack[32] ^= 1;
             memcpy((void *)(uintptr_t)q->address, b->ack, 64);
             ++b->receives;
             b->ack_ready = 0;
@@ -156,6 +175,36 @@ int main(void)
     assert(galaxy_hab_receiver_frame(&b.receiver, packet, 63, b.output, sizeof(b.output), &b.frame) != 0);
     assert(galaxy_hab_receiver_frame(&b.receiver, packet, 64, b.memory, b.memory_size, &b.frame) == -EINVAL);
     assert(galaxy_hab_receiver_frame(&b.receiver, packet, 64, b.output, sizeof(b.output), (void *)b.output) == -EINVAL);
+    /* 平台buffer带padding：跨行写入、容量尾界和hash失败都须保护像素/padding。 */
+    {
+        uint8_t padded[48], before[48], first_packet[64];
+        struct galaxy_hab_frame_info info, previous;
+        const struct galaxy_hab_stream_layout *s = &b.receiver.layout.streams[0];
+        size_t slot = s->base + (size_t)(30 % s->slots) * s->slot_bytes;
+        assert(galaxy_hab_encode_frame(first_packet, &b.receiver.layout, 91, 30, 0,
+            galaxy_hab_sample_hash(b.memory + slot, s->slot_bytes)) == 0);
+        memset(padded, 0xa5, sizeof(padded));
+        assert(galaxy_hab_receiver_frame_strided(&b.receiver, first_packet, 64,
+            padded, 32, 20, &info) == 0);
+        assert(memcmp(padded, b.memory + slot, 12) == 0);
+        assert(memcmp(padded + 20, b.memory + slot + 12, 12) == 0);
+        for (i = 12; i < 20; ++i) assert(padded[i] == 0xa5);
+        for (i = 32; i < sizeof(padded); ++i) assert(padded[i] == 0xa5);
+        memcpy(before, padded, sizeof(before)); previous = info;
+        assert(galaxy_hab_receiver_frame_strided(&b.receiver, first_packet, 64,
+            padded, 31, 20, &info) == -EMSGSIZE);
+        assert(galaxy_hab_receiver_frame_strided(&b.receiver, first_packet, 64,
+            padded, sizeof(padded), 11, &info) == -EINVAL);
+        assert(galaxy_hab_receiver_frame_strided(&b.receiver, first_packet, 64,
+            padded, sizeof(padded), SIZE_MAX, &info) == -EINVAL);
+        assert(galaxy_hab_receiver_frame_strided(&b.receiver, first_packet, 64,
+            b.memory, b.memory_size, 20, &info) == -EINVAL);
+        b.memory[slot] ^= 1;
+        assert(galaxy_hab_receiver_frame_strided(&b.receiver, first_packet, 64,
+            padded, sizeof(padded), 20, &info) == -EBADMSG);
+        b.memory[slot] ^= 1;
+        assert(memcmp(before, padded, sizeof(before)) == 0 && memcmp(&previous, &info, sizeof(info)) == 0);
+    }
     sender.sequence = UINT32_MAX;
     assert(galaxy_hab_sender_frame(&sender, 1, rgba, sizeof(rgba), 4100, 4) == 0 && b.frame.sequence == 0);
 
@@ -220,6 +269,37 @@ int main(void)
         assert(galaxy_hab_receiver_frame(&receiver, packet, 64, b.output, sizeof(b.output), &b.frame) == -ENOTCONN);
         galaxy_hab_receiver_close(&receiver);
     }
-    puts("HAB owned sender/receiver/HMAC end-to-end and malformed-input contracts passed; no QNX or real driver");
+    /* 自有HELLO协商与消费ACK：旧v1对照路径仍保留，不能把它称为原版能力。 */
+    for (int failure = 0; failure <= 3; ++failure) {
+        init_bridge(&b, &sender);
+        assert(galaxy_hab_sender_open(&sender, targets, 2, 8, 10000,
+            UINT64_C(0x1122334455667788), 7, 1234, galaxy_hab_hmac_sign, &b.key) == 0);
+        assert(galaxy_hab_owned_encode(packet, GALAXY_HAB_OWNED_HELLO, 0, 91, 0,
+            sender.session, galaxy_hab_hmac_sign, &b.key) == 0);
+        for (i = 0; i < 64; ++i) {
+            memcpy(modified, packet, 64); modified[i] ^= 1;
+            assert(galaxy_hab_receiver_enable_consumption(&b.receiver, modified, 64, ack) == -EPROTO);
+            assert(!b.receiver.owned_consumption && b.receiver.scratch);
+        }
+        assert(galaxy_hab_sender_enable_consumption(&sender) == 0);
+        assert(sender.owned_consumption && b.receiver.owned_consumption && !b.receiver.scratch && !b.receiver.scratch_size);
+        assert(galaxy_hab_sender_enable_consumption(&sender) == -EALREADY);
+        b.corrupt_posted = failure;
+        sender.sequence = 29;
+        int result = galaxy_hab_sender_frame(&sender, 1, rgba, sizeof(rgba), 4100, 4);
+        if (!failure) {
+            assert(result == 0 && b.frame.sequence == 30 && b.receives == 3);
+            sender.sequence = UINT32_MAX;
+            assert(galaxy_hab_sender_frame(&sender, 0, rgba, sizeof(rgba), 12, 4) == 0);
+            assert(b.frame.sequence == 0 && b.receives == 4);
+        } else {
+            assert(result == (failure == 3 ? -EIO : -EPROTO));
+            assert(sender.owned_failed && b.frames == 1);
+            assert(galaxy_hab_sender_frame(&sender, 1, rgba, sizeof(rgba), 4100, 4) == -EPIPE && b.frames == 1);
+        }
+        assert(galaxy_hab_sender_close(&sender) == 0);
+        assert(!sender.memory && !b.receiver.ready && !b.receiver.scratch);
+    }
+    puts("HAB sender/receiver/HMAC, owned consumption negotiation, ACK/session rejection and wrap contracts passed; no QNX or real driver");
     return 0;
 }

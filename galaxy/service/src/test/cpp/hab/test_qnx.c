@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 #include "galaxy_hab_qnx.h"
 #include "galaxy_hab_hmac.h"
+#include "galaxy_hab_owned.h"
 #include <assert.h>
 #include <errno.h>
 #include <stdio.h>
@@ -19,6 +20,7 @@ static struct {
     int missing_display, fail_cleanup, close_count, unmap_count, unimport_count, requested_type;
     int trace_begin, trace_end, last_receive_timeout, receive_timeout_failure;
     int cancel_after, cancel_checks;
+    int owned_ready, owned_posted;
     struct window window[2];
 } f;
 static int handle_token, display_tokens[2], context_token;
@@ -76,7 +78,24 @@ int habmm_socket_recv(int vc, void *packet, unsigned *size, unsigned timeout, un
 }
 int habmm_socket_send(int vc, const void *packet, unsigned size, unsigned flags)
 {
-    CALL(); assert(vc == 733 && !flags && size == 64 && !f.ack);
+    const uint8_t *bytes = packet;
+    uint32_t magic = (uint32_t)bytes[0] | (uint32_t)bytes[1] << 8 | (uint32_t)bytes[2] << 16 | (uint32_t)bytes[3] << 24;
+    CALL(); assert(vc == 733 && !flags && size == 64);
+    if (magic == GALAXY_HAB_OWNED_MAGIC) {
+        assert(f.ack);
+        if (!f.owned_ready) {
+            assert(!f.posts && galaxy_hab_owned_check(bytes, size, GALAXY_HAB_OWNED_READY, 0, 91, 0, 99, galaxy_hab_hmac_sign, &f.key) == 0);
+            ++f.owned_ready;
+        } else {
+            uint32_t sequence = (uint32_t)f.packet[12] | (uint32_t)f.packet[13] << 8 | (uint32_t)f.packet[14] << 16 | (uint32_t)f.packet[15] << 24;
+            uint32_t stream = f.packet[60];
+            assert(f.posts > f.owned_posted);
+            assert(galaxy_hab_owned_check(bytes, size, GALAXY_HAB_OWNED_POSTED, sequence, 91, stream, 99, galaxy_hab_hmac_sign, &f.key) == 0);
+            ++f.owned_posted;
+        }
+        return 0;
+    }
+    assert(!f.ack);
     /* ACK绝不能早于窗口及可写buffer准备；只有一次握手ACK，没有帧ACK。 */
     assert(f.windows == (int)f.layout.count && f.buffers == (int)f.layout.count);
     for (uint32_t i = 0; i < f.layout.count; ++i) assert(!f.window[i].visible);
@@ -227,7 +246,7 @@ static void fixture(struct galaxy_hab_qnx *q, uint32_t count)
 static void released(const struct galaxy_hab_qnx *q)
 {
     assert(!f.pmem && !f.channel && !f.imported && !f.mapped && !f.context && !f.windows);
-    assert(!q->receiver.ready && !q->receiver.scratch && !q->pixels && !q->mapping && !q->import_handle);
+    assert(!q->receiver.ready && !q->receiver.scratch && !q->mapping && !q->import_handle);
 }
 static void frame(uint32_t sequence, uint32_t stream)
 {
@@ -320,6 +339,12 @@ int main(void)
     f.receive_phase = 0; f.ack = 0; f.buffers = 0;
     assert(galaxy_hab_qnx_open(&q, targets, 1, 10000) == 0);
     assert(galaxy_hab_qnx_close(&q) == 0); released(&q);
-    puts("HAB QNX import/Screen lifecycle, writable buffer, padded BGRA and failure contracts passed; host fake APIs only");
+    fixture(&q, 1); assert(galaxy_hab_qnx_open(&q, targets, 1, 10000) == 0);
+    assert(galaxy_hab_owned_encode(f.packet, GALAXY_HAB_OWNED_HELLO, 0, 91, 0, 99, galaxy_hab_hmac_sign, &f.key) == 0);
+    assert(galaxy_hab_qnx_step(&q) == 0 && f.owned_ready == 1 && !q.receiver.scratch);
+    frame(30, 0);
+    assert(galaxy_hab_qnx_step(&q) == 0 && f.posts == 1 && f.owned_posted == 1);
+    assert(galaxy_hab_qnx_close(&q) == 0); released(&q);
+    puts("HAB QNX import/Screen lifecycle, writable buffer, owned POSTED-after-post and failure contracts passed; host fake APIs only");
     return 0;
 }

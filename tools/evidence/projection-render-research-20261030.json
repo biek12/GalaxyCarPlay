@@ -1,0 +1,167 @@
+{
+  "recorded_at": "2026-10-30T12:26:06.332236+08:00",
+  "vehicle": "L6 2023 Max / FlymeAuto 2.3.1; existing local G733 evidence",
+  "oem_warning_text_reported_by_user": "仪表图传异常，请联系服务站",
+  "warning_trigger_resolved": false,
+  "runtime_test_this_round": false,
+  "conclusion_limit": "监测/状态上报链存在；未证明本次提示由其触发、未证明Android图传可停用",
+  "sources": [
+    {
+      "local_path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/g733-offline-environment-20261025/rootfs/apps/cluster/FX11_HEV/bin/hmi/GLY_G733/ClusterHMI/cluster-hmi",
+      "sha256": "385d8fc526936a32fa08cf8dfd51db731a58c8a3c86fd43709a6269bdf080e64",
+      "evidence_class": "static ELF symbols/strings; file offset, not runtime address",
+      "hits": [
+        {
+          "query": "sendBlackScreenSts",
+          "file_offset": "0x2a263",
+          "symbol_or_static_string": "_ZN15SafetyAppsProxy18sendBlackScreenStsEN5bosch7cluster10safetyapps3sih2pb11HMIBlackStsE"
+        },
+        {
+          "query": "sendKanziAnimationSts",
+          "file_offset": "0x2a340",
+          "symbol_or_static_string": "_ZN15SafetyAppsProxy21sendKanziAnimationStsEN5bosch7cluster10safetyapps3sih2pb16HMIAnimationTypeENS4_15HMIAnimationStsE"
+        },
+        {
+          "query": "sendMessageToSafetyModule",
+          "file_offset": "0x7bcdf8",
+          "symbol_or_static_string": "sendMessageToSafetyModule"
+        }
+      ]
+    },
+    {
+      "local_path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/g733-offline-environment-20261025/rootfs/apps/cluster/FX11_HEV/lib/libMiddleware.so",
+      "sha256": "023b692aa7073a9240eb69cf7b3d9c994a3f039e521a23091368c64bad6b4806",
+      "evidence_class": "static ELF symbols/strings; file offset, not runtime address",
+      "hits": [
+        {
+          "query": "SafetyAppsTimer_1S4Init",
+          "file_offset": "0x5184e",
+          "symbol_or_static_string": "_ZN14TelltaleServer18SafetyAppsTimer_1S4InitEPS_"
+        },
+        {
+          "query": "SafetyAppsTimer_1S6Notify",
+          "file_offset": "0x51dcf",
+          "symbol_or_static_string": "_ZN14TelltaleServer18SafetyAppsTimer_1S6NotifyEPv"
+        },
+        {
+          "query": "sendSelfCheckSts",
+          "file_offset": "0x51d32",
+          "symbol_or_static_string": "_ZN15SafetyAppsProxy16sendSelfCheckStsEN5bosch7cluster10safetyapps3sih2pb19ClusterSelfCheckStsE"
+        },
+        {
+          "query": "sendCAreaTelltale",
+          "file_offset": "0x51d92",
+          "symbol_or_static_string": "_ZN15SafetyAppsProxy17sendCAreaTelltaleE18ST_TT_CAREA_STATUS"
+        },
+        {
+          "query": "sendAAreaWarningId",
+          "file_offset": "0x71d4e",
+          "symbol_or_static_string": "_ZN15SafetyAppsProxy18sendAAreaWarningIdEt"
+        }
+      ]
+    },
+    {
+      "local_path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/g733-offline-environment-20261025/rootfs/apps/cluster/FX11_HEV/lib/libMidProxy.so",
+      "sha256": "276182f5f980f4784eb42d0bfad2e50ae5a854f66be80d1f1f5c9b717d139c92",
+      "evidence_class": "static ELF symbols/strings; file offset, not runtime address",
+      "hits": [
+        {
+          "query": "safetyapps3sih2pb14HMIBlackStsMsg",
+          "file_offset": "0x1001a5",
+          "symbol_or_static_string": "_ZNK5bosch7cluster10safetyapps3sih2pb14HMIBlackStsMsg12GetClassDataEv"
+        },
+        {
+          "query": "safetyapps3sih2pb19ClusterSelfCheckMsg",
+          "file_offset": "0x10022f",
+          "symbol_or_static_string": "_ZNK5bosch7cluster10safetyapps3sih2pb19ClusterSelfCheckMsg12GetClassDataEv"
+        },
+        {
+          "query": "safetyapps3sih2pb17AAreaWarningIdMsg",
+          "file_offset": "0x1003c5",
+          "symbol_or_static_string": "_ZNK5bosch7cluster10safetyapps3sih2pb17AAreaWarningIdMsg12GetClassDataEv"
+        }
+      ]
+    },
+    {
+      "local_path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/g733-offline-environment-20261025/rootfs/tmp/graphics.conf",
+      "sha256": "e7237a1567646fa01fd477d9819e9abb04a511987283a25e7b1a83f82be08e2d",
+      "evidence_class": "captured target configuration; not source SDK",
+      "lines": [
+        {
+          "line": 8,
+          "text": "gralloc-module = Adreno"
+        },
+        {
+          "line": 18,
+          "text": "blit-config = c2d"
+        },
+        {
+          "line": 24,
+          "text": "video-mode = 1920 x 532 @ 60"
+        },
+        {
+          "line": 34,
+          "text": "video-mode = 1920 x 532 @ 60"
+        },
+        {
+          "line": 44,
+          "text": "video-mode = 1440 x 1920 @ 55"
+        },
+        {
+          "line": 55,
+          "text": "video-mode = 800 x 480 @ 60"
+        },
+        {
+          "line": 65,
+          "text": "video-mode = 2880 x 1080 @ 55"
+        }
+      ]
+    },
+    {
+      "local_path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/g733-offline-environment-20261025/rootfs/apps/cluster/common/bin/startup",
+      "sha256": "ac228dfc14916b2e5a56d12bdb6db88e8398f1609039e5e714041c1c3cbb6af2",
+      "evidence_class": "captured target configuration; not source SDK",
+      "lines": [
+        {
+          "line": 159,
+          "text": "# Startup cluster-app"
+        },
+        {
+          "line": 219,
+          "text": "# Startup cluster-bg-hmi"
+        },
+        {
+          "line": 270,
+          "text": "# Startup system-monitor"
+        }
+      ]
+    },
+    {
+      "local_path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/g733-offline-environment-20261025/rootfs/apps/cluster/FX11_HEV/bin/hmi/GLY_G733/ClusterHMI/ClusterDataSource.xml",
+      "sha256": "9a38b5a5332be8424bf5f754354dc03c055e31a6fd4cb27cfb5301bd736cc682",
+      "evidence_class": "captured target configuration; not source SDK",
+      "lines": [
+        {
+          "line": 20,
+          "text": "<UnresolvedWarnId type=\"int\">0</UnresolvedWarnId>"
+        },
+        {
+          "line": 27,
+          "text": "<Speed type=\"int\">0</Speed>"
+        },
+        {
+          "line": 30,
+          "text": "<SpeedValid type=\"bool\">true</SpeedValid>"
+        },
+        {
+          "line": 55,
+          "text": "<GearType type=\"int\">0</GearType>"
+        },
+        {
+          "line": 387,
+          "text": "<Speed type=\"int\">0</Speed>"
+        }
+      ]
+    }
+  ]
+}

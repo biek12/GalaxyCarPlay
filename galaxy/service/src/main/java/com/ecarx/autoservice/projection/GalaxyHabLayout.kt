@@ -8,5 +8,4 @@ internal object GalaxyHabLayout {
     const val HEIGHT = AutoContract.HEIGHT
     const val MAP_WIDTH = AutoContract.WIDTH
     const val MAP_HEIGHT = AutoContract.MAP_HEIGHT
-    const val FRAME_INTERVAL_MILLIS = 100L
 }

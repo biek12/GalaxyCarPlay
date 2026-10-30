@@ -12,7 +12,7 @@
     <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
     <uses-permission android:name="com.ecarx.autoservice.permission.RENDER" />
     <queries><package android:name="com.flyme.auto.logreport" /><package android:name="com.ecarx.nexusx" /><package android:name="com.galaxy.autocluster" /><package android:name="com.ecarx.carplay" /></queries>
-    <application android:label="AutoService" android:allowBackup="false" android:theme="@android:style/Theme.Material.NoActionBar">
+    <application android:label="AutoService" android:allowBackup="false" android:theme="@style/ServiceTheme">
         <uses-library android:name="android.car" android:required="false" />
         <uses-library android:name="ecarx.car" android:required="false" />
         <uses-library android:name="ecarx.adaptapi" android:required="false" />

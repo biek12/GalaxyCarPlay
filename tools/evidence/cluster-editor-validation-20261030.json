@@ -1,0 +1,59 @@
+{
+  "recorded_at": "2026-10-30T16:38:00.721945+08:00",
+  "command": "bash scripts/verify_cluster_preflight.sh --package",
+  "passed": true,
+  "jvm_test_count": 106,
+  "python_tool_tests": 46,
+  "native_contract_groups": 11,
+  "browser_interaction_groups": 8,
+  "checks": [
+    "platform",
+    "tools",
+    "source-contracts",
+    "review-assets",
+    "browser-review",
+    "theme-evidence",
+    "copy-benchmark",
+    "native-address-undefined-sanitizers"
+  ],
+  "apps": {
+    "mobile": {
+      "package": "com.ecarx.carplay",
+      "sha256": "8f93147cd3ed1240c471c3d557f7f4f9e420270c4e033d373eb68fa0046903c9",
+      "bytes": 61057699,
+      "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121"
+    },
+    "service": {
+      "package": "com.ecarx.autoservice",
+      "sha256": "561a57353358825510ad45236ae762b8e362e55d8e39eb8cef3b97fcd2698e45",
+      "bytes": 13790259,
+      "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121"
+    },
+    "cluster": {
+      "package": "com.galaxy.autocluster",
+      "sha256": "0fa1cf761583ba650d48e015b744b0caab9c9dcb7f9490a64e8da17189476f6e",
+      "bytes": 3493936,
+      "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121"
+    }
+  },
+  "gpu_test": {
+    "sha256": "d6442999a474ca0135b3df111ae49d929d420638593be59380f2d0109987dbaf",
+    "bytes": 120580,
+    "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121",
+    "executed": false
+  },
+  "qnx_receiver_sha256": "1faa808e73b262bb06985db62a887e4831362872d2d3288b7e386eb83df69b86",
+  "test_bundle": ".work/vehicle-test/cluster-editor-20261030-163803",
+  "bundle_file_count": 2068,
+  "bundle_manifest_sha256": "9cbcbd677e1844953e758f28846d88557bed6f1d029d5d27f01db1ae01b4417f",
+  "lint_run": false,
+  "vehicle_connected": false,
+  "installed": false,
+  "qnx_sdk_build_complete": false,
+  "not_verified": [
+    "Android real EGL/SurfaceTexture/ImageReader driver execution",
+    "8155 CPU/PSS/threads/FD and measured display FPS",
+    "CarPlay native111 live content and QNX Screen visible output",
+    "OEM image transmission warning root cause/absence"
+  ]
+}

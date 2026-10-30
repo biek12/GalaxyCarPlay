@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 自写草案：借鉴结构化Card/Text/Bar组合；无参考图片或字体，当前App不会加载。 -->
+<cluster-theme schemaVersion="1" status="draft" id="neon-stack-inspired"
+    name="Neon Stack 启发" designWidth="1920" designHeight="532" fit="contain">
+    <render-policy mode="fixed-cap" maxFps="30" animationFps="30" mapFps="source"
+        static="on-change" keepAliveMs="1000"/>
+    <appearance mode="auto" day="day" night="night" shareDayNight="false"/>
+    <styles>
+        <palette id="day" foreground="#102A38" muted="#4B6370" accent="#007995" panel="#E5F3F6"/>
+        <palette id="night" foreground="#E8FBFF" muted="#91A8B4" accent="#28D8F5" panel="#DD08151E"/>
+        <override component="soc-bar" mode="night" foreground="#49DEAD"/>
+        <override component="title" mode="day" foreground="#006579" fontScale="0.95"/>
+    </styles>
+    <scene>
+        <component id="map" type="map-viewport" x="0" y="0" width="1920" height="532" z="0"
+            source="navigation.map" scale="contain"/>
+        <component id="speed-card" type="card" x="45" y="45" width="440" height="440" z="1"
+            background="@panel" cornerRadius="22"/>
+        <component id="title" type="text" x="85" y="65" width="340" height="45" z="2"
+            text="DRIVE" foreground="@accent"/>
+        <component id="speed-number" type="value-text" x="85" y="125" width="340" height="130" z="2"
+            bind="vehicle.displaySpeed" unit="km/h" invalidText="--"/>
+        <component id="gear" type="value-text" x="175" y="285" width="160" height="60" z="2"
+            bind="vehicle.gear" invalidText="--"/>
+        <component id="soc-title" type="text" x="85" y="365" width="120" height="40" z="2" text="SOC"/>
+        <component id="soc-bar" type="bar" x="85" y="420" width="340" height="14" z="2"
+            bind="vehicle.soc" min="0" max="100" foreground="@accent"/>
+        <component id="media-card" type="card" x="1410" y="45" width="465" height="440" z="1"
+            background="@panel" cornerRadius="22"/>
+        <component id="track" type="track-info" x="1450" y="85" width="385" height="95" z="2"
+            bind="media.track"/>
+        <component id="lyrics" type="lyrics" x="1450" y="205" width="385" height="190" z="2"
+            bind="media.lyrics" clock="media.playback" lines="3" transition="line-change"/>
+        <component id="progress" type="media-progress" x="1450" y="430" width="385" height="40" z="2"
+            bind="media.playback"/>
+    </scene>
+    <animations>
+        <animation id="line-change" preset="lyrics-scroll" durationMs="420"/>
+    </animations>
+</cluster-theme>

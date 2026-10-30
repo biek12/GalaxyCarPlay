@@ -16,6 +16,7 @@ class AutoClient(context: Context, private val role: String,
     private val onSnapshot: (Bundle) -> Unit = {},
     private val onState: (String) -> Unit = {},
     private val onCommand: (Int) -> Unit = {},
+    private val onConfiguredSurface: (Surface?, Long) -> Unit = { _, _ -> },
 ) : Closeable {
     private val app = context.applicationContext
     private val main = Handler(Looper.getMainLooper())
@@ -30,11 +31,15 @@ class AutoClient(context: Context, private val role: String,
     @Volatile private var lastMedia: Bundle? = null
     @Volatile private var lastNavigation: Bundle? = null
     @Volatile private var lastArtwork: ByteArray? = null
+    @Volatile private var lastScene: Bundle? = null
+    private var previewSurface: Surface? = null // io线程持有自己的引用
     private var borrowed: Surface? = null
     @Volatile private var active = false
     private val media = AtomicReference<Bundle?>()
     private val navigation = AtomicReference<Bundle?>()
     private val art = AtomicReference<ByteArray?>()
+    private val scene = AtomicReference<Bundle?>()
+    private val policy = AtomicReference<Bundle?>()
     private val flush = Runnable { flushLatest() }
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, binder: IBinder) {
@@ -46,7 +51,7 @@ class AutoClient(context: Context, private val role: String,
                 override fun onSnapshot(snapshot: Bundle) { main.post {
                     if (!closed && generation == ticket) {
                         snapshot.classLoader = javaClass.classLoader
-                        if (snapshot.containsKey("command")) onCommand(snapshot.getInt("command")) else onSnapshot(snapshot)
+                        if (snapshot.containsKey("command")) onCommand(snapshot.getInt("command")) else this@AutoClient.onSnapshot(snapshot)
                     }
                 } }
                 override fun onSurface(kind: String, surface: Surface) { main.post {
@@ -54,11 +59,12 @@ class AutoClient(context: Context, private val role: String,
                     val old = borrowed
                     borrowed = surface
                     onSurface(surface)
+                    onConfiguredSurface(surface, kind.substringAfter('@', "0").toLongOrNull() ?: 0)
                     old?.release()
                 } }
                 override fun onProjectionState(kind: String, state: String) { main.post {
                     if (!closed && generation == ticket) {
-                        if (state == "surface_closed") { onSurface(null); borrowed?.release(); borrowed = null }
+                        if (state == "surface_closed") { onSurface(null); onConfiguredSurface(null, 0); borrowed?.release(); borrowed = null }
                         onState(state)
                     }
                 } }
@@ -73,6 +79,8 @@ class AutoClient(context: Context, private val role: String,
                     media.compareAndSet(null, lastMedia)
                     navigation.compareAndSet(null, lastNavigation)
                     art.compareAndSet(null, lastArtwork)
+                    scene.compareAndSet(null, lastScene)
+                    if (role == AutoContract.PREVIEW) next.setPreviewSurface(lease, previewSurface)
                     flushLatest()
                 } catch (error: Exception) { state("connect:${error.javaClass.simpleName}") }
             }
@@ -105,11 +113,29 @@ class AutoClient(context: Context, private val role: String,
         require(bytes.size <= 2 * 1024 * 1024)
         lastArtwork = bytes.copyOf(); art.set(lastArtwork); scheduleFlush()
     }
+    fun configureScene(value: SceneConfiguration) {
+        require(role == AutoContract.THEME || role == AutoContract.PREVIEW)
+        lastScene = value.bundle(); scene.set(lastScene); scheduleFlush()
+    }
+    fun setProjectionPolicy(value: ProjectionPolicy) { policy.set(value.bundle()); scheduleFlush() }
+    fun setPreviewSurface(value: Surface?) {
+        require(role == AutoContract.PREVIEW)
+        if(closed)return
+        if(value==null){lastScene=null;scene.set(null)}
+        val copy = value?.let { duplicateSurface(it) }
+        if(!io.post {
+            if (closed) { copy?.release(); return@post }
+            previewSurface?.release(); previewSurface = copy
+            call { it.setPreviewSurface(owner, copy) }
+        })copy?.release()
+    }
     private fun scheduleFlush() { io.removeCallbacks(flush); io.post(flush) }
     private fun flushLatest() {
         val remote = api ?: return
         if (closed) return
         call {
+            scene.getAndSet(null)?.let { value -> remote.configureScene(owner, value) }
+            policy.getAndSet(null)?.let { value -> remote.setProjectionPolicy(owner, value) }
             media.getAndSet(null)?.let { value -> remote.publishMedia(owner, value) }
             navigation.getAndSet(null)?.let { value -> remote.publishNavigation(owner, value) }
             art.getAndSet(null)?.let { bytes ->
@@ -149,6 +175,7 @@ class AutoClient(context: Context, private val role: String,
     private fun lost(reason: String) {
         ++generation; api = null
         onSurface(null); borrowed?.release(); borrowed = null
+        onConfiguredSurface(null, 0)
         onState(reason)
     }
     private val retry = Runnable { connect() }
@@ -165,11 +192,20 @@ class AutoClient(context: Context, private val role: String,
         closed = true; ++generation
         main.removeCallbacks(retry)
         onSurface(null); borrowed?.release(); borrowed = null
+        onConfiguredSurface(null, 0)
         val previous = api; api = null
         if (bound) { app.unbindService(connection); bound = false }
-        io.removeCallbacksAndMessages(null)
+        // 已排队的Surface任务必须运行其closed分支，才能释放独立引用。
+        // 其他IPC任务由call/flushLatest的closed检查失效，清理任务随后串行退出。
+        io.removeCallbacks(flush)
         media.set(null); navigation.set(null); art.set(null)
+        scene.set(null); policy.set(null); lastScene = null
         lastMedia = null; lastNavigation = null; lastArtwork = null
-        io.post { runCatching { previous?.detach(owner) }; thread.quitSafely() }
+        io.post { runCatching { previous?.detach(owner) }; previewSurface?.release(); previewSurface = null; thread.quitSafely() }
+    }
+    private fun duplicateSurface(value: Surface): Surface {
+        val parcel = Parcel.obtain()
+        return try { value.writeToParcel(parcel, 0); parcel.setDataPosition(0); Surface.CREATOR.createFromParcel(parcel) }
+        finally { parcel.recycle() }
     }
 }

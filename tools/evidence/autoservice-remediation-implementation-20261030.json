@@ -1,0 +1,377 @@
+{
+  "recordedAt": "2026-10-30T10:47:33.785646+08:00",
+  "validationAt": "2026-10-30T10:43:09.628343+08:00",
+  "command": "scripts/verify_auto_platform.sh",
+  "jvmTests": 47,
+  "habAndProvisionTests": 15,
+  "projectAndMeasurementTests": 28,
+  "lintRun": false,
+  "connected": false,
+  "installed": false,
+  "deviceValidated": false,
+  "apps": {
+    "mobile": {
+      "package": "com.ecarx.carplay",
+      "sha256": "efbbbf774af0a0ea926ce192c580326c3f5d2f9e3b76b4fb118fd737299bd011",
+      "bytes": 61045475,
+      "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121"
+    },
+    "service": {
+      "package": "com.ecarx.autoservice",
+      "sha256": "e2f9207ca741508c3edac4e710160bfc1acd55e7c6cd577b8814671ba6fe3cb5",
+      "bytes": 13599647,
+      "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121"
+    },
+    "cluster": {
+      "package": "com.galaxy.autocluster",
+      "sha256": "a3b7d8f0f83e5ea5cc625853474dadf8f93104be9a92f44edadf162b03c7521f",
+      "bytes": 2691459,
+      "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121"
+    }
+  },
+  "changedSourceFiles": [
+    {
+      "path": "galaxy/cluster/src/main/java/com/galaxy/autocluster/ClusterActivity.kt",
+      "beforeSha256": "aac48ed4febe5a9deb56abd1db7f09f54b6eeee1f239efaaea8c8d1c0e87aab8",
+      "afterSha256": "5828ce431fdc9b9320927fd4a132d31771fc7097ef3347a8ba4fc8a58c5d7307",
+      "change": "modified"
+    },
+    {
+      "path": "galaxy/cluster/src/main/java/com/galaxy/autocluster/ClusterRenderService.kt",
+      "beforeSha256": "b77848ff44748695514e30cf9f1650820a1a8687523f262ca0eb6678f6ef3f03",
+      "afterSha256": "e8ca0c741afa193179d7201283ca0a7354d5f50beef37e998c1603ccd5fcfc38",
+      "change": "modified"
+    },
+    {
+      "path": "galaxy/service/src/debug/java/com/ecarx/autoservice/platform/RootDebugProbe.kt",
+      "beforeSha256": "562e1632c34ceda8135871fe270c0793472e73fa96db7fbd6b0d2dd6c18741aa",
+      "afterSha256": "2bf4df838075d5bd01297fcf01c1d018386065336ee248d0ea17afb6213f71db",
+      "change": "modified"
+    },
+    {
+      "path": "galaxy/service/src/main/AndroidManifest.xml",
+      "beforeSha256": "d9d843d8da5081ed8993443b347066aedf00e308535d8bbaef04b8ac9dfb15ca",
+      "afterSha256": "eea9a5703508ea26d1f04e312a4a12e893e65069fd890d42896b012b70087820",
+      "change": "modified"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/AutoService.kt",
+      "beforeSha256": "5a280419f66f7fea2799ee4629514564036c56bc9a2b06b1c7de3a6c922cdc36",
+      "afterSha256": "3f810f0e44f42259b2677c98e579dd50896a70d66741c14567bec36dd75770a2",
+      "change": "modified"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/DiagnosticActivity.kt",
+      "beforeSha256": null,
+      "afterSha256": "1e72e6385557ee2a8f2797ef34419dd3573c8179c2309d051d97d60d22302953",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/SerialWorker.kt",
+      "beforeSha256": null,
+      "afterSha256": "f06c1d9391914c8adf4feff74f35497427e9c71930bff60258680c9b0fbe765e",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/ServiceActivity.kt",
+      "beforeSha256": "39a8e331d05e4ef19d02ca9d2e8298583fb64b3a8acdf717ad97505ec453a0a0",
+      "afterSha256": "026e6b5d724212e246e62605aa6423925ac18a47940856baac9c64f597c9a926",
+      "change": "modified"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/AdbConnection.kt",
+      "beforeSha256": null,
+      "afterSha256": "c0258c95d6c0502bee7529783c2bb535afd0f0f4a307bed21e364f59f3c257ed",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/AdbEndpoint.kt",
+      "beforeSha256": null,
+      "afterSha256": "5f09a5409edadc52db43162db21db8e5a3f2a9a8290d9cef957e4652893195f5",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/AdbKeyAuthorization.kt",
+      "beforeSha256": null,
+      "afterSha256": "cb12ccff7210b0ea882b5719cb3e0c0f87d310dbdae262620f56d5391b6f2d71",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/AdbPacket.kt",
+      "beforeSha256": null,
+      "afterSha256": "598d6ec5e739aae03cdc2004ae6fa195fa7ed8059c1e5e7cade8a1bbda626c46",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/AdbRootAuthPath.kt",
+      "beforeSha256": null,
+      "afterSha256": "dc341924657c82da98549f7600592e6b78b74f0170d672d247ed7eef0919d13e",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/AdbRootNegotiation.kt",
+      "beforeSha256": null,
+      "afterSha256": "e04d6b2e718b500e00462e64bfe63e01d0009d28a88b4c04f72df4bfef45cba2",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/AdbShellExecutor.kt",
+      "beforeSha256": "bcc391b375ab8b5bac098a29d87bb677721e7109d1c21a7f27a3b6e9cb9a2ef3",
+      "afterSha256": "8d35791aa0d4bf5a821975f4e6e4ebc8cfb07c657577388cb22df4e21ac5c8ae",
+      "change": "modified"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/AdbStlsTunnel.kt",
+      "beforeSha256": null,
+      "afterSha256": "db9c9df8f32a94356ad7377ef004b16dca0c31d98971011790c407e44748166b",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/AdbTypes.kt",
+      "beforeSha256": null,
+      "afterSha256": "728bdf973b7b5da94dacfda8e235d9633a0d1488add7e1485827e51496461751",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/AndroidRootBootstrap.kt",
+      "beforeSha256": null,
+      "afterSha256": "220371f1e09a48e3c663aa02c137c50d587a017315f0f60e3786e3b4549331ab",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/AppPermissionSetup.kt",
+      "beforeSha256": null,
+      "afterSha256": "ac1833dc718955b9c1e36457a285a723e41b7310913c7cd264c7bbf517752838",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/ControlWork.kt",
+      "beforeSha256": null,
+      "afterSha256": "d94d2c0e2a3ca2e9d5fd1cb99f1973bd26e5f2692011b342a35c43c38984c32b",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/FoundationRecovery.kt",
+      "beforeSha256": null,
+      "afterSha256": "3cf626da4d67ba113290056cee0dea4a3d962a6e5d2828f6eb27ce223884ac72",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/KeepAlivePolicy.kt",
+      "beforeSha256": "6576a432e7158745b56756ff4f95296f3f03f29df511aa2b61346d2d05b3a738",
+      "afterSha256": null,
+      "change": "removed"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/PlatformAccess.kt",
+      "beforeSha256": "e048de8ffdb109d02775a1d34296878263492fa75874b2ff3e897fdea8f606a9",
+      "afterSha256": "9199053799347c385fae40dd1a2df6e5ee5e057601f614acb4f6c261477ca8d0",
+      "change": "modified"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/PlatformCoordinator.kt",
+      "beforeSha256": "6ac1d60111da62d0fbc7822c4da05e5b80e5cf2d81fff2e48fcfe34ecc95e655",
+      "afterSha256": "90c2373a97cc9a859b4851910311c41f0b0a1fdbed33690ca7883b9d529d8f38",
+      "change": "modified"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/PlatformDeadlines.kt",
+      "beforeSha256": null,
+      "afterSha256": "9fd898e034dd31542af73fcf485dd519d9d79aab4fd582450b77d7d483d7e2b0",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxCredentials.kt",
+      "beforeSha256": "72a0441babf44f69fea0d39cf0b99a9786fd1fe4c41e1b28e434feddbda09555",
+      "afterSha256": "df6f09d4b7822667e0135d6f3a7cca4795ad7ffdb62e017334dac54f941f5f46",
+      "change": "modified"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxOemCredentials.kt",
+      "beforeSha256": null,
+      "afterSha256": "ad078113f342e127d3d2d090e6233c3ff6f71ae01c1e7356bc426da0e3227454",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxReceiverDeployer.kt",
+      "beforeSha256": "428071077ac7eb726595fe6ec3b6784c859f3fd5c437012c549f2d38808e6844",
+      "afterSha256": "9af545c4ad9dae21127b6338298e73c8d0589c4bc8130eebc149bc7682046d89",
+      "change": "modified"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxTelnet.kt",
+      "beforeSha256": "02bce93a0764692e787beda4d01e3c2e1a3870c8cf34f5b8f7d503887b0fc616",
+      "afterSha256": "359794e1255d6dc97554a7571ba1c6f1a2c0342c31c3e82d7b0d91de3cdfb080",
+      "change": "modified"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootHabProcess.kt",
+      "beforeSha256": "e37256fd36cf9e00b4f0497a500d34fe5604bd0b8f5dcfb5ce78aa96d17ebde2",
+      "afterSha256": "9887d579d05d9bc74c54fe21569ac6299d929ee1357d1249834360c8890c963f",
+      "change": "modified"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootHabSession.kt",
+      "beforeSha256": null,
+      "afterSha256": "8f0d7af34816a636eff029763e2f5d3e40d1204a1ea9b8cd31f28b7ced20adc6",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootOwner.kt",
+      "beforeSha256": null,
+      "afterSha256": "ebbed94375b845eda53d1e76d838ab1c9ab93405e274b2132f1bd36a7ff1f0ff",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootServiceAuthentication.kt",
+      "beforeSha256": null,
+      "afterSha256": "0e533888bc8349056a76e9860e071a749d49fec60f88930f594541d4d65bb96f",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootServiceClient.kt",
+      "beforeSha256": "62d93a8c66976c56e4856bf958370e7c4baa62a1bc3edb4fda1525b01a8c4f6b",
+      "afterSha256": "bf46e626261ce7fe4a558758d66959b84875969146f01df2bcc73c03bcbb35a5",
+      "change": "modified"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootServiceMain.kt",
+      "beforeSha256": "dba2172d8fd6dd211ba4db99df856eafa0a23657e39b88e5e61bb9029536f7d6",
+      "afterSha256": "5958833324876707db2f7b9c49583aa60ff9098b18bc79b9a011b061179fb3c9",
+      "change": "modified"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootWire.kt",
+      "beforeSha256": null,
+      "afterSha256": "02cf711fc0568a8eef7065ce048c790a78dea32ff84af62898a3e2106f5198cb",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/WirelessAdbStartupActivator.kt",
+      "beforeSha256": null,
+      "afterSha256": "dc71ab8d417d22d8a89f27416a68d2ce0ef882f71303d62713f4a485d1f859f7",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabComposition.kt",
+      "beforeSha256": "9d1c4dceac81da1421a6d92db39408b259463a03908ce5cf167e3edce9395725",
+      "afterSha256": "c28f0daf5084fc55421d22b8c14c985cec2287d5aa443859370c0607e0b8ef7f",
+      "change": "modified"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabFrames.kt",
+      "beforeSha256": "21e1b12ee8e16ab68a80c3a871d88babf6783504bd19c81ac949f1f3027d654e",
+      "afterSha256": "ea3bf7393d9d621ea794d7a02ca4868c038fa5a76e34f92014eea957515bd12d",
+      "change": "modified"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/startup/AutoBootReceiver.kt",
+      "beforeSha256": null,
+      "afterSha256": "b76a135efc48e90bd73110d41bd1645ba912aa9e2a65247879beb7840d18d192",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/startup/AutoRecoveryJob.kt",
+      "beforeSha256": null,
+      "afterSha256": "a20684840b8fd31c35689ec2ea177379d0919e8ca5f47daac89e3d939ff874c7",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/startup/AutoStartup.kt",
+      "beforeSha256": null,
+      "afterSha256": "8dea37a025db1879c8bb64ba3d7fb8234c06b53c6924dcc03356cc32f36b0dcf",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/EcarxVehicleSource.kt",
+      "beforeSha256": "2286a00bfe21bc31e752414c7dc7a4503429c4a4a9d9fbcf886fe958be94ddbe",
+      "afterSha256": "0754f085d52a44fc86dd35545c550b6b7ae6cc1fee8196ab5fb99b96f55404fa",
+      "change": "modified"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleCatalog.kt",
+      "beforeSha256": "74a8ad8621cd9a5897c39583b33dcaff1e46ee42125257711459739f18ff01f4",
+      "afterSha256": "b3bfd24b2c1a67a9e606a1e888b1f9b3f96cfc4a310dac5f0b779c4bd4a736ea",
+      "change": "modified"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleCollector.kt",
+      "beforeSha256": null,
+      "afterSha256": "1960caad6b04627e49dc9eb0de9109d7a3528217b0bc94a7e7260b07b01282c7",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleInventory.kt",
+      "beforeSha256": "9080340befbde9fb9a4343887d82ed1b09fe3b7926ffbfff797ae33173c7acbe",
+      "afterSha256": "6968323639495e20b1a7d32631f78a8f40bc441a490a744a4a6ca435e8e7fb07",
+      "change": "modified"
+    },
+    {
+      "path": "galaxy/service/src/test/java/com/ecarx/autoservice/platform/AdbStartupTest.kt",
+      "beforeSha256": null,
+      "afterSha256": "ad46c5a8f2c29392e2d3ccb7c6fdc9a27ee4253006eebce701f6aa0c508fd570",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/test/java/com/ecarx/autoservice/platform/AndroidRootBootstrapTest.kt",
+      "beforeSha256": null,
+      "afterSha256": "36449530fca8c8763da072c764ca62f48a1eb813b7e732d1ffd4742c04032e67",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/test/java/com/ecarx/autoservice/platform/FoundationRecoveryTest.kt",
+      "beforeSha256": null,
+      "afterSha256": "a68afbf9e93de16df0c5dd9606e2c1edc22d2be18f2d34b15e13a40bd47a0b02",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/test/java/com/ecarx/autoservice/platform/PlatformExecutionTest.kt",
+      "beforeSha256": "95ff979f3571d1ab402d24aa706716686b35e366d894e763629e119554cdaaba",
+      "afterSha256": "f38dfd94903330815ddfca99b38d0017d4b02f181942ba0abafa2fc440c452b7",
+      "change": "modified"
+    },
+    {
+      "path": "galaxy/service/src/test/java/com/ecarx/autoservice/platform/QnxOemCredentialsTest.kt",
+      "beforeSha256": null,
+      "afterSha256": "fde823dd8a569aaa7046c09b8cd7caeaa609e2a87ce7cacb692f2aef7f685bc4",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/test/java/com/ecarx/autoservice/startup/AutoStartupTest.kt",
+      "beforeSha256": null,
+      "afterSha256": "692b654302ae9f023bb9510090914524d8ca9dce8b73882fee8a86604c3b4b94",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/VehicleEventsTest.kt",
+      "beforeSha256": null,
+      "afterSha256": "c3ab384d3ec63757f4c85e50b7b5d9aa4a5df91a55e16868af2a3f2384f001fc",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/test/java/ecarx/car/IECarXCar.kt",
+      "beforeSha256": null,
+      "afterSha256": "c4e77a18c37b079438340794bc37a8848c7570d0608b7f04a041bfd23afef743",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/test/java/ecarx/car/hardware/property/VehicleTestContract.kt",
+      "beforeSha256": null,
+      "afterSha256": "4ff6ffe421a674be727938e12ea00bd24b26dbb04b1f41a87c9ae38c1677c3a5",
+      "change": "added"
+    },
+    {
+      "path": "galaxy/service/src/test/java/ecarx/car/hardware/signal/SignalFilter.kt",
+      "beforeSha256": null,
+      "afterSha256": "fef0b80c1e75d89815a15e1b25497ddb35b9a7ab3ce6f99b8869e0cd214aef6d",
+      "change": "added"
+    }
+  ],
+  "knownUnverified": [
+    "Android App to ::1:23 accessibility on target firmware",
+    "real boot and process recovery",
+    "QNX OEM source parsing and login on vehicle",
+    "full physical projection after this split",
+    "CPU/PSS and resource recovery under vehicle workloads"
+  ]
+}

@@ -1,0 +1,286 @@
+{
+  "schemaVersion": 1,
+  "recordedAt": "2026-10-30T09:43:20.029257+08:00",
+  "scope": "只读源码与历史记录核验；整改方案，无运行代码变更或新设备验收",
+  "references": [
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢",
+      "headObserved": null,
+      "identity": "以逐文件SHA256标识所读工作区，不以HEAD代替工作区内容"
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向",
+      "headObserved": "03f57e317f05fb0606a29542ffc5bbbe4ba1059e",
+      "identity": "以逐文件SHA256标识所读工作区，不以HEAD代替工作区内容"
+    }
+  ],
+  "files": [
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/adaptation/system/adb/AdbEndpoint.kt",
+      "sha256": "6e6815fbe9018f62d33a1d5d8196e4fb369d5d0ebbc78518c00eba6f8f3ccfd5",
+      "lines": 207
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/adaptation/system/adb/AdbConnection.kt",
+      "sha256": "6a4dbdbb350d86895281e8b0014a2d00e96bf75c3bc1fdfffd6b0f35c42128d2",
+      "lines": 161
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/adaptation/system/adb/AdbStlsTunnel.kt",
+      "sha256": "a3665c11dd962b06df582c4b298bc30c41d0d5a878bf1d2769ca1e2d1ea4ed3a",
+      "lines": 115
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/adaptation/system/adb/AdbRootNegotiation.kt",
+      "sha256": "de5b7e74b54bf0d7304b33ec6e881898772b816c542297b2d4d091b34cb53063",
+      "lines": 126
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/adaptation/system/adb/AdbRootAuthPath.kt",
+      "sha256": "f816e9fbe30709b736d4853b398a1e4eadfccae811e28f7b53519bf2c95d10fa",
+      "lines": 22
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/adaptation/system/adb/AdbRootControlAdapter.kt",
+      "sha256": "44c39f511432b4e0ddc519752f482a771003ce0418f0cb944b3328686443178b",
+      "lines": 666
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/adaptation/system/adb/AdbAuthorizationRecovery.kt",
+      "sha256": "b5391518c1ff754f5d6a5938cb6a4ca86c53614ff1d4aed81f7f27bb62a75b8b",
+      "lines": 64
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/adaptation/system/adb/RootServiceClient.kt",
+      "sha256": "ae5d34e2f9d4a0dfc195721aaa0c4b367aa2ad5a5bd69f9ff1ed9492004b9700",
+      "lines": 184
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/adaptation/system/adb/RootServiceAuthentication.kt",
+      "sha256": "2c6e5ff66c5d623f272445a4a2a5fa384ad690807727aead5390996a1a66150f",
+      "lines": 69
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/adaptation/system/adb/WirelessAdbStartupActivator.kt",
+      "sha256": "9c242f50f8a1d98991fae766a52d6f0c5b8f4ad672ea359caec5b2c6862349f9",
+      "lines": 70
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/adaptation/system/adb/AppPermissionRecovery.kt",
+      "sha256": "db45bc72458a1ff5b1eb2268a4b18c7a81dba339e53b1cbc27266771bae6d85c",
+      "lines": 141
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/adaptation/system/adb/root/RootPeerOwner.kt",
+      "sha256": "9f8d2f965ba6987ef067fd686d88f55794039c0433ecd70d1464a82c9cb830f9",
+      "lines": 16
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/adaptation/system/adb/root/RootHelperPeer.kt",
+      "sha256": "684c9ada40a6b75ef5788fafdcecab4baa6fa084bca01ab32b3ac9411bb1f411",
+      "lines": 31
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/adaptation/system/adb/root/RootHelperProcess.kt",
+      "sha256": "c42700688d5fd9196e5d1920a03b3b71f3b8f27be09872436afb6fadd3a26777",
+      "lines": 16
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/adaptation/system/adb/root/RootServiceMain.kt",
+      "sha256": "da10aa4c60b181f0c05c991da6907344eb72bf259b21f82dcaa94d391ed6b805",
+      "lines": 293
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/domain/usecase/RootAdbUseCases.kt",
+      "sha256": "e86dbc762819ce23c40321c09ab550000d3d30e08701c2905c034f7ce02500d2",
+      "lines": 126
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/infrastructure/receiver/BootReceiver.kt",
+      "sha256": "e560af877cca585e152f72fa72c09243a1c21f2237088979a452853dad8cb4cf",
+      "lines": 41
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/infrastructure/service/KeepAliveService.kt",
+      "sha256": "34d9026e549851947b7d8dfe1c993c3b46b46d58d1fbb97277f1f990d4dc8993",
+      "lines": 162
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/infrastructure/service/NexusxRuntimeService.kt",
+      "sha256": "60ef4feb21a0bf370a59cf5a04fb1a15d8e4e57fe78e174e18fa26116b250a7d",
+      "lines": 96
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/infrastructure/service/WifiAdbRecoveryScheduler.kt",
+      "sha256": "a89bbf009aba5caf08236a1060ea6bb86226b13e011a1ea0174f12dbe7f1cbb9",
+      "lines": 66
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/infrastructure/startup/StartupRecoveryLoop.kt",
+      "sha256": "46ef02a61650f80cde00f91b64e947e4fd0d717c288a536afc28cf7ce5372e2f",
+      "lines": 40
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/docs/analysis/evcc-root-adb-flow.md",
+      "sha256": "9f3f26154ffd825b4e448950e296e917e655f93d68252decdac55d7cbefe8ae0",
+      "lines": 175
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/docs/progress/root-adb-debug-log.md",
+      "sha256": "a3777be47a72ea4fbef44bc86b630b7c13c8e17954bfc008ee33b132c22cf97c",
+      "lines": 165
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/docs/progress/privileged-startup-recovery-20261024.md",
+      "sha256": "276d6943b863bfc3fc5c9010bd13bcd668d545d82b2bf9988f26036c4338d11d",
+      "lines": 39
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/apps/l6-nexus/android/root-adb-demo/app/src/main/java/com/ecarx/l6nexus/rootdemo/DemoAdbRootController.kt",
+      "sha256": "56018049d24713690d3cd29f1e41067d2e3243d1447c8e1f9443b9f7a909618d",
+      "lines": 209
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/apps/l6-nexus/android/root-adb-demo/app/src/main/java/com/ecarx/l6nexus/rootdemo/RootServiceStartupService.kt",
+      "sha256": "7112f2fc0b38336872ecda9fbb72d212a5cdf3456ec1d57fbf84b46b9627ae95",
+      "lines": 92
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/apps/l6-nexus/android/root-adb-demo/app/src/main/java/com/ecarx/l6nexus/rootdemo/BootCompletedReceiver.kt",
+      "sha256": "a1eeb852852088819504b22b0f572b06235a15bf7492d315c4d49299b1f7ba24",
+      "lines": 23
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/车机逆向/docs/research/live-root-debug-2026-09-17.md",
+      "sha256": "7c0f5131a766cb0a18b80b0897c810f1dbab02f7fdea28d38f200b0a71b7a26d",
+      "lines": 361
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/telemetry-live-20261025/sdk-sources/sources/ecarx/car/hardware/property/ECarXCarPropertyManagerBase.java",
+      "sha256": "85fe9cd2e1bbc722bb5f5c274196e98f302a432868f75c043fd24bea317b9ded",
+      "lines": 252
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/galaxy/service/src/main/java/com/ecarx/autoservice/AutoService.kt",
+      "sha256": "5a280419f66f7fea2799ee4629514564036c56bc9a2b06b1c7de3a6c922cdc36",
+      "lines": 335
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/galaxy/service/src/main/java/com/ecarx/autoservice/ServiceActivity.kt",
+      "sha256": "39a8e331d05e4ef19d02ca9d2e8298583fb64b3a8acdf717ad97505ec453a0a0",
+      "lines": 141
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/galaxy/service/src/main/java/com/ecarx/autoservice/platform/PlatformAccess.kt",
+      "sha256": "e048de8ffdb109d02775a1d34296878263492fa75874b2ff3e897fdea8f606a9",
+      "lines": 65
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/galaxy/service/src/main/java/com/ecarx/autoservice/platform/PlatformCoordinator.kt",
+      "sha256": "6ac1d60111da62d0fbc7822c4da05e5b80e5cf2d81fff2e48fcfe34ecc95e655",
+      "lines": 78
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/galaxy/service/src/main/java/com/ecarx/autoservice/platform/KeepAlivePolicy.kt",
+      "sha256": "6576a432e7158745b56756ff4f95296f3f03f29df511aa2b61346d2d05b3a738",
+      "lines": 15
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootServiceClient.kt",
+      "sha256": "62d93a8c66976c56e4856bf958370e7c4baa62a1bc3edb4fda1525b01a8c4f6b",
+      "lines": 51
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootServiceMain.kt",
+      "sha256": "dba2172d8fd6dd211ba4db99df856eafa0a23657e39b88e5e61bb9029536f7d6",
+      "lines": 85
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootHabProcess.kt",
+      "sha256": "e37256fd36cf9e00b4f0497a500d34fe5604bd0b8f5dcfb5ce78aa96d17ebde2",
+      "lines": 32
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxReceiverDeployer.kt",
+      "sha256": "428071077ac7eb726595fe6ec3b6784c859f3fd5c437012c549f2d38808e6844",
+      "lines": 67
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxTelnet.kt",
+      "sha256": "02bce93a0764692e787beda4d01e3c2e1a3870c8cf34f5b8f7d503887b0fc616",
+      "lines": 66
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/galaxy/service/src/main/java/com/ecarx/autoservice/platform/AdbShellExecutor.kt",
+      "sha256": "bcc391b375ab8b5bac098a29d87bb677721e7109d1c21a7f27a3b6e9cb9a2ef3",
+      "lines": 35
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/EcarxVehicleSource.kt",
+      "sha256": "2286a00bfe21bc31e752414c7dc7a4503429c4a4a9d9fbcf886fe958be94ddbe",
+      "lines": 174
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleInventory.kt",
+      "sha256": "9080340befbde9fb9a4343887d82ed1b09fe3b7926ffbfff797ae33173c7acbe",
+      "lines": 50
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabComposition.kt",
+      "sha256": "9d1c4dceac81da1421a6d92db39408b259463a03908ce5cf167e3edce9395725",
+      "lines": 214
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabFrames.kt",
+      "sha256": "21e1b12ee8e16ab68a80c3a871d88babf6783504bd19c81ac949f1f3027d654e",
+      "lines": 17
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabLayout.kt",
+      "sha256": "7c2ca5de89c4fad6993dffc02f91af6921fd0c8a2de9519a81dd85c5ecefc703",
+      "lines": 12
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/galaxy/service/src/main/AndroidManifest.xml",
+      "sha256": "d9d843d8da5081ed8993443b347066aedf00e308535d8bbaef04b8ac9dfb15ca",
+      "lines": 25
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/galaxy/service/src/test/java/com/ecarx/autoservice/platform/PlatformExecutionTest.kt",
+      "sha256": "95ff979f3571d1ab402d24aa706716686b35e366d894e763629e119554cdaaba",
+      "lines": 63
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/galaxy/cluster/src/main/java/com/galaxy/autocluster/ClusterRenderService.kt",
+      "sha256": "b77848ff44748695514e30cf9f1650820a1a8687523f262ca0eb6678f6ef3f03",
+      "lines": 80
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/tools/hab/telnet_session.py",
+      "sha256": "122eafdb42bc106f0451f7d1f0181829f8d986d5c829922189132756dd50d75d",
+      "lines": 238
+    },
+    {
+      "path": "/Users/anjon/Documents/GalaxyPlay/galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxCredentials.kt",
+      "sha256": "72a0441babf44f69fea0d39cf0b99a9786fd1fe4c41e1b28e434feddbda09555",
+      "lines": 30
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/nexusx/src/main/java/com/ecarx/nexusx/adaptation/platform/flymeauto/qnx/QnxTelnetClient.kt",
+      "sha256": "3d6945b1d1990bf448ee567506f7905dbb6332e4a54fd091d6c827d6b3a543d1",
+      "lines": 367
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/qnx-diagnostics-20261025/originals/AutoLogReport-jadx/resources/AndroidManifest.xml",
+      "sha256": "6ead9b2274fba26707352444d2e9439377e0d2daea906f9d2567dcc249a8535c",
+      "lines": 201
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/tools/inspect_g733_qnx_diagnostics.py",
+      "sha256": "5f7a8ce5ad933a780b2968d4b158ce32c4e480715ea52e977be2e98e4a628520",
+      "lines": 147
+    }
+  ],
+  "authenticationReuseAddendumAt": "2026-10-30T09:51:30.086046+08:00",
+  "authenticationReuseAddendum": "用户授权复用自有星枢认证并内置QNX授权/取得方法；只核对解析器和包身份，未输出真实凭据，未改运行代码。"
+}

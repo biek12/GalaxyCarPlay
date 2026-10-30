@@ -16,7 +16,7 @@ from elf64 import ELF
 
 QNX_IMPORTS = {
     "libc.so.4": ["_init_libc", "__get_errno_ptr", "exit", "malloc", "free", "memset",
-                  "memcpy", "memcmp", "strcmp", "strlen", "read", "write", "open", "close", "signal"],
+                  "memcpy", "memcmp", "strcmp", "strlen", "read", "write", "open", "close", "signal", "msync"],
     "libuhab-qvmhost.so": ["habmm_socket_open", "habmm_socket_recv", "habmm_socket_send",
                             "habmm_socket_close", "habmm_import", "habmm_unimport"],
     "libpmem_client.so": ["pmem_init", "pmem_deinit", "pmem_map_handle", "pmem_unmap_handle"],
@@ -55,7 +55,7 @@ def describe(path, build_class, interpreter, allowed_needed):
 
 def build_android(llvm, output):
     sources = [HAB / name for name in ("galaxy_hab_transport.c", "galaxy_hab_linux.c",
-               "galaxy_hab_protocol.c", "galaxy_hab_pixels.c", "galaxy_hab_sender.c", "galaxy_hab_hmac.c")]
+               "galaxy_hab_protocol.c", "galaxy_hab_owned.c", "galaxy_hab_pixels.c", "galaxy_hab_sender.c", "galaxy_hab_hmac.c")]
     binary = output / "android/galaxy_hab_android_probe"
     binary.parent.mkdir(parents=True, exist_ok=True)
     run([llvm / "aarch64-linux-android29-clang", "-std=c11", "-O1", "-g", "-fno-omit-frame-pointer",
@@ -95,7 +95,7 @@ def build_qnx_candidate(llvm, output, rootfs):
              "-I", str(PROBES / "qnx_abi"), "-I", str(HAB), "-I", str(PROBES),
              "-std=c11", "-O1", "-g", "-fPIC", "-fno-stack-protector", "-fno-omit-frame-pointer",
              "-Wall", "-Wextra", "-Wpedantic", "-Werror"]
-    sources = [HAB / name for name in ("galaxy_hab_protocol.c", "galaxy_hab_hmac.c",
+    sources = [HAB / name for name in ("galaxy_hab_protocol.c", "galaxy_hab_owned.c", "galaxy_hab_hmac.c",
                "galaxy_hab_receiver.c", "galaxy_hab_qnx.c")]
     sources += [PROBES / "probe_common.c", PROBES / "qnx_probe.c"]
     objects = []
@@ -138,7 +138,9 @@ def main():
         reports.append(build_qnx_candidate(llvm, output, args.qnx_rootfs.resolve()))
     report = dict(artifacts=reports, qnx_sdk_build_complete=False,
                   target_executed=False, device_connected=False,
-                  source_sha256={str(p.relative_to(ROOT)): sha(p) for folder in (HAB, PROBES) for p in sorted(folder.glob("*")) if p.suffix in {".c", ".h"}},
+                  source_sha256={str(p.relative_to(ROOT)): sha(p) for folder in (HAB, PROBES)
+                                 for p in sorted(folder.rglob("*"))
+                                 if p.is_file() and p.suffix in {".c", ".h", ".S"}},
                   compiler=subprocess.check_output([str(llvm / "clang"), "--version"], text=True).splitlines()[0])
     (output / "build-report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
     for artifact in reports:

@@ -10,21 +10,32 @@ internal class FoundationRecovery(
     @Volatile private var running = false
     private var pending: AutoCloseable? = null
     private var failures = 0
+    private var inFlight = false
     fun start() {
         if (running || !enabled()) return
         running = true; failures = 0; queue(0, ++generation)
+    }
+    /** 新投屏需求可提前等待中的恢复，但复用正在执行的Root准备，不并发启动第二代。 */
+    fun requestNow() {
+        if (!enabled()) return
+        if (!running) { start(); return }
+        if (inFlight) return
+        pending?.close(); pending = null
+        queue(0, ++generation)
     }
     private fun queue(delay: Long, token: Long) {
         pending = schedule(delay) {
             pending = null
             if (!current(token)) return@schedule
+            inFlight = true
             recover({ current(token) }) { success ->
                 if (!current(token)) return@recover
+                inFlight = false
                 failures = if (success) 0 else (failures + 1).coerceAtMost(5)
                 queue(if (success) 60000 else (30000L shl (failures - 1)).coerceAtMost(300000), token)
             }
         }
     }
     private fun current(token: Long) = running && generation == token && enabled()
-    override fun close() { running = false; ++generation; pending?.close(); pending = null }
+    override fun close() { running = false; inFlight = false; ++generation; pending?.close(); pending = null }
 }

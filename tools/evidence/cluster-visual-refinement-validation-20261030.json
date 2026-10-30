@@ -1,0 +1,67 @@
+{
+  "completed_at": "2026-10-30T18:08:33.092107+08:00",
+  "passed": true,
+  "jvm_test_count": 121,
+  "checks": [
+    "platform",
+    "tools",
+    "source-contracts",
+    "review-assets",
+    "browser-review",
+    "theme-evidence",
+    "copy-benchmark",
+    "native-address-undefined-sanitizers"
+  ],
+  "apps": {
+    "mobile": {
+      "package": "com.ecarx.carplay",
+      "sha256": "67311ee653efa4f155fc2490bd019eac4d2ecde68c80b750429fe75aef37bd87",
+      "bytes": 61067931,
+      "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121"
+    },
+    "service": {
+      "package": "com.ecarx.autoservice",
+      "sha256": "3f053479cddc52718141603211d9b8b4a93fd0362a45d4bed035859b96b3651c",
+      "bytes": 13802106,
+      "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121"
+    },
+    "cluster": {
+      "package": "com.galaxy.autocluster",
+      "sha256": "a99407ac448a20b2d4f33a0b8b3eca37534da66581c27bb573fedf6c7c9176b6",
+      "bytes": 3575908,
+      "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121"
+    }
+  },
+  "gpu_test": {
+    "sha256": "5c2c573513a4fc3a1699de7ddeb73965d7fd758ea8bdf22aafe196de6576e1e7",
+    "bytes": 145276,
+    "certificate_sha256": "c0e8c25bef3ef1a331517cc0961a7e0368d23c15865afa40546ecb1e4820c121",
+    "executed": false
+  },
+  "qnx_receiver_sha256": "1faa808e73b262bb06985db62a887e4831362872d2d3288b7e386eb83df69b86",
+  "not_verified": [
+    "Android real EGL/SurfaceTexture/ImageReader driver execution",
+    "8155 CPU/PSS/threads/FD and measured display FPS",
+    "CarPlay native111 live content and QNX Screen visible output",
+    "OEM image transmission warning root cause/absence"
+  ],
+  "command": "bash scripts/verify_cluster_preflight.sh --package",
+  "python_tool_tests": 48,
+  "native_contract_groups": 11,
+  "browser_interaction_groups": 8,
+  "test_bundle": ".work/vehicle-test/cluster-editor-20261030-180834",
+  "bundle_file_count": 2154,
+  "bundle_manifest_sha256": "24c76ef4c320912d3f89aebebd610200976e5914bcb52f88b82e717384f34eb9",
+  "bundle_zip_sha256": "5c45b822ca0d16ae769bd17dd8efd3b6321ac29136662819b5c14363ebb0cf29",
+  "lint_run": false,
+  "vehicle_connected": false,
+  "installed": false,
+  "new_tests": [
+    "Cruise arc endpoints positive/negative and custom scale",
+    "Reference lyrics width and five readable rows",
+    "Lyrics after centered track pixel equality",
+    "Signed kW +60/-60/reverse units/280/staleness"
+  ],
+  "vehicle_power_direction_verified": false,
+  "oem_warning_visuals_completed": false
+}

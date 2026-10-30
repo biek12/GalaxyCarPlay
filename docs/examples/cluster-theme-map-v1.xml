@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 自写设计草案：复用相同组件，只改变组合/几何；当前App不会加载本文件。 -->
+<cluster-theme schemaVersion="1" status="draft" id="map-compact"
+    name="地图 · 紧凑媒体" designWidth="1920" designHeight="532" fit="contain">
+    <render-policy mode="fixed-cap" maxFps="30" animationFps="30" mapFps="source"
+        static="on-change" keepAliveMs="1000"/>
+    <appearance mode="auto" day="day" night="night" shareDayNight="false"/>
+    <styles>
+        <palette id="night" foreground="#EFF5F8" muted="#9AAAB2" accent="#1F9EFF"/>
+        <palette id="day" foreground="#13252F" muted="#50646F" accent="#006FC7"/>
+        <override component="track" mode="day" foreground="#102A38"/>
+    </styles>
+    <animations>
+        <animation id="line-change" preset="crossfade" durationMs="260"/>
+    </animations>
+    <scene>
+        <component id="map" type="map-viewport" x="0" y="0" width="1450" height="532" z="0"
+            source="navigation.map" scale="contain"/>
+        <component id="speed-number" type="value-text" x="60" y="370" width="220" height="110" z="10"
+            bind="vehicle.displaySpeed" unit="km/h" invalidText="--"/>
+        <component id="artwork" type="artwork" x="1500" y="55" width="220" height="180" z="10"
+            bind="media.artwork"/>
+        <component id="track" type="track-info" x="1480" y="255" width="390" height="75" z="10"
+            bind="media.track"/>
+        <component id="lyrics" type="lyrics" x="1480" y="335" width="390" height="75" z="10"
+            bind="media.lyrics" clock="media.playback" lines="1" transition="line-change"/>
+        <component id="progress" type="media-progress" x="1480" y="440" width="390" height="40" z="10"
+            bind="media.playback"/>
+    </scene>
+</cluster-theme>
