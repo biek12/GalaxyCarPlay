@@ -52,3 +52,22 @@ bash scripts/verify_carplay_experience.sh
 用户补充复现条件：iPhone 16 Pro Max / iOS 27.2，只有开关回退，没有黑屏或重连。该信息是用户实测描述；本轮没有连接该手机或车机。参考[iOS符号差异](https://github.com/blacktop/ipsw-diffs/blob/8af66bf3a924930979237d896ee447f0f2684ac8/iOS/18_5_22F76__vs_26_0_23A5260n/DYLIBS/CarKit.md)可见CRVehicle.displayScaleMode、CRDisplayScaleInfo与物理尺寸/像素/视口算法，但这是旧版本符号证据，不是iOS27.2运行轨迹或已找到根因。
 
 **当前第3项仍待定位/实测，因此遵守用户指定顺序，未覆盖当前核心。** 先独立保存三方审查候选，见下方后续记录；这不是核心升级完成声明。
+
+
+### 已完成的只读核心三方审查
+
+命令：`python3 scripts/compare_upstream.py --tag v0.2.22`。工具只读取本地标签和已提交产品源码，不fetch、不切换参考HEAD、不写当前模块/版本锁。工作区源码有未提交修改时拒绝生成，候选存在时拒绝覆盖。完整逐文件旧/本地/新/候选SHA256见[审查登记](../tools/upstream/reviews/v0.2.22-three-way.json)，本次本地输入是`beb19cb1416a5835fc5d6c539efda1c8e0723e55`。
+
+1420份所选上游文件中：1131份未变、21份仅本地适配、248份仅上游变化、9份双方变化可Git自动合并、11份文本冲突。没有发现新核心文件与galaxy同包同文件名的碰撞。独立galaxy产品文件不属于覆盖输入。候选保存在`.work/upstream-candidates/v0.2.22-28d6002ba003-three-way-beb19cb1416a/product/`，不是可直接安装/已编译的升级版。
+
+| 冲突文件 | 必须保留和整合的内容 |
+| --- | --- |
+| AsyncDiagnosticLog / SessionLogFile / DiagnosticRedactor | 产品脱敏上下文、代次/字节轮转，与上游异步日志优化；不可选一侧整文件覆盖 |
+| CarPlayHostActivity | 产品装配、固定面板/111/HAB接点，与上游屏幕转发、偶数尺寸等改动 |
+| ClusterMusicState / ClusterMusicView | 产品歌词、位图所有权与进度时钟，与上游曲目/封面更新和动画 |
+| AndroidMediaSink / MicrophoneUplink | 产品音频/输入源/焦点/通信模式多流所有权，与上游导航焦点、静音诊断等改动 |
+| CarPlayRuntimeConfig | 产品冻结信道集合与上游已有网络接口覆盖字段并存 |
+| galaxy/mobile/build.gradle.kts | 保留CarPlay包名、产品版本属性和原签名；核心版本单独更新，不使用上游应用版本号覆盖产品版本 |
+| TelephonyMicrophoneTest | 保留本轮应用录音走电话及多流释放回归，并加入上游新增场景 |
+
+`record_patches.py`已取消固定写死v0.2.21目录，改从baseline-lock.tag取得对应只读基线。真正升级时仍需解决上述11份冲突、核验上游新行为、更新版本锁和重建补丁，再编译回归。本轮没有执行这些产品覆盖步骤。
