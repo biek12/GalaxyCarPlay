@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[1]
 ANDROID = '{http://schemas.android.com/apk/res/android}'
 CREDENTIAL_SUFFIXES = {'.pk8', '.p7b', '.key', '.pem', '.p12', '.pfx', '.jks', '.keystore'}
 GENERATED_DIRS = {'build', '.gradle', '.cxx', '.externalNativeBuild', '__pycache__'}
-MODULE_DIRS = ('common', 'shared', 'galaxy/mobile', 'galaxy/common')
+MODULE_DIRS = ('common', 'shared', 'galaxy/mobile', 'galaxy/common', 'galaxy/contracts', 'galaxy/client', 'galaxy/service', 'galaxy/cluster')
 
 
 def product_path(path, mapping):
@@ -30,7 +30,7 @@ def source_files(root):
     for path in root.rglob('*'):
         # 仅排除模块根输出目录；src中的同名包/资产目录仍是真实输入，不能绕过审查。
         relative = path.relative_to(root)
-        if relative.parts[0] not in GENERATED_DIRS and path.is_file():
+        if relative.parts[0] not in GENERATED_DIRS and path.name != '.DS_Store' and path.is_file():
             yield path
 
 
@@ -74,7 +74,7 @@ def check_core(root):
 def check_product(root):
     settings = (root / 'settings.gradle.kts').read_text()
     assert 'rootProject.name = "GalaxyPlay"' in settings
-    assert set(re.findall(r'":([a-z]+)"', settings)) == {'shared', 'common', 'mobile'}
+    assert set(re.findall(r'":([a-z-]+)"', settings)) == {'shared', 'common', 'mobile', 'auto-contracts', 'auto-client', 'service', 'cluster'}
     build = (root / 'galaxy/mobile/build.gradle.kts').read_text()
     assert 'applicationId = "com.ecarx.carplay"' in build
     assert not re.search(r'^\s*applicationIdSuffix\s*=', build, re.M)
@@ -97,7 +97,7 @@ def check_product(root):
     controller = (root / 'shared/src/main/java/com/shilapi/xcertplay/orchestration/CarPlayController.kt').read_text()
     assert 'com.apple.syslog_relay' not in controller
     assert 'carplay-lab-phone-diagnostics' not in controller
-    for directories in (('common', 'galaxy/common'), ('shared',), ('galaxy/mobile',)):
+    for directories in (('common', 'galaxy/common'), ('shared',), ('galaxy/mobile',), ('galaxy/contracts',), ('galaxy/client',), ('galaxy/service',), ('galaxy/cluster',)):
         declarations = set()
         for directory in directories:
             for path in (root / directory / 'src/main/java').rglob('*'):

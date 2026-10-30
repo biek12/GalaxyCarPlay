@@ -70,12 +70,13 @@ run_step() {
         step_seconds=$(( $(date +%s) - begin ))
         log_line "<== $name 通过（${step_seconds}s）"
         return 0
+    else
+        local status=${PIPESTATUS[0]:-1}
+        step_seconds=$(( $(date +%s) - begin ))
+        log_line "<== $name 失败（exit=$status，${step_seconds}s）"
+        FAILED_STEP=$name
+        return 1
     fi
-    local status=${PIPESTATUS[0]}
-    step_seconds=$(( $(date +%s) - begin ))
-    log_line "<== $name 失败（exit=$status，${step_seconds}s）"
-    FAILED_STEP=$name
-    return 1
 }
 
 # 结果汇总：直接读 XML 结果，不依赖控制台文案。

@@ -30,7 +30,7 @@ REGISTRY = ROOT / 'tools/upstream/patches.json'
 IMPORT_LOG = ROOT / 'tools/upstream/galaxy-import.json'
 LOCK = ROOT / 'tools/upstream/baseline-lock.json'
 GENERATED_DIRS = {'build', '.gradle', '.cxx', '.externalNativeBuild', '__pycache__'}
-MODULE_DIRS = ('common', 'shared', 'galaxy/mobile', 'galaxy/common')
+MODULE_DIRS = ('common', 'shared', 'galaxy/mobile', 'galaxy/common', 'galaxy/contracts', 'galaxy/client', 'galaxy/service', 'galaxy/cluster')
 BINARY_SUFFIXES = {'.png', '.jpg', '.jpeg', '.webp', '.gif', '.mp4', '.pcm', '.wav', '.ttf', '.otf', '.so', '.jar'}
 HEADER_PATH = re.compile(r'^\+\+\+ b/(.+)$', re.M)
 BINARY_PATH = re.compile(r'^Binary files .+ and b/(.+) differ$', re.M)
@@ -91,7 +91,7 @@ def render(product: str, before: bytes | None, after: bytes) -> str:
 
 def product_files() -> list[str]:
     """当前产品层源码/资源路径（与 project_checks 的登记范围一致）。"""
-    found: list[str] = []
+    found: list[str] = ['gradle/libs.versions.toml']
     for directory in MODULE_DIRS:
         base = ROOT / directory
         if not base.is_dir():
@@ -100,7 +100,7 @@ def product_files() -> list[str]:
             # 生成目录按模块内相对路径判断：模块根下的 build/、.gradle/ 等产物不是产品源码。
             if path.relative_to(base).parts[0] in GENERATED_DIRS:
                 continue
-            if path.is_file() and not path.is_symlink():
+            if path.name != '.DS_Store' and path.is_file() and not path.is_symlink():
                 found.append(path.relative_to(ROOT).as_posix())
     return found
 

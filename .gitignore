@@ -14,6 +14,8 @@ __pycache__/
 
 # 参考仓库与研究材料不作为产品源码提交
 /references/
+/.local/research/
+/.local/decoded/
 
 # 身份、签名、设备记录与分发产物不入库
 .private/
