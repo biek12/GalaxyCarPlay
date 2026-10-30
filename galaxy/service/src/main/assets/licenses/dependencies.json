@@ -1,0 +1,67 @@
+[
+  {
+    "coordinate": "com.flyfishxu:kadb-android:2.1.1",
+    "url": "https://github.com/flyfishxu/Kadb.git",
+    "licenses": [
+      {
+        "name": "Apache License 2.0",
+        "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+      }
+    ]
+  },
+  {
+    "coordinate": "com.github.Flyfish233:spake2-java:1.0.5",
+    "url": "https://github.com/flyfish233/spake2-java",
+    "licenses": [
+      {
+        "name": "GNU General Public License, Version 3.0 or later",
+        "url": "https://www.gnu.org/licenses/gpl-3.0.txt"
+      }
+    ]
+  },
+  {
+    "coordinate": "org.lsposed.hiddenapibypass:hiddenapibypass:6.1",
+    "url": "https://github.com/LSPosed/AndroidHiddenApiBypass",
+    "licenses": [
+      {
+        "name": "The Apache Software License, Version 2.0",
+        "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+      }
+    ]
+  },
+  {
+    "coordinate": "org.bouncycastle:bcprov-jdk18on:1.83",
+    "url": null,
+    "licenses": []
+  },
+  {
+    "coordinate": "org.bouncycastle:bcpkix-jdk18on:1.83",
+    "url": null,
+    "licenses": []
+  },
+  {
+    "coordinate": "org.bouncycastle:bcutil-jdk18on:1.83",
+    "url": null,
+    "licenses": []
+  },
+  {
+    "coordinate": "com.squareup.okio:okio-jvm:3.17.0",
+    "url": "https://github.com/square/okio/",
+    "licenses": [
+      {
+        "name": "The Apache Software License, Version 2.0",
+        "url": "http://www.apache.org/licenses/LICENSE-2.0.txt"
+      }
+    ]
+  },
+  {
+    "coordinate": "org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.10.2",
+    "url": "https://github.com/Kotlin/kotlinx.coroutines",
+    "licenses": [
+      {
+        "name": "Apache-2.0",
+        "url": "https://www.apache.org/licenses/LICENSE-2.0.txt"
+      }
+    ]
+  }
+]
