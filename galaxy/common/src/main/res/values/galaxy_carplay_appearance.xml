@@ -9,6 +9,7 @@
     <string name="galaxy_carplay_return_reset_name">默认名称</string>
     <string name="galaxy_carplay_return_preview">CarPlay 返回入口图标预览</string>
     <string name="galaxy_carplay_return_import">选择入口图标</string>
+    <string name="galaxy_carplay_return_picker_unavailable">当前车机没有可用的图片选择器，无法更换入口图标。</string>
     <string name="galaxy_carplay_return_crop_hint">选择图片后裁剪为正方形，确认才保存；取消保留原图标。</string>
     <string name="galaxy_carplay_return_icon_default">默认图标</string>
     <string name="galaxy_carplay_return_icon_custom">自定义图标</string>
