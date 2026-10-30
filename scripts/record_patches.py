@@ -25,10 +25,10 @@ import re
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
-BASELINE = ROOT / 'references/baselines/DiPlay-v0.2.21'
 REGISTRY = ROOT / 'tools/upstream/patches.json'
 IMPORT_LOG = ROOT / 'tools/upstream/galaxy-import.json'
 LOCK = ROOT / 'tools/upstream/baseline-lock.json'
+BASELINE = ROOT / 'references/baselines' / f"DiPlay-{json.loads(LOCK.read_text())['tag']}"
 GENERATED_DIRS = {'build', '.gradle', '.cxx', '.externalNativeBuild', '__pycache__'}
 MODULE_DIRS = ('common', 'shared', 'galaxy/mobile', 'galaxy/common', 'galaxy/contracts', 'galaxy/client', 'galaxy/service', 'galaxy/cluster')
 BINARY_SUFFIXES = {'.png', '.jpg', '.jpeg', '.webp', '.gif', '.mp4', '.pcm', '.wav', '.ttf', '.otf', '.so', '.jar'}
