@@ -4,9 +4,9 @@ Software: GalaxyPlay
 
 Maintainer: Tamshen
 
-Agreement version: 2026-10-06
+Agreement version: 2026-10-29
 
-Last updated: 2026-10-06
+Last updated: 2026-10-29
 
 Source code: https://github.com/Tamshen/GalaxyPlay
 
@@ -59,6 +59,8 @@ If the software obstructs important information, interferes with factory functio
 ## 5. Third-party features and authentication
 
 The software may include experimental features or features not yet verified on your device.
+
+When cluster-music visuals are enabled, the lyric feature automatically queries the third-party LRCLIB service over HTTPS. The request sends only the current track title and artist; it does not send album name, duration, playback position, or device/vehicle identifiers. The request also identifies the application name/version; the service can see the IP address and request metadata needed for network operation. Its retention and use are governed by that service's own policies. This application does not write lyrics or lookup history to persistent local files and keeps only a bounded in-memory result cache while running. Lookups may fail, have no match, or return incorrect lyrics; lyric text may be copyrighted and must be used lawfully. Disabling cluster-music visuals stops new lookups and cancels an in-flight request.
 
 The software is not an Apple-certified product. Connections, projection and authentication mechanisms may be affected by third-party policies, system updates or technical restrictions. Working now does not guarantee continued compatibility.
 
