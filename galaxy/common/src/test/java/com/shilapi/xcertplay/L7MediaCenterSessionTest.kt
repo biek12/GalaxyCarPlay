@@ -28,7 +28,11 @@ class L7MediaCenterSessionTest {
         val updates = mutableListOf<CarPlayNowPlaying>()
         val artworks = mutableListOf<Uri?>()
         val lyricUpdates = mutableListOf<GalaxyOemLyrics>()
-        override fun lyrics(value: GalaxyOemLyrics) { lyricUpdates += value }
+        var failLyrics = false
+        override fun lyrics(value: GalaxyOemLyrics) {
+            lyricUpdates += value
+            if (failLyrics) throw SecurityException("synthetic-lyrics-rejected")
+        }
         var token = true
         var acceptSource = true
         var failState = false
@@ -78,6 +82,17 @@ class L7MediaCenterSessionTest {
     private val logs = mutableListOf<String>()
     private val retries = java.util.ArrayDeque<Runnable>()
     private val session = L7MediaCenterSession(port, "own", { current }, { index, _ -> sent += index }, worker, main, logs::add, retry = { retries.add(it) })
+    @Test fun lyricRejectionDoesNotBlockCoverOrPlaybackAndHasABoundedRetryBudget() {
+        port.failLyrics = true
+        connect()
+        for (elapsed in 1L..6L) { session.update(playing(elapsed)); worker.drain() }
+        assertTrue(port.updates.isNotEmpty())
+        assertTrue(port.calls.contains("progress:6"))
+        assertEquals(3, port.lyricUpdates.size)
+        session.updateLyrics(playing(), GalaxyOemLyrics("new", "new")); worker.drain()
+        assertEquals(4, port.lyricUpdates.size)
+    }
+
     @Test fun lyricsFollowTrackAndRegistrationWithoutRepublishingCoverForEachLine() {
         connect()
         val track = playing()

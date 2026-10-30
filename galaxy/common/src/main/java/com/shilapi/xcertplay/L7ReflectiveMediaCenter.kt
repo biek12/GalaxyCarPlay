@@ -32,6 +32,8 @@ internal class L7ReflectiveMediaCenter(
     @Volatile private var info: Any? = null
     @Volatile private var snapshotRevision = 0L
     @Volatile private var latestLyrics = GalaxyOemLyrics()
+    private val lyricDirectory = java.io.File(app.cacheDir, "l7-media-lyrics/${java.util.UUID.randomUUID()}")
+    private val lyricLease = GalaxyTemporaryFiles.protect(lyricDirectory)
     private val lyricFiles = java.util.ArrayDeque<java.io.File>()
     private var lyricUri: Uri? = null
     private val trackSession = java.util.UUID.randomUUID().toString()
@@ -109,7 +111,7 @@ internal class L7ReflectiveMediaCenter(
         if (!valid) return
         if (latestLyrics.content != value.content) {
             lyricUri = if (value.content.isEmpty()) null else {
-                val dir = java.io.File(app.cacheDir, "l7-media-lyrics").apply { mkdirs() }
+                val dir = lyricDirectory.apply { mkdirs() }
                 val file = java.io.File(dir, "${java.util.UUID.randomUUID()}.lrc")
                 file.writeText(value.content)
                 lyricFiles.addLast(file)
@@ -210,6 +212,8 @@ internal class L7ReflectiveMediaCenter(
         latestLyrics = GalaxyOemLyrics()
         lyricFiles.forEach(::removeLyricFile)
         lyricFiles.clear()
+        lyricDirectory.delete()
+        lyricLease.close()
         lyricUri = null
         contract = null
     }

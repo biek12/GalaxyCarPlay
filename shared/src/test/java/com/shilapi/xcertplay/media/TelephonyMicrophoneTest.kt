@@ -99,20 +99,26 @@ class TelephonyMicrophoneTest {
         assertEquals(AudioRecord.STATE_UNINITIALIZED, record.state)
     }
 
-    @Test fun appVoiceCallUsesCommunicationCaptureAndRestoresModeWithoutTelephonyEchoEffects() {
+    @Test fun appVoiceCallUsesPhoneCaptureAndRestoresItsModeAndEffects() = appPhoneRoute("default")
+    @Test fun faceTimeUsesPhoneCaptureAndRestoresItsModeAndEffects() = appPhoneRoute("facetime")
+    @Test fun compatibilityRecordingUsesPhoneCaptureAndRestoresItsModeAndEffects() = appPhoneRoute("compatibility")
+
+    private fun appPhoneRoute(type: String) {
         sink.close()
         sink = AndroidMediaSink(context = context, platformAdaptation = GalaxyMediaPolicy(
             factoryProfile = true, preferBus = false))
         manager.mode = AudioManager.MODE_RINGTONE
-        val appCall = AudioStreamId(100, "default")
-        sink.onMicrophoneStarted(appCall, config("default"))
+        val appCall = AudioStreamId(100, type)
+        sink.onMicrophoneStarted(appCall, config(type))
         val record = awaitCapture()
         assertEquals(AudioManager.MODE_IN_COMMUNICATION, manager.mode)
         assertEquals(MediaRecorder.AudioSource.VOICE_COMMUNICATION, record.audioSource)
-        assertTrue(ShadowAudioEffect.getAudioEffects().isEmpty())
+        assertEquals(setOf("AcousticEchoCanceler", "NoiseSuppressor"),
+            ShadowAudioEffect.getAudioEffects().map { it.javaClass.simpleName }.toSet())
         sink.onMicrophoneStopped(appCall)
         assertEquals(AudioManager.MODE_RINGTONE, manager.mode)
         assertEquals(AudioRecord.STATE_UNINITIALIZED, record.state)
+        assertTrue(ShadowAudioEffect.getAudioEffects().isEmpty())
     }
 
     @Test fun stoppingAnOverlappingCallKeepsCommunicationModeForTheRemainingOwner() {

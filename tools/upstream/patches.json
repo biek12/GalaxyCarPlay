@@ -84,7 +84,7 @@
     {
       "id": "P005",
       "patch": "tools/upstream/patches/P005-galaxy-migration.patch",
-      "sha256": "9fa4b3b0973da826701b56f27d09967ac42edd0bafd48a4879b9ec4dd53a2e55",
+      "sha256": "8e05f1b421529838341152c8e0f204bd3ccc0f52f8ee624e70e7b6dd1ab1742f",
       "source": "旧GalaxyPlay galaxy目录完整迁入 + v0.2.21核心接缝（CarPlayHostActivity抽取CarPlayBackgroundSession/CarPlayHostProduct、音频平台适配注入）",
       "purpose": "按D03学习旧Galaxy产品组织：galaxy/mobile唯一应用、galaxy/common产品适配、galaxy/shared音频/网络策略；核心只保留中性接缝",
       "defaultBehavior": "无产品注入时核心沿用上游默认（HostProductBindings为空、MediaPlatformAdaptation.NONE）",
@@ -432,7 +432,7 @@
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyTemporaryFiles.kt": {
           "baselineSha256": null,
-          "productSha256": "0254f023d6dfc5e57a92dd9655efcebade17042a45dbb6f255edaf9dfe506617"
+          "productSha256": "616d6c67ce3fc8a526b968ca8bb9efd46e25fa2ba294bc056c43ee76b533e60c"
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyUpdateApk.kt": {
           "baselineSha256": null,
@@ -688,7 +688,7 @@
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/L7MediaCenterSession.kt": {
           "baselineSha256": null,
-          "productSha256": "a2eb3dadd2b2ed6f0b5e313b244aa479dd80944ecc1680f65a47d4189fd18118"
+          "productSha256": "807d5111b5329305f329c1e375b6b56a614a8c384d70adfcbcab01571c85c179"
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/L7MediaCommandDispatcher.kt": {
           "baselineSha256": null,
@@ -792,7 +792,7 @@
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/L7ReflectiveMediaCenter.kt": {
           "baselineSha256": null,
-          "productSha256": "c9099a0e416a6357549370f4ae4ede2667027a4c84b2e5c96f94694ed1965ffc"
+          "productSha256": "0d221cbf0abcc758a2695258acd1c7f3c8b0955a7a5ee51c83cc7272df69ddd4"
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/L7RemoteLogSettings.kt": {
           "baselineSha256": null,
@@ -1668,7 +1668,7 @@
         },
         "galaxy/common/src/test/java/com/shilapi/xcertplay/L7MediaCenterSessionTest.kt": {
           "baselineSha256": null,
-          "productSha256": "fbad1ba0bec6274243debcd73b3278ea18eeb1633330987477ee1d859fe7b539"
+          "productSha256": "3f9dc84df5dd8f6a19a607c7a5094b246aa4fa26eda12f0624c76bedb04cee5b"
         },
         "galaxy/common/src/test/java/com/shilapi/xcertplay/L7MediaCommandDispatcherTest.kt": {
           "baselineSha256": null,
@@ -1988,7 +1988,7 @@
         },
         "shared/src/test/java/com/shilapi/xcertplay/media/TelephonyMicrophoneTest.kt": {
           "baselineSha256": "e772bb79b4fa8a140a001c5ae085a8fcec8d6039ab2e61452f88449e11316e8f",
-          "productSha256": "b2096b7ad8df9c6b6de9a0f92005bd892ef2bf38f81a24c0252a9b9513e15aef"
+          "productSha256": "66cce581876e3d3445c981c92df4daaeea468bb969b46c54dc50f9d4121dcfed"
         },
         "galaxy/client/build.gradle.kts": {
           "baselineSha256": null,

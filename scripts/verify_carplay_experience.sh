@@ -13,6 +13,7 @@ cd "$ROOT"
 ./gradlew --offline --no-daemon --console=plain -Pandroid.builder.sdkDownload=false \
   -I scripts/verify/lib/robolectric-offline.init.gradle \
   :shared:testDebugUnitTest --tests '*GalaxyFactoryAudioProfileTest' --tests '*AppMicrophoneRequestTest' \
+  --tests '*TelephonyMicrophoneTest' --tests '*MicrophoneStartTest' --tests '*MicrophoneSourceFallbackTest' \
   --tests '*MicrophoneInputPolicyTest' --tests '*AudioChannelMappingTest' --tests '*CarPlayAudioStreamIsolationTest' \
   :common:testDebugUnitTest --tests '*L7MediaCenterSessionTest' --tests '*GalaxyOemMediaContractTest' \
   --tests '*GalaxyHostAdapterTest' --tests '*GalaxyMediaBindingTest' --tests '*GalaxyMediaSdkTest' \

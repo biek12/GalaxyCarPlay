@@ -49,6 +49,8 @@ internal class L7MediaCenterSession(
     private var publishedProgress: Long? = null
     private var publishedLyrics: GalaxyOemLyrics? = null
     private var publishedLyricContent: String? = null
+    private var pendingLyrics: GalaxyOemLyrics? = null
+    private var lyricAttempts = 0
     private val playRequest = L7MediaPlayRequest()
     private var playRetryRevision: Long? = null
     private var pending: Snapshot? = null
@@ -110,6 +112,8 @@ internal class L7MediaCenterSession(
             registration++
             registered = true
             publishedLyrics = null
+            pendingLyrics = null
+            lyricAttempts = 0
             publishedLyricContent = null
             safely("queryFocus") { applyFocus(port.focusClient()); "RETURNED" }
             published = null
@@ -163,9 +167,11 @@ internal class L7MediaCenterSession(
         val uri = next.artwork
         playRequest.observe(value)
         if (explicitPlay) playRequest.select()
-        if (publishedLyrics != next.lyrics) {
-            if (!safely("updateLyrics") { port.lyrics(next.lyrics); true }) return
-            publishedLyrics = next.lyrics
+        if (pendingLyrics != next.lyrics) { pendingLyrics = next.lyrics; lyricAttempts = 0 }
+        if (publishedLyrics != next.lyrics && lyricAttempts < 3) {
+            lyricAttempts++
+            if (safely("updateLyrics") { port.lyrics(next.lyrics); true }) publishedLyrics = next.lyrics
+            // 歌词IPC与曲目/封面是独立更新，前者异常不能挡住后者。
         }
         val metadata = next.copy(value = value.copy(elapsedMillis = null), lyrics = next.lyrics.copy(sentence = ""))
         if (pending != metadata) { pending = metadata; updateAttempts = 0 }
