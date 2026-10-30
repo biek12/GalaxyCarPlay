@@ -38,7 +38,7 @@ internal class L7MediaCenterSession(
     @Volatile private var registration = 0L
     @Volatile private var foreignFocus = false
     private var ownFocus = false
-    private data class Snapshot(val value: CarPlayNowPlaying, val artwork: Uri?)
+    private data class Snapshot(val value: CarPlayNowPlaying, val artwork: Uri?, val lyrics: GalaxyOemLyrics = GalaxyOemLyrics())
     @Volatile private var snapshot = Snapshot(CarPlayNowPlaying(), null)
     private val latest get() = snapshot.value
     private var started = false
@@ -47,6 +47,8 @@ internal class L7MediaCenterSession(
     private var published: CarPlayNowPlaying? = null
     private var publishedArtwork: Uri? = null
     private var publishedProgress: Long? = null
+    private var publishedLyrics: GalaxyOemLyrics? = null
+    private var publishedLyricContent: String? = null
     private val playRequest = L7MediaPlayRequest()
     private var playRetryRevision: Long? = null
     private var pending: Snapshot? = null
@@ -107,6 +109,8 @@ internal class L7MediaCenterSession(
             }
             registration++
             registered = true
+            publishedLyrics = null
+            publishedLyricContent = null
             safely("queryFocus") { applyFocus(port.focusClient()); "RETURNED" }
             published = null
             pending = null
@@ -130,10 +134,22 @@ internal class L7MediaCenterSession(
     }) {
         if (closed) return
         val previous = snapshot
-        snapshot = Snapshot(value, uri)
+        snapshot = Snapshot(value, uri, if (ClusterMusicState.trackChanged(previous.value, value))
+            GalaxyOemLyrics() else previous.lyrics)
         if (previous.value.copy(elapsedMillis = null) != value.copy(elapsedMillis = null) || previous.artwork != uri) {
             event("snapshot titlePresent=${!value.title.isNullOrBlank()} artistPresent=${!value.artist.isNullOrBlank()} albumPresent=${!value.album.isNullOrBlank()} durationKnown=${value.durationMillis != null} progressKnown=${value.elapsedMillis != null} playingKnown=${value.playbackKnown} playing=${value.playing} artworkAvailable=${uri != null} coalesced=${scheduled.get()} localPlayback=$localPlayback")
         }
+        if (scheduled.compareAndSet(false, true)) enqueue {
+            scheduled.set(false)
+            if (registered) publishLatest()
+        }
+    }
+
+    fun updateLyrics(expected: CarPlayNowPlaying, value: GalaxyOemLyrics) {
+        if (closed) return
+        val previous = snapshot
+        if (ClusterMusicState.trackChanged(previous.value, expected) || previous.lyrics == value) return
+        snapshot = previous.copy(lyrics = value)
         if (scheduled.compareAndSet(false, true)) enqueue {
             scheduled.set(false)
             if (registered) publishLatest()
@@ -147,14 +163,18 @@ internal class L7MediaCenterSession(
         val uri = next.artwork
         playRequest.observe(value)
         if (explicitPlay) playRequest.select()
-        val metadata = next.copy(value = value.copy(elapsedMillis = null))
+        if (publishedLyrics != next.lyrics) {
+            if (!safely("updateLyrics") { port.lyrics(next.lyrics); true }) return
+            publishedLyrics = next.lyrics
+        }
+        val metadata = next.copy(value = value.copy(elapsedMillis = null), lyrics = next.lyrics.copy(sentence = ""))
         if (pending != metadata) { pending = metadata; updateAttempts = 0 }
-        val changed = published?.copy(elapsedMillis = null) != metadata.value || publishedArtwork != uri
+        val changed = published?.copy(elapsedMillis = null) != metadata.value || publishedArtwork != uri || publishedLyricContent != next.lyrics.content
         if (changed && !safely("prepare") { port.prepare(value, uri); true }) return
         if (closed || !current() || snapshot !== next) return
         requestPlayback()
         if (closed || !current() || snapshot !== next) return
-        val needsUpdate = published?.copy(elapsedMillis = null) != metadata.value || publishedArtwork != uri
+        val needsUpdate = changed
         // 原厂独立缓存各客户端状态；初始焦点属于其他来源不能阻断歌曲与进度上报。
         if (needsUpdate && value.playbackKnown && updateAttempts < 3) {
             updateAttempts++
@@ -163,6 +183,7 @@ internal class L7MediaCenterSession(
             if (safely("updateState") { port.update(value, uri) }) {
                 published = value
                 publishedArtwork = uri
+                publishedLyricContent = next.lyrics.content
                 // 已接受字段的健康注册完成后，后续服务重启获得独立失败预算。
                 attempts = 0
             } else retryState()

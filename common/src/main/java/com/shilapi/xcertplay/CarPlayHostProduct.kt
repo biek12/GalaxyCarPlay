@@ -50,6 +50,8 @@ internal interface CarPlayHostProduct {
     val name: String
     fun enterHost(): Boolean
     fun homeIntent(page: String): Intent
+    /** 产品可按固定面板规格报告当前占屏毫米尺寸；null保持上游策略。 */
+    fun physicalSize(width: Int, height: Int): com.shilapi.xcertplay.airplay.AirPlayPhysicalSizeMm? = null
     fun uiScalePercent(): Int
     fun oemLabel(): String
     fun icon(): AirPlayIcon

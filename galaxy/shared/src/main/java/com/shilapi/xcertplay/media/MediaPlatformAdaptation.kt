@@ -12,6 +12,8 @@ interface PlatformAudioProfile {
     /** 产品HAL要求应用上行先进入通信模式；仅对已请求输入的流生效。 */
     val appMicrophoneUsesCommunicationMode: Boolean get() = false
     fun attributes(channel: AudioChannel, contentType: Int, choice: Int): AudioAttributes
+    /** 只映射平台用途，不改协议流身份、编码、采样率或上行密钥。 */
+    fun audioType(audioType: String, inputRequested: Boolean): String = audioType
     fun microphoneSource(audioType: String, sampleRate: Int, wireless: Boolean): Int?
 }
 

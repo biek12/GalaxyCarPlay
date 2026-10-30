@@ -11,6 +11,20 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [29, 30], manifest = Config.NONE)
 class GalaxyFactoryAudioProfileTest {
+    @Test fun appRecordingUsesTheSamePhoneRouteAndSourceAsTelephony() {
+        val profile = L7FactoryAudioProfile(null) { _, name ->
+            if (name == "AUDIO_SOURCE_CP_PHONE_SWB") 42 else null
+        }
+        for (type in listOf("facetime", "default", "compatibility", "telephony")) {
+            val route = profile.audioType(type, inputRequested = true)
+            assertEquals("telephony", route)
+            assertEquals(42, profile.microphoneSource(route, 24000, false))
+        }
+        for (type in listOf("default", "compatibility", "speechrecognition", "media", "alert"))
+            assertEquals(type, profile.audioType(type, inputRequested = false))
+        assertEquals("speechrecognition", profile.audioType("speechrecognition", inputRequested = true))
+    }
+
     @Test fun oemRingtoneUsesSonificationWithoutChangingSpeechRoles() {
         val profile = L7FactoryAudioProfile(null) { _, _ -> null }
         val ring = profile.attributes(AudioChannel.RINGTONE, AudioAttributes.CONTENT_TYPE_SPEECH, 0)

@@ -18,6 +18,7 @@ internal interface L7MediaCenterPort : Closeable {
     /** 仅撤销本地回调与快照，不发远端 IPC，允许退出先于阻塞调用完成。 */
     fun invalidate()
     fun update(value: CarPlayNowPlaying, artwork: Uri?): Boolean
+    fun lyrics(value: GalaxyOemLyrics) {}
     fun progress(milliseconds: Long)
     fun unregister(): Boolean
     companion object {

@@ -43,12 +43,16 @@ internal class GalaxyOemMediaContract(val api: Class<*>, val client: Class<*>, v
         val capabilities = listOf("isCollected", "isDownloaded", "isSupportCollect", "isSupportDownload",
             "isSupportLoopModeSwitch", "isSupportVrCtrlPlayStatus")
         val integers = listOf("getVip", "getPlayingMediaListType", "getPlayingItemPositionInQueue", "getRadioMode", "getDisplayId")
-        infoMethods = (required + capabilities.mapNotNull { optional(info, it, Boolean::class.javaPrimitiveType!!) } +
+        val lyrics = listOfNotNull(optional(info, "getLyric", Uri::class.java),
+            optional(info, "getLyricContent", String::class.java),
+            optional(info, "getCurrentLyricSentence", String::class.java))
+        infoMethods = (required + lyrics + capabilities.mapNotNull { optional(info, it, Boolean::class.javaPrimitiveType!!) } +
             integers.mapNotNull { optional(info, it, Int::class.javaPrimitiveType!!) }).toTypedArray()
         for (name in listOf("requestPlay", "unregister")) method(api, name, Boolean::class.javaPrimitiveType!!, Any::class.java, overridable = false)
         method(api, "updateMusicPlaybackState", Boolean::class.javaPrimitiveType!!, Any::class.java, info, overridable = false)
         method(api, "updateMediaSourceTypeList", Boolean::class.javaPrimitiveType!!, Any::class.java, IntArray::class.java, overridable = false)
         method(api, "updateCurrentProgress", Void.TYPE, Any::class.java, Long::class.javaPrimitiveType!!, overridable = false)
+        method(api, "updateCurrentLyric", Void.TYPE, Any::class.java, String::class.java, overridable = false)
         method(api, "updateCurrentSourceType", Void.TYPE, Any::class.java, Int::class.javaPrimitiveType!!, overridable = false)
         method(api, "queryCurrentFocusClient", String::class.java, Any::class.java, overridable = false)
     }
