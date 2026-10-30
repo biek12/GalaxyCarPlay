@@ -10,6 +10,7 @@ class AppMicrophoneRequestTest {
 
     @Test fun callsAndSiriAlwaysRecord() {
         assertTrue(wants("telephony"))
+        assertTrue(wants("facetime"))
         assertTrue(wants("speechrecognition"))
     }
 

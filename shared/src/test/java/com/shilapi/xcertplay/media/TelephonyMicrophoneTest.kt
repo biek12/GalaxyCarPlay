@@ -99,6 +99,36 @@ class TelephonyMicrophoneTest {
         assertEquals(AudioRecord.STATE_UNINITIALIZED, record.state)
     }
 
+    @Test fun appVoiceCallUsesCommunicationCaptureAndRestoresModeWithoutTelephonyEchoEffects() {
+        sink.close()
+        sink = AndroidMediaSink(context = context, platformAdaptation = GalaxyMediaPolicy(
+            factoryProfile = true, preferBus = false))
+        manager.mode = AudioManager.MODE_RINGTONE
+        val appCall = AudioStreamId(100, "default")
+        sink.onMicrophoneStarted(appCall, config("default"))
+        val record = awaitCapture()
+        assertEquals(AudioManager.MODE_IN_COMMUNICATION, manager.mode)
+        assertEquals(MediaRecorder.AudioSource.VOICE_COMMUNICATION, record.audioSource)
+        assertTrue(ShadowAudioEffect.getAudioEffects().isEmpty())
+        sink.onMicrophoneStopped(appCall)
+        assertEquals(AudioManager.MODE_RINGTONE, manager.mode)
+        assertEquals(AudioRecord.STATE_UNINITIALIZED, record.state)
+    }
+
+    @Test fun stoppingAnOverlappingCallKeepsCommunicationModeForTheRemainingOwner() {
+        manager.mode = AudioManager.MODE_RINGTONE
+        val appCall = AudioStreamId(100, "facetime")
+        sink.onMicrophoneStarted(telephony, config("telephony"))
+        awaitCapture()
+        sink.onMicrophoneStarted(appCall, config("facetime"))
+        sink.onMicrophoneStopped(telephony)
+        assertEquals(AudioManager.MODE_IN_COMMUNICATION, manager.mode)
+        sink.onMicrophoneStopped(telephony) // 迟到的重复停止不能释放另一条流。
+        assertEquals(AudioManager.MODE_IN_COMMUNICATION, manager.mode)
+        sink.onMicrophoneStopped(appCall)
+        assertEquals(AudioManager.MODE_RINGTONE, manager.mode)
+    }
+
     @Test fun aCallWhileCarBluetoothIsOffUsesTheCabinMicrophone() {
         context.getSharedPreferences("diplay_bt_suspend", 0).edit().putBoolean("restore_initially_enabled", true).commit()
         shadowOf(context.getSystemService(BluetoothManager::class.java).adapter).setState(BluetoothAdapter.STATE_OFF)
