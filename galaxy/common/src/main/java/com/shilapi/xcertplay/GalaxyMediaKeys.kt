@@ -40,8 +40,11 @@ internal object GalaxyMediaKeys {
             return
         }
         clearAttachment()
-        this.context = context.applicationContext
+        val appContext = context.applicationContext
+        this.context = appContext
+        ClusterMusicSettings.initializeDefaults(appContext, enabledDefault = true, permanentDefault = true)
         this.controller = next
+        GalaxyClusterMusicBinding.attach(appContext, next)
         this.onPlaybackStarted = onPlaybackStarted
         this.assistantActive = assistantActive
         val ticket = attachment
@@ -62,6 +65,7 @@ internal object GalaxyMediaKeys {
                 if (expectedOwner != null && owner === expectedOwner) {
                     bridge?.onArtworkChanged(id, bytes)
                     covers?.submit(id, bytes)
+                    GalaxyClusterMusicBinding.submitArtwork(next, id, bytes)
                 }
             }
         }
@@ -90,10 +94,15 @@ internal object GalaxyMediaKeys {
             owner = currentOwner
             if (currentOwner != null) openSession(app, next, currentOwner)
         }
-        if (currentOwner == null) return
+        if (currentOwner == null) {
+            mediaInfo = CarPlayNowPlaying()
+            GalaxyClusterMusicBinding.update(next, mediaInfo)
+            return
+        }
         // 回调可来自任意链路线程，交付时读最新快照，不把排队旧增量倒灌。
         val update = next.nowPlayingSnapshot()
         mediaInfo = update
+        GalaxyClusterMusicBinding.update(next, update)
         bridge?.onNowPlayingChanged(update)
         if (update.playbackKnown) L7SteeringDiagnostics.store.state("phonePlayback", "playing=${update.playing}")
         if (update == CarPlayNowPlaying()) covers?.reset()
@@ -122,10 +131,12 @@ internal object GalaxyMediaKeys {
         }
         val retained = next.nowPlayingSnapshot()
         mediaInfo = retained
+        GalaxyClusterMusicBinding.update(next, retained)
         bridge?.onNowPlayingChanged(retained)
         next.matchingArtworkSnapshot(retained.artworkTransferId)?.let {
             bridge?.onArtworkChanged(it.id, it.bytes)
             covers?.submit(it.id, it.bytes)
+            GalaxyClusterMusicBinding.submitArtwork(next, it.id, it.bytes)
         }
     }
 
@@ -164,7 +175,10 @@ internal object GalaxyMediaKeys {
     }
 
     private fun startNavigation(app: Context, next: CarPlayController, expectedOwner: Any) {
-        navigation = L7NavigationSession(L7ReflectiveNavigation(app), {
+        val navigationPort: L7NavigationPort = if (GalaxyVehicleAudioProfiles.model(app) == GalaxyVehicleAudioProfiles.Model.L6) {
+            GalaxyL6DimNavigationPort(app)
+        } else L7ReflectiveNavigation(app)
+        navigation = L7NavigationSession(navigationPort, {
             synchronized(this) { controller === next && owner === expectedOwner && next.activeMediaSessionOwner() === expectedOwner }
         })
         navigationTick = object : Runnable {
@@ -188,6 +202,7 @@ internal object GalaxyMediaKeys {
         steeringWheel?.close(); steeringWheel = null
         commandGate = L7MediaCommandGate()
         mediaInfo = CarPlayNowPlaying()
+        controller?.let(GalaxyClusterMusicBinding::resetSession)
         owner = null
         L7SteeringDiagnostics.store.connection(false)
     }
@@ -199,6 +214,7 @@ internal object GalaxyMediaKeys {
         controller?.artworkListener = null
         controller?.navigationFrameListener = null
         releaseSession()
+        GalaxyClusterMusicBinding.detach(controller)
         controller = null
         context = null
     }

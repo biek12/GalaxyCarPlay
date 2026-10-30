@@ -59,6 +59,13 @@ internal interface CarPlayHostProduct {
     fun wifiP2pAllowedChannels(): List<Int>? = null
     /** 可选解码器名称只影响本次Sink；核心负责能力校验和资源生命周期。 */
     fun preferredAvcDecoder(): String? = null
+    /** 产品拥有屏幕外合成输出；核心仅绑定其返回的111解码Surface。 */
+    fun clusterDisplayConfiguration(): AirPlayDisplayConfig? = null
+    fun ensureClusterOutput(surfaceChanged: (android.view.Surface?) -> Unit): Boolean = false
+    fun closeClusterOutput() = Unit
+    fun clusterStreamChanged(active: Boolean) = Unit
+    fun clusterGuidanceChanged(guidance: com.shilapi.xcertplay.hud.ClusterTurnGuidance?) = Unit
+    fun keepsClusterOutputWhileMapIdle(): Boolean = false
     fun installChrome(root: FrameLayout, replacing: View, before: View?, wireless: Boolean,
                       retry: () -> Unit): HostChromeBinding
     fun onHardwareKey(controller: CarPlayController?, event: KeyEvent): Boolean

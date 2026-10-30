@@ -13,6 +13,14 @@ internal object ClusterMusicSettings {
     fun size(context: Context) = prefs(context).getInt(PREFIX + "size", 100).coerceIn(50, 150)
     fun saveEnabled(context: Context, value: Boolean) { prefs(context).edit().putBoolean(PREFIX + "enabled", value).apply() }
     fun savePermanent(context: Context, value: Boolean) { prefs(context).edit().putBoolean(PREFIX + "permanent", value).apply() }
+    /** Product adapters may select defaults without overwriting a driver's existing preference. */
+    fun initializeDefaults(context: Context, enabledDefault: Boolean, permanentDefault: Boolean) {
+        val preferences = prefs(context)
+        val edit = preferences.edit()
+        if (!preferences.contains(PREFIX + "enabled")) edit.putBoolean(PREFIX + "enabled", enabledDefault)
+        if (!preferences.contains(PREFIX + "permanent")) edit.putBoolean(PREFIX + "permanent", permanentDefault)
+        edit.apply()
+    }
     fun save(context: Context, key: String, value: Int) {
         require(key in setOf("x", "y", "size"))
         prefs(context).edit().putInt(PREFIX + key, value.coerceIn(if (key == "size") 50..150 else 5..95)).apply()
