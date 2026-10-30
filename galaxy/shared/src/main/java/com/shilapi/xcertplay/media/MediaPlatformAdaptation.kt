@@ -9,6 +9,8 @@ import java.io.Closeable
 
 /** 核心拥有播放/录音对象，适配仅提供属性、输入源和可关闭的路由观察。 */
 interface PlatformAudioProfile {
+    /** 产品HAL要求应用上行先进入通信模式；仅对已请求输入的流生效。 */
+    val appMicrophoneUsesCommunicationMode: Boolean get() = false
     fun attributes(channel: AudioChannel, contentType: Int, choice: Int): AudioAttributes
     fun microphoneSource(audioType: String, sampleRate: Int, wireless: Boolean): Int?
 }

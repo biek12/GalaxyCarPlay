@@ -305,7 +305,7 @@ class AndroidMediaSink(
     }
     private val microphoneUplinks = ConcurrentHashMap<AudioStreamId, MicrophoneUplink>()
     private val audioModeLock = Any()
-    private var communicationModeStream: AudioStreamId? = null
+    private val communicationModeStreams = mutableSetOf<AudioStreamId>()
     private var savedAudioMode = AudioManager.MODE_NORMAL
     private var callSpeaker: CallSpeaker? = null // guarded by audioModeLock
     private var earpieceFallbackTried = false // guarded by audioModeLock
@@ -577,16 +577,19 @@ class AndroidMediaSink(
         try {
             val speakerphoneCall = config.audioType == "telephony" &&
                 appContext != null && BydBluetoothSuspend.isSuspendedByUs(appContext)
-            if (callProcessingEnabled && config.audioType == "telephony" && !speakerphoneCall) enterCommunicationMode(id)
+            val communication = MicrophoneInputPolicy.communication(config.audioType,
+                factoryAudio?.appMicrophoneUsesCommunicationMode == true)
+            if (callProcessingEnabled && communication && !speakerphoneCall) enterCommunicationMode(id)
             val uplink = microphoneUplinks.computeIfAbsent(id) {
                 val owner = Any()
                 MicrophoneUplink(config, onAudioDiagnostic,
                     speakerphoneCall = speakerphoneCall,
                     echoReference = if (config.audioType == TELEPHONY_AUDIO_TYPE) callEchoReferences[id] else null,
                     factorySource = factoryAudio?.microphoneSource(config.audioType, config.sampleRate, wirelessAudio),
+                    appCommunication = factoryAudio?.appMicrophoneUsesCommunicationMode == true,
                     audioRouting = audioRouting,
                     callProcessingEnabled = callProcessingEnabled,
-                    onCaptureStarted = { if (config.audioType == TELEPHONY_AUDIO_TYPE) communicationFocusStarted(owner) },
+                    onCaptureStarted = { if (communication) communicationFocusStarted(owner) },
                     onCaptureReleased = { communicationFocusReleased(owner) })
             }
             if (!uplink.start()) {
@@ -614,11 +617,15 @@ class AndroidMediaSink(
     private fun enterCommunicationMode(id: AudioStreamId) {
         val manager = audioManager ?: return
         synchronized(audioModeLock) {
-            if (communicationModeStream != null) return
+            if (id in communicationModeStreams) return
+            if (communicationModeStreams.isNotEmpty()) {
+                communicationModeStreams.add(id)
+                return
+            }
             // Select the HAL communication path before AudioRecord is created.
             savedAudioMode = manager.mode
             manager.mode = AudioManager.MODE_IN_COMMUNICATION
-            communicationModeStream = id
+            communicationModeStreams.add(id)
             earpieceFallbackTried = false
             val speakerRequested = runCatching(callSpeakerphone).getOrDefault(false)
             if (speakerRequested) callSpeaker = CallSpeaker.on(manager)
@@ -643,7 +650,7 @@ class AndroidMediaSink(
     private fun moveCallToLoudspeaker(id: AudioStreamId) {
         val manager = audioManager ?: return
         val line = synchronized(audioModeLock) {
-            if (communicationModeStream != id || callSpeaker != null || earpieceFallbackTried) return
+            if (id !in communicationModeStreams || callSpeaker != null || earpieceFallbackTried) return
             earpieceFallbackTried = true
             callSpeaker = CallSpeaker.on(manager)
             "Audio: call routed to the earpiece; loudspeaker=${callSpeaker != null} stream=$id"
@@ -654,9 +661,10 @@ class AndroidMediaSink(
     private fun restoreAudioMode(id: AudioStreamId?) {
         val manager = audioManager ?: return
         synchronized(audioModeLock) {
-            val active = communicationModeStream ?: return
-            if (id != null && id != active) return
-            communicationModeStream = null
+            val active = communicationModeStreams.firstOrNull() ?: return
+            if (id != null) {
+                if (!communicationModeStreams.remove(id) || communicationModeStreams.isNotEmpty()) return
+            } else communicationModeStreams.clear()
             callSpeaker?.restore()
             callSpeaker = null
             // The report is built inside the try but sent outside it: reporting from in there

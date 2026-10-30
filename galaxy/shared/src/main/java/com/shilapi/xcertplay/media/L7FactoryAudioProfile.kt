@@ -12,6 +12,7 @@ class L7FactoryAudioProfile internal constructor(
         runCatching { type.getField(name).getInt(null) }.getOrNull()?.takeIf { it > 0 }
     },
 ) : PlatformAudioProfile {
+    override val appMicrophoneUsesCommunicationMode = true
     internal fun usage(channel: AudioChannel): Int {
         val kind = when (channel) {
             AudioChannel.MEDIA -> "MEDIA"

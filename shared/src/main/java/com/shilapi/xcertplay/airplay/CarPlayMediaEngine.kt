@@ -668,7 +668,7 @@ class CarPlayMediaEngine(
          * or, without one, the uplink port the iPhone sends for a recording stream.
          */
         fun wantsMicrophone(audioType: String, stream: Map<String, Any?>): Boolean = when (audioType) {
-            "telephony", "speechrecognition" -> true
+            "telephony", "facetime", "speechrecognition" -> true
             "default", "compatibility" -> when (val input = stream["input"]) {
                 is Boolean -> input
                 is Number -> input.toInt() != 0

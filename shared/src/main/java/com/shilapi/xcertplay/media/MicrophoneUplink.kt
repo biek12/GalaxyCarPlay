@@ -44,6 +44,7 @@ internal class MicrophoneUplink(
     },
     private val noAudioRestartMillis: Long = NO_AUDIO_RESTART_MILLIS,
     private val factorySource: Int? = null,
+    private val appCommunication: Boolean = false,
     private val audioRouting: AudioRouteProvider? = null,
     private val callProcessingEnabled: Boolean = true,
     private val onCaptureStarted: () -> Unit = {},
@@ -98,6 +99,8 @@ internal class MicrophoneUplink(
                 } else {
                     MediaRecorder.AudioSource.VOICE_RECOGNITION
                 }
+            MicrophoneInputPolicy.communication(config.audioType, appCommunication) ->
+                MediaRecorder.AudioSource.VOICE_COMMUNICATION
             else -> MediaRecorder.AudioSource.MIC
         }
         val nextEncoder = if (config.codec == AudioCodecKind.OPUS) {
@@ -157,11 +160,7 @@ internal class MicrophoneUplink(
                     Log.i(TAG, "microphone echo canceller enabled=${echoCanceller != null} tail=${ECHO_TAIL_MILLIS}ms")
                 }
             }
-            val channel = when (config.audioType.lowercase()) {
-                "telephony" -> AudioChannel.PHONE
-                "speechrecognition" -> AudioChannel.ASSISTANT
-                else -> AudioChannel.NAVIGATION
-            }
+            val channel = MicrophoneInputPolicy.channel(config.audioType)
             routeBinding = audioRouting?.bind(nextRecorder, channel, true, config.sampleRate, config.channels)
             nextRecorder.startRecording()
             onCaptureStarted()

@@ -15,6 +15,7 @@ val localAuthenticationAssets = providers.environmentVariable("DIPLAY_AUTH_ASSET
     .orNull?.let { file(it).canonicalFile }
 
 android {
+    packaging.jniLibs.useLegacyPackaging = true
     namespace = "com.shilapi.xcertplay"
     compileSdk {
         version = release(37)
