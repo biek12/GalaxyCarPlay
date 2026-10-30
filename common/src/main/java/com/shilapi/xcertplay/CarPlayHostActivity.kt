@@ -1270,7 +1270,9 @@ class CarPlayHostActivity : ComponentActivity() {
         val previous = detectedCluster
         if (state != previous) appendLog("Cluster map: detected theme=${state.theme} mapVisible=${state.mapVisible} smallWindow=${state.smallWindow}")
         detectedCluster = state
-        if (!AirPlayPersistence.loadClusterMapEnabled(this)) { dismissClusterPresentation(); return }
+        if (product?.clusterDisplayConfiguration() == null && !AirPlayPersistence.loadClusterMapEnabled(this)) {
+            dismissClusterPresentation(); return
+        }
         ensureClusterPresentation()
         if (AirPlayPersistence.loadClusterSmallWindowMode(this) == CLUSTER_SMALL_WINDOW_AUTO &&
             adbNaviMode == null &&
@@ -1298,6 +1300,7 @@ class CarPlayHostActivity : ComponentActivity() {
     }
 
     private fun ensureClusterPresentation() {
+        if (product?.ensureClusterOutput(::onClusterSurface) == true) return
         if (!AirPlayPersistence.loadClusterMapEnabled(this)) {
             clusterLaunchGate.reset()
             dismissClusterPresentation()
@@ -1424,6 +1427,7 @@ class CarPlayHostActivity : ComponentActivity() {
     }
 
     private fun applyClusterTurnOverlay() {
+        product?.clusterGuidanceChanged(clusterTurnGuidance)
         val overlay = CarPlayClusterDisplay.usesCustomTurnCard(AirPlayPersistence.loadClusterContent(this))
         // CN: the small-window navi keeps a second card rect, and the card glass has a theme override.
         val smallWindow = smallWindowActive()
@@ -1457,6 +1461,7 @@ class CarPlayHostActivity : ComponentActivity() {
         }
     }
     private fun dismissClusterPresentation() {
+        product?.closeClusterOutput()
         ClusterActivityOutput.stop(this)
         val presentations = (clusterLayers.values + listOfNotNull(clusterPresentation)).distinct()
         clusterLayers.clear()
@@ -1512,6 +1517,12 @@ class CarPlayHostActivity : ComponentActivity() {
         adbClusterConfigured = false
         clusterStreamOnDisplay = false
         requestedSmallWindowForStream = null
+        product?.clusterDisplayConfiguration()?.let {
+            clusterStreamOnDisplay = true
+            MapMirrors.streamAspect = it.widthPixels.toDouble() / it.heightPixels
+            appendLog("Cluster product: requesting full map stream 111 at ${it.widthPixels}x${it.heightPixels}")
+            return it
+        }
         if (!AirPlayPersistence.loadClusterMapEnabled(this)) return null
         if (AdbClusterRouter.enabled(this) && ClusterActivityOutput.hasConfirmedRoute()) {
             adbClusterConfigured = true
@@ -1856,7 +1867,8 @@ class CarPlayHostActivity : ComponentActivity() {
         val presented = surface != null && presentation?.isShowing == true && presentation.mapVisible &&
             presentation.outputSurface === surface
         val direct = surface != null && adbClusterConfigured && ClusterActivityOutput.hasConfirmedRoute()
-        controller?.setDashboardMapOutputVisible(presented || direct)
+        val productOutput = surface != null && product?.clusterDisplayConfiguration() != null
+        controller?.setDashboardMapOutputVisible(presented || direct || productOutput)
     }
 
     override fun onConfigurationChanged(newConfig: Configuration) {
@@ -6530,6 +6542,7 @@ class CarPlayHostActivity : ComponentActivity() {
                 activeScreenStreamTypes.remove(type)
             }
             if (type == SCREEN_TYPE_ALT) {
+                product?.clusterStreamChanged(active)
                 Log.i(ClusterMapPresentation.TAG, "cluster stream active=$active")
                 appendLog("Cluster map: stream active=$active")
                 clusterPresentation?.setStreamActive(active)
@@ -6549,7 +6562,8 @@ class CarPlayHostActivity : ComponentActivity() {
                     // A reconnect is quicker. When the iPhone has gone, the car may stop DiPlay soon after,
                     // and a cluster still held then stayed in BYD's simple mode until a restart (#883, #803).
                     mainHandler.removeCallbacks(releaseIdleCluster)
-                    mainHandler.postDelayed(releaseIdleCluster, CLUSTER_IDLE_RELEASE_MILLIS)
+                    if (product?.keepsClusterOutputWhileMapIdle() != true)
+                        mainHandler.postDelayed(releaseIdleCluster, CLUSTER_IDLE_RELEASE_MILLIS)
                 }
             }
             updateDebugOverlays()

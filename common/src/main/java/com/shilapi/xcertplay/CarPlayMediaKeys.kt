@@ -490,7 +490,7 @@ internal object CarPlayMediaKeys {
         return AmbientArtwork(bitmap, color)
     }
 
-    private fun decodeArtwork(bytes: ByteArray): Bitmap? {
+    internal fun decodeArtwork(bytes: ByteArray): Bitmap? {
         if (bytes.isEmpty()) return null
         val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
         BitmapFactory.decodeByteArray(bytes, 0, bytes.size, bounds)

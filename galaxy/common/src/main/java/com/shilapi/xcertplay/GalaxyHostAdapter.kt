@@ -29,6 +29,42 @@ private class GalaxyProductHostAdapter(
 ) : CarPlayHostProduct {
     private val chrome = GalaxyHostChrome(activity)
     private val geometry = GalaxyDisplayTrace(actions.report)
+    private val main = android.os.Handler(android.os.Looper.getMainLooper())
+    private var platform: GalaxyAutoServiceBinding? = null
+    private var platformSurface: ((android.view.Surface?) -> Unit)? = null
+    private var platformSession: CarPlayController? = null
+    private var platformActive = false
+    private fun platformCluster() = GalaxyVehicleAudioProfiles.model(activity) != GalaxyVehicleAudioProfiles.Model.CUSTOM
+    override fun clusterDisplayConfiguration() = if (platformCluster()) AirPlayDisplayConfig(
+        widthPixels = com.galaxy.auto.contract.AutoContract.WIDTH,
+        heightPixels = com.galaxy.auto.contract.AutoContract.MAP_HEIGHT,
+        fps = 30, primaryInputDevice = 0, features = 0,
+        initialUrl = com.shilapi.xcertplay.airplay.CarPlayClusterDisplay.MAP_URL,
+        safeArea = com.shilapi.xcertplay.airplay.AirPlayInsets(top = 80, bottom = 90, left = 650, right = 550),
+        safeAreaDrawOutside = true) else null
+    override fun keepsClusterOutputWhileMapIdle() = platformCluster()
+    override fun ensureClusterOutput(surfaceChanged: (android.view.Surface?) -> Unit): Boolean {
+        if (!platformCluster()) return false
+        platformSurface = surfaceChanged
+        if (platform == null) platform = GalaxyAutoServiceBinding(activity, surfaceChanged, actions.report) { index ->
+            val current = actions.currentController()
+            if (current != null && current.hasActiveSession()) {
+                val key = when (index) {
+                    com.shilapi.xcertplay.airplay.CarPlayMediaButton.PREVIOUS -> KeyEvent.KEYCODE_MEDIA_PREVIOUS
+                    com.shilapi.xcertplay.airplay.CarPlayMediaButton.NEXT -> KeyEvent.KEYCODE_MEDIA_NEXT
+                    else -> KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE
+                }
+                GalaxyMediaKeys.onHardwareKey(current, KeyEvent(KeyEvent.ACTION_DOWN, key))
+                GalaxyMediaKeys.onHardwareKey(current, KeyEvent(KeyEvent.ACTION_UP, key))
+            }
+        }.also { it.active(platformActive) }
+        return true
+    }
+    override fun closeClusterOutput() { platform?.close(); platform = null }
+    override fun clusterStreamChanged(active: Boolean) = Unit
+    override fun clusterGuidanceChanged(guidance: com.shilapi.xcertplay.hud.ClusterTurnGuidance?) {
+        platform?.guidance(guidance)
+    }
     override val name = "CarPlay"
 
     override fun enterHost() = L7Agreement.require(activity) && L7StartupGuard.enterHost(activity)
@@ -77,6 +113,13 @@ private class GalaxyProductHostAdapter(
         GalaxyMediaKeys.onHardwareKey(controller, event)
 
     override fun bindMedia(sink: AndroidMediaSink, controller: CarPlayController) {
+        main.post {
+            if (actions.currentController() !== controller) return@post
+            platformSession = controller
+            platformActive = controller.hasActiveSession()
+            platformSurface?.let { ensureClusterOutput(it) }
+            platform?.active(platformActive)
+        }
         GalaxyMediaKeys.attach(activity, controller, sink::resumeMediaAudioFocus, sink::isAssistantAudioActive)
         // 投屏媒体建立即挂上方控；本类回调来自连接链路，GalaxySteeringBinding内部投递到主线程。
         GalaxySteeringBinding.attach(activity, controller)
@@ -93,6 +136,12 @@ private class GalaxyProductHostAdapter(
 
     override fun sessionStateChanged(controller: CarPlayController?, active: Boolean) {
         controller ?: return
+        main.post {
+            if (actions.currentController() !== controller) return@post
+            platformSession = controller
+            platformActive = active
+            platform?.active(active)
+        }
         GalaxyMediaKeys.onSessionStateChanged(controller, active)
         if (active) {
             GalaxySteeringBinding.attach(activity, controller)
@@ -110,6 +159,12 @@ private class GalaxyProductHostAdapter(
     }
 
     override fun detachMedia(controller: CarPlayController?) {
+        main.post {
+            if (controller != null && platformSession !== controller) return@post
+            platformSession = null
+            platformActive = false
+            closeClusterOutput()
+        }
         GalaxyMediaKeys.detach(controller)
         GalaxySteeringBinding.detach(controller)
     }
