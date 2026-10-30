@@ -14,6 +14,8 @@ internal class GalaxyOemPlaybackSnapshot(
     private val valid: () -> Boolean,
     private val artwork: () -> android.net.Uri?,
     private val controlEnabled: Boolean,
+    private val lyrics: () -> GalaxyOemLyrics = { GalaxyOemLyrics() },
+    private val lyricUri: android.net.Uri? = null,
 ) : InvocationHandler {
     private val app = context.applicationContext
     private val appIcon = "android.resource://${app.packageName}/${app.applicationInfo.icon}"
@@ -33,6 +35,9 @@ internal class GalaxyOemPlaybackSnapshot(
             "getAlbum" -> value.album
             "getDuration" -> value.durationMillis ?: 0L
             "getArtwork" -> artwork()
+            "getLyric" -> lyricUri
+            "getLyricContent" -> lyrics().content
+            "getCurrentLyricSentence" -> lyrics().sentence
             "getSourceType" -> source
             "getPlaybackStatus" -> if (value.playing) 1 else 0
             "getPackageName" -> app.packageName

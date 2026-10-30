@@ -30,6 +30,7 @@ class GalaxyHostAdapterTest {
             currentController = { actions++; null }, report = { actions++ },
         ))
         assertEquals("CarPlay", product.name)
+        assertEquals(L7DisplayGeometry.forViewport(activity, 1440, 1920), product.physicalSize(1440, 1920))
         val destination = product.homeIntent("settings-connection")
         assertEquals(GalaxySettingsActivity::class.java.name, destination.component?.className)
         assertEquals("settings-connection", destination.getStringExtra("page"))

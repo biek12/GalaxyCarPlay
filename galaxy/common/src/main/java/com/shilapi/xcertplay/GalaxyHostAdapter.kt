@@ -69,6 +69,7 @@ private class GalaxyProductHostAdapter(
 
     override fun enterHost() = L7Agreement.require(activity) && L7StartupGuard.enterHost(activity)
     override fun homeIntent(page: String) = Intent(activity, GalaxySettingsActivity::class.java).putExtra("page", page)
+    override fun physicalSize(width: Int, height: Int) = L7DisplayGeometry.forViewport(activity, width, height)
     override fun uiScalePercent() = GalaxyProjectionScale.sanitize(activity
         .getSharedPreferences("xcertplay_airplay", 0).getInt("ui_scale_percent", 100))
     override fun oemLabel() = GalaxyCarPlayAppearance.label(activity)

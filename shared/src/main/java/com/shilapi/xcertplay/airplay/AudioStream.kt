@@ -22,6 +22,8 @@ data class AudioFormat(
      * 0x10000000 and 0x20000000 count at 16 and 24 kHz (see [MicrophoneConfig.opusClockRate]).
      */
     val rtpClockRate: Int = sampleRate,
+    /** 本流已取得有效上行配置；仅供平台区分录音应用与导航提示。 */
+    val inputRequested: Boolean = false,
 )
 
 /**

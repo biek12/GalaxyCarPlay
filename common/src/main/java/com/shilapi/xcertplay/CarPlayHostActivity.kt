@@ -5115,7 +5115,7 @@ class CarPlayHostActivity : ComponentActivity() {
     }
 
     private fun resolvePhysicalSize(size: DisplaySize): AirPlayPhysicalSizeMm =
-        AirPlayDisplaySettings.resolvePhysicalSizeMm(
+        product?.physicalSize(size.width, size.height) ?: AirPlayDisplaySettings.resolvePhysicalSizeMm(
             currentWidthPixels = size.width,
             currentHeightPixels = size.height,
             maximumWidthPixels = maxOf(maximumDetectedWidthPixels, size.width),

@@ -31,6 +31,9 @@ internal class L7ReflectiveMediaCenter(
     @Volatile private var latest = CarPlayNowPlaying()
     @Volatile private var info: Any? = null
     @Volatile private var snapshotRevision = 0L
+    @Volatile private var latestLyrics = GalaxyOemLyrics()
+    private val lyricFiles = java.util.ArrayDeque<java.io.File>()
+    private var lyricUri: Uri? = null
     private val trackSession = java.util.UUID.randomUUID().toString()
     private var track = 0L
     override var source = L7MediaCenterPort.CARPLAY_SOURCE
@@ -102,6 +105,31 @@ internal class L7ReflectiveMediaCenter(
     }
     override fun progress(milliseconds: Long) { latest = latest.copy(elapsedMillis = milliseconds); call("updateCurrentProgress", arrayOf(Any::class.java, Long::class.javaPrimitiveType!!), token, milliseconds) }
 
+    override fun lyrics(value: GalaxyOemLyrics) {
+        if (!valid) return
+        if (latestLyrics.content != value.content) {
+            lyricUri = if (value.content.isEmpty()) null else {
+                val dir = java.io.File(app.cacheDir, "l7-media-lyrics").apply { mkdirs() }
+                val file = java.io.File(dir, "${java.util.UUID.randomUUID()}.lrc")
+                file.writeText(value.content)
+                lyricFiles.addLast(file)
+                while (lyricFiles.size > 4) removeLyricFile(lyricFiles.removeFirst())
+                androidx.core.content.FileProvider.getUriForFile(app, "${app.packageName}.media-artwork", file)
+                    .also { GalaxyMediaArtworkAccess.grant(app, it, null) }
+            }
+        }
+        latestLyrics = value
+        // 已核验G733 EAS实现转发到updateLyricSentence；每句只调用一次。
+        if (token != null) apiType?.getMethod("updateCurrentLyric", Any::class.java, String::class.java)
+            ?.invoke(api, token, value.sentence)
+    }
+
+    private fun removeLyricFile(file: java.io.File) {
+        runCatching { app.revokeUriPermission(androidx.core.content.FileProvider.getUriForFile(
+            app, "${app.packageName}.media-artwork", file), android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION) }
+        file.delete()
+    }
+
     override fun prepare(value: CarPlayNowPlaying, artwork: Uri?) {
         if (!valid) return
         if (latest.title != value.title || latest.artist != value.artist || latest.album != value.album ||
@@ -135,7 +163,7 @@ internal class L7ReflectiveMediaCenter(
                         artwork
                     }
                 }
-            }, localPlayback && GalaxyVehiclePreferences.steering(app)))
+            }, localPlayback && GalaxyVehiclePreferences.steering(app), { latestLyrics }, lyricUri))
     }
 
     override fun update(value: CarPlayNowPlaying, artwork: Uri?): Boolean {
@@ -179,6 +207,10 @@ internal class L7ReflectiveMediaCenter(
         latest = CarPlayNowPlaying()
         api?.let { target -> requireNotNull(apiType).getMethod("release").invoke(target) }
         api = null
+        latestLyrics = GalaxyOemLyrics()
+        lyricFiles.forEach(::removeLyricFile)
+        lyricFiles.clear()
+        lyricUri = null
         contract = null
     }
     companion object {

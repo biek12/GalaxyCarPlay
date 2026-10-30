@@ -30,6 +30,11 @@ internal object GalaxyMediaKeys {
     private var steeringWheel: L7SteeringWheel? = null
     private var commandGate = L7MediaCommandGate()
     private var mediaInfo = CarPlayNowPlaying()
+    private var stopLyrics: (() -> Unit)? = null
+    private var lyricTick: Runnable? = null
+    private var lyricState = ClusterMusicState.Snapshot()
+    private var lyricContentState: List<ClusterLyricLine>? = null
+    private var lyricContent = ""
 
     @Synchronized fun attach(context: Context, next: CarPlayController, onPlaybackStarted: () -> Unit,
                              assistantActive: () -> Boolean = { false }) {
@@ -172,6 +177,19 @@ internal object GalaxyMediaKeys {
             L7ReflectiveMediaCenter(app, next.localMediaAudioEnabled), app.packageName,
             ::current, dispatch, traceSend = traced, localPlayback = next.localMediaAudioEnabled,
         ).also { it.start(); it.update(next.nowPlayingSnapshot(), null) }
+        handler.post { synchronized(this) {
+            if (!current()) return@synchronized
+            stopLyrics = ClusterMusicState.observe { state -> synchronized(this) {
+                if (current()) { lyricState = state; publishOemLyrics() }
+            } }
+            lyricTick = object : Runnable {
+                override fun run() = synchronized(this@GalaxyMediaKeys) {
+                    if (!current() || lyricTick !== this) return@synchronized
+                    publishOemLyrics()
+                    handler.postDelayed(this, 250L)
+                }
+            }.also { handler.post(it) }
+        } }
     }
 
     private fun startNavigation(app: Context, next: CarPlayController, expectedOwner: Any) {
@@ -191,7 +209,24 @@ internal object GalaxyMediaKeys {
         }.also { handler.post(it) }
     }
 
+    private fun publishOemLyrics() {
+        val state = lyricState
+        if (ClusterMusicState.trackChanged(mediaInfo, state.info)) return
+        // 完整LRC仅在歌词集合改变时编码；时钟推进只计算当前句。
+        if (lyricContentState !== state.lyrics) {
+            lyricContentState = state.lyrics
+            lyricContent = GalaxyOemLyrics.from(state, SystemClock.elapsedRealtime()).content
+        }
+        mediaCenter?.updateLyrics(state.info, GalaxyOemLyrics(lyricContent,
+            state.lyricAt(SystemClock.elapsedRealtime())?.text.orEmpty().take(500)))
+    }
+
     private fun releaseSession() {
+        stopLyrics?.let { remove -> handler.post { remove() } }; stopLyrics = null
+        lyricTick?.let(handler::removeCallbacks); lyricTick = null
+        lyricState = ClusterMusicState.Snapshot()
+        lyricContentState = null
+        lyricContent = ""
         navigationTick?.let(handler::removeCallbacks)
         navigationTick = null
         navigation?.close(); navigation = null

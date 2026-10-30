@@ -178,11 +178,13 @@ class CarPlayMediaEngine(
         sink.onAudioStopped(streamId)
 
         val key = outputKey(session, stream) ?: return null
-        val format = AudioStreamCodec.fromFormatBits(
+        val decodedFormat = AudioStreamCodec.fromFormatBits(
             (stream["audioFormat"] as? Number)?.toLong() ?: 0L,
             type,
             audioType,
         )
+        val microphone = microphoneConfig(session, type, stream, decodedFormat)
+        val format = decodedFormat.copy(inputRequested = microphone != null)
         Log.i(
             TAG,
             "airplay audio format type=$type audioType=$audioType codec=${format.codec} " +
@@ -193,7 +195,6 @@ class CarPlayMediaEngine(
         val connectionId = stream["streamConnectionID"]
         val latencyMs = (stream["audioLatencyMs"] as? Number)?.toInt() ?: 0
         val meta = AudioMeta(type, format, connectionId, latencyMs)
-        val microphone = microphoneConfig(session, type, stream, format)
         if (microphone != null) pendingMicrophone[streamKey] = microphone
         if (type == STREAM_TYPE_MAIN_AUDIO && audioType != "media") {
             session.logDebug(

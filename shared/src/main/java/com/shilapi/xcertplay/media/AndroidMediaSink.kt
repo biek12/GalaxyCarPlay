@@ -575,17 +575,21 @@ class AndroidMediaSink(
     override fun onMicrophoneStarted(id: AudioStreamId, config: MicrophoneConfig) {
         // This callback runs on the downlink thread; microphone failures must not stop playback.
         try {
-            val speakerphoneCall = config.audioType == "telephony" &&
+            val routeType = factoryAudio?.audioType(config.audioType, inputRequested = true) ?: config.audioType
+            val routedConfig = if (routeType == config.audioType) config else config.copy(audioType = routeType)
+            if (routeType != config.audioType) onAudioDiagnostic(
+                "Microphone: platformRoute type=${config.audioType} routeType=$routeType channel=PHONE")
+            val speakerphoneCall = routeType == "telephony" &&
                 appContext != null && BydBluetoothSuspend.isSuspendedByUs(appContext)
-            val communication = MicrophoneInputPolicy.communication(config.audioType,
+            val communication = MicrophoneInputPolicy.communication(routeType,
                 factoryAudio?.appMicrophoneUsesCommunicationMode == true)
             if (callProcessingEnabled && communication && !speakerphoneCall) enterCommunicationMode(id)
             val uplink = microphoneUplinks.computeIfAbsent(id) {
                 val owner = Any()
-                MicrophoneUplink(config, onAudioDiagnostic,
+                MicrophoneUplink(routedConfig, onAudioDiagnostic,
                     speakerphoneCall = speakerphoneCall,
-                    echoReference = if (config.audioType == TELEPHONY_AUDIO_TYPE) callEchoReferences[id] else null,
-                    factorySource = factoryAudio?.microphoneSource(config.audioType, config.sampleRate, wirelessAudio),
+                    echoReference = if (routeType == TELEPHONY_AUDIO_TYPE) callEchoReferences[id] else null,
+                    factorySource = factoryAudio?.microphoneSource(routeType, config.sampleRate, wirelessAudio),
                     appCommunication = factoryAudio?.appMicrophoneUsesCommunicationMode == true,
                     audioRouting = audioRouting,
                     callProcessingEnabled = callProcessingEnabled,
@@ -759,7 +763,8 @@ class AndroidMediaSink(
         existing?.close()
         // A replacement owns a fresh ring: the old worker can still finish a blocking write.
         // The car's phone audio state cancels the echo itself; a second canceller would work against it.
-        val echoReference = if (callEchoCancellation && format.audioType == TELEPHONY_AUDIO_TYPE && format.sampleRate > 0 &&
+        val phoneRoute = (factoryAudio?.audioType(format.audioType, format.inputRequested) ?: format.audioType) == TELEPHONY_AUDIO_TYPE
+        val echoReference = if (callEchoCancellation && phoneRoute && format.sampleRate > 0 &&
             !PhoneAudioRoute.carPlayCallsUseCarAudio()) {
             EchoReference(format.sampleRate).also { callEchoReferences[id] = it }
         } else {
@@ -778,20 +783,20 @@ class AndroidMediaSink(
             mediaBufferMillis,
             onAudioDiagnostic,
             ambientSinkToken,
-            speakerphoneCall = format.audioType == "telephony" &&
+            speakerphoneCall = phoneRoute &&
                 appContext != null && BydBluetoothSuspend.isSuspendedByUs(appContext),
             echoReference = echoReference,
-            voiceFilter = callVoiceFilter && format.audioType == TELEPHONY_AUDIO_TYPE,
+            voiceFilter = callVoiceFilter && phoneRoute,
             assistantChannel = audioRoutingTemplate?.choice(AudioOutputRole.ASSISTANT) ?: assistantChannel,
             factoryAudio = factoryAudio,
             routingTemplate = audioRoutingTemplate,
             audioRouting = audioRouting,
             renderAudio = LocalMediaAudioPolicy.shouldRender(localMediaAudioEnabled, id, format),
-            onStarted = { if (format.audioType == TELEPHONY_AUDIO_TYPE) communicationFocusStarted(communicationOwner) },
+            onStarted = { if (phoneRoute) communicationFocusStarted(communicationOwner) },
             onReleased = { communicationFocusReleased(communicationOwner) },
         ).also {
             it.setNavigationAttenuationDb(navigationAttenuationDb)
-            if (format.audioType == TELEPHONY_AUDIO_TYPE) it.onRoutedToEarpiece = { moveCallToLoudspeaker(id) }
+            if (phoneRoute) it.onRoutedToEarpiece = { moveCallToLoudspeaker(id) }
             audioRenderers[id] = it
             // Cover a Settings change made while this renderer was being prepared.
             it.setNavigationAttenuationDb(navigationAttenuationDb)
@@ -2236,7 +2241,7 @@ private class AudioRenderer(
             AudioChannelMappingMode.MOBILE_COMPATIBLE
         }
         val selection = AudioChannelMapper.map(
-            audioType = format.audioType,
+            audioType = factoryAudio?.audioType(format.audioType, format.inputRequested) ?: format.audioType,
             payloadType = format.payloadType,
             mode = mode,
         )

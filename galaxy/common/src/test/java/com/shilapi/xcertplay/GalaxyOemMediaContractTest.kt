@@ -17,6 +17,9 @@ class GalaxyOemMediaContractTest {
         open fun getUuid(): String? = null
         open fun getDuration(): Long = 0
         open fun getArtwork(): Uri? = null
+        open fun getLyric(): Uri? = null
+        open fun getLyricContent(): String? = null
+        open fun getCurrentLyricSentence(): String? = null
         open fun getSourceType(): Int = 6
         open fun getPlaybackStatus(): Int = 0
         open fun getLaunchIntent(): PendingIntent? = null
@@ -46,6 +49,7 @@ class GalaxyOemMediaContractTest {
         fun updateMusicPlaybackState(token: Any, info: Info): Boolean = true
         fun updateMediaSourceTypeList(token: Any, values: IntArray): Boolean = true
         fun updateCurrentProgress(token: Any, value: Long) {}
+        fun updateCurrentLyric(token: Any, value: String) {}
         fun updateCurrentSourceType(token: Any, value: Int) {}
         fun queryCurrentFocusClient(token: Any): String? = packageName
     }
@@ -60,6 +64,8 @@ class GalaxyOemMediaContractTest {
         val contract = GalaxyOemMediaContract(Modern::class.java, Client::class.java, Info::class.java)
         val api = Modern(); val client = Client()
         assertTrue(contract.linkedSession)
+        assertTrue(contract.infoMethods.map { it.name }.containsAll(listOf(
+            "getLyric", "getLyricContent", "getCurrentLyricSentence")))
         assertSame(client, contract.register(api, "synthetic.own", client))
         assertEquals("synthetic.own", api.packageName)
         assertEquals("synthetic.own", api.sessionPackage)
