@@ -1,0 +1,4 @@
+AutoService使用自有平台/投射代码。
+公开依赖的许可证及来源见dependencies.json；第三方保留其版权声明，不以本工程根许可证替代各文件许可。
+Kadb: Copyright Flyfish Xu / Apache-2.0。spake2-java: GPL-3.0-or-later。HiddenApiBypass: Apache-2.0。
+本APK不包含参考AutoService/AutoDisplay的加固壳或OEM SDK二进制；QNX程序是本工程自有源码候选，依赖目标系统已安装库。
