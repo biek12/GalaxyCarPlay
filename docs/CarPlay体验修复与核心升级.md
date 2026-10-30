@@ -46,3 +46,9 @@ bash scripts/verify_carplay_experience.sh
 修复提交完成后，按旧基线/本项目/新标签三方比较。上游原样文件直接取新版本，产品专属文件保留；双方修改文件由Git三方合并，冲突逐项审查。新锁文件、适配差异、冲突处理与验证必须独立记录。
 
 最终验证：2026-10-31T00:08:16+08:00，`bash scripts/verify_carplay_experience.sh`通过；common 55项/0失败、shared 23项/0失败；三个APK assembleDebug通过。CarPlay APK SHA256 `6e28475813677e5df88a32a86492d35add7c822e6c1305a9523865fbbecf849e`，保留于本机`.work/apks/carplay-experience-v0.2.21/CarPlay-debug.apk`。未安装，未作实车功能通过声明。
+
+后续收口：歌词IPC拒绝改为每份内容/每代注册最多3次，独立于曲目/封面发布，避免异常阻断已有信息；缓存加入活动目录保护和进程遗留清理。补充真实AudioRecord路径回归，default/facetime/compatibility均验证电话效果器、停止后模式与录音器/效果器释放。2026-10-31T00:15:10+08:00执行同一命令通过，common 56项/0失败、shared 68项/0失败，三个APK编译通过。最终CarPlay APK SHA256 `a3aec59bb74041c27f4a03745519f2e7cda5a9bf8fb65b9c9e39b7f02febe7a0`。
+
+用户补充复现条件：iPhone 16 Pro Max / iOS 27.2，只有开关回退，没有黑屏或重连。该信息是用户实测描述；本轮没有连接该手机或车机。参考[iOS符号差异](https://github.com/blacktop/ipsw-diffs/blob/8af66bf3a924930979237d896ee447f0f2684ac8/iOS/18_5_22F76__vs_26_0_23A5260n/DYLIBS/CarKit.md)可见CRVehicle.displayScaleMode、CRDisplayScaleInfo与物理尺寸/像素/视口算法，但这是旧版本符号证据，不是iOS27.2运行轨迹或已找到根因。
+
+**当前第3项仍待定位/实测，因此遵守用户指定顺序，未覆盖当前核心。** 先独立保存三方审查候选，见下方后续记录；这不是核心升级完成声明。

@@ -9550,7 +9550,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +}
 --- /dev/null
 +++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyTemporaryFiles.kt
-@@ -0,0 +1,43 @@
+@@ -0,0 +1,44 @@
 +package com.shilapi.xcertplay
 +
 +import android.content.Context
@@ -9578,6 +9578,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    @Synchronized fun cleanup(context: Context) {
 +        cleanDirectories(File(context.cacheDir, "log-upload-snapshots"), Regex("upload-[a-zA-Z0-9-]+"))
 +        cleanDirectories(File(context.cacheDir, "l7-media-artwork"), Regex("[a-f0-9-]{36}"))
++        cleanDirectories(File(context.cacheDir, "l7-media-lyrics"), Regex("[a-f0-9-]{36}"))
 +        val temporary = File(context.cacheDir, "app-updates/pending.tmp")
 +        if (temporary.isFile && System.currentTimeMillis() - temporary.lastModified() >= 60_000) temporary.delete()
 +        GalaxyUpdateCache.load(context)
@@ -15375,7 +15376,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +}
 --- /dev/null
 +++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/L7MediaCenterSession.kt
-@@ -0,0 +1,350 @@
+@@ -0,0 +1,356 @@
 +package com.shilapi.xcertplay
 +
 +import android.net.Uri
@@ -15427,6 +15428,8 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    private var publishedProgress: Long? = null
 +    private var publishedLyrics: GalaxyOemLyrics? = null
 +    private var publishedLyricContent: String? = null
++    private var pendingLyrics: GalaxyOemLyrics? = null
++    private var lyricAttempts = 0
 +    private val playRequest = L7MediaPlayRequest()
 +    private var playRetryRevision: Long? = null
 +    private var pending: Snapshot? = null
@@ -15488,6 +15491,8 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +            registration++
 +            registered = true
 +            publishedLyrics = null
++            pendingLyrics = null
++            lyricAttempts = 0
 +            publishedLyricContent = null
 +            safely("queryFocus") { applyFocus(port.focusClient()); "RETURNED" }
 +            published = null
@@ -15541,9 +15546,11 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        val uri = next.artwork
 +        playRequest.observe(value)
 +        if (explicitPlay) playRequest.select()
-+        if (publishedLyrics != next.lyrics) {
-+            if (!safely("updateLyrics") { port.lyrics(next.lyrics); true }) return
-+            publishedLyrics = next.lyrics
++        if (pendingLyrics != next.lyrics) { pendingLyrics = next.lyrics; lyricAttempts = 0 }
++        if (publishedLyrics != next.lyrics && lyricAttempts < 3) {
++            lyricAttempts++
++            if (safely("updateLyrics") { port.lyrics(next.lyrics); true }) publishedLyrics = next.lyrics
++            // 歌词IPC与曲目/封面是独立更新，前者异常不能挡住后者。
 +        }
 +        val metadata = next.copy(value = value.copy(elapsedMillis = null), lyrics = next.lyrics.copy(sentence = ""))
 +        if (pending != metadata) { pending = metadata; updateAttempts = 0 }
@@ -18154,7 +18161,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +}
 --- /dev/null
 +++ b/galaxy/common/src/main/java/com/shilapi/xcertplay/L7ReflectiveMediaCenter.kt
-@@ -0,0 +1,221 @@
+@@ -0,0 +1,225 @@
 +package com.shilapi.xcertplay
 +
 +import android.content.Context
@@ -18189,6 +18196,8 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +    @Volatile private var info: Any? = null
 +    @Volatile private var snapshotRevision = 0L
 +    @Volatile private var latestLyrics = GalaxyOemLyrics()
++    private val lyricDirectory = java.io.File(app.cacheDir, "l7-media-lyrics/${java.util.UUID.randomUUID()}")
++    private val lyricLease = GalaxyTemporaryFiles.protect(lyricDirectory)
 +    private val lyricFiles = java.util.ArrayDeque<java.io.File>()
 +    private var lyricUri: Uri? = null
 +    private val trackSession = java.util.UUID.randomUUID().toString()
@@ -18266,7 +18275,7 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        if (!valid) return
 +        if (latestLyrics.content != value.content) {
 +            lyricUri = if (value.content.isEmpty()) null else {
-+                val dir = java.io.File(app.cacheDir, "l7-media-lyrics").apply { mkdirs() }
++                val dir = lyricDirectory.apply { mkdirs() }
 +                val file = java.io.File(dir, "${java.util.UUID.randomUUID()}.lrc")
 +                file.writeText(value.content)
 +                lyricFiles.addLast(file)
@@ -18367,6 +18376,8 @@ Binary files /dev/null and b/galaxy/common/src/main/assets/codec-probe/hevc.mp4 
 +        latestLyrics = GalaxyOemLyrics()
 +        lyricFiles.forEach(::removeLyricFile)
 +        lyricFiles.clear()
++        lyricDirectory.delete()
++        lyricLease.close()
 +        lyricUri = null
 +        contract = null
 +    }
@@ -29748,7 +29759,7 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +}
 --- /dev/null
 +++ b/galaxy/common/src/test/java/com/shilapi/xcertplay/L7MediaCenterSessionTest.kt
-@@ -0,0 +1,509 @@
+@@ -0,0 +1,524 @@
 +package com.shilapi.xcertplay
 +
 +import android.net.Uri
@@ -29779,7 +29790,11 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        val updates = mutableListOf<CarPlayNowPlaying>()
 +        val artworks = mutableListOf<Uri?>()
 +        val lyricUpdates = mutableListOf<GalaxyOemLyrics>()
-+        override fun lyrics(value: GalaxyOemLyrics) { lyricUpdates += value }
++        var failLyrics = false
++        override fun lyrics(value: GalaxyOemLyrics) {
++            lyricUpdates += value
++            if (failLyrics) throw SecurityException("synthetic-lyrics-rejected")
++        }
 +        var token = true
 +        var acceptSource = true
 +        var failState = false
@@ -29829,6 +29844,17 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +    private val logs = mutableListOf<String>()
 +    private val retries = java.util.ArrayDeque<Runnable>()
 +    private val session = L7MediaCenterSession(port, "own", { current }, { index, _ -> sent += index }, worker, main, logs::add, retry = { retries.add(it) })
++    @Test fun lyricRejectionDoesNotBlockCoverOrPlaybackAndHasABoundedRetryBudget() {
++        port.failLyrics = true
++        connect()
++        for (elapsed in 1L..6L) { session.update(playing(elapsed)); worker.drain() }
++        assertTrue(port.updates.isNotEmpty())
++        assertTrue(port.calls.contains("progress:6"))
++        assertEquals(3, port.lyricUpdates.size)
++        session.updateLyrics(playing(), GalaxyOemLyrics("new", "new")); worker.drain()
++        assertEquals(4, port.lyricUpdates.size)
++    }
++
 +    @Test fun lyricsFollowTrackAndRegistrationWithoutRepublishingCoverForEachLine() {
 +        connect()
 +        val track = playing()
@@ -35120,24 +35146,30 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +}
 --- a/shared/src/test/java/com/shilapi/xcertplay/media/TelephonyMicrophoneTest.kt
 +++ b/shared/src/test/java/com/shilapi/xcertplay/media/TelephonyMicrophoneTest.kt
-@@ -99,6 +99,36 @@
+@@ -99,6 +99,42 @@
          assertEquals(AudioRecord.STATE_UNINITIALIZED, record.state)
      }
  
-+    @Test fun appVoiceCallUsesCommunicationCaptureAndRestoresModeWithoutTelephonyEchoEffects() {
++    @Test fun appVoiceCallUsesPhoneCaptureAndRestoresItsModeAndEffects() = appPhoneRoute("default")
++    @Test fun faceTimeUsesPhoneCaptureAndRestoresItsModeAndEffects() = appPhoneRoute("facetime")
++    @Test fun compatibilityRecordingUsesPhoneCaptureAndRestoresItsModeAndEffects() = appPhoneRoute("compatibility")
++
++    private fun appPhoneRoute(type: String) {
 +        sink.close()
 +        sink = AndroidMediaSink(context = context, platformAdaptation = GalaxyMediaPolicy(
 +            factoryProfile = true, preferBus = false))
 +        manager.mode = AudioManager.MODE_RINGTONE
-+        val appCall = AudioStreamId(100, "default")
-+        sink.onMicrophoneStarted(appCall, config("default"))
++        val appCall = AudioStreamId(100, type)
++        sink.onMicrophoneStarted(appCall, config(type))
 +        val record = awaitCapture()
 +        assertEquals(AudioManager.MODE_IN_COMMUNICATION, manager.mode)
 +        assertEquals(MediaRecorder.AudioSource.VOICE_COMMUNICATION, record.audioSource)
-+        assertTrue(ShadowAudioEffect.getAudioEffects().isEmpty())
++        assertEquals(setOf("AcousticEchoCanceler", "NoiseSuppressor"),
++            ShadowAudioEffect.getAudioEffects().map { it.javaClass.simpleName }.toSet())
 +        sink.onMicrophoneStopped(appCall)
 +        assertEquals(AudioManager.MODE_RINGTONE, manager.mode)
 +        assertEquals(AudioRecord.STATE_UNINITIALIZED, record.state)
++        assertTrue(ShadowAudioEffect.getAudioEffects().isEmpty())
 +    }
 +
 +    @Test fun stoppingAnOverlappingCallKeepsCommunicationModeForTheRemainingOwner() {
