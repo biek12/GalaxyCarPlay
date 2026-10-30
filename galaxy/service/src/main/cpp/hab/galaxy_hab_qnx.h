@@ -13,10 +13,12 @@ struct galaxy_hab_qnx {
     int vcid, channel_open, pmem_active, imported;
     void *import_handle, *mapping;
     uint32_t export_id;
+    uint32_t checksum_sequence, checksum_stream, checksum_attempts, checksum_mismatches;
+    uint32_t checksum_expected, checksum_observed;
+    uint32_t cache_syncs, cache_failures, posted_frames;
+    int cache_last_error;
     screen_context_t context;
     screen_window_t windows[2];
-    uint8_t *pixels;
-    size_t pixel_capacity;
     /* 可选本地诊断：stage是静态操作名；INT_MIN表示调用前，其余为返回值，不含载荷/指针。 */
     void (*trace)(void *context, const char *stage, int result);
     void *trace_context;
@@ -33,7 +35,8 @@ void galaxy_hab_qnx_init(struct galaxy_hab_qnx *owner,
 int galaxy_hab_qnx_open(struct galaxy_hab_qnx *owner,
                           const struct galaxy_hab_target *targets, uint32_t count,
                           uint32_t open_timeout_ms);
-/* 0=已提交FRAME或ZORDER，1=STOP并已释放，负值=失败并已释放；没有逐帧ACK。 */
+/* 0=处理了FRAME/重传请求/控制；1=STOP且已释放；负值=失败且已释放。
+ * GLC2对实际post成功的帧发POSTED；不能将返回0或事件计数直接当作显示帧数。 */
 int galaxy_hab_qnx_step(struct galaxy_hab_qnx *owner);
 /* 自有长期会话使用有限空闲期；非零timeout沿已核验habmm_socket_recv参数传递。 */
 int galaxy_hab_qnx_step_timeout(struct galaxy_hab_qnx *owner, uint32_t timeout_ms);

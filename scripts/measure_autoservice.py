@@ -10,7 +10,8 @@ import subprocess
 import time
 
 ROOT = Path(__file__).resolve().parents[1]
-NAMES = ('com.ecarx.autoservice', 'autoservice-root', 'libgalaxy_hab_bridge.so', 'com.galaxy.autocluster')
+OWNED_NAMES = ('com.ecarx.autoservice', 'autoservice-root', 'libgalaxy_hab_bridge.so', 'com.galaxy.autocluster', 'com.ecarx.carplay')
+NAMES = (*OWNED_NAMES, 'surfaceflinger')
 
 
 def parse(text):
@@ -29,6 +30,12 @@ def parse(text):
                 record['started_ticks'] = int(fields[19])
         records.append(record)
     return records
+
+
+def projection_metrics(text):
+    """只采自有dump中明确的数值指标，不落盘其余系统/媒体输出。"""
+    line = next((line for line in text.splitlines() if line.strip().startswith('hab=')), '')
+    return {key: int(value) for key, value in re.findall(r'([A-Za-z][A-Za-z0-9]*)=(\d+)(?=\s|$)', line)}
 
 
 def main():
@@ -63,6 +70,7 @@ def main():
     time.sleep(args.warmup)
     started = time.monotonic()
     previous = {}
+    previous_projection = None
     samples = []
     while time.monotonic() - started < args.duration:
         at = time.monotonic()
@@ -73,7 +81,16 @@ def main():
             if ticks and old and 'cpu_ticks' in item:
                 item['cpu_percent_one_core'] = 100 * (item['cpu_ticks'] - old[1]) / ticks / (at - old[0])
             previous[key] = (at, item.get('cpu_ticks', 0))
-        samples.append({'seconds': round(at - started, 3), 'processes': records})
+        projection = projection_metrics(shell('dumpsys activity service com.ecarx.autoservice/.AutoService'))
+        rates = {}
+        if previous_projection:
+            old_at, old_metrics = previous_projection
+            for key in ('mapLatched', 'themeLatched', 'outputPosted', 'newFramesSubmitted'):
+                if key in projection and key in old_metrics and projection[key] >= old_metrics[key]:
+                    rates[key + 'PerSecond'] = round((projection[key] - old_metrics[key]) / (at - old_at), 3)
+        previous_projection = at, projection
+        samples.append({'seconds': round(at - started, 3), 'processes': records,
+                        'projection': projection, 'rates': rates})
         time.sleep(min(args.interval, max(0, args.duration - (time.monotonic() - started))))
     summary = {}
     for name in NAMES:
@@ -87,7 +104,8 @@ def main():
                          'fd_peak': max((p.get('FD', 0) for p in items), default=None)}
     totals = []
     for sample in samples:
-        processes = sample['processes']
+        # SurfaceFlinger是整机共享合成服务，单列观察，不归入自有App合计。
+        processes = [p for p in sample['processes'] if p['process'] in OWNED_NAMES]
         totals.append({'cpu': sum(p['cpu_percent_one_core'] for p in processes) if processes and all('cpu_percent_one_core' in p for p in processes) else None,
                        'pss': sum(p['Pss'] for p in processes) if processes and all('Pss' in p for p in processes) else None,
                        'rss': sum(p.get('Rss', p.get('VmRSS', 0)) for p in processes)})

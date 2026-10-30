@@ -61,6 +61,8 @@ internal class GalaxyAutoServiceBinding(context: Context, surface: (Surface?) ->
     fun guidance(value: ClusterTurnGuidance?) = client.publishNavigation(Bundle().apply {
         value ?: return@apply
         putString("road", value.road); putString("distance", "${value.distanceMeters} m"); putInt("maneuver", value.icon)
+        putInt("roundaboutExit",value.roundaboutExit)
+        value.remainingMeters?.let { putString("remainingDistance",if(it<1000)"$it m"else String.format(Locale.ROOT,"%.1f km",it/1000.0)) }
         value.remainingSeconds?.let { putString("remaining", "${it / 60} 分钟") }
         value.arrivalEpochSeconds?.let { putString("arrival", SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(it * 1000))) }
     })

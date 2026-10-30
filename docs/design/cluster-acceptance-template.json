@@ -1,0 +1,168 @@
+{
+  "profile": "L6-2023-Max-FlymeAuto2.3.1",
+  "tested_at": null,
+  "bundle_manifest_sha256": null,
+  "operator_notes": "复制到包外填写，不修改已校验测试包；不记录车辆/手机标识或认证材料。",
+  "checks": [
+    {
+      "id": "V01",
+      "name": "原车基线/开启投屏",
+      "status": "not_tested",
+      "actual": null,
+      "evidence_files": [],
+      "performance_reports": []
+    },
+    {
+      "id": "V02",
+      "name": "完整地图与音乐",
+      "status": "not_tested",
+      "actual": null,
+      "evidence_files": [],
+      "performance_reports": []
+    },
+    {
+      "id": "V03",
+      "name": "三列只读组件库",
+      "status": "not_tested",
+      "actual": null,
+      "evidence_files": [],
+      "performance_reports": []
+    },
+    {
+      "id": "V04",
+      "name": "拖拽缩放图层与预览租约",
+      "status": "not_tested",
+      "actual": null,
+      "evidence_files": [],
+      "performance_reports": []
+    },
+    {
+      "id": "V05",
+      "name": "组件属性与日夜",
+      "status": "not_tested",
+      "actual": null,
+      "evidence_files": [],
+      "performance_reports": []
+    },
+    {
+      "id": "V06",
+      "name": "保存修改切换背景和导入导出",
+      "status": "not_tested",
+      "actual": null,
+      "evidence_files": [],
+      "performance_reports": []
+    },
+    {
+      "id": "V07",
+      "name": "暂停seek换歌与失效数据",
+      "status": "not_tested",
+      "actual": null,
+      "evidence_files": [],
+      "performance_reports": []
+    },
+    {
+      "id": "V08",
+      "name": "10/20/30对照与持续负载",
+      "status": "not_tested",
+      "actual": null,
+      "evidence_files": [],
+      "performance_reports": []
+    },
+    {
+      "id": "V09",
+      "name": "静态预览停止资源",
+      "status": "not_tested",
+      "actual": null,
+      "evidence_files": [],
+      "performance_reports": []
+    },
+    {
+      "id": "V10",
+      "name": "恢复重连按需接收端",
+      "status": "not_tested",
+      "actual": null,
+      "evidence_files": [],
+      "performance_reports": []
+    },
+    {
+      "id": "V11",
+      "name": "原车图传异常与共存",
+      "status": "not_tested",
+      "actual": null,
+      "evidence_files": [],
+      "performance_reports": []
+    },
+    {
+      "id": "V12",
+      "name": "巡航三态与目标速度/角度",
+      "status": "not_tested",
+      "actual": null,
+      "evidence_files": [],
+      "performance_reports": []
+    },
+    {
+      "id": "V13",
+      "name": "低中高自动回收与原始功率标定",
+      "status": "not_tested",
+      "actual": null,
+      "evidence_files": [],
+      "performance_reports": []
+    },
+    {
+      "id": "V14",
+      "name": "原厂胎压与油电续航视觉采集",
+      "status": "not_tested",
+      "actual": null,
+      "evidence_files": [],
+      "performance_reports": []
+    },
+    {
+      "id": "V15",
+      "name": "左菜单短按四页与长按取消",
+      "status": "not_tested",
+      "actual": null,
+      "evidence_files": [],
+      "performance_reports": []
+    },
+    {
+      "id": "V16",
+      "name": "地图虚化圆角与完整源",
+      "status": "not_tested",
+      "actual": null,
+      "evidence_files": [],
+      "performance_reports": []
+    },
+    {
+      "id": "V17",
+      "name": "音乐四行歌词/220px进度与区域背景",
+      "status": "not_tested",
+      "actual": null,
+      "evidence_files": [],
+      "performance_reports": []
+    },
+    {
+      "id": "V18",
+      "name": "独立档位与G733 PA驾驶模式原车对照",
+      "status": "not_tested",
+      "actual": null,
+      "evidence_files": [],
+      "performance_reports": []
+    },
+    {
+      "id": "V19",
+      "name": "首次授权/TLS端点/三段身份与自恢复",
+      "status": "not_tested",
+      "actual": null,
+      "evidence_files": [],
+      "performance_reports": []
+    },
+    {
+      "id": "V20",
+      "name": "USB/MANUAL/P2P连接及音频原车媒体方控",
+      "status": "not_tested",
+      "actual": null,
+      "evidence_files": [],
+      "performance_reports": []
+    }
+  ]
+}

@@ -2,6 +2,7 @@ package com.galaxy.auto.contract;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.os.ParcelFileDescriptor;
+import android.view.Surface;
 import com.galaxy.auto.contract.IAutoCallback;
 import com.galaxy.auto.contract.IAutoResult;
 /** v1：小状态走Bundle，画面走独占Surface，封面走只读FD；Shell另需ADMIN签名权限；没有车辆写接口。 */
@@ -19,4 +20,7 @@ interface IAutoService {
     void publishArtwork(IBinder owner, in ParcelFileDescriptor artwork);
     void executeShell(IBinder owner, String transport, String command, int timeoutMillis, IAutoResult result);
     void mediaCommand(IBinder owner, int command);
+    void configureScene(IBinder owner, in Bundle scene);
+    void setPreviewSurface(IBinder owner, in Surface surface);
+    void setProjectionPolicy(IBinder owner, in Bundle policy);
 }

@@ -4,6 +4,19 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class GalaxyHabFramesTest {
+    @Test fun timingFollowsTheFrameThatSurvivesReplacement() {
+        val frames = GalaxyHabFrames(4)
+        val old = frames.acquire()!!
+        frames.publish(old, 100)
+        val latest = frames.acquire()!!
+        frames.publish(latest, 200)
+        val frame = frames.takeStamped()!!
+        assertSame(latest, frame.pixels)
+        assertEquals(200L, frame.acquiredAtNanos)
+        assertNull(frames.takeStamped())
+        frames.release(frame.pixels)
+        frames.close()
+    }
     @Test fun slowSenderDoesNotBlockCaptureOrReuseItsBufferAndOnlyLatestFrameSurvives() {
         val frames = GalaxyHabFrames(4)
         val sending = frames.acquire()!!

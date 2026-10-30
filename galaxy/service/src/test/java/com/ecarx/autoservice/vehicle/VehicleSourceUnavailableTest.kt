@@ -14,7 +14,7 @@ class VehicleSourceUnavailableTest {
         val result = source.cycle(VehicleCatalog.forModel("L6"), 123, "L6")
         assertEquals("not_connected", result.getString("discovery"))
         val samples = result.getJSONArray("samples")
-        assertEquals(72, samples.length())
+        assertEquals(VehicleCatalog.forModel("L6").size, samples.length())
         for (index in 0 until samples.length()) {
             assertEquals("UNAVAILABLE", samples.getJSONObject(index).getString("status"))
             assertTrue(samples.getJSONObject(index).isNull("value"))

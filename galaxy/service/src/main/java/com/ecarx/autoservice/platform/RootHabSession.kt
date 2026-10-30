@@ -21,8 +21,11 @@ internal object RootHabSession {
         }, "AutoService-hab-input").apply { isDaemon = true; start() }
         try { child.inputStream.copyTo(client.outputStream) }
         finally {
-            runCatching { child.outputStream.close() }; child.destroy(); client.close(); feeder.interrupt()
-            children.remove(child)
+            runCatching { child.outputStream.close() }; child.destroy()
+            if (!child.waitFor(1000, java.util.concurrent.TimeUnit.MILLISECONDS)) {
+                child.destroyForcibly(); child.waitFor(1000, java.util.concurrent.TimeUnit.MILLISECONDS)
+            }
+            client.close(); feeder.interrupt(); children.remove(child)
         }
     }
     fun close() { children.forEach { it.destroy(); runCatching { it.outputStream.close() } }; children.clear() }

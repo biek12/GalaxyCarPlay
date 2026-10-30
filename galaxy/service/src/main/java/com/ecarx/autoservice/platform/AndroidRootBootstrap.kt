@@ -29,7 +29,9 @@ internal object AndroidRootBootstrap {
                         val operation = input.read()
                         if (operation in 251..254) {
                             val option = input.read(); check(option >= 0)
-                            output.write(byteArrayOf(255.toByte(), (if (operation in 251..252) 254 else 252).toByte(), option.toByte())); output.flush()
+                            if (operation == 251 || operation == 253) {
+                                output.write(byteArrayOf(255.toByte(), (if (operation == 251) 254 else 252).toByte(), option.toByte())); output.flush()
+                            }
                         } else if (operation == 250) {
                             var previous = 0
                             while (true) { val next = input.read(); check(next >= 0); if (previous == 255 && next == 240) break; previous = next }

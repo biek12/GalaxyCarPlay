@@ -61,7 +61,7 @@ class HabNativeSourceTest(unittest.TestCase):
 
     def test_owned_receiver_with_real_sender_and_hmac(self):
         self.compile_and_run("receiver", [
-            NATIVE / "galaxy_hab_protocol.c", NATIVE / "galaxy_hab_pixels.c",
+            NATIVE / "galaxy_hab_protocol.c", NATIVE / "galaxy_hab_owned.c", NATIVE / "galaxy_hab_pixels.c",
             NATIVE / "galaxy_hab_transport.c", NATIVE / "galaxy_hab_sender.c",
             NATIVE / "galaxy_hab_hmac.c", NATIVE / "galaxy_hab_receiver.c",
             TESTS / "test_receiver.c",
@@ -69,7 +69,7 @@ class HabNativeSourceTest(unittest.TestCase):
 
     def test_qnx_platform_lifecycle_and_writable_buffers(self):
         self.compile_and_run("qnx", [
-            NATIVE / "galaxy_hab_protocol.c", NATIVE / "galaxy_hab_hmac.c",
+            NATIVE / "galaxy_hab_protocol.c", NATIVE / "galaxy_hab_owned.c", NATIVE / "galaxy_hab_hmac.c",
             NATIVE / "galaxy_hab_receiver.c", NATIVE / "galaxy_hab_qnx.c",
             TESTS / "test_qnx.c",
         ], ["-I", str(TESTS / "qnx_stubs")])
@@ -90,7 +90,7 @@ class HabNativeSourceTest(unittest.TestCase):
 
     def test_sender_open_frame_and_close(self):
         self.compile_and_run("sender", [
-            NATIVE / "galaxy_hab_protocol.c", NATIVE / "galaxy_hab_pixels.c",
+            NATIVE / "galaxy_hab_protocol.c", NATIVE / "galaxy_hab_owned.c", NATIVE / "galaxy_hab_pixels.c",
             NATIVE / "galaxy_hab_transport.c", NATIVE / "galaxy_hab_sender.c",
             TESTS / "test_sender.c",
         ])

@@ -23,5 +23,11 @@ class AutoServiceMeasureTest(unittest.TestCase):
         self.assertNotIn('credential', row)
         self.assertEqual(row['VmRSS'], 20)
 
+    def test_projection_dump_keeps_only_numeric_owned_metrics(self):
+        text = 'other private=12\nhab=rootTransport=false captured=20 newFramesSubmitted=18 composeUsP95=3000 postIntervalUsP99=44000\nmedia title=private\n'
+        metrics = module.projection_metrics(text)
+        self.assertEqual(metrics, {'captured': 20, 'newFramesSubmitted': 18, 'composeUsP95': 3000, 'postIntervalUsP99': 44000})
+        self.assertEqual({}, module.projection_metrics('media title=private'))
+
 if __name__ == '__main__':
     unittest.main()

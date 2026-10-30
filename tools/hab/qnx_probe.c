@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 #include "probe_common.h"
 #include "galaxy_hab_qnx.h"
+#include "galaxy_hab_owned.h"
 #include <errno.h>
 #include <limits.h>
 #include <string.h>
@@ -56,13 +57,21 @@ static void diagnostic_trace(void *context, const char *stage, int result)
     if (result == INT_MIN) { probe_text("BEGIN"); probe_text(stage); }
     else probe_number("RETURN", result);
 }
+static void error_trace(void *context, const char *stage, int result)
+{
+    (void)context;
+    if (result >= 0 || result == INT_MIN) return;
+    probe_text("RECEIVER_ERROR_STAGE");
+    probe_text(stage);
+    probe_number("RECEIVER_ERROR_RESULT", result);
+}
 static int cancelled(void *context) { (void)context; return probe_stopping != 0; }
 int main(int argc, char **argv)
 {
     struct galaxy_hab_hmac_key key;
     struct galaxy_hab_qnx q;
     struct galaxy_hab_target target;
-    uint32_t display, width, height, z, frames = 0, sessions = 0;
+    uint32_t display, width, height, z, frames = 0, sessions = 0, checksum_failures = 0;
     unsigned consecutive_failures = 0;
     int result, closed, serving;
 #ifdef GALAXY_QNX_ABI_CANDIDATE
@@ -70,6 +79,7 @@ int main(int argc, char **argv)
 #else
     probe_text("BUILD=QNX_SDK");
 #endif
+    probe_number("OWNED_PROTOCOL_VERSION", GALAXY_HAB_OWNED_VERSION);
     if (argc == 2 && !strcmp(argv[1], "self-test")) return probe_selftest();
     if (probe_signals()) return 1;
     if (argc == 2 && !strcmp(argv[1], "inventory")) return inventory();
@@ -90,19 +100,35 @@ int main(int argc, char **argv)
         frames = 0;
         probe_number("RECEIVER_LISTEN_SESSION", ++sessions);
         galaxy_hab_qnx_init(&q, galaxy_hab_hmac_sign, &key);
-        q.trace = !serving || argc == 8 ? diagnostic_trace : NULL;
+        checksum_failures = 0;
+        q.trace = !serving || argc == 8 ? diagnostic_trace : error_trace;
         q.cancelled = cancelled;
         result = galaxy_hab_qnx_open(&q, &target, 1, serving ? 600000 : 10000);
         probe_number("RECEIVER_READY_ACK", result);
         while (!result && !probe_stopping && (serving || frames < 120)) {
             result = serving ? galaxy_hab_qnx_step_timeout(&q, 5000) : galaxy_hab_qnx_step(&q);
+            if (q.checksum_mismatches != checksum_failures) {
+                checksum_failures = q.checksum_mismatches;
+                probe_number("RECEIVER_CHECKSUM_FAILURES", checksum_failures);
+                probe_number("RECEIVER_CHECKSUM_SEQUENCE", q.checksum_sequence);
+                probe_number("RECEIVER_CHECKSUM_ATTEMPT", q.checksum_attempts);
+                probe_number("RECEIVER_CHECKSUM_EXPECTED", (int)q.checksum_expected);
+                probe_number("RECEIVER_CHECKSUM_OBSERVED", (int)q.checksum_observed);
+            }
             if (!result) {
                 ++frames;
-                if (!serving || frames % 100u == 0) probe_number("RECEIVER_FRAME_OR_CONTROL_COUNT", frames);
+                if (!serving || frames % 100u == 0) {
+                    probe_number("RECEIVER_FRAME_OR_CONTROL_COUNT", frames);
+                    probe_number("RECEIVER_POSTED_FRAMES", q.posted_frames);
+                }
             }
         }
         probe_number("RECEIVER_LOOP_RESULT", result);
         probe_number("RECEIVER_PROCESSED_EVENTS", frames);
+        probe_number("RECEIVER_POSTED_FRAMES", q.posted_frames);
+        probe_number("RECEIVER_CACHE_SYNCS", q.cache_syncs);
+        probe_number("RECEIVER_CACHE_FAILURES", q.cache_failures);
+        probe_number("RECEIVER_CACHE_LAST_ERROR", q.cache_last_error);
         probe_number("RECEIVER_SIGNAL_STOP_REQUESTED", probe_stopping != 0);
         closed = galaxy_hab_qnx_close(&q);
         probe_number("RECEIVER_CLOSE", closed);

@@ -21,7 +21,7 @@ val prepareQnxReceiver by tasks.registering(Exec::class) {
 android {
     namespace = "com.ecarx.autoservice"
     compileSdk = 37
-    defaultConfig { applicationId = "com.ecarx.autoservice"; minSdk = 29; targetSdk = 37; versionCode = 1; versionName = "0.1.0" }
+    defaultConfig { applicationId = "com.ecarx.autoservice"; minSdk = 29; targetSdk = 37; versionCode = 1; versionName = "0.1.0"; testInstrumentationRunner = "com.ecarx.autoservice.projection.ProjectionSmokeInstrumentation" }
     packaging.jniLibs.useLegacyPackaging = true
     sourceSets.getByName("main").jniLibs.directories.add(habLibraries.get().asFile.path)
     sourceSets.getByName("main").assets.directories.add(qnxAssets.get().asFile.path)

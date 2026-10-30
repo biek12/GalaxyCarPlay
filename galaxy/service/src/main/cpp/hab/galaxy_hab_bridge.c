@@ -2,6 +2,7 @@
 #define _POSIX_C_SOURCE 200809L
 #include "galaxy_hab_sender.h"
 #include "galaxy_hab_hmac.h"
+#include "galaxy_hab_owned.h"
 #include <errno.h>
 #include <signal.h>
 #include <stdio.h>
@@ -29,6 +30,15 @@ static int read_all(void *buffer, size_t size)
     }
     return stopping ? -EINTR : 0;
 }
+static void trace_checksum(const struct galaxy_hab_sender *sender, uint32_t *reported)
+{
+    if (sender->checksum_retries == *reported && !sender->local_hash_failures) return;
+    *reported = sender->checksum_retries;
+    printf("HAB: checksum-retry sequence=%u retries=%u expected=%08x local=%08x localFailures=%u\n",
+        sender->checksum_sequence, sender->checksum_retries, sender->checksum_expected,
+        sender->checksum_local, sender->local_hash_failures);
+    fflush(stdout);
+}
 int main(void)
 {
     struct galaxy_hab_sender sender;
@@ -38,7 +48,7 @@ int main(void)
     struct timespec now;
     uint64_t random[2];
     uint8_t header[16], *pixels = NULL;
-    uint32_t last_size = 0, last_stride = 0, last_pixel_stride = 0;
+    uint32_t last_size = 0, last_stride = 0, last_pixel_stride = 0, reported_retries = 0;
     size_t i;
     const size_t maximum = 16u * 1024u * 1024u;
     int result, closed;
@@ -55,11 +65,15 @@ int main(void)
     if (!result) result = galaxy_hab_sender_open(&sender, &target, 1, 6, 10000,
         random[0] | 1u, random[1] | 1u, (uint64_t)now.tv_sec * 1000000u + (uint64_t)now.tv_nsec / 1000u,
         galaxy_hab_hmac_sign, &key);
+    if (!result) result = galaxy_hab_sender_enable_consumption(&sender);
     if (!result) {
         pixels = malloc(maximum);
         if (!pixels) result = -ENOMEM;
     }
-    if (!result) { puts("HAB: ready display=2 size=1920x532 slots=6"); fflush(stdout); }
+    if (!result) {
+        printf("HAB: consumption protocol=GLC2 version=%u frameChecksum=every-frame\n", GALAXY_HAB_OWNED_VERSION);
+        puts("HAB: ready display=2 size=1920x532 slots=6"); fflush(stdout);
+    }
     while (!result && !stopping) {
         uint32_t size;
         alarm(12);
@@ -69,17 +83,23 @@ int main(void)
         if (!size) break;
         if (size == UINT32_MAX) {
             /* 静态画面仍送保留帧：对端的有限失联回收不依赖View持续重绘。 */
+            alarm(2);
             if (last_size) result = galaxy_hab_sender_frame(&sender, 0, pixels, last_size,
                 last_stride, last_pixel_stride);
+            trace_checksum(&sender, &reported_retries);
+            if (!result) { printf("HAB: frame-posted ticket=%u sequence=%u\n", word(header + 12), sender.sequence); fflush(stdout); }
             continue;
         }
-        if (size > maximum || word(header + 12)) { result = -EMSGSIZE; break; }
+        if (size > maximum) { result = -EMSGSIZE; break; }
         result = read_all(pixels, size);
+        alarm(2);
         if (!result) result = galaxy_hab_sender_frame(&sender, 0, pixels, size,
             word(header + 4), word(header + 8));
+        trace_checksum(&sender, &reported_retries);
         if (!result) { last_size = size; last_stride = word(header + 4); last_pixel_stride = word(header + 8); }
+        if (!result) { printf("HAB: frame-posted ticket=%u sequence=%u\n", word(header + 12), sender.sequence); fflush(stdout); }
         if (!result && sender.sequence % 100u == 0) {
-            printf("HAB: submitted frames=%u\n", sender.sequence); fflush(stdout);
+            printf("HAB: submitted frames=%u checksumRetries=%u\n", sender.sequence, sender.checksum_retries); fflush(stdout);
         }
     }
     alarm(2);

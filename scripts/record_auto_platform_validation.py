@@ -33,6 +33,15 @@ def main():
                 assert hashlib.sha256(binary).hexdigest() == metadata['sha256']
         apps[module] = dict(package=package,sha256=sha(path),bytes=path.stat().st_size,certificate_sha256=fingerprint)
     assert len({x['certificate_sha256'] for x in apps.values()}) == 1, '同签名IPC契约不成立'
+    gpu_path=ROOT/'galaxy/service/build/outputs/apk/androidTest/debug/service-debug-androidTest.apk'
+    gpu_test=None
+    if gpu_path.is_file():
+        gpu_badging=subprocess.check_output([str(aapt),'dump','badging',str(gpu_path)],text=True)
+        assert "package: name='com.ecarx.autoservice.test'" in gpu_badging
+        gpu_cert=subprocess.check_output([str(signer),'verify','--print-certs',str(gpu_path)],text=True)
+        gpu_fingerprint=re.search(r'Signer #1 certificate SHA-256 digest: ([a-f0-9]+)',gpu_cert).group(1)
+        assert gpu_fingerprint==apps['service']['certificate_sha256']
+        gpu_test=dict(sha256=sha(gpu_path),bytes=gpu_path.stat().st_size,certificate_sha256=gpu_fingerprint,executed=False)
     tests=[]
     for folder in ['galaxy/contracts','galaxy/service','galaxy/cluster','common']:
         for file in sorted((ROOT/folder/'build/test-results/testDebugUnitTest').glob('TEST-*.xml')):
@@ -41,7 +50,7 @@ def main():
             tests.append(dict(name=result.get('name'),tests=int(result.get('tests',0)),skipped=int(result.get('skipped',0))))
     assert tests
     report=dict(recorded_at=datetime.now(ZoneInfo('Asia/Shanghai')).isoformat(),apps=apps,
-        apk_sha256=apps['mobile']['sha256'], tests=tests,total_tests=sum(x['tests'] for x in tests),
+        apk_sha256=apps['mobile']['sha256'], gpu_test=gpu_test, tests=tests,total_tests=sum(x['tests'] for x in tests),
         lint_run=False,installed=False,device_tested=False,qnx_sdk_build_complete=False,
         qnx_candidate_bundled=True,validation_command='scripts/verify_auto_platform.sh',
         source_sha256={str(p.relative_to(ROOT)):sha(p) for d in ['galaxy/contracts/src','galaxy/client/src','galaxy/service/src','galaxy/cluster/src'] for p in sorted((ROOT/d).rglob('*')) if p.is_file()})

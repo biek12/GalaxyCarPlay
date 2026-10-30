@@ -4,7 +4,7 @@ package com.ecarx.autoservice.vehicle
 internal data class SignalSpec(val key: String, val propertyId: Int, val unit: String,
     val divisor: Double = 1.0, val minimum: Double = -Double.MAX_VALUE,
     val maximum: Double = Double.MAX_VALUE, val gear: Boolean = false,
-    val normalizedId: Int = 0, val name: String = key, val mapping: Map<String, String> = emptyMap())
+    val payload: String="number", val area: Int=1, val normalizedId: Int = 0, val name: String = key, val mapping: Map<String, String> = emptyMap())
 
 internal object VehicleCatalog {
     private val l6Specs by lazy { create("L6") }
@@ -18,6 +18,16 @@ internal object VehicleCatalog {
         require(model in setOf("L6", "L7"))
         val l6 = model == "L6"
         return listOf(
+            // G733既有实测PA：读取area0；16字节availability/data/format/status，不能当VSTD防盗状态。
+            SignalSpec("driveMode",561023639,"state",payload="ecarx-pa-enum",area=0,normalizedId=10106,name="PA_DriveMode",mapping=mapOf("1" to "增程","2" to "纯电","3" to "性能","6" to "智能")),
+            // 原厂CarSignalManager及注解的只读枚举；未知枚举不沿用原始数字。
+            SignalSpec("cruiseState",557874311,"state",normalizedId=10101,name="CrsCtrlrSts",mapping=mapOf("1" to "off","2" to "standby","3" to "active")),
+            SignalSpec("regenLevel",557874243,"state",normalizedId=10102,name="EgyRgnLvlSet",mapping=mapOf("0" to "low","1" to "medium","2" to "high","3" to "auto")),
+            // CLUSTER_ADAS原厂声明；当前设定速度与实际车速保持独立。
+            SignalSpec("cruiseSetSpeed",557849309,"km/h",minimum=0.0,maximum=300.0,normalizedId=10103,name="CLUSTER_ADAS_DRVRACCRSSETSPDREQDRVRCRSSETSPDREQ"),
+            // 原始电功率/状态没有明确kW和回收方向合同，不冒充regenPowerKw。
+            SignalSpec("electricPowerRaw",557850038,"raw",normalizedId=10104,name="CLUSTER_POWERFLOW_DISPELECPWRABS"),
+            SignalSpec("electricPowerStateRaw",557850039,"raw",normalizedId=10105,name="CLUSTER_POWERFLOW_DISPELECPWRSTS"),
             SignalSpec("displaySpeed", if (l6) 557874774 else 557874774, "km/h", 1.0, normalizedId = 10001, name = "SIVehSpdIndcd", mapping = emptyMap()),
             SignalSpec("soc", if (l6) 561024567 else 561024570, "%", 1.0, normalizedId = 10002, name = "paegyhvbattsoc", mapping = emptyMap()),
             SignalSpec("gear", if (l6) 557874335 else 557874335, "raw", 1.0, normalizedId = 10003, name = "GearLvrIndcn", mapping = mapOf("0" to "P", "1" to "R", "2" to "N", "3" to "D")),
@@ -54,7 +64,7 @@ internal object VehicleCatalog {
             SignalSpec("property.10034", if (l6) 557848143 else 557848143, "raw", 1.0, normalizedId = 10034, name = "APA_INSDSNSRDSTOFRELEBLK1", mapping = emptyMap()),
             SignalSpec("property.10035", if (l6) 557848145 else 557848145, "raw", 1.0, normalizedId = 10035, name = "APA_INSDSNSRDSTOFRERIBLK1", mapping = emptyMap()),
             SignalSpec("property.10036", if (l6) 557848147 else 557848147, "raw", 1.0, normalizedId = 10036, name = "APA_OUTDSNSRDSTOFRERIBLK1", mapping = emptyMap()),
-            SignalSpec("property.10037", if (l6) 289475088 else 289475088, "raw", 1.0, normalizedId = 10037, name = "HW_KEY_INPUT", mapping = emptyMap()),
+            SignalSpec("property.10037", if (l6) 289475088 else 289475088, "raw", 1.0, payload="key-event", normalizedId = 10037, name = "HW_KEY_INPUT", mapping = emptyMap()),
             SignalSpec("lowBeam", if (l6) 557849510 else 557849510, "raw", 1.0, normalizedId = 10038, name = "CLUSTER_WARNING_EXTRLTGSTSLOBEAM", mapping = emptyMap()),
             SignalSpec("highBeam", if (l6) 557849181 else 557849181, "raw", 1.0, normalizedId = 10039, name = "CLUSTER_WARNING_EXTRLTGSTSHIBEAM", mapping = emptyMap()),
             SignalSpec("property.10040", if (l6) 557850632 else 557850632, "raw", 1.0, normalizedId = 10040, name = "LCM_EPBLAMPREQEPBLAMPREQ", mapping = mapOf("0" to "1", "1" to "0")),
@@ -93,10 +103,32 @@ internal object VehicleCatalog {
         )
     }
     fun convert(spec: SignalSpec, raw: Any?): String? {
-        val value = (raw as? Number)?.toDouble() ?: return null
+        if(spec.payload=="key-event")return when(raw){
+            is IntArray->raw.takeIf { it.size>=2&&it.size<=8 }?.joinToString(",")
+            is Array<*>->raw.takeIf { it.size in 2..8&&it.all { n->n is Int } }?.joinToString(",")
+            else->null
+        }
+        if(spec.payload=="ecarx-pa-enum"){
+            val bytes=when(raw){is ByteArray->raw;is Array<*>->if(raw.all {it is Byte})raw.map {it as Byte}.toByteArray()else return null;else->return null}
+            if(bytes.size!=16)return null
+            val buffer=java.nio.ByteBuffer.wrap(bytes).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+            val available=buffer.int;val value=buffer.int;val format=buffer.int;val status=buffer.int
+            return if(available==1&&format==0&&status==0)spec.mapping[value.toString()]else null
+        }
+        // 星枢VehicleSignalDecoder的PA合同：availability/data/format/status四个LE int。
+        // 原始16字节仍由目录保存，语义字段只使用明确可用、格式0、状态0的数据。
+        val scalar = if (raw is ByteArray) {
+            if (raw.size != 16) return null
+            val buffer = java.nio.ByteBuffer.wrap(raw).order(java.nio.ByteOrder.LITTLE_ENDIAN)
+            val available = buffer.int; val data = buffer.int; val format = buffer.int; val status = buffer.int
+            if (available != 1 || format != 0 || status != 0) return null
+            data
+        } else raw
+        val value = (scalar as? Number)?.toDouble() ?: return null
         if (!value.isFinite() || (value != 0.0 && kotlin.math.abs(value) < java.lang.Float.MIN_NORMAL)) return null
         val integral = value % 1.0 == 0.0
         if (spec.key == "gear") return if (integral) spec.mapping[value.toLong().toString()] else null
+        if(spec.key in setOf("cruiseState","regenLevel"))return if(integral)spec.mapping[value.toLong().toString()]else null
         if (integral) spec.mapping[value.toLong().toString()]?.let { return it }
         val normalized = value / spec.divisor
         val range = when (spec.key) {

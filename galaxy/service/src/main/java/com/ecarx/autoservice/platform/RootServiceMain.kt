@@ -22,6 +22,20 @@ object RootServiceMain {
         check(System.getenv("CLASSPATH")!!.substringBefore(':') == apk)
         val certificate = args[6].also { require(it.matches(Regex("[0-9a-f]{64}"))) }
             .chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+        // 取消一轮准备时，已交给app_process的启动不能撤回。新一轮可能同时到达；
+        // socket的内核绑定决定唯一owner，未取得监听权的本次进程直接退出，不创建线程或崩溃上报。
+        val server = try { LocalServerSocket(owner.socketName) }
+        catch (_: java.io.IOException) { certificate.fill(0); return }
+        com.ecarx.autoservice.ServiceTrace.configure(java.io.File("/data/user/${owner.uid / 100000}/com.ecarx.autoservice/files/diagnostics/root.log"), owner.uid)
+        com.ecarx.autoservice.ServiceTrace.event("root_helper_started")
+        val previousCrashHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, error ->
+            com.ecarx.autoservice.ServiceTrace.event("root_uncaught_${thread.name}", error)
+            previousCrashHandler?.uncaughtException(thread, error)
+        }
+        // 与星枢RootServiceMain一致。目标固件的Looper.loop会访问主Looper，
+        // 缺少初始化会令任何HandlerThread在订阅成功后崩溃并杀死整个UID0 helper。
+        if (android.os.Looper.getMainLooper() == null) android.os.Looper.prepareMainLooper()
         val specs = VehicleCatalog.forModel(args[4])
         val source = EcarxVehicleSource()
         val instance = java.util.UUID.randomUUID().toString()
@@ -29,13 +43,14 @@ object RootServiceMain {
         val peers = ConcurrentHashMap.newKeySet<LocalSocket>()
         val pool = ThreadPoolExecutor(0, 6, 30, TimeUnit.SECONDS, SynchronousQueue())
         val watchdog = Executors.newSingleThreadScheduledExecutor()
-        val server = LocalServerSocket(owner.socketName)
         fun release() {
             peers.forEach { runCatching { it.close() } }; RootHabSession.close()
             runCatching { server.close() }
         }
         watchdog.scheduleWithFixedDelay({
-            if (!owner.valid() || (peers.isEmpty() && SystemClock.elapsedRealtime() - lastRequest.get() > 300000)) {
+            val ownerValid = owner.valid()
+            if (!ownerValid || (peers.isEmpty() && SystemClock.elapsedRealtime() - lastRequest.get() > 300000)) {
+                com.ecarx.autoservice.ServiceTrace.event(if (ownerValid) "root_exit_idle" else "root_exit_owner_invalid")
                 release()
                 // 星枢实车已确认跨线程close不能可靠唤醒accept，最后只结束本helper。
                 Process.killProcess(Process.myPid())
@@ -59,6 +74,7 @@ object RootServiceMain {
                             val operation = input.readInt()
                             lastRequest.set(SystemClock.elapsedRealtime())
                             if (operation == 2) {
+                                com.ecarx.autoservice.ServiceTrace.event("root_exit_requested")
                                 output.writeInt(0); output.flush(); release(); Process.killProcess(Process.myPid()); return@execute
                             }
                             if (operation == 6) { RootHabSession.run(client, input, output, apk); return@execute }
@@ -70,15 +86,20 @@ object RootServiceMain {
                                     3 -> ShellExecutor.execute(request.getString("command"), request.getInt("timeoutMillis"))
                                     4 -> QnxReceiverDeployer.deploy(request)
                                     5 -> QnxReceiverDeployer.stop(request)
-                                    7 -> AdbKeyAuthorization.authorize(request.getString("publicKey"))
+                                    7 -> AdbKeyAuthorization.authorize(request.getString("publicKey"), request.optBoolean("forceReload"))
+                                    8 -> synchronized(source) { source.close(); JSONObject().put("state", "vehicle_stopped") }
                                     else -> error("unknown_operation")
                                 }
                             } catch (error: Exception) {
+                                com.ecarx.autoservice.ServiceTrace.event("root_operation_$operation", error)
                                 JSONObject().put("error", error.javaClass.simpleName).put("stage", error.message?.takeIf { it.matches(Regex("[a-z_]+")) } ?: "root_operation_failed")
                             }
                             RootWire.write(output, result)
                         }
-                    } } catch (_: Exception) { /* EOF/timeout/owner失效均结束连接，不输出命令或认证内容。 */ }
+                    } } catch (error: Exception) {
+                        if (error !is java.io.EOFException && error !is java.net.SocketTimeoutException)
+                            com.ecarx.autoservice.ServiceTrace.event("root_peer_failed", error)
+                    }
                     finally { peers.remove(peer); lastRequest.set(SystemClock.elapsedRealtime()) }
                 } } catch (_: RejectedExecutionException) { peers.remove(peer); peer.close() }
             }

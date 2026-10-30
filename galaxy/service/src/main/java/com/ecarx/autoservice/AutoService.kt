@@ -12,6 +12,7 @@ import com.ecarx.autoservice.platform.RootServiceClient
 import com.ecarx.autoservice.platform.PlatformCoordinator
 import com.galaxy.auto.contract.*
 import com.ecarx.autoservice.startup.AutoStartup
+import com.ecarx.autoservice.settings.ServiceFeatures
 
 /** 唯一平台与仪表输出owner。Binder入口只鉴权/排队，车辆、封面和客户端回调各用worker。 */
 class AutoService : Service() {
@@ -28,11 +29,16 @@ class AutoService : Service() {
     private val clients = ClientRegistry { owner -> main.post { detach(owner) } }
     private var composition: GalaxyHabComposition? = null
     private lateinit var platform: PlatformCoordinator
+    @Volatile private var features = ServiceFeatures()
+    private var platformGeneration = 0L
     private var projectionRequested = false
     private var platformReady = false
     private var rootReady = false
     private var preparing = false
-    private val surfaces = mutableMapOf<String, Surface>()
+    private val surfaces = mutableMapOf<String, Pair<String, Surface>>()
+    private val scenes = mutableMapOf<String, SceneConfiguration>()
+    private var previewTarget: Surface? = null
+    private var projectionPolicy = ProjectionPolicy()
     private var media = Bundle()
     private var navigation = Bundle()
     private var signals = Bundle()
@@ -40,6 +46,9 @@ class AutoService : Service() {
     @Volatile private var closed = false
     private var status = "created"
     @Volatile private var paused = false
+    private val inputEpoch=java.util.UUID.randomUUID().toString()
+    private var menuSequence=0L
+    private var menuReceivedAt=0L
     private var artworkVersion = 0L
     private var artworkGeneration = 0L
     private val notify = Runnable {
@@ -72,10 +81,11 @@ class AutoService : Service() {
             require(AutoContract.roleValid(role))
             val packages = packageManager.getPackagesForUid(calling).orEmpty()
             if (role == AutoContract.MAP) check("com.ecarx.carplay" in packages)
-            if (role == AutoContract.THEME) check(AutoContract.CLUSTER_PACKAGE in packages)
+            if (role == AutoContract.THEME || role == AutoContract.PREVIEW) check(AutoContract.CLUSTER_PACKAGE in packages)
             enqueue {
+                if(role==AutoContract.PREVIEW)clients.role(AutoContract.PREVIEW)?.let { old->this@AutoService.detach(old.owner) }
                 clients.attach(owner, calling, role, callback)
-                surfaces[role]?.let { surface -> callbacks.post { runCatching { callback.onSurface(role, surface) } } }
+                surfaces[role]?.let { (kind,surface) -> callbacks.post { runCatching { callback.onSurface(kind, surface) } } }
                 publish()
             }
         }
@@ -146,7 +156,7 @@ class AutoService : Service() {
                     callbacks.post { runCatching { result.onResult(Bundle().apply { putString("error", "shell_busy") }) } }
                 } else shell.post {
                     val response = runCatching {
-                        check(!closed && !paused) { "platform_stopped" }
+                        check(!closed && !paused && AutoStartup.enabled(this@AutoService)) { "platform_stopped" }
                         shellAccess.executeShell(command, timeoutMillis, transport)
                     }
                     val output = Bundle().apply {
@@ -172,23 +182,77 @@ class AutoService : Service() {
                 } }
             }
         }
+        override fun configureScene(owner: IBinder, value: Bundle) {
+            val calling=uid();val safe=SceneConfiguration.from(value)
+            enqueue {
+                val lease=clients.require(owner,calling)
+                check(lease.role==AutoContract.THEME||lease.role==AutoContract.PREVIEW)
+                scenes[lease.role]=safe
+                val existing=composition
+                ensureComposition(includePreview=lease.role==AutoContract.PREVIEW)
+                if(existing!=null)composition?.configureScene(lease.role,safe)
+            }
+        }
+        override fun setPreviewSurface(owner: IBinder, surface: Surface?) {
+            val calling=uid()
+            main.post {
+                if(closed){surface?.release();return@post}
+                try {
+                    check(clients.require(owner,calling).role==AutoContract.PREVIEW)
+                    val old=previewTarget
+                    ensureComposition(includePreview=surface!=null)
+                    composition?.setPreviewSurface(surface)
+                    previewTarget=surface
+                    if(surface==null){scenes.remove(AutoContract.PREVIEW);composition?.clearScene(AutoContract.PREVIEW)}
+                    old?.release()
+                    updateProjection()
+                }catch(error: Exception){surface?.release();state("preview:${error.javaClass.simpleName}")}
+            }
+        }
+        override fun setProjectionPolicy(owner: IBinder, value: Bundle) {
+            val calling=uid();val safe=ProjectionPolicy.from(value)
+            check(AutoContract.CLUSTER_PACKAGE in packageManager.getPackagesForUid(calling).orEmpty())
+            enqueue {
+                clients.require(owner,calling)
+                projectionPolicy=safe
+                getSharedPreferences("platform",0).edit().putString("projectionMode",safe.mode)
+                    .putInt("projectionFps",safe.maximumFps).putInt("animationFps",safe.animationFps).apply()
+                composition?.setPolicy(safe);publish()
+            }
+        }
     }
     override fun onCreate() {
         super.onCreate()
+        ServiceTrace.configure(java.io.File(filesDir, "diagnostics/app.log"))
+        ServiceTrace.event("service_created")
+        val prefs=getSharedPreferences("platform",0)
+        features = ServiceFeatures.read(this)
+        prefs.edit().putString("vehicleMode", if (features.root) "root" else "app").apply()
+        val max=prefs.getInt("projectionFps",30).coerceIn(1,60)
+        projectionPolicy=ProjectionPolicy(prefs.getString("projectionMode","content-aware")!!,max,prefs.getInt("animationFps",30).coerceIn(1,max))
         shellAccess = com.ecarx.autoservice.platform.PlatformAccess(this)
         collector = VehicleCollector(this, inventory, { bundle, state, count ->
             signals = bundle; discovery = state; discoveredCount = count; publish()
-        }, { if (::platform.isInitialized) platform.rootLost() })
+        }, { if (::platform.isInitialized) platform.rootLost() },menuPressed={
+            menuReceivedAt=SystemClock.elapsedRealtime();++menuSequence;publish()
+        })
         paused = !AutoStartup.enabled(this)
         startPlatformForeground()
-        if (!paused) { platform = newPlatform(); platform.start(); collector.start(); AutoStartup.schedule(this) }
+        if (!paused) { platform = newPlatform(); platform.start(); if (features.vehicle) collector.start(); AutoStartup.schedule(this) }
         else status = "stopped"
         publish()
     }
-    private fun newPlatform() = PlatformCoordinator(this, ::state) { ready ->
-        rootReady = ready
-        publish()
-        if (!ready) { platformReady = false; composition?.setSessionActive(false) }
+    private fun newPlatform(): PlatformCoordinator {
+        val ticket = ++platformGeneration
+        return PlatformCoordinator(this, report = { value -> main.post {
+            if (!closed && !paused && ticket == platformGeneration) state(value)
+        } }, foundationChanged = { ready ->
+            if (!closed && !paused && ticket == platformGeneration) {
+                rootReady = ready && features.root
+                publish()
+            }
+            // 独立车辆/Root维护的结果不能关闭已由普通App握手成功的HAB会话。
+        }, features = features)
     }
     private fun startPlatformForeground() {
         val manager = getSystemService(NotificationManager::class.java)
@@ -198,13 +262,17 @@ class AutoService : Service() {
             .setContentTitle("AutoService").setContentText("车辆数据与仪表投射").setContentIntent(intent).build())
     }
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (intent?.action == "stop") {
+        if (intent?.action == "stop" || (intent?.action != "start" && !AutoStartup.enabled(this))) {
             AutoStartup.setEnabled(this, false)
+            features = ServiceFeatures.read(this)
             runCatching { stopService(Intent().setComponent(ComponentName(AutoContract.CLUSTER_PACKAGE, "com.galaxy.autocluster.ClusterRenderService"))) }
-            paused = true; projectionRequested = false; platformReady = false; rootReady = false; preparing = false
+            paused = true; ++platformGeneration
+            projectionRequested = false; platformReady = false; rootReady = false; preparing = false
             composition?.close(); composition = null; surfaces.clear()
             clients.all().forEach { lease -> callbacks.post { runCatching { lease.callback.onProjectionState(lease.role, "surface_closed") } } }
-            collector.stop(); if (::platform.isInitialized) platform.close(); shellAccess.cancel()
+            collector.stop(); signals = Bundle(); discovery = "stopped"; discoveredCount = 0
+            if (::platform.isInitialized) platform.close()
+            shellAccess.cancel()
             status = "stopped"; publish(); stopForeground(STOP_FOREGROUND_REMOVE); stopSelf()
             return START_NOT_STICKY
         }
@@ -213,56 +281,96 @@ class AutoService : Service() {
             runCatching { stopService(Intent().setComponent(ComponentName(AutoContract.CLUSTER_PACKAGE, "com.galaxy.autocluster.ClusterRenderService"))) }
         }
         if (intent?.action == "start") AutoStartup.setEnabled(this, true)
-        if (!AutoStartup.enabled(this)) {
-            stopForeground(STOP_FOREGROUND_REMOVE); stopSelf()
-            return START_NOT_STICKY
-        }
+        applyFeatureSettings()
         if (paused) {
-            paused = false; platform = newPlatform(); platform.start(); collector.start(); startPlatformForeground()
+            paused = false; platform = newPlatform(); platform.start(); if (features.vehicle) collector.start(); startPlatformForeground()
             if (clients.all().any { it.role != AutoContract.OBSERVER }) { ensureComposition(); updateProjection() }
         }
-        if (intent?.action == "prepare") platform.retry()
+        if (intent?.action == "prepare") { shellAccess.cancel(); platform.retry() }
         if (intent?.action == "model") {
+            intent.getStringExtra("model")?.takeIf { it in setOf("L6", "L7") }?.let {
+                getSharedPreferences("platform", 0).edit().putString("model", it).commit()
+            }
             composition?.setSessionActive(false)
-            collector.stop(); platform.close(); platform = newPlatform(); platform.start(); collector.start()
+            collector.stop(); ++platformGeneration; platform.close(); platform = newPlatform(); platform.start(); if (features.vehicle) collector.start()
             projectionRequested = false; platformReady = false; updateProjection()
         }
-        if (intent?.action == "cluster" || getSharedPreferences("platform", 0).getBoolean("themeEnabled", false)) runCatching {
+        if (features.projection && (intent?.action == "cluster" || getSharedPreferences("platform", 0).getBoolean("themeEnabled", false))) runCatching {
             startForegroundService(Intent().setComponent(ComponentName(AutoContract.CLUSTER_PACKAGE,
                 "com.galaxy.autocluster.ClusterRenderService")))
         }.onFailure { state("cluster:${it.javaClass.simpleName}") }
+        publish()
         return START_STICKY
     }
+    /** 主线程应用用户选择。连接配置换代，投屏和车辆各自释放；外部客户端不能覆盖这些总开关。 */
+    private fun applyFeatureSettings() {
+        val next = ServiceFeatures.read(this)
+        val previous = features
+        if (next == previous) return
+        features = next
+        val connectionsChanged = previous.adb != next.adb || previous.root != next.root
+        if (connectionsChanged) {
+            ++platformGeneration
+            shellAccess.cancel()
+            rootReady = false
+            if (::platform.isInitialized) platform.close(releaseRoot = !next.root)
+            getSharedPreferences("platform", 0).edit().putString("vehicleMode", if (next.root) "root" else "app").apply()
+            if (!paused) { platform = newPlatform(); platform.start() }
+            composition?.rootPolicyChanged()
+        }
+        if (previous.vehicle != next.vehicle || connectionsChanged) {
+            collector.stop()
+            signals = Bundle(); discovery = if (next.vehicle) "not_connected" else "disabled"; discoveredCount = 0
+            if (!paused && next.vehicle) collector.start()
+        }
+        if (previous.projection != next.projection) updateProjection()
+        status = "settings_applied"
+        publish()
+    }
     override fun onBind(intent: Intent?): IBinder? = if (intent?.action == AutoContract.ACTION) binder else null
-    private fun ensureComposition() {
-        if (composition != null || paused || clients.all().none { it.role != AutoContract.OBSERVER && it.active }) return
-        composition = GalaxyHabComposition(this, { role, surface ->
-            if (surface == null) surfaces.remove(role) else surfaces[role] = surface
+    private fun ensureComposition(includePreview: Boolean = false) {
+        if (composition != null || paused || (!includePreview && (!features.projection || clients.all().none { AutoContract.producesOutput(it.role) && it.active }))) return
+        composition = GalaxyHabComposition(this, { kind, surface ->
+            val role=kind.substringBefore('@')
+            if (surface == null) surfaces.remove(role) else surfaces[role] = kind to surface
             clients.role(role)?.callback?.let { callback -> callbacks.post {
-                runCatching { if (surface != null) callback.onSurface(role, surface) else callback.onProjectionState(role, "surface_closed") }
+                runCatching { if (surface != null) callback.onSurface(kind, surface) else callback.onProjectionState(role, "surface_closed") }
             } }
-        }, ::state)
+        }, ::state, prepareReceiver = { complete ->
+            if (!features.root || paused) { complete(false); return@GalaxyHabComposition }
+            preparing = true
+            platform.prepare(true) { ready ->
+                preparing = !ready
+                complete(ready)
+            }
+        }, connectionChanged = { ready -> platformReady = ready; if (ready) preparing = false; publish() })
+        composition?.setPolicy(projectionPolicy)
+        scenes.forEach { (role,scene) -> composition?.configureScene(role,scene) }
+        composition?.setPreviewSurface(previewTarget)
     }
     private fun updateProjection() {
         val map = clients.role(AutoContract.MAP)?.active == true
-        val active = !paused && clients.all().any { it.role != AutoContract.OBSERVER && it.active }
+        val active = !paused && features.projection && clients.all().any { AutoContract.producesOutput(it.role) && it.active }
         if (active) ensureComposition()
         composition?.setMapActive(map)
-        if (active && platformReady) composition?.setSessionActive(true)
         if (active != projectionRequested) {
             projectionRequested = active
-            if (!active) composition?.setSessionActive(false)
             preparing = active
-            platform.prepare(active) { ready -> preparing = false; platformReady = ready; if (projectionRequested && !paused) composition?.setSessionActive(ready) }
+            composition?.setSessionActive(active)
+            if (!active) { platformReady = false; preparing = false }
+            if (!active) platform.prepare(false) {}
         }
-        if (!active) { composition?.close(); composition = null; surfaces.clear() }
+        if (!active && previewTarget==null) { composition?.close(); composition = null; surfaces.clear() }
     }
     private fun detach(owner: IBinder) {
         val old = clients.remove(owner) ?: return
+        scenes.remove(old.role)
+        if(old.role==AutoContract.THEME||old.role==AutoContract.PREVIEW)composition?.clearScene(old.role)
+        if(old.role==AutoContract.PREVIEW){previewTarget?.release();previewTarget=null;composition?.setPreviewSurface(null)}
         if (old.role == AutoContract.MAP) { media = Bundle(); navigation = Bundle(); ++artworkGeneration
             java.io.File(cacheDir, "artwork.png").delete(); ++artworkVersion }
         updateProjection()
-        if (clients.all().none { it.role != AutoContract.OBSERVER }) {
+        if (clients.all().none { AutoContract.producesOutput(it.role) } && previewTarget==null) {
             composition?.close(); composition = null; surfaces.clear()
         }
         publish()
@@ -275,7 +383,13 @@ class AutoService : Service() {
             putString("vehicleDiscovery", discovery); putInt("vehiclePropertyCount", discoveredCount); putInt("vehicleSampledCount", inventory.count()); putInt("vehicleValidCount", inventory.validCount())
             putInt("version", AutoContract.VERSION); putLong("sequence", ++sequence); putLong("receivedAt", SystemClock.elapsedRealtime())
             putBoolean("rootReady", rootReady); putBoolean("qnxReady", platformReady)
+            putBoolean("automatic", AutoStartup.enabled(this@AutoService))
+            putBundle("features", features.bundle())
+            putBoolean("projectionRequested", projectionRequested)
+            putString("foundation", foundationEvidence())
             putString("status", status); putBundle("vehicle", Bundle(signals)); putBundle("media", Bundle(media)); putBundle("navigation", Bundle(navigation))
+            putString("inputEpoch",inputEpoch);putLong("menuSequence",menuSequence);putLong("menuReceivedAt",menuReceivedAt)
+            putBundle("projectionPolicy",projectionPolicy.bundle())
             putString("vehicleMode", getSharedPreferences("platform", 0).getString("vehicleMode", "app"))
             putString("model", getSharedPreferences("platform", 0).getString("model", "L6"))
             putLong("artworkVersion", artworkVersion)
@@ -285,7 +399,15 @@ class AutoService : Service() {
         callbacks.removeCallbacks(notify); if (recipients.isNotEmpty()) callbacks.post(notify)
     }
     override fun dump(fd: java.io.FileDescriptor, writer: java.io.PrintWriter, args: Array<out String>) {
+        if ("--foundation-check" in args) {
+            writer.println("FOUNDATION_CHECK=" + foundationEvidence())
+            return
+        }
         val snapshot = synchronized(snapshotLock) { Bundle(latest) }
+        if ("--cluster-fields" in args) {
+            writer.println("CLUSTER_FIELDS=" + ClusterFieldDiagnostics.collect(snapshot, android.os.SystemClock.elapsedRealtime()))
+            return
+        }
         writer.println("AUTOSERVICE_DIAGNOSTIC version=${AutoContract.VERSION}")
         for (key in listOf("status", "model", "vehicleMode", "vehicleDiscovery")) writer.println("$key=${snapshot.getString(key)}")
         for (key in listOf("vehiclePropertyCount", "vehicleSampledCount", "vehicleValidCount")) writer.println("$key=${snapshot.getInt(key)}")
@@ -293,15 +415,23 @@ class AutoService : Service() {
         writer.println("clients=" + clients.all().joinToString { "${it.role}:${it.active}" })
         writer.println("hab=" + (composition?.metrics() ?: "inactive"))
         writer.println("automatic=" + AutoStartup.enabled(this))
+        writer.println("features=$features")
         writer.println("adbIdentityConfigured=" + java.io.File(noBackupFilesDir, "adb/client.pem").exists())
         writer.println("qnxCredentialsConfigured=" + java.io.File(noBackupFilesDir, "qnx-login.json").exists())
     }
+    private fun foundationEvidence(): String = when {
+        paused -> "{\"state\":\"stopped\"}"
+        !features.adb && !features.root -> "{\"state\":\"disabled\"}"
+        ::platform.isInitialized -> platform.foundationEvidence()
+        else -> "{}"
+    }
     override fun onDestroy() {
-        closed = true
+        closed = true; ++platformGeneration
         composition?.close(); composition = null
         if (::platform.isInitialized) platform.close()
         shellAccess.close(); shell.close()
         clients.close(); surfaces.clear()
+        previewTarget?.release();previewTarget=null;scenes.clear()
         collector.close()
         callbacks.close()
         artwork.close()

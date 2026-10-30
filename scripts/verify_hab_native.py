@@ -11,7 +11,7 @@ ROOT = Path(__file__).resolve().parents[1]
 NATIVE = ROOT / "galaxy/service/src/main/cpp/hab"
 SOURCES = (
     "galaxy_hab_transport.c", "galaxy_hab_linux.c", "galaxy_hab_pixels.c",
-    "galaxy_hab_protocol.c", "galaxy_hab_sender.c", "galaxy_hab_hmac.c", "galaxy_hab_receiver.c",
+    "galaxy_hab_protocol.c", "galaxy_hab_owned.c", "galaxy_hab_sender.c", "galaxy_hab_hmac.c", "galaxy_hab_receiver.c",
 )
 
 
@@ -35,7 +35,7 @@ def main():
             parser.error("缺少已配置QNX SDK qcc；主机合同测试已执行，不冒充QNX目标编译")
         output = ROOT / ".work/hab-native/qnx-aarch64le"
         output.mkdir(parents=True, exist_ok=True)
-        sources = ["galaxy_hab_protocol.c", "galaxy_hab_hmac.c", "galaxy_hab_receiver.c",
+        sources = ["galaxy_hab_protocol.c", "galaxy_hab_owned.c", "galaxy_hab_hmac.c", "galaxy_hab_receiver.c",
                    "galaxy_hab_qnx.c", "galaxy_hab_qnx_main.c"]
         subprocess.run([compiler, "-Vgcc_ntoaarch64le", "-std=c11", "-Wall", "-Wextra",
                         "-Wpedantic", "-Werror", "-I", str(NATIVE),

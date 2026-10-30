@@ -15,6 +15,6 @@ python3 scripts/verify_hab_native.py --android 2>&1 | tee "$CACHE/logs/verify-au
   -I scripts/verify/lib/robolectric-offline.init.gradle \
   :auto-contracts:testDebugUnitTest :service:testDebugUnitTest :cluster:testDebugUnitTest \
   :common:testDebugUnitTest --tests '*ClusterMusicTest' --tests '*GalaxyL6HabFrameFormatTest' \
-  :service:assembleDebug :cluster:assembleDebug :mobile:assembleDebug 2>&1 | tee "$CACHE/logs/verify-auto-platform.log"
+  :service:assembleDebug :service:assembleDebugAndroidTest :cluster:assembleDebug :mobile:assembleDebug 2>&1 | tee "$CACHE/logs/verify-auto-platform.log"
 python3 -m unittest discover -s scripts/tests -p 'test_hab*.py'
 python3 scripts/record_auto_platform_validation.py
