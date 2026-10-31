@@ -68,6 +68,13 @@ internal interface CarPlayHostProduct {
     fun clusterStreamChanged(active: Boolean) = Unit
     fun clusterGuidanceChanged(guidance: com.shilapi.xcertplay.hud.ClusterTurnGuidance?) = Unit
     fun keepsClusterOutputWhileMapIdle(): Boolean = false
+    /**
+     * 产品是否让iPhone接收车速/挡位；null时沿用上游BYD开关与ECARX SDK判定。
+     * 产品实现必须由自有来源（如平台服务订阅）支撑，不能用“SDK存在”代替车型核验。
+     */
+    fun vehicleSpeedToIphone(): Boolean? = null
+    /** 产品自有轮速源；与[vehicleSpeedToIphone]配套，位置仍由核心按产品定位合同选择。 */
+    fun vehicleSpeedSource(): com.shilapi.xcertplay.transport.VehicleSpeedSource? = null
     fun installChrome(root: FrameLayout, replacing: View, before: View?, wireless: Boolean,
                       retry: () -> Unit): HostChromeBinding
     fun onHardwareKey(controller: CarPlayController?, event: KeyEvent): Boolean

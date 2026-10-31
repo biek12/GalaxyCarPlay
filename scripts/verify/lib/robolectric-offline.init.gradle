@@ -3,7 +3,7 @@
 // 并在离线依赖目录已备齐时强制离线取物。不进入 APK、不进入产品源集、不改依赖版本与测试断言。
 //
 // 缓存根目录由 GALAXY_VERIFY_CACHE 指定；缺省为仓库根下 .work（该目录已被 .gitignore 排除）。
-def cacheRoot = new File(System.getenv('GALAXY_VERIFY_CACHE') ?: new File(rootDir, '.work').toString()).absoluteFile
+def cacheRoot = new File(System.getenv('GALAXY_VERIFY_CACHE') ?: new File(gradle.startParameter.currentDir, '.work').toString()).absoluteFile
 def dependencyDir = new File(cacheRoot, 'robolectric-deps')
 // Robolectric 运行时会在 user.home 下建下载锁与缓存，受限环境不可写真实用户目录。
 def sandboxHome = new File(cacheRoot, 'android-user-home')

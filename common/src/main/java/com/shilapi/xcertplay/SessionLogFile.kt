@@ -3,46 +3,77 @@ package com.shilapi.xcertplay
 import java.io.Closeable
 import java.io.File
 
-/** 由装配方提供已脱敏上下文；核心只关心不透明标识和独立头部，不解析车型或产品字段。 */
+/** 由装配方提供已脱敏上下文；核心不解析车型或产品字段。 */
 internal interface DiagnosticLogContext {
     val id: String
     val header: String
 }
 
-/** 每行先脱敏再落盘，按UTF-8总字节预算轮转；上下文的脱敏由注入方负责。 */
+/** 写盘/轮转在有界后台队列；入队前脱敏，并冻结配置、清理代次和reset代次。 */
 internal class SessionLogFile(
     val file: File,
     private val archiveNames: List<String> = ARCHIVE_NAMES,
 ) : Closeable {
     private val lock = storageLock
-    private var closed = false
+    @Volatile private var closed = false
     @Volatile var context: DiagnosticLogContext? = null
+    @Volatile private var resetGeneration = 0L
     private var writtenConfiguration: String? = null
+    private data class Entry(val line: String, val evidence: DiagnosticLogContext?,
+        val storageGeneration: Long, val resetGeneration: Long)
+    private var reportedDrops = 0L
 
     init {
         require(archiveNames.isNotEmpty() && archiveNames.distinct().size == archiveNames.size)
         require(archiveNames.all { it.isNotBlank() && File(it).name == it && it !in setOf(".", "..", file.name) })
     }
 
+    private val writer: BoundedDiagnosticWriter<Entry> = BoundedDiagnosticWriter(MAX_PENDING, ::drain)
+
     fun reset(header: String) = synchronized(lock) {
         if (!closed) {
+            resetGeneration++
             file.parentFile?.mkdirs()
             rotate()
             file.writeText("")
             writtenConfiguration = null
             notifyStorage(true)
-            append(header)
+            DiagnosticRedactor.redact(header)?.let { write(it, null) }
         }
     }
 
-    fun append(line: String, evidence: DiagnosticLogContext? = context) = synchronized(lock) {
-        if (closed) return@synchronized
-        val safe = DiagnosticRedactor.redact(line) ?: return@synchronized
+    /** 连接/UI线程不等待文件锁；队列从不保存未脱敏正文。 */
+    fun append(line: String, evidence: DiagnosticLogContext? = context) {
+        if (closed) return
+        val generation = AsyncDiagnosticLog.currentGeneration()
+        val epoch = resetGeneration
+        val safe = DiagnosticRedactor.redact(line) ?: return
+        writer.enqueue(Entry(safe, evidence, generation, epoch))
+    }
+
+    /** AsyncDiagnosticLog已有线程和代次保护，直接写盘，避免双层队列。 */
+    fun appendNow(line: String, evidence: DiagnosticLogContext? = context) = synchronized(lock) {
+        if (!closed) DiagnosticRedactor.redact(line)?.let { write(it, evidence) }
+        Unit
+    }
+
+    private fun drain(entry: Entry): Unit = synchronized(lock) {
+        if (entry.storageGeneration != AsyncDiagnosticLog.currentGeneration() ||
+            entry.resetGeneration != resetGeneration) return@synchronized
+        val drops = writer.droppedCount
+        if (drops > reportedDrops) {
+            write("${drops - reportedDrops} lines dropped", entry.evidence)
+            reportedDrops = drops
+        }
+        // 关闭前已接受的行允许有限flush；关闭后外部迟到append/appendNow均拒绝。
+        write(entry.line, entry.evidence)
+    }
+
+    private fun write(safe: String, evidence: DiagnosticLogContext?) {
         val bytes = ((evidence?.let { "config_ref=${it.id} " } ?: "") + safe + "\n").toByteArray(Charsets.UTF_8)
         runCatching {
             file.parentFile?.mkdirs()
             val header = evidence?.let { (it.header + "\n").toByteArray(Charsets.UTF_8) }
-            // 实际写入点核总预算，不依赖装配方预算，也不把字符数误作磁盘字节数。
             if (bytes.size + (header?.size ?: 0) > MAX_BYTES) return@runCatching
             val needsHeader = header != null && (writtenConfiguration != evidence?.id || file.length() == 0L)
             val rotated = file.length() + bytes.size + (if (needsHeader) header!!.size else 0) > MAX_BYTES
@@ -52,15 +83,15 @@ internal class SessionLogFile(
                 writtenConfiguration = null
             }
             if (header != null && (writtenConfiguration != evidence?.id || file.length() == 0L)) {
-                // 不重用普通行的截断器；此头部只能来自已脱敏并校验摘要的配置证据。
                 file.appendBytes(header)
                 writtenConfiguration = evidence?.id
             }
             file.appendBytes(bytes)
             notifyStorage(rotated)
         }
-        Unit
     }
+
+    internal fun awaitIdle(timeoutMillis: Long): Boolean = writer.awaitIdle(timeoutMillis)
 
     private fun rotate() {
         if (!file.exists() || file.length() == 0L) return
@@ -72,14 +103,20 @@ internal class SessionLogFile(
         file.copyTo(File(file.parentFile, archiveNames.first()), overwrite = true)
     }
 
-    override fun close() = synchronized(lock) { closed = true }
+    override fun close() {
+        closed = true
+        writer.close()
+        writer.awaitIdle(CLOSE_FLUSH_MILLIS)
+    }
+
     private fun notifyStorage(rescan: Boolean) { runCatching { storageChanged?.invoke(file, rescan) } }
 
     companion object {
-        // 写入、轮转、清理与产品保留策略共用一个边界，不在清理后回写旧队列。
         internal val storageLock = Any()
         @Volatile internal var storageChanged: ((File, Boolean) -> Unit)? = null
         const val MAX_BYTES = 512 * 1024L
+        private const val MAX_PENDING = 4096
+        private const val CLOSE_FLUSH_MILLIS = 250L
         private val ARCHIVE_NAMES = listOf("previous.log") + (2..7).map { "previous-$it.log" }
         val REPORT_NAMES = ARCHIVE_NAMES.reversed() + "diplay.log"
     }

@@ -72,6 +72,8 @@ class CarPlayRuntimeConfig(
     val existingWifiPassphrase: String = "",
     /** 可选部署信道集合及优先顺序；null保持核心默认计划，不读取产品地区或系统国家码。 */
     wifiP2pAllowedChannels: List<Int>? = null,
+    /** Interface override for units whose station LAN runs on an interface Android does not report as Wi-Fi, e.g. a USB NIC on eth1. */
+    val existingWifiInterface: String? = null,
 ) {
     val wifiP2pAllowedChannels: List<Int>? = wifiP2pAllowedChannels?.let {
         java.util.Collections.unmodifiableList(ArrayList(it))

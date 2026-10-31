@@ -96,6 +96,30 @@ class GalaxyDiagnosticLogTest {
         } finally { folder.deleteRecursively() }
     }
 
+    @Test fun directFileQueueCannotRestoreClearedOrPreviousSessionLines() {
+        val folder = Files.createTempDirectory("galaxy-direct-log-generation").toFile()
+        val log = SessionLogFile(File(folder, "debug.log"))
+        try {
+            synchronized(SessionLogFile.storageLock) {
+                log.append("stage=before-clear")
+                AsyncDiagnosticLog.clearGalaxy(folder)
+            }
+            assertTrue(log.awaitIdle(2_000))
+            assertFalse(log.file.exists())
+            synchronized(SessionLogFile.storageLock) {
+                log.append("stage=before-reset")
+                log.reset("session=current")
+                log.append("stage=current")
+            }
+            assertTrue(log.awaitIdle(2_000))
+            val content = log.file.readText()
+            assertTrue(content.contains("session=current"))
+            assertTrue(content.contains("stage=current"))
+            assertFalse(content.contains("before-clear"))
+            assertFalse(content.contains("before-reset"))
+        } finally { log.close(); folder.deleteRecursively() }
+    }
+
     @Test fun clearRejectsNonLeafNamesBeforeTouchingAnyOwnedFile() {
         val folder = Files.createTempDirectory("galaxy-diagnostic-clear-input").toFile()
         try {
@@ -144,6 +168,7 @@ class GalaxyDiagnosticLogTest {
             assertTrue(log.file.readText().contains(first.header))
             assertFalse(log.file.readText().contains(next.header))
             repeat(800) { log.append("stage=rotate count=$it " + "界".repeat(650), first) }
+            assertTrue(log.awaitIdle(10_000))
             assertTrue(log.file.length() <= SessionLogFile.MAX_BYTES)
             assertEquals(first.header, log.file.readLines().first())
             assertTrue(File(folder, "previous.log").isFile)

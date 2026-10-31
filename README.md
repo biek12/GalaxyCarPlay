@@ -1,5 +1,9 @@
 # GalaxyPlay
 
+2026-10-31：[车辆数据经AutoService订阅（轮速接入）](docs/AutoService车速订阅-20261031.md)：契约升v3，新增按需车辆信号订阅（`setVehicleFeed`/`onVehicleFeed`）；CarPlay 只订阅 `displaySpeed`/`gear` 生成 iAP2 `$PASCD`，不再反射厂商SDK、不需要ADB/Root；位置仍走本机provider。离线回归与三APK编译见记录；L6行驶车速、`km/h`单位、有无GPS及iPhone侧是否采用仍需实车验证。
+
+2026-10-31：[DiPlay v0.2.22三方迁移](docs/DiPlay-v0.2.22核心迁移.md)：保留Galaxy车型、微信电话通道、原车媒体、HAB和独立应用适配，整合官方固定发布核心。冲突处理、发布SHA、回归及APK见记录；智能显示缩放回退和原厂DIM歌词消费仍待实车定位。
+
 2026-10-30：[AutoService界面与功能开关整改](docs/AutoService界面与功能开关整改-20261030.md)：Flyme原生日夜卡片、运行概览、自动运行及投屏/车辆数据/本机ADB/Root独立开关、全部关闭；设置接实际启停与持久化。assembleDebug与原签名核验通过，已在隔离Android11模拟器安装并取得日夜/关闭/诊断截图；全部关闭后重开App保持设置。尚未车机安装或实车验收。
 
 当前总览：[哪些已跑通、哪些未跑通（2026-10-30）](docs/当前跑通状态-20261030.md)。统一区分指定L6实车成功、出图但不稳定、已实现待实测与未完成；历史记录保留各自轮次边界。
@@ -30,7 +34,7 @@ AutoService整改已落入源码并产出APK：复用星枢TLS/Root流程，内�
 
 新车机 CarPlay 接收端项目。应用显示名 **CarPlay**，包名 **com.ecarx.carplay**。首验为 **银河 L6 2023 年 Max / FlymeAuto 2.3.1**，L7 随后适配。
 
-当前已进入**多应用实施阶段**：CarPlay保留官方DiPlay v0.2.21核心与Galaxy适配；`galaxy/service`建立独立AutoService（`com.ecarx.autoservice`），集中车辆数据、Root/ADB、保活与HAB合成；`galaxy/cluster`为独立仪表，应用通过公共契约通信。新三个APK编译通过；本轮不跑Lint，实车断开后未安装或验收这次拆分。当前实现、回归结果和测试包流程见[AutoService实施与测试](docs/AutoService实施与测试.md)。此前CarPlay/人工帧的现场结果按各自记录保留，不能代验新三App。
+当前已进入**多应用实施阶段**：CarPlay采用官方DiPlay v0.2.22固定发布核心与Galaxy适配；`galaxy/service`建立独立AutoService（`com.ecarx.autoservice`），集中车辆数据、Root/ADB、保活与HAB合成；`galaxy/cluster`为独立仪表，应用通过公共契约通信。新三个APK编译通过；本轮不跑Lint，实车断开后未安装或验收这次拆分。当前实现、回归结果和测试包流程见[AutoService实施与测试](docs/AutoService实施与测试.md)。此前CarPlay/人工帧的现场结果按各自记录保留，不能代验新三App。
 
 
 ## 项目文档
