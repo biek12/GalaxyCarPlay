@@ -16,6 +16,8 @@ class ClientRegistryTest {
         override fun onSnapshot(snapshot: Bundle) = Unit
         override fun onSurface(role: String, surface: Surface) = Unit
         override fun onProjectionState(role: String, state: String) = Unit
+        // v3按需订阅回调：AIDL新增方法，Stub保持抽象，必须显式实现。
+        override fun onVehicleFeed(values: Bundle) = Unit
     }
     @Test fun oneMapOwnerAndIndependentObserversUnlinkIdempotently() {
         val clients = ClientRegistry {}

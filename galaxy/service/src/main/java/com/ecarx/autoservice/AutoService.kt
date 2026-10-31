@@ -41,8 +41,11 @@ class AutoService : Service() {
     private var projectionPolicy = ProjectionPolicy()
     private var media = Bundle()
     private var navigation = Bundle()
-    private var signals = Bundle()
+    /** 订阅驱动采集的最新快照（只含订阅键），feed推送与拉取接口同源。 */
+    @Volatile private var signals = Bundle()
     private var sequence = 0L
+    /** 按需订阅的轮次序号；每轮自增一次，同一轮的多个租约共用一个值。 */
+    private var feedSequence = 0L
     @Volatile private var closed = false
     private var status = "created"
     @Volatile private var paused = false
@@ -220,6 +223,36 @@ class AutoService : Service() {
                 composition?.setPolicy(safe);publish()
             }
         }
+        override fun setVehicleFeed(owner: IBinder, keys: Array<String>?, minIntervalMillis: Int) {
+            val calling = uid()
+            check(AutoContract.feedKeysValid(keys))
+            check(AutoContract.feedIntervalValid(minIntervalMillis)) { "invalid_feed_interval" }
+            // 键格式在上面的check已限制；车型目录校验放主线程，因为model可能在这期间被切换。
+            enqueue {
+                val lease = clients.require(owner, calling)
+                lease.feed = VehicleFeed.validate(keys, modelPrefs())
+                lease.feedIntervalMillis = minIntervalMillis
+                // 间隔变了就要按新节拍重算，不能沿用上一档的到期时刻。
+                lease.lastFeedAt = 0L
+                applyDemand()
+                // 订阅当下先补一次当前缓存，避免最多等一个采集节拍才有数据；未订阅的键不读车机。
+                if (lease.feed.isNotEmpty()) publishFeedTo(lease, signals, SystemClock.elapsedRealtime())
+            }
+        }
+        /** 读服务端已采集的缓存：不触发任何车机读取，未订阅/无值的键不出现。 */
+        override fun getVehicleValues(keys: Array<String>?): Bundle {
+            uid()
+            check(AutoContract.feedKeysValid(keys))
+            return runCatching {
+                val accepted = VehicleFeed.validate(keys, modelPrefs())
+                if (accepted.isEmpty()) Bundle() else VehicleFeed.select(signals, accepted)
+            }.getOrElse { Bundle() }
+        }
+        /** 全目录诊断扫描只允许本包触发，避免外部应用把车机读取放大。 */
+        override fun setVehicleScan(enabled: Boolean) {
+            check(uid() == Process.myUid()) { "local_only" }
+            collector.setScan(enabled)
+        }
     }
     override fun onCreate() {
         super.onCreate()
@@ -231,10 +264,14 @@ class AutoService : Service() {
         val max=prefs.getInt("projectionFps",30).coerceIn(1,60)
         projectionPolicy=ProjectionPolicy(prefs.getString("projectionMode","content-aware")!!,max,prefs.getInt("animationFps",30).coerceIn(1,max))
         shellAccess = com.ecarx.autoservice.platform.PlatformAccess(this)
-        collector = VehicleCollector(this, inventory, { bundle, state, count ->
-            signals = bundle; discovery = state; discoveredCount = count; publish()
+        collector = VehicleCollector(this, inventory, { state, count ->
+            // 元数据（发现状态/条数）驱动快照；车辆值走feed，不再整包重投。
+            discovery = state; discoveredCount = count; publish()
         }, { if (::platform.isInitialized) platform.rootLost() },menuPressed={
             menuReceivedAt=SystemClock.elapsedRealtime();++menuSequence;publish()
+        }, feed={ values, at ->
+            // 采集在自身worker线程；租约与Binder回调都在主线程，因此只投递不直接触碰。
+            main.post { publishFeed(values, at) }
         })
         paused = !AutoStartup.enabled(this)
         startPlatformForeground()
@@ -270,6 +307,9 @@ class AutoService : Service() {
             projectionRequested = false; platformReady = false; rootReady = false; preparing = false
             composition?.close(); composition = null; surfaces.clear()
             clients.all().forEach { lease -> callbacks.post { runCatching { lease.callback.onProjectionState(lease.role, "surface_closed") } } }
+            // 服务停止后租约可能继续存在；不清空就会在恢复时静默沿用旧订阅并发推送。
+            clients.all().forEach { it.feed = emptySet(); it.lastFeedAt = 0L }
+            applyDemand()
             collector.stop(); signals = Bundle(); discovery = "stopped"; discoveredCount = 0
             if (::platform.isInitialized) platform.close()
             shellAccess.cancel()
@@ -292,6 +332,9 @@ class AutoService : Service() {
                 getSharedPreferences("platform", 0).edit().putString("model", it).commit()
             }
             composition?.setSessionActive(false)
+            // 旧键不一定属于新车型目录；清空后由订阅方按新目录重新订阅。
+            clients.all().forEach { it.feed = emptySet(); it.lastFeedAt = 0L }
+            applyDemand()
             collector.stop(); ++platformGeneration; platform.close(); platform = newPlatform(); platform.start(); if (features.vehicle) collector.start()
             projectionRequested = false; platformReady = false; updateProjection()
         }
@@ -320,8 +363,8 @@ class AutoService : Service() {
         }
         if (previous.vehicle != next.vehicle || connectionsChanged) {
             collector.stop()
-            signals = Bundle(); discovery = if (next.vehicle) "not_connected" else "disabled"; discoveredCount = 0
-            if (!paused && next.vehicle) collector.start()
+            signals = Bundle(); discovery = if (next.vehicle) "idle" else "disabled"; discoveredCount = 0
+            if (!paused && next.vehicle) { collector.start(); applyDemand() }
         }
         if (previous.projection != next.projection) updateProjection()
         status = "settings_applied"
@@ -364,6 +407,8 @@ class AutoService : Service() {
     }
     private fun detach(owner: IBinder) {
         val old = clients.remove(owner) ?: return
+        // 租约消失必须立刻收缩采集集合，否则退订后还会继续读车机。
+        applyDemand()
         scenes.remove(old.role)
         if(old.role==AutoContract.THEME||old.role==AutoContract.PREVIEW)composition?.clearScene(old.role)
         if(old.role==AutoContract.PREVIEW){previewTarget?.release();previewTarget=null;composition?.setPreviewSurface(null)}
@@ -378,6 +423,61 @@ class AutoService : Service() {
     private fun state(value: String) {
         main.post { if (!closed) { status = value; android.util.Log.i("AutoService", value); publish() } }
     }
+    /** 订阅键与车型目录绑定，必须按当前选择的车型校验，不能沿用切换前的键。 */
+    private fun modelPrefs(): String = getSharedPreferences("platform", 0).getString("model", "L6") ?: "L6"
+    private var catalogKeysModel = ""
+    private var catalogKeys: Array<String> = emptyArray()
+    /** 目录键名清单：只在车型变化时重建，避免每次快照都重新分配78个字符串数组。 */
+    private fun vehicleKeys(): Array<String> {
+        val model = modelPrefs()
+        if (model != catalogKeysModel) {
+            catalogKeysModel = model
+            // 键名清单＝目录键＋旧公共别名：客户端据此知道哪些键可订阅。
+            catalogKeys = (VehicleCatalog.forModel(model).map { it.key } + VehicleCatalog.LEGACY_ALIASES.keys).toTypedArray()
+        }
+        return catalogKeys
+    }
+    /**
+     * 按需订阅的每轮推送；主线程调用。
+     * 无订阅者、暂停或车辆采集关闭时直接返回，250ms采集节拍上不产生额外开销。
+     */
+    private fun publishFeed(values: Bundle, at: Long) {
+        if (closed || paused || !features.vehicle) return
+        // 缓存对外供给：拉取接口与订阅补发都用这一份，保证推/拉同源。
+        signals = values
+        val targets = clients.all().filter { it.feed.isNotEmpty() }
+        if (targets.isEmpty()) return
+        // 一轮只自增一次：同一轮的多个租约拿到同一个序号，跨租约可直接对齐节拍。
+        val round = ++feedSequence
+        targets.forEach { lease ->
+            // 按租约自己的间隔节流：1Hz的订阅者不会因为别人要250ms而收4倍数据。
+            if (lease.lastFeedAt != 0L && at - lease.lastFeedAt < lease.feedIntervalMillis) return@forEach
+            lease.lastFeedAt = at
+            sendFeed(lease, values, at, round)
+        }
+    }
+    /**
+     * 把当前所有租约的订阅合并成采集需求：键取并集、间隔取最紧。
+     * 空表表示没人订阅，采集端据此完全停摆（不读车机、不空转）。
+     */
+    private fun applyDemand() {
+        if (!::collector.isInitialized) return
+        // 别名要翻译成基础键才能读到车机；租约自己的feed仍保留别名，用于裁剪下发。
+        collector.setDemand(VehicleDemand.merge(clients.all().map { lease ->
+            lease.feed.mapTo(HashSet()) { VehicleCatalog.baseKey(it) } to lease.feedIntervalMillis
+        }))
+    }
+    /** 订阅/改订阅当下的即时补发：此时还没有整轮节拍，序号单独分配。 */
+    private fun publishFeedTo(lease: ClientRegistry.Lease, values: Bundle, at: Long) {
+        sendFeed(lease, values, at, ++feedSequence)
+    }
+    private fun sendFeed(lease: ClientRegistry.Lease, values: Bundle, at: Long, round: Long) {
+        val out = VehicleFeed.select(values, lease.feed)
+        // 该租约本轮没有任何有效值就不发空包：不补0/不补默认值，消费者按maxAgeMillis自行判过期。
+        if (out.isEmpty) return
+        out.putLong("at", at); out.putLong("sequence", round)
+        callbacks.post { runCatching { lease.callback.onVehicleFeed(out) } }
+    }
     private fun publish() {
         val snapshot = Bundle().apply {
             putString("vehicleDiscovery", discovery); putInt("vehiclePropertyCount", discoveredCount); putInt("vehicleSampledCount", inventory.count()); putInt("vehicleValidCount", inventory.validCount())
@@ -387,11 +487,14 @@ class AutoService : Service() {
             putBundle("features", features.bundle())
             putBoolean("projectionRequested", projectionRequested)
             putString("foundation", foundationEvidence())
-            putString("status", status); putBundle("vehicle", Bundle(signals)); putBundle("media", Bundle(media)); putBundle("navigation", Bundle(navigation))
+            putString("status", status); putBundle("media", Bundle(media)); putBundle("navigation", Bundle(navigation))
+            // v4：快照不再携带全量车辆键（原来每次投递83个子Bundle×每客户端）。
+            // 只发键名清单，客户端据此把主题/自身需求裁剪成订阅；值走feed或getVehicleValues。
+            putStringArray("vehicleKeys", vehicleKeys()); putBoolean("vehicleScanning", collector.scanning())
             putString("inputEpoch",inputEpoch);putLong("menuSequence",menuSequence);putLong("menuReceivedAt",menuReceivedAt)
             putBundle("projectionPolicy",projectionPolicy.bundle())
             putString("vehicleMode", getSharedPreferences("platform", 0).getString("vehicleMode", "app"))
-            putString("model", getSharedPreferences("platform", 0).getString("model", "L6"))
+            putString("model", modelPrefs())
             putLong("artworkVersion", artworkVersion)
             putString("artworkUri", "content://com.ecarx.autoservice.artwork/current")
         }
@@ -405,7 +508,9 @@ class AutoService : Service() {
         }
         val snapshot = synchronized(snapshotLock) { Bundle(latest) }
         if ("--cluster-fields" in args) {
-            writer.println("CLUSTER_FIELDS=" + ClusterFieldDiagnostics.collect(snapshot, android.os.SystemClock.elapsedRealtime()))
+            // v4快照不含车辆值：诊断用当前订阅快照补上，保持同一份数据口径。
+            val withVehicle = Bundle(snapshot).apply { putBundle("vehicle", Bundle(signals)) }
+            writer.println("CLUSTER_FIELDS=" + ClusterFieldDiagnostics.collect(withVehicle, android.os.SystemClock.elapsedRealtime()))
             return
         }
         writer.println("AUTOSERVICE_DIAGNOSTIC version=${AutoContract.VERSION}")
@@ -413,6 +518,12 @@ class AutoService : Service() {
         for (key in listOf("vehiclePropertyCount", "vehicleSampledCount", "vehicleValidCount")) writer.println("$key=${snapshot.getInt(key)}")
         writer.println("projectionRequested=$projectionRequested platformReady=$platformReady preparing=$preparing paused=$paused")
         writer.println("clients=" + clients.all().joinToString { "${it.role}:${it.active}" })
+        // 只读诊断：谁订了几个键。键名本身是公共别名，可直接打印。
+        writer.println("feeds=" + clients.all().filter { it.feed.isNotEmpty() }
+            .joinToString { "${it.role}:${it.feed.size}@${it.feedIntervalMillis}ms[${it.feed.joinToString(",")}]" })
+        writer.println("vehicleDemand=" + VehicleDemand.merge(clients.all().map { it.feed to it.feedIntervalMillis })
+            .entries.joinToString { "${it.key}@${it.value}ms" })
+        writer.println("vehicleStats=" + collector.stats())
         writer.println("hab=" + (composition?.metrics() ?: "inactive"))
         writer.println("automatic=" + AutoStartup.enabled(this))
         writer.println("features=$features")

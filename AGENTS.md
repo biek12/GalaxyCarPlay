@@ -6,7 +6,7 @@
 
 - 工程名 GalaxyPlay；安装到车机的应用显示名固定为 **CarPlay**，applicationId 固定为 **com.ecarx.carplay**。
 - 保留跟随 shihabal3amri/DiPlay CarPlay 核心更新的能力。
-- D01 已确认采用官方 DiPlay v0.2.21 固定发布提交为新产品核心基线，选择性迁入既有适配；不以本地旧 GalaxyPlay 整包作为起点，不把 main HEAD 当发布基线。准确 SHA 见[决策记录](docs/决策记录.md)。
+- D01 已确认采用官方 DiPlay v0.2.21 固定发布提交为新产品核心基线，选择性迁入既有适配；不以本地旧 GalaxyPlay 整包作为起点，不把 main HEAD 当发布基线。首次基线保留于Git；本轮按用户后续要求三方迁移到官方v0.2.22固定发布提交，准确 SHA 见[决策记录](docs/决策记录.md)。
 - 学习本地 GalaxyPlay 的 FlymeAutoUI、USB、无线与原车音频适配。
 - 仪表路线参考 zmisgod/DiPlay 与 jiopia/DiPlay-ECARX；目标覆盖银河 L6、L7，**所有能力优先适配 L6**。
 - 方控学习复用“车机逆向”和“星枢”已有程序经验，不另起未经核验的协议猜测。
@@ -26,6 +26,10 @@
 - 2026-10-30用户明确要求在本工程规划独立AutoService与AutoDesktop及后续AI等App。AutoService统一ADB/Root、启动/保活协调、车辆基础数据、基础服务映射及仪表投屏/集中融合；AutoDesktop负责重写桌面。完整仪表主题应独立于CarPlay，CarPlay在仪表链路中提供地图/音乐，不继续承载整套仪表制作。独立仪表App暂名AutoCluster；AutoService包名已由用户指定为 `com.ecarx.autoservice`，根工程名不变。见[多应用规划](docs/多应用架构规划.md)。
 
 - 2026-10-30用户要求车辆数据应读尽读：主动枚举可读目录，并结合目标固件自身声明和已核验L6/L7映射采集；不再以用户举例字段限定范围。目录来源、支持/读取状态、区域、原始值与新鲜度分别发布；保持只读，不引入车辆控制或猜测属性ID。
+
+- 2026-10-31用户明确：车辆数据不由各App各自实现ADB/Root或厂商SDK认证，统一消费AutoService的版本化按需订阅（契约v3 `setVehicleFeed`/`onVehicleFeed`，键为当前车型目录别名）。CarPlay给iPhone的轮速（`$PASCD`）只消费AutoService发布的`displaySpeed`/`gear`，位置保持本机provider；不采用上游按其他车型推断的“SDK存在即启用、车机无GPS”。见[车速订阅记录](docs/AutoService车速订阅-20261031.md)。
+
+- 2026-10-31用户确认车辆数据采集改为**订阅驱动（契约v4）**：`setVehicleFeed`带最小间隔（既是推送节拍也是该键的采集周期），采集端只读订阅键且只读到期的键，无人订阅时一拍都不读；`onSnapshot`不再下发全量车辆子Bundle，只发键名清单`vehicleKeys`；另提供`getVehicleValues`纯缓存拉取。**“读尽读”能力不缩减**：全目录探索保留为默认关闭、手动触发的显式诊断扫描`setVehicleScan`，不删目录键、不删属性枚举。CarPlay轮速订阅间隔为1000ms（与iAP2控制循环同频）。契约v4为破坏性变更，AutoService/AutoCluster/CarPlay三个APK必须同版本更新。改动须做整改前后CPU/内存/线程/FD对比，静态推导不得写成实测。见[方案文档](docs/AutoService数据订阅与采集资源优化方案-20261031.md)与[决策记录](docs/决策记录.md)。
 
 - 2026-10-30用户进一步授权集成KeepAlive与自有RootService、通过RootService/ADB执行Shell、自动配置本App所需权限及自动部署QNX接收程序。只管理自有辅助进程/接收程序和本App权限，不改原车启动项/HMI。早前采用外部本机配置接入QNX；后续用户明确要求内置自动认证/取得流程，按下条最新确认执行，不再把外部文件导入作为正常使用前提。
 
@@ -49,7 +53,7 @@
 
 - 2026-10-30用户最终微调：歌词区默认四行（上方1行已播放、第二行为当前、下方2行待播放），进度条缩短；右上补独立档位与驾驶模式组件。模式显示纯电/增程/性能/智能，读取星枢已验证的G733 PA 0x21708A97、area0、16字节状态合同，不混用VSTD防盗状态或通用枚举。
 
-- 本轮CarPlay体验修复顺序由用户确认：先提交既有AutoService/Cluster工作区，再修微信电话通道、原车歌词/封面和CarPlay内部智能显示缩放；修复提交后才迁移官方新核心。真实标签为v0.2.21→v0.2.22；升级必须保留旧基线、车型适配及上游变化的三方证据，不直接覆盖或使用main HEAD。当前修复/未解项见[记录](docs/CarPlay体验修复与核心升级.md)。
+- 本轮CarPlay体验修复顺序由用户确认：先提交既有AutoService/Cluster工作区，再修微信电话通道、原车歌词/封面和CarPlay内部智能显示缩放；修复提交后才迁移官方新核心。真实标签为v0.2.21→v0.2.22；升级必须保留旧基线、车型适配及上游变化的三方证据，不直接覆盖或使用main HEAD。当前修复/未解项见[记录](docs/CarPlay体验修复与核心升级.md)。 用户随后明确要求解决冲突并继续升级：我方车型/产品改动优先，同时整合新特性，不能把尚未实车验证的缩放或歌词消费写成已解决。
 
 ## 当前执行边界
 

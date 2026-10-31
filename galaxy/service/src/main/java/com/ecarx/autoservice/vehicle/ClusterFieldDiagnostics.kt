@@ -3,7 +3,9 @@ package com.ecarx.autoservice.vehicle
 import android.os.Bundle
 import org.json.JSONObject
 
-/** 现场标定仅导出明确列出的仪表数值；读缓存，不触发车控、额外读属性或认证流程。 */
+/** 现场标定仅导出明确列出的仪表数值；读缓存，不触发车控、额外读属性或认证流程。
+ *  v4下“缓存”是当前订阅采集的结果，因此未订阅的键不出现——这是设计而非缺失，
+ *  全目录可读范围仍可在诊断页按属性翻页核对。 */
 internal object ClusterFieldDiagnostics {
     private val keys = listOf("gear", "driveMode", "displaySpeed", "cruiseState", "cruiseSetSpeed", "regenLevel", "electricPowerRaw", "electricPowerStateRaw", "drivePowerKw", "regenPowerKw", "tractionPowerKw",
         "fuelRange", "evRange", "fuel", "soc", "fuelConsumption", "electricConsumption", "outsideTemperature",

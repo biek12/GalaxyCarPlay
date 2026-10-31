@@ -24,11 +24,21 @@ internal object RootServiceClient {
         } catch (error: Exception) { socket.close(); throw error }
     }
     fun healthy(context: Context): Boolean = request(context, 0, JSONObject(), 5000).optString("state") == "root_ready"
-    fun read(context: Context): JSONObject = synchronized(vehicleLock) {
+    /**
+     * v4：车辆读取请求带订阅键与到期键，helper只读到期键；scan=true时改走全目录诊断扫描。
+     * 请求体走与op3..5相同的定长JSON帧，避免helper与App两侧出现两套帧格式。
+     */
+    fun read(context: Context, keys: Collection<String>, due: Collection<String>, scan: Boolean): JSONObject = synchronized(vehicleLock) {
         val socket = vehicleSocket ?: connect(context).also { vehicleSocket = it }
         try {
-            DataOutputStream(socket.outputStream).apply { writeInt(1); flush() }
-            RootWire.read(DataInputStream(socket.inputStream)).also { check(it.has("samples")) }
+            val payload = JSONObject().put("keys", org.json.JSONArray(keys.toList()))
+                .put("due", org.json.JSONArray(due.toList())).put("scan", scan)
+            val bytes = payload.toString().toByteArray(Charsets.UTF_8)
+            require(bytes.size <= 16384) { "vehicle_request_too_large" }
+            DataOutputStream(socket.outputStream).apply { writeInt(1); writeInt(bytes.size); write(bytes); flush() }
+            RootWire.read(DataInputStream(socket.inputStream)).also {
+                check(it.has("samples")) { "vehicle_reply_incomplete" }
+            }
         } catch (error: Exception) { closeVehicle(); throw error }
     }
     fun request(context: Context, operation: Int, payload: JSONObject, timeout: Int = 35000, work: ControlWork? = null): JSONObject {

@@ -27,6 +27,16 @@ internal class ClusterSceneOutput(
     private val worker=Handler(thread.looper)
     private val pacer=FramePacer()
     private val latestData=AtomicReference<Bundle?>()
+    /** v4：车辆值不再随快照全量下发，改由订阅推送；这里缓存最近一轮订阅结果。 */
+    @Volatile private var vehicleFeed: Bundle = Bundle()
+    /** 目录可用键（来自快照的键名清单），用于把主题源裁剪成可订阅键。 */
+    @Volatile private var catalogKeys: Set<String> = emptySet()
+    /** 当前主题实际引用的车辆键；变化时才重新订阅。 */
+    private var subscribed: Set<String> = emptySet()
+    /** 当前编译主题的源集合，用于在快照晚到时补订阅。 */
+    private var sources: Set<String> = emptySet()
+    /** 最近一份完整快照（不含车辆值）；订阅到达时用它重建SceneData。 */
+    private var lastSnapshot: Bundle = Bundle()
     private val dataQueued=AtomicBoolean()
     private var data=SceneData()
     private var policy=ProjectionPolicy()
@@ -64,6 +74,10 @@ internal class ClusterSceneOutput(
     private val client=AutoClient(app,role,onSnapshot={ snapshot ->
         onSnapshot(snapshot)
         latestData.set(Bundle(snapshot))
+        if(dataQueued.compareAndSet(false,true))worker.post(ingest)
+    },onVehicleFeed={ values ->
+        // 订阅值到达才重建一次SceneData，避免每拍全量重算。
+        vehicleFeed=values
         if(dataQueued.compareAndSet(false,true))worker.post(ingest)
     },onState={ status(it) },onConfiguredSurface={ surface,nonce ->
         val copy=surface?.let(::duplicateSurface)
@@ -117,6 +131,8 @@ internal class ClusterSceneOutput(
 
     private fun stage(prepared: PreparedScene){
         pending?.close();pending=prepared
+        sources=compiled(prepared).sources
+        applySubscription()
         if(!production){active?.close();active=prepared;pending=null;renderer?.close();renderer=null;return}
         token=maxOf(SystemClock.elapsedRealtimeNanos(),token+1)
         val compiled=compiled(prepared)
@@ -131,10 +147,35 @@ internal class ClusterSceneOutput(
         return if(night)prepared.night else prepared.day
     }
 
+    /**
+     * 把主题实际引用的 vehicle.* 源裁剪成订阅键：键名先在目录清单里过滤，
+     * 未知键（例如派生量）不送进服务端的严格校验，否则整次订阅会被拒绝。
+     */
+    private fun applySubscription(){
+        val wanted=sources.filter { it.startsWith("vehicle.") }
+            .map { it.removePrefix("vehicle.") }
+            .filter { it in catalogKeys }
+            .toSet()
+        if(wanted==subscribed)return
+        subscribed=wanted
+        main.post { if(!closed)runCatching { client.setVehicleFeed(wanted, AutoContract.MIN_FEED_INTERVAL_MS) }
+            .onFailure { status("车辆订阅失败：${it.javaClass.simpleName}") } }
+    }
+
     private val ingest=Runnable {
         dataQueued.set(false)
-        val snapshot=latestData.getAndSet(null)?:return@Runnable
         if(closed)return@Runnable
+        val received=latestData.getAndSet(null)
+        if(received!=null){
+            // 保留最近一份完整快照：车辆值走订阅通道，快照只负责媒体/导航/菜单/策略。
+            lastSnapshot=Bundle(received)
+            received.getStringArray("vehicleKeys")?.let { names ->
+                val next=names.toSet()
+                if(next!=catalogKeys){ catalogKeys=next; applySubscription() }
+            }
+        }
+        if(lastSnapshot.isEmpty)return@Runnable
+        val snapshot=Bundle(lastSnapshot).apply { putBundle("vehicle", vehicleFeed) }
         val now=SystemClock.elapsedRealtime()
         val previous=data
         data=SceneData(snapshot)

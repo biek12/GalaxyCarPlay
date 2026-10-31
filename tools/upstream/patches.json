@@ -22,7 +22,7 @@
     {
       "id": "P002",
       "patch": "tools/upstream/patches/P002-product-foundation.patch",
-      "sha256": "b4b1698a71fc0d993441e56b487880efd7cd61adc5765673fbc13a50bfaa06f3",
+      "sha256": "53c6588451600f4a425174df40265068bc77dc784f420403aa27ec9b1ae6d65f",
       "source": "DiPlay v0.2.21 / 49bf3bc2b011cb5ee7c7f4da9b99b18cbd3a23a2；GalaxyPlay基础适配",
       "purpose": "沿旧Galaxy产品目录组织适配，根mobile剔除，应用唯一入口为galaxy/mobile",
       "defaultBehavior": "仅填缺失车型与MANUAL偏好；保留显式P2P、认证和外部签名校验",
@@ -33,7 +33,7 @@
           "productSha256": "d36e5a8bf2eadf91a3c3c52420f2d1c7c8b24fd421df5c5b938528e9c0f5516c"
         },
         "galaxy/mobile/build.gradle.kts": {
-          "baselineSha256": "333111d23b46e15c7678fc2c6a3679e79f28c2580905a2890e3d711b9b95749b",
+          "baselineSha256": "192525d97a2abc3859259c2e9378a8c6ea495a59a033b00416054fbd0afafdbf",
           "productSha256": "4998ef045ca03458ca39a29575904156961357e09ed257b1d11bfdf4442c3ea4"
         },
         "galaxy/mobile/src/main/AndroidManifest.xml": {
@@ -69,22 +69,22 @@
     {
       "id": "P004",
       "patch": "tools/upstream/patches/P004-remove-phone-lab-capture.patch",
-      "sha256": "215a8c6e5de17da6d4a373a443784f7952b603f67288702be21ee7ed133ebd33",
+      "sha256": "63e26e31585942d8e9d0bc6b606fd7a8c1c743be9dcfa95162d7dfdf30dc5fdb",
       "source": "DiPlay v0.2.21 / 49bf3bc2b011cb5ee7c7f4da9b99b18cbd3a23a2；GalaxyPlay基础适配",
       "purpose": "删除上游临时手机认证syslog采集",
       "defaultBehavior": "正常Lockdown/CarKit连接顺序不变，不启动采集线程",
       "regression": "离线禁采集契约、shared USB/Lockdown回归（NDK齐备后）",
       "files": {
         "shared/src/main/java/com/shilapi/xcertplay/orchestration/CarPlayController.kt": {
-          "baselineSha256": "0c6c8c249f7dcea89f4fc4f6d58f973588ca21613f46bd3c373dc5627188ca9f",
-          "productSha256": "dd5c1dca6553c106acd89bd272a3facfe555586dddb32dfcfd1a766d863b22e3"
+          "baselineSha256": "dc2690ba71c441c7238f3f77894bb4fbaa505be123b3917343f1aa467289cbf0",
+          "productSha256": "e0594ce215306dad1be0097da6e2d7710352bfeab9889f7d8ca7b270ff961d9f"
         }
       }
     },
     {
       "id": "P005",
       "patch": "tools/upstream/patches/P005-galaxy-migration.patch",
-      "sha256": "8e05f1b421529838341152c8e0f204bd3ccc0f52f8ee624e70e7b6dd1ab1742f",
+      "sha256": "5910ca206099fa9ebdd7865738d64e9cd2c9cd7e2bd5d5141886f75b24b11c7b",
       "source": "旧GalaxyPlay galaxy目录完整迁入 + v0.2.21核心接缝（CarPlayHostActivity抽取CarPlayBackgroundSession/CarPlayHostProduct、音频平台适配注入）",
       "purpose": "按D03学习旧Galaxy产品组织：galaxy/mobile唯一应用、galaxy/common产品适配、galaxy/shared音频/网络策略；核心只保留中性接缝",
       "defaultBehavior": "无产品注入时核心沿用上游默认（HostProductBindings为空、MediaPlatformAdaptation.NONE）",
@@ -92,7 +92,7 @@
       "files": {
         "common/src/main/java/com/shilapi/xcertplay/CarPlayHostProduct.kt": {
           "baselineSha256": null,
-          "productSha256": "a8d4acdebdd27b61207376cc2fb78b5c40fd2f46b53c07b0682565796abff086"
+          "productSha256": "79e8997efcaa38e7172fb620a076a6ea974d7b029fa205a561c8684b8f8cb63c"
         },
         "galaxy/common/src/main/AndroidManifest.xml": {
           "baselineSha256": null,
@@ -140,7 +140,7 @@
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/CarPlayBackgroundSession.kt": {
           "baselineSha256": null,
-          "productSha256": "9893dafc63761577f4735bb95299069359726f23f69ea082b391b9add2baf695"
+          "productSha256": "dcac07d2c05a9cdc902931be97cf74533f4298561dbd69bc745d4187c3fbeaf4"
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/CarPlayMediaSession.kt": {
           "baselineSha256": null,
@@ -228,7 +228,7 @@
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyConfigurationFields.kt": {
           "baselineSha256": null,
-          "productSha256": "5a0f5e22aa4908285573bae296230435f2db1c4921d835593a32ea0b14b15a5f"
+          "productSha256": "8a618b677d39deb4e939bbddad3576919a306fb64088e8168362fecbcc0e3b98"
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyConfigurationFrame.kt": {
           "baselineSha256": null,
@@ -296,7 +296,7 @@
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyHostAdapter.kt": {
           "baselineSha256": null,
-          "productSha256": "9b143cafd800994be47e0a3dfc739b3c7bd57f968c0d9dca431bc1378f38b1d1"
+          "productSha256": "b3c6e403489efcfb27b84132ecd5eb07c240fe1430d01d9d53e1ba5ff07b28b6"
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyHostChrome.kt": {
           "baselineSha256": null,
@@ -404,7 +404,7 @@
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxySettingsActivity.kt": {
           "baselineSha256": null,
-          "productSha256": "e10bbd11b0797a243a6a549751f7a841d135e86b262cd309cf35a91bcc4cf996"
+          "productSha256": "0bfa6b96b6fac596cc1223bd9452d5fa087a5b79fad7cf8ec3b2e8cf10b84ce2"
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxySoftwareVideoOutput.kt": {
           "baselineSha256": null,
@@ -520,7 +520,7 @@
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/L7AudioSettings.kt": {
           "baselineSha256": null,
-          "productSha256": "6cfdc4021820f8b16792fe739ec6a1e337a6ac4c737571fa95f8f9b040584df8"
+          "productSha256": "d0879ad732baf75cd3b772a06bab76c4f83e25d04ec44e92a73b12d796207706"
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/L7AudioTemplateEditor.kt": {
           "baselineSha256": null,
@@ -620,7 +620,7 @@
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/L7DisplaySettings.kt": {
           "baselineSha256": null,
-          "productSha256": "92bd72a22381238df7eab034a9f2505b1c86f078eb1f5f36d80d946b3a7c0cbf"
+          "productSha256": "8cd8c38d9f3098cf10ee0dc42aab4f806ae5f70b069e43bddfb72975ead17158"
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/L7FloatingNavigationPreferences.kt": {
           "baselineSha256": null,
@@ -900,7 +900,7 @@
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/L7VehicleSettings.kt": {
           "baselineSha256": null,
-          "productSha256": "ff44997054a8c9f1efc104b69796c1ed71baadbb479079466bdf03b152c74ac6"
+          "productSha256": "6e5c7a60ee840846577d93f6bd046135c14b286a3c68b71edb6aa7a5687beba1"
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/L7VendorSdk.kt": {
           "baselineSha256": null,
@@ -1408,7 +1408,7 @@
         },
         "galaxy/common/src/main/res/values-zh-rCN/strings.xml": {
           "baselineSha256": null,
-          "productSha256": "ba7d2e4b69dfb99a776a53396873296a52814baa856fb23727a38c2d038820da"
+          "productSha256": "4e4979c251291a5954709bd167acd5db1fdc32249e8daaa19e82db16cee5aee5"
         },
         "galaxy/common/src/main/res/values-zh-rCN/strings_contrib_audio.xml": {
           "baselineSha256": null,
@@ -1588,7 +1588,7 @@
         },
         "galaxy/common/src/main/res/values/strings.xml": {
           "baselineSha256": null,
-          "productSha256": "59789dac32a3eba90fb1c463c3715d369543eaea308d4d2bf2330e28c92600cd"
+          "productSha256": "5d538678f2af0ab960173e023107443df36a9ec179c85d75c2ea5eb0e59863bf"
         },
         "galaxy/common/src/main/res/values/strings_contrib_audio.xml": {
           "baselineSha256": null,
@@ -1628,11 +1628,11 @@
         },
         "galaxy/common/src/test/java/com/shilapi/xcertplay/GalaxyDiagnosticLogTest.kt": {
           "baselineSha256": null,
-          "productSha256": "042b18bc9112bc9657d3cfb06e2d392a5cb5d83011ad26e757cd57bb44ca2930"
+          "productSha256": "bb25598c09f63ccfded203a887c7ff9842ceb063852973b986728d18917545f9"
         },
         "galaxy/common/src/test/java/com/shilapi/xcertplay/GalaxyHostAdapterTest.kt": {
           "baselineSha256": null,
-          "productSha256": "85b4ae480fc4d6bcce1c217a08234fc80b9688f32e4d0765f47bcc84de076876"
+          "productSha256": "7ab8eebca710b36c0d2ae5bd8d70cdbc977af14e3d6a1623bb4f9f0c72843ad4"
         },
         "galaxy/common/src/test/java/com/shilapi/xcertplay/GalaxyHostChromeTest.kt": {
           "baselineSha256": null,
@@ -1775,28 +1775,28 @@
           "productSha256": "c37700c4a50ecd126c4d06056bfe197f1ce18baa60fb2b8336305829af0e6482"
         },
         "common/src/main/java/com/shilapi/xcertplay/AsyncDiagnosticLog.kt": {
-          "baselineSha256": "3ebab3341e78539051c8941ad59aa3090b68daccd3fcc41e9f250091d051d12b",
-          "productSha256": "dc5d65a567db0defcbee8372af8029dd9f402916e8851f47a28da7ef24026d0e"
+          "baselineSha256": "f32618c2f4760cb2b48567593f925919a0ca64baee6b0ea65105f9990064bf04",
+          "productSha256": "baf8738a5825269a25dd31dcbd395843a66524ade4651639a054bd56aed2ca2e"
         },
         "common/src/main/java/com/shilapi/xcertplay/CarPlayHostActivity.kt": {
-          "baselineSha256": "d17d6729e58d851fae6631c8da48e351d5f52fa9a7e120f446ea5e4edb6b0dc4",
-          "productSha256": "e9acd9b6f2861cdb6e87855bb0ffceea2ebc2c6de0b71f9936e4d8a3ebe6e989"
+          "baselineSha256": "4de6c9d17ae0477422a63e1f2278d9aa6da445d9194d56ef69f4ec92300beddd",
+          "productSha256": "2e2fcb8d796a36d5ec6b7b8877162c9a83866c931871560f83e8d04d0513e933"
         },
         "common/src/main/java/com/shilapi/xcertplay/DiagnosticExportStore.kt": {
           "baselineSha256": "45543dc705199a4849eb11d87b883cd89671bd5c3b3b9fdcd239d842b370894f",
           "productSha256": "b58108d5e557d0be570128501c936036af4129370098d2e7ea1f19995868292b"
         },
         "common/src/main/java/com/shilapi/xcertplay/DiagnosticRedactor.kt": {
-          "baselineSha256": "71f23a88a78a43c0d0bde040b4ad691b6776e8d030e1e1b054a1d53f4f4d453d",
-          "productSha256": "64e9e4449a3e8249e52cf9995388e90fa94a3bdf074940f1c0ea1fedb41d3bb3"
+          "baselineSha256": "8f58caded6e10ec8a95fd46c047c5ae6886c2101537d9cf8c935147fdd796004",
+          "productSha256": "7959d408235995176840193129d72e1503da165d7df9195321f6a453464a43f3"
         },
         "common/src/main/java/com/shilapi/xcertplay/SessionLogFile.kt": {
-          "baselineSha256": "9751412a877d190474238175ae0d1ad9c2e5b7c9b2dbd6528c09ce2d7a486f43",
-          "productSha256": "8056b26caa677f9f5f717a3accf29b45b584c0fb952e645292a8ba60feffb790"
+          "baselineSha256": "a7e8e41d2adaf27639f98a29b5766b6f6b6e525d09aa7c067502de2ca33d0733",
+          "productSha256": "d36f2d491cddca8a6234aa412f7fc58d11a383f541fc80a83bba34ca17594fa7"
         },
         "common/src/test/java/com/shilapi/xcertplay/DiagnosticRedactorTest.kt": {
-          "baselineSha256": "8d3054dadd074780075c3c3eb5140959559fd59527ff426f95b364f086abccd6",
-          "productSha256": "5c8fd9ab72aa01f02836596ca738cb82e1f43245cb092cb31bcff2efbeba1d4f"
+          "baselineSha256": "34773a651e7da335f46ac4bbcc75e46037b5da73c947aef9a8d185ebb2c78359",
+          "productSha256": "eb5d37b5552e825cb0c8d48d7f60f067c1e1fe00b294a48f934b064ae9db02cc"
         },
         "common/src/test/java/com/shilapi/xcertplay/TraditionalChineseTranslationsTest.kt": {
           "baselineSha256": "686a107b29e5310c8d5c1f48ac7f35244e03f40366287db62af96514f75dcf17",
@@ -1819,16 +1819,16 @@
           "productSha256": "8fa9debf80d31b66f530bddddd6fbf1ab7b5d8ffe312fd2a1491b3d1a6a3c1c0"
         },
         "shared/src/main/java/com/shilapi/xcertplay/airplay/AirPlaySession.kt": {
-          "baselineSha256": "93c20c06435642dab3aebf3f99c2c630d6ffe9f086e904167cd72f6add5caae1",
-          "productSha256": "02767b72467814fbb94e74b3ac98df145da446d47dfe7c3bf7a9b160b0093335"
+          "baselineSha256": "275888513fbc6923e201d212f92b539333657dc569aa71b105aa3fa077200471",
+          "productSha256": "e64daf8c59fa3e604d09d6823c2621e13da5203a330db497b2d5c77bb10cc1b8"
         },
         "shared/src/main/java/com/shilapi/xcertplay/hud/BydHudRouteState.kt": {
           "baselineSha256": "a1d7af2c5ac60d6d19b7791ba8aa94661cc093f9a4b0f398d3792649eb36185e",
           "productSha256": "535f62e20d31eb3214c6bcaa865a9767a9c1a33fc89393ff5925c071e38c9e1d"
         },
         "shared/src/main/java/com/shilapi/xcertplay/media/AndroidMediaSink.kt": {
-          "baselineSha256": "a0b00a783bd22aa0da617a6855ed4e2414652dbf4d384a210e50f1572735a8a3",
-          "productSha256": "f5d20528f9999335692cef845655af04dfee25a1d4137423e6017f15d8d9741c"
+          "baselineSha256": "35652a0e81f23b66793acffe3cfa31f0aa8db7394280c21462a5e81e66a9548f",
+          "productSha256": "dba5dc293e77964d1309472ed0abbe7b575de0932d83f73a28e8239f9c7c359a"
         },
         "shared/src/main/java/com/shilapi/xcertplay/media/AudioChannelMapping.kt": {
           "baselineSha256": "01d1d58938d9d4b03cc72005213d28374dbe94ce39d80e7d55486adec91fa7e9",
@@ -1839,20 +1839,20 @@
           "productSha256": "77f4b411ac93f1b0ebf27572218293e54788117e37c27d1e18809924ebd080b9"
         },
         "shared/src/main/java/com/shilapi/xcertplay/media/MicrophoneUplink.kt": {
-          "baselineSha256": "2b85189cd72b09531ba1fa8f5207d78ba1f1c38702192a5a23304b29a04da8da",
-          "productSha256": "56c4e5febbcf873eb7d532f0c9d2fd26e89827ebe1ab9e60a8aa77321d3c0f6b"
+          "baselineSha256": "84233b89ab65f02cbe08f70bbeffeb6a5f5c4d1a58139079bc14b2a28f2f4b72",
+          "productSha256": "79a5ce86ac10065c330efa108519caca219cb694474d438fc0197a7e398260f3"
         },
         "shared/src/main/java/com/shilapi/xcertplay/network/P2pStartupRecovery.kt": {
           "baselineSha256": "f7da02d1f061d77650583d8ad11f30af5be22d285e9dc00a6951ac9b3d0d1e9c",
           "productSha256": "78f1fe20ee6f8f1c64bd4165680953960812d7b67022172b87f6fbaa314aeb4e"
         },
         "shared/src/main/java/com/shilapi/xcertplay/network/WifiP2pGroupManager.kt": {
-          "baselineSha256": "b60239eef5fdfeacfe270614c53441e068dea1b5bd8242cb093346664f4ae8f4",
-          "productSha256": "da0431e5fe68ba3d814cf16275163400341a2cd3b8d0a2dfe69165371501ec01"
+          "baselineSha256": "8f7efb09c366b8edbaf00bf97c3155c16664ab917406a6f345e62978b3314741",
+          "productSha256": "a872da863990833f7a9e2e99eda64d82cb39943f09c689eb3adf4537d1635e0a"
         },
         "shared/src/main/java/com/shilapi/xcertplay/orchestration/CarPlayRuntimeConfig.kt": {
-          "baselineSha256": "ae5e37fa0ab4843b9bba1a3daa2e26e20befe16b44a68a73b8ce976a7eb624d5",
-          "productSha256": "24de56c429cd68fbb877e4cfcb39616847b5bebbbf367b3a9b07e2f02d6125ea"
+          "baselineSha256": "8799c424608f59ed41ee27a1c239eab80bc744a489672c09b482633ca364089b",
+          "productSha256": "965c17d6d637424a4f5c9a1793387a029b298baf540c54423b5124d799230d91"
         },
         "shared/src/test/java/com/shilapi/xcertplay/media/AudioClockTrimTest.kt": {
           "baselineSha256": "e0d7f5242accd9a5f6887378e3952d279a79b0c187cbde62757f3aba34a4d6ff",
@@ -1867,8 +1867,8 @@
           "productSha256": "d36cf83835e87f8378f63570605aaa021ede531a8b43c5e5a80545e68857b8ba"
         },
         "shared/src/test/java/com/shilapi/xcertplay/media/AudioRebufferDiagnosticsTest.kt": {
-          "baselineSha256": "260f8fab36e8de8be852cc2254958d4a65211bc75dfecd0af8cd654d85492ae5",
-          "productSha256": "e1545a2c8f449c53e9cece95496f84f43897c88a10cc9c254844bd1966ad5b5e"
+          "baselineSha256": "4436a88651fec704bf4620374bd8d5c3b807922ce1dbbeeed6563f991ea6a06e",
+          "productSha256": "ddda2eeb444e20cfe69dc44c2b7b5f083b2739cc11800761122f939d071fab1d"
         },
         "shared/src/test/java/com/shilapi/xcertplay/media/CarPlayPlaybackStatusTest.kt": {
           "baselineSha256": "1d1a661ce37d766f1251a84c558020a1453f6a1c4d584d1db7826bb493874044",
@@ -1927,24 +1927,24 @@
           "productSha256": "a0c166e606ba7147157373dc482e3f16a61dae4e969632caac30a404883d1b8d"
         },
         "common/src/main/java/com/shilapi/xcertplay/CarPlayMediaKeys.kt": {
-          "baselineSha256": "aebd8afbce33dceb3f18ad08940f0c0bd3883d36dd3eb90c1124ad1e7b10932c",
-          "productSha256": "33e1c731ba6ddabaac279df530bfb5a2f6e0e681fa1f3c41d1e88831a33826fb"
+          "baselineSha256": "468979aa45bdd4860835fb9cb85b64dfdfb882db14225bf34c05af54f024d0db",
+          "productSha256": "4b8edf803a256689a64370ff021e89a98dbb69d422e7bb0ed8a1c0dee9097eff"
         },
         "common/src/main/java/com/shilapi/xcertplay/ClusterMusicSettings.kt": {
-          "baselineSha256": "859265d2f7253759a25e0bbe9290dc81c7d721b974c913ae02d2d1a334d3914c",
-          "productSha256": "499468db0321f71a950b494c504eb1894d06527187adeb872df0b8edeea88ece"
+          "baselineSha256": "bb6c9b7334ded4b9ff3c140031869a2d5ab48035b3a547d9bb7e0f960ad064c6",
+          "productSha256": "cbc1d2e602b73721deef63361a5a08ccd79053909f15ac407a112bd9bff805f4"
         },
         "common/src/main/java/com/shilapi/xcertplay/ClusterMusicState.kt": {
-          "baselineSha256": "bbcccd4250fbf85bbf181d3900d4296623bd9f246a6233668ac81d1c89196dfd",
-          "productSha256": "222da4aa9ca85a3522bea3cebbab0d9329ae86dcfaa8ad151e9b7abb0d1b7bab"
+          "baselineSha256": "b5b564b6212aa4dc75a909a85ba026087b36cfd9b1237a3316287f251da7b5c5",
+          "productSha256": "eb96de9b45c2796a91fe34b5f6ff48ed6cbc34a03e0c38891a665db34725b08a"
         },
         "common/src/main/java/com/shilapi/xcertplay/ClusterMusicView.kt": {
-          "baselineSha256": "3f6067ddf06dce68e01a2cf2e776c0a50e37f2c00e4ab9e14ee653e501a0001f",
-          "productSha256": "395e7cc6791031dd5e330c9f5f7bf0c4430590ec2bad60d10e53c8e2567e9855"
+          "baselineSha256": "0e11eedb569314fb6014bbc61c6058a5279fdf57b729f857615ab3fa73f46816",
+          "productSha256": "61c396ed901500e74d51b8622dc278c0815a2ea46070a3b4fe8774a92ea8e1ad"
         },
         "common/src/test/java/com/shilapi/xcertplay/ClusterMusicTest.kt": {
-          "baselineSha256": "5833d7a023d02c4189caad4e1834239c273fee1c6358fc33204f81c0bf2f63dc",
-          "productSha256": "e83fd0e9ad7ee3d014a183a0c1e8f933870f48b603119ef38c6b62f6c79cc46a"
+          "baselineSha256": "5c1a73c5efd511150697ef8d0aa19838f2c87bf4faab86aabe2e47e5adc49e86",
+          "productSha256": "7eb5d7dc1d71de1e8c2c746061133364cd4a1532451388f172dc5b236a28d863"
         },
         "galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyClusterMusicBinding.kt": {
           "baselineSha256": null,
@@ -1971,8 +1971,8 @@
           "productSha256": "e733d4964f34b92f158071258e09036b1687489981cdb62dd34f9115095b6b12"
         },
         "shared/src/main/java/com/shilapi/xcertplay/airplay/CarPlayMediaEngine.kt": {
-          "baselineSha256": "799038089714d3c491fd21fbcae30544e5e1c6699b4bee62fbe6e10b50701682",
-          "productSha256": "c4d2080d4455b14615ec823c393e679bdc524751bc365496ec765269e0ea69b5"
+          "baselineSha256": "ce724ea25371d15660a8f082faddae86a1a6c0f7ea008bf9b500da598d4988ad",
+          "productSha256": "911fdda987b846a98a60efcdaadaf397edb15e6821ae24b78453970653a87ec5"
         },
         "shared/src/main/java/com/shilapi/xcertplay/media/MicrophoneInputPolicy.kt": {
           "baselineSha256": null,
@@ -1987,8 +1987,8 @@
           "productSha256": "90c3997ffffe81736e6644b9ef666d70d68188af1e36375f461713d651c1e4a5"
         },
         "shared/src/test/java/com/shilapi/xcertplay/media/TelephonyMicrophoneTest.kt": {
-          "baselineSha256": "e772bb79b4fa8a140a001c5ae085a8fcec8d6039ab2e61452f88449e11316e8f",
-          "productSha256": "66cce581876e3d3445c981c92df4daaeea468bb969b46c54dc50f9d4121dcfed"
+          "baselineSha256": "db972c4daca790d9ad1006889b5c117574f7f243d5b5f02a0d8dc5c129a74aa6",
+          "productSha256": "dc7db3fd263fdc708b39037da3d4de0d6069316e196035c4d33a476bb8ba8053"
         },
         "galaxy/client/build.gradle.kts": {
           "baselineSha256": null,
@@ -2000,7 +2000,7 @@
         },
         "galaxy/client/src/main/java/com/galaxy/auto/client/AutoClient.kt": {
           "baselineSha256": null,
-          "productSha256": "5d4a37506c984ad7aa3f7c2b8bd1a6c3ab2bb59a911b58bd6b36d04bf5983722"
+          "productSha256": "d642cc7a73cf438415c2967250df3f855b115d7c467b76d600915a787f44bd6f"
         },
         "galaxy/cluster/build.gradle.kts": {
           "baselineSha256": null,
@@ -2012,7 +2012,7 @@
         },
         "galaxy/cluster/src/main/java/com/galaxy/autocluster/ClusterActivity.kt": {
           "baselineSha256": null,
-          "productSha256": "4b14b37f0f228b3f8991ea9a768c17063fffea7731806d98b967c64eceb4abac"
+          "productSha256": "1b77b493a74eee60331d006bd6db3023a8516d955d03e1e4c59270f68fc684d4"
         },
         "galaxy/cluster/src/main/java/com/galaxy/autocluster/ClusterRenderService.kt": {
           "baselineSha256": null,
@@ -2032,7 +2032,7 @@
         },
         "galaxy/contracts/src/main/aidl/com/galaxy/auto/contract/IAutoCallback.aidl": {
           "baselineSha256": null,
-          "productSha256": "81a80bf176ef78577e483a3741b44d493ff94dabfb887aa6b4a5e6b0cd551c27"
+          "productSha256": "0eae29b46a4ff7432ae9261e7f967fa837b8ae42b77c358dcd20a9d74b4198de"
         },
         "galaxy/contracts/src/main/aidl/com/galaxy/auto/contract/IAutoResult.aidl": {
           "baselineSha256": null,
@@ -2040,19 +2040,19 @@
         },
         "galaxy/contracts/src/main/aidl/com/galaxy/auto/contract/IAutoService.aidl": {
           "baselineSha256": null,
-          "productSha256": "1c7b24b3b1fb64a70a36a493cd888bdd66ddfa08e67fcbdeb7d2db580f4b1a57"
+          "productSha256": "833d4d6e9c0a914a6902b75062ae2df0bb0eeafb31105ba6d2d75f99c71416c4"
         },
         "galaxy/contracts/src/main/java/com/galaxy/auto/contract/AutoContract.kt": {
           "baselineSha256": null,
-          "productSha256": "ba2505d68b5dcc33d99cacae207847d3dadc9bd76e83f6cf956187f2524a1f02"
+          "productSha256": "ab34f4c6deaa95a7854e121781b295c9a5a1246fc44f34186ff60044c61bfa5b"
         },
         "galaxy/contracts/src/main/java/com/galaxy/auto/contract/VehicleSignal.kt": {
           "baselineSha256": null,
-          "productSha256": "094c43868ce9ec796418f3cc2a1b685ed614f2c7a7420223d86a41fb206b798d"
+          "productSha256": "a41ba8ad8d45f55d7a86ff0137c8b712f62958d62a749b5d3e070a0a709cc63c"
         },
         "galaxy/contracts/src/test/java/com/galaxy/auto/contract/AutoContractTest.kt": {
           "baselineSha256": null,
-          "productSha256": "a1fe01d4fa11a004d57ea21f10c7087cd59b7f3260faae8264349763215aed7d"
+          "productSha256": "ad35c5c66cccd10f8534f3f100bb76b5ee825a9777e1ed5efeaf8584db4c71e3"
         },
         "galaxy/service/build.gradle.kts": {
           "baselineSha256": null,
@@ -2140,11 +2140,11 @@
         },
         "galaxy/service/src/main/java/com/ecarx/autoservice/AutoService.kt": {
           "baselineSha256": null,
-          "productSha256": "d12a44cf78ac9d0368039dc35c1c9a25befd5fe36ca6f033619afc380fdfa0f0"
+          "productSha256": "5794040bc781b5f15cc29be2aae00e8bd9f0871c94e524622ce219dc65a1192c"
         },
         "galaxy/service/src/main/java/com/ecarx/autoservice/ClientRegistry.kt": {
           "baselineSha256": null,
-          "productSha256": "508353a0b58186166f6a4f76b4ce409346b925bd190548da55efc9cdc6f75365"
+          "productSha256": "e56f68aa98a6d4c1daf6cbff71d731ccb8e413d61f27fe0f572d0c76c6baba7e"
         },
         "galaxy/service/src/main/java/com/ecarx/autoservice/ServiceActivity.kt": {
           "baselineSha256": null,
@@ -2184,11 +2184,11 @@
         },
         "galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootServiceClient.kt": {
           "baselineSha256": null,
-          "productSha256": "8a50d591a4264ea6a334612fcf1af7f9a879274fdc8a4b12cfefb1dc179c54a8"
+          "productSha256": "a799f3f6b03d791cc8f2777b38458b98eab189a190e042c2712ab4bc54cea640"
         },
         "galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootServiceMain.kt": {
           "baselineSha256": null,
-          "productSha256": "3e94da9ad0fafcbac9119a945a25b82e15af40b27a25b530c271c286330bd124"
+          "productSha256": "4856f0929557ace5d3bd475288ed30b2b4e76fafaca2498a6e58dd9620e01482"
         },
         "galaxy/service/src/main/java/com/ecarx/autoservice/platform/ShellExecutor.kt": {
           "baselineSha256": null,
@@ -2220,11 +2220,11 @@
         },
         "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/EcarxVehicleSource.kt": {
           "baselineSha256": null,
-          "productSha256": "5412eabef2381e6a5252384cda59159a07f18e62290d8ee0dde14ac75ee84668"
+          "productSha256": "19b0f62ec4b0729eea3c8aa22a10a589d5e33e343aebeadc983f5b436d4171ed"
         },
         "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleCatalog.kt": {
           "baselineSha256": null,
-          "productSha256": "24bcba9c801644326ec1b06cf54b1a9721cb232cc82aa933ecfa5ab76b15752c"
+          "productSha256": "b1391cd24bedf747e56bcd5e44f4b1e8b6318b215c61b6c64f39d6b346a08cf2"
         },
         "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleInventory.kt": {
           "baselineSha256": null,
@@ -2232,11 +2232,11 @@
         },
         "galaxy/service/src/test/java/com/ecarx/autoservice/ClientRegistryTest.kt": {
           "baselineSha256": null,
-          "productSha256": "a1896d82fe37a592f9de527ded5e1dfd06d6db100a14c3c76b42179a7dcaf4a0"
+          "productSha256": "776d07397513d9b563e83c878b61c022c5f5ed04b8b8098a11580ba61633a236"
         },
         "galaxy/service/src/test/java/com/ecarx/autoservice/platform/PlatformExecutionTest.kt": {
           "baselineSha256": null,
-          "productSha256": "f38dfd94903330815ddfca99b38d0017d4b02f181942ba0abafa2fc440c452b7"
+          "productSha256": "a2a6e9ff7ccf82991f873f0cff5e8937731acc59c6576dd23e424b60b9c30fa4"
         },
         "galaxy/service/src/test/java/com/ecarx/autoservice/projection/GalaxyHabFramesTest.kt": {
           "baselineSha256": null,
@@ -2304,7 +2304,7 @@
         },
         "galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/VehicleSourceUnavailableTest.kt": {
           "baselineSha256": null,
-          "productSha256": "26ee68729e1d9203de1ff9b79eb7078274fb14b2a6cd479ff9543b2d137b7712"
+          "productSha256": "3ecd341203b0fc4d3e85639294a75bda4d0a961e11cec75cd245f2a47913f4da"
         },
         "galaxy/service/src/debug/java/com/ecarx/autoservice/platform/RootDebugProbe.kt": {
           "baselineSha256": null,
@@ -2312,7 +2312,7 @@
         },
         "galaxy/service/src/main/java/com/ecarx/autoservice/DiagnosticActivity.kt": {
           "baselineSha256": null,
-          "productSha256": "e1ebcaf071d168055f099cc5ca1b53f4ce36021db93c00721447512fe434cee8"
+          "productSha256": "805d26d4003bb60bbf4f500a49b88fd453f530a48274abe11633772850a52103"
         },
         "galaxy/service/src/main/java/com/ecarx/autoservice/SerialWorker.kt": {
           "baselineSha256": null,
@@ -2408,7 +2408,7 @@
         },
         "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleCollector.kt": {
           "baselineSha256": null,
-          "productSha256": "7c6f6e58f5ccef47d150c16ec1e1b02ebf3540bfbcb1ad05681ea3c391d6dfd7"
+          "productSha256": "2005682b00f7c6765cfb55ff3bc8d0a5b96d0ab2556432b7b4b8a871cc767ffe"
         },
         "galaxy/service/src/test/java/com/ecarx/autoservice/platform/AdbStartupTest.kt": {
           "baselineSha256": null,
@@ -2432,7 +2432,7 @@
         },
         "galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/VehicleEventsTest.kt": {
           "baselineSha256": null,
-          "productSha256": "04cd2e15496bbc64db84029afa6f0baa465cdf26ee3aee8359e70771d9b45b2e"
+          "productSha256": "0a413d8bb15351ec0a295c3fd7d785b9e32e37fb3f71b091ec19dbadf6b41fab"
         },
         "galaxy/service/src/test/java/ecarx/car/IECarXCar.kt": {
           "baselineSha256": null,
@@ -2472,7 +2472,7 @@
         },
         "galaxy/cluster/src/main/java/com/galaxy/autocluster/runtime/ClusterSceneOutput.kt": {
           "baselineSha256": null,
-          "productSha256": "e2fe9282db9ad15d61d62e429b75a0d1e7da72518e575397ba6dac806c88e8c5"
+          "productSha256": "5e693c11e29c6079c7415e4c9b956d3f07ecf3f9c78d464f4d3b7805d9ccad71"
         },
         "galaxy/cluster/src/main/java/com/galaxy/autocluster/runtime/ScenePreparation.kt": {
           "baselineSha256": null,
@@ -2764,7 +2764,7 @@
         },
         "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/ClusterFieldDiagnostics.kt": {
           "baselineSha256": null,
-          "productSha256": "75d4cf25b91c0707e06545fe4c7050756be8207e179d9eb1c3d11ebd4b7b69c4"
+          "productSha256": "2e7f895c833f0114a93ddaccc3a718e91e510126c8e497438c0f3ba5e5aca803"
         },
         "galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/ClusterFieldDiagnosticsTest.kt": {
           "baselineSha256": null,
@@ -2817,6 +2817,70 @@
         "shared/src/main/java/com/shilapi/xcertplay/airplay/AudioStream.kt": {
           "baselineSha256": "0e40f472b31ee7feec4a2b966b703239cb6557c8ebb49ec333b24fb488ec8a76",
           "productSha256": "0fa5abfef6d79e88e78bf3f2a1ce1d66e4e0e40c0134d273a34edaad823d9108"
+        },
+        "common/src/test/java/com/shilapi/xcertplay/CarPlayHostSettingsTest.kt": {
+          "baselineSha256": "0bbce2bc698ffa42a2a06b1464fa966540ccfc85773a3875af28130eb4ad0ca9",
+          "productSha256": "a0c1a0b3651c9dbb0537fc6bc06f3dcc5a6bcbda60746663320907ba4e84c874"
+        },
+        "common/src/test/java/com/shilapi/xcertplay/HomeLastConnectionProblemTest.kt": {
+          "baselineSha256": "a950d141994bbf735917367eb8b5a760d24a0a22e0866c05dc9942de09d873b6",
+          "productSha256": "dd3955f725c3ffae3d48c46c8cdbacabe48a381ee0b8115d6110f08725c18db3"
+        },
+        "shared/src/test/java/com/shilapi/xcertplay/airplay/BufferedMusicClockTrimTest.kt": {
+          "baselineSha256": "c233677ca83f1fd83772e06d2976f6f824b9cae56370c0e54b4f59c6f0d5c701",
+          "productSha256": "0b75b9135782ecdf36261924eee46b7281abb15c60d4c85fbff226736c89376f"
+        },
+        "shared/src/test/java/com/shilapi/xcertplay/airplay/RealtimeMusicClockTrimTest.kt": {
+          "baselineSha256": "c3888d29301f0cec3a3bbd02b152e60cf479fb44b5de069a2b4443c09be07cdc",
+          "productSha256": "b99773d0b5c6c11bd94f443b473a5a65dbc6075657311a57eea36883cf41b60d"
+        },
+        "common/src/main/java/com/shilapi/xcertplay/CarPlayLocationSelection.kt": {
+          "baselineSha256": null,
+          "productSha256": "fb526841bb35efaf200779332df715fcc90a90c2473e63fe4c7355d09b8df036"
+        },
+        "common/src/test/java/com/shilapi/xcertplay/CarPlayLocationSelectionTest.kt": {
+          "baselineSha256": null,
+          "productSha256": "dbdae49b9a70dc18018e1a443e3ec32dc3e8b6dab2146d677a49165d4ff814ee"
+        },
+        "galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyVehicleOutputSettings.kt": {
+          "baselineSha256": null,
+          "productSha256": "20cba3472964f32aa6f57a218627dcb47dd6b3b7eb6bba021604ce8c7924ab1e"
+        },
+        "galaxy/common/src/main/java/com/shilapi/xcertplay/GalaxyVehicleSpeed.kt": {
+          "baselineSha256": null,
+          "productSha256": "a689d5bcf790d7a8d063174393f55515c6664c6caffac44e6c2762977362dcc8"
+        },
+        "galaxy/common/src/main/res/values-en/galaxy_vehicle_speed.xml": {
+          "baselineSha256": null,
+          "productSha256": "ea10b59ac934bfe7d49248b08471af619e25b03fb46d00c41000eba7b71244dc"
+        },
+        "galaxy/common/src/main/res/values/galaxy_vehicle_speed.xml": {
+          "baselineSha256": null,
+          "productSha256": "c1bb97209e4ad41a4bf929cd4660fd6b3d2185c64c93a804695f3a805d5daee0"
+        },
+        "galaxy/common/src/test/java/com/shilapi/xcertplay/GalaxyVehicleSpeedTest.kt": {
+          "baselineSha256": null,
+          "productSha256": "0bf76a940796f7e159851e676ae23995847efa664250ac9b5502c3a0404bd7bb"
+        },
+        "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleFeed.kt": {
+          "baselineSha256": null,
+          "productSha256": "c95b04e89f70b7d9b8cc54cc67c8c3af7f453492e65c704c02c1f3ffc8c9c108"
+        },
+        "galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/VehicleFeedTest.kt": {
+          "baselineSha256": null,
+          "productSha256": "7be8d831d85a65043cea589709bbafc7768444c09f4d326e3f25bc0edb76da27"
+        },
+        "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleDemand.kt": {
+          "baselineSha256": null,
+          "productSha256": "e7126c0391a33b7930dae39f2ace0de59db2e30c3db03a4e61ffeb2760d1531a"
+        },
+        "galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/VehicleDemandTest.kt": {
+          "baselineSha256": null,
+          "productSha256": "e0fb56df782295ac4973db3e7881c61be904b717a0e3cba47d8203d235178128"
+        },
+        "galaxy/service/src/test/java/ecarx/car/hal/HalPropertyIdTransformation.kt": {
+          "baselineSha256": null,
+          "productSha256": "2fe07f20146757a62845321bbfcea6535be15ac019f3d4edcb323b5aa017b978"
         }
       }
     }

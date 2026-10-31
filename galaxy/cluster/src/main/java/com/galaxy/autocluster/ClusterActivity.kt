@@ -181,8 +181,8 @@ class ClusterActivity : Activity() {
         }catch(error: Exception){message("素材未应用，原设置保留")}
     }
     private fun fields(): List<Pair<String,String>> {
-        val values=snapshot.getBundle("vehicle")
-        val known=VehiclePainter.labels.keys+(values?.keySet()?:emptySet())
+        // v4快照只带键名清单，不再带全量车辆值；编辑器下拉以目录清单为准。
+        val known=VehiclePainter.labels.keys+(snapshot.getStringArray("vehicleKeys")?.toSet()?:emptySet())
         return known.sorted().map { key->"vehicle.$key" to (VehiclePainter.labels[key]?:key) }+
             listOf("media.title" to "歌曲标题","media.artist" to "歌手","media.album" to "专辑","media.elapsed" to "播放位置（毫秒）","media.duration" to "音乐时长（毫秒）",
                 "navigation.distance" to "导航距离","navigation.road" to "道路名称","navigation.arrival" to "到达时间")
