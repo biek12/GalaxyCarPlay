@@ -16,7 +16,7 @@ internal object AsyncDiagnosticLog {
     @Volatile private var generation = 0L
     private val writer = BoundedDiagnosticWriter<Entry> { entry ->
         synchronized(SessionLogFile.storageLock) {
-            if (entry.generation == generation) entry.target.append(entry.line, entry.context)
+            if (entry.generation == generation) entry.target.appendNow(entry.line, entry.context)
         }
     }
 
@@ -56,6 +56,8 @@ internal object AsyncDiagnosticLog {
         }
         runCatching { SessionLogFile.storageChanged?.invoke(File(folder, "diplay.log"), true) }
     }
+
+    internal fun currentGeneration(): Long = generation
 
     internal fun awaitIdle(timeoutMillis: Long): Boolean = writer.awaitIdle(timeoutMillis)
 }

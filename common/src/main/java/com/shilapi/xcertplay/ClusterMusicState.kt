@@ -72,8 +72,12 @@ internal object ClusterMusicState {
             val changed = trackChanged(previous.info, info)
             val keep = preserveProductState && !changed &&
                 previous.info.artworkTransferId == info.artworkTransferId
-            val artwork = if (keep && suppliedArtwork == null) previous.artwork else suppliedArtwork
-            val owner = if (keep && suppliedArtwork == null) previous.ownsArtwork else ownsArtwork
+            val hasTrack = !info.title.isNullOrBlank() || !info.artist.isNullOrBlank()
+            // 上游借用封面可跨元数据更新保留；产品拥有的图像仅在同曲中保留，切歌仍释放。
+            val retain = suppliedArtwork == null && (keep ||
+                (!preserveProductState && hasTrack && !previous.ownsArtwork))
+            val artwork = if (retain) previous.artwork?.takeUnless { it.isRecycled } else suppliedArtwork
+            val owner = if (retain) previous.ownsArtwork else ownsArtwork
             val lyrics = if (keep) previous.lyrics else emptyList()
             val lyricsResolved = keep && previous.lyricsResolved
             val now = SystemClock.elapsedRealtime()

@@ -1047,7 +1047,7 @@ class GalaxySettingsActivity : ComponentActivity() {
                     appendLine("Authentication backend: ${AirPlayPersistence.loadMfiTarget(appContext)}")
                     appendLine("CarPlay setup: ${if (setupError == null) "ready" else "authentication unavailable"}")
                     appendLine("Saved video preference (may differ from active session): ${if (AirPlayPersistence.loadHevcEnabled(appContext)) "HEVC" else "H.264"}; ${AirPlayPersistence.loadFps(appContext)} fps")
-                    appendLine("CarPlay size: ${if (l7Ui) "L7 viewport physical geometry" else com.shilapi.xcertplay.airplay.CarPlaySize.fromWidthMillimeters(AirPlayPersistence.loadWidthPhysicalMm(appContext)).label}")
+                    appendLine("CarPlay size: ${if (l7Ui) "L7 viewport physical geometry" else (com.shilapi.xcertplay.airplay.CarPlaySize.exact(AirPlayPersistence.loadWidthPhysicalMm(appContext))?.label ?: "${AirPlayPersistence.loadWidthPhysicalMm(appContext)} mm")}")
                     appendLine("Saved resolution preference (may differ from active session): ${AirPlayPersistence.loadDisplayScaleTenths(appContext) * 10}%")
                     appendLine("Session: ${if (CarPlayBackgroundSession.active) "active" else if (CarPlayBackgroundSession.hasSession()) "connecting" else "stopped"}")
                     appendLine("Head-unit board: ${Build.BOARD}; hardware: ${Build.HARDWARE}; build: ${Build.DISPLAY}")

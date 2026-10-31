@@ -45,6 +45,14 @@ internal object L7AudioSettings {
                 text(R.string.l7_call_processing_note), AirPlayPersistence.loadCallProcessingEnabled(context)) {
                 AirPlayPersistence.saveCallProcessingEnabled(context, it)
             })
+            card.addView(L7Components.switchRow(context, text(R.string.settings_navigation_prompt_audio_focus),
+                text(R.string.settings_navigation_prompt_audio_focus_description), AirPlayPersistence.loadNavigationPromptAudioFocus(context)) {
+                AirPlayPersistence.saveNavigationPromptAudioFocus(context, it)
+            })
+            card.addView(L7Components.switchRow(context, text(R.string.settings_call_at_call_rate),
+                text(R.string.settings_call_at_call_rate_description), AirPlayPersistence.loadCallAtCallRate(context)) {
+                AirPlayPersistence.saveCallAtCallRate(context, it)
+            })
 
         }
         L7SettingsSection.add(parent, text(R.string.l7_section_bluetooth_audio)) { L7BluetoothAudioSettings.add(context, it, showExclusive = context !is GalaxyConfigurationContext) }

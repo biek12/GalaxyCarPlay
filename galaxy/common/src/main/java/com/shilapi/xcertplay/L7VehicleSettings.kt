@@ -28,6 +28,12 @@ internal object L7VehicleSettings {
                     else R.string.l7_vehicle_preset_note)).apply {
                 setValue(text(L7AudioSettings.modeName(GalaxyVehicleAudioProfiles.mode(context))))
             })
+            card.addView(L7Components.switchRow(context, text(R.string.galaxy_vehicle_speed_iphone),
+                text(R.string.galaxy_vehicle_speed_iphone_note),
+                GalaxyVehicleOutputSettings.vehicleSpeedToIphone(context)) { enabled ->
+                // 成功时不重建页面：开关此时已是目标状态，且不能在监听器派发期间销毁它自己的视图。
+                if (!change(context) { GalaxyVehicleOutputSettings.setVehicleSpeedToIphone(context, enabled) }) refresh()
+            })
             val detected = GalaxyVehicleModelDetector.detect()
             card.addView(L7Components.valueRow(context, text(R.string.l7_template_detect),
                 detected?.let { GalaxyVehicleModelConfirmation.name(context, it) } ?: text(R.string.l7_template_detect_unknown)) {
@@ -38,8 +44,11 @@ internal object L7VehicleSettings {
         }
     }
 
-    private fun change(context: Context, action: () -> Unit) {
-        if (runCatching(action).isFailure)
+    /** 返回是否保存成功；失败时提示且由调用方决定是否重建，避免在开关回调里销毁正在派发的视图。 */
+    private fun change(context: Context, action: () -> Unit): Boolean {
+        val saved = runCatching(action).isSuccess
+        if (!saved)
             Toast.makeText(context, R.string.l7_template_save_failed, Toast.LENGTH_LONG).show()
+        return saved
     }
 }

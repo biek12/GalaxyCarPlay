@@ -178,7 +178,7 @@
     <string name="drag_to_move_pinch_to_zoom">拖动以移动，双指缩放</string>
     <string name="draw_outside_safe_area">允许绘制到安全区域外</string>
     <string name="driving_side">驾驶方向</string>
-    <string name="efficient_video">高效视频</string>
+    <string name="efficient_video">高效视频（HEVC）</string>
     <string name="enable_the_car_s_bluetooth_and_pair_your_iphone_first">请先打开车机蓝牙并配对 iPhone。</string>
     <string name="error">错误</string>
     <string name="exit_application">退出应用</string>

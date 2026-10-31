@@ -11,6 +11,11 @@ internal object L7DisplaySettings {
         fun text(id: Int) = activity.getString(id)
         L7SettingsSection.add(parent, text(R.string.l7_section_app_ui), footer = text(R.string.l7_ui_density_hint)) {
             L7UiDensitySettings.add(activity, it)
+            it.addView(L7Components.switchRow(activity, text(R.string.settings_carplay_same_task),
+                text(R.string.settings_carplay_same_task_description), AirPlayPersistence.loadCarPlaySameTask(activity)) { enabled ->
+                AirPlayPersistence.saveCarPlaySameTask(activity, enabled)
+                CarPlayScreen.closeIfElsewhere(activity)
+            })
         }
         L7SettingsSection.add(parent, text(R.string.l7_section_floating), footer = text(R.string.l7_floating_hint)) { card ->
             card.addView(L7Components.switchRow(activity, text(R.string.l7_in_app_title), text(R.string.l7_in_app_hint),

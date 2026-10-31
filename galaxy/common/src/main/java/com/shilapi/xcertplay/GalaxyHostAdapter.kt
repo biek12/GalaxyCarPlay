@@ -12,6 +12,7 @@ import com.shilapi.xcertplay.media.AudioOutputRole
 import com.shilapi.xcertplay.media.CarPlayVideoLayout
 import com.shilapi.xcertplay.media.GalaxyMediaPolicy
 import com.shilapi.xcertplay.orchestration.CarPlayController
+import com.shilapi.xcertplay.transport.VehicleSpeedSource
 import kotlin.math.roundToInt
 
 /** 唯一公开安装入口供Application调用，不向mobile暴露内部宿主接口。 */
@@ -78,6 +79,12 @@ private class GalaxyProductHostAdapter(
     override fun connectionStage(message: String, englishMessage: String) = message
     override fun wifiP2pAllowedChannels(): List<Int> = GalaxyP2pSettings.load(activity).policy.channels
     override fun preferredAvcDecoder(): String? = GalaxyVideoDecoderPreferences.load(activity).decoder
+    // 车速/挡位来自本车平台的按需订阅（GalaxyVehicleSpeed），不由“本机装了ECARX SDK”推导。
+    // 每次调用都新建来源实例：核心的 VehicleSpeedLocationProvider 负责它这一次连接的 start/stop。
+    override fun vehicleSpeedToIphone() = GalaxyVehicleOutputSettings.vehicleSpeedToIphone(activity)
+    override fun vehicleSpeedSource(): VehicleSpeedSource? =
+        if (GalaxyVehicleOutputSettings.vehicleSpeedToIphone(activity))
+            GalaxyVehicleSpeed(activity.applicationContext, log = actions.report) else null
 
     override fun audioConfiguration(): HostAudioConfiguration {
         val template = GalaxyVehicleAudioProfiles.load(activity)
