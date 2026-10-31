@@ -14,6 +14,13 @@ import java.util.concurrent.atomic.AtomicLong
 
 /** 只服务启动它的App进程。控制、只读车辆和HAB分派独立处理；不改变原车进程或设备权限。 */
 object RootServiceMain {
+    private fun org.json.JSONArray?.toStringSet(): Set<String> {
+        if (this == null) return emptySet()
+        val out = HashSet<String>(length())
+        for (index in 0 until length()) optString(index).takeIf { it.isNotEmpty() }?.let { out += it }
+        return out
+    }
+
     @JvmStatic fun main(args: Array<String>) {
         require(args.size == 7 && Process.myUid() == 0)
         val owner = RootOwner(args[0].toInt(), args[1].toInt(), args[2])
@@ -78,11 +85,23 @@ object RootServiceMain {
                                 output.writeInt(0); output.flush(); release(); Process.killProcess(Process.myPid()); return@execute
                             }
                             if (operation == 6) { RootHabSession.run(client, input, output, apk); return@execute }
-                            val request = if (operation in 3..5 || operation == 7) RootWire.read(input, 16384) else JSONObject()
+                            val request = if (operation == 1 || operation in 3..5 || operation == 7) RootWire.read(input, 16384) else JSONObject()
                             val result = try {
                                 when (operation) {
                                     0 -> JSONObject().put("state", "root_ready").put("uid", Process.myUid())
-                                    1 -> synchronized(source) { source.cycle(specs, SystemClock.elapsedRealtime(), args[4]) }
+                                    1 -> synchronized(source) {
+                                        // 订阅键决定注册与读取；scan=true时额外推进一轮全目录诊断扫描（结果并入同一回复）。
+                                        val now = SystemClock.elapsedRealtime()
+                                        val keys = request.optJSONArray("keys").toStringSet()
+                                        val due = request.optJSONArray("due").toStringSet().intersect(keys)
+                                        val reply = source.cycle(specs, now, args[4], keys, due)
+                                        if (request.optBoolean("scan")) {
+                                            val scan = source.scanCycle(specs, now, args[4])
+                                            reply.put("scan", scan.optJSONArray("scan")?.length() ?: 0)
+                                            reply.put("scanCursor", scan.optInt("cursor"))
+                                        }
+                                        reply
+                                    }
                                     3 -> ShellExecutor.execute(request.getString("command"), request.getInt("timeoutMillis"))
                                     4 -> QnxReceiverDeployer.deploy(request)
                                     5 -> QnxReceiverDeployer.stop(request)

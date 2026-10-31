@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="galaxy_vehicle_speed_iphone">Send speed and gear to iPhone</string>
+    <string name="galaxy_vehicle_speed_iphone_note">Speed and gear come from this head unit\'s AutoService subscription and do not change the location source. Used only while location reporting is on. Applies on the next connection.</string>
+</resources>

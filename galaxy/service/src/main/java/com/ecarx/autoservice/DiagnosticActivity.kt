@@ -29,9 +29,9 @@ class DiagnosticActivity : Activity() {
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(18); bottomMargin = ui.dp(18) })
         result = ui.label("等待诊断操作", 15f).apply { setTextIsSelectable(true) }
         root.addView(ui.card().apply { addView(result) })
-        fun button(title: String, action: () -> Unit) {
-            root.addView(ui.button(title, action = action), LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(12) })
-        }
+        fun buttonView(title: String, action: () -> Unit): Button =
+            ui.button(title, action = action).also { root.addView(it, LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(12) }) }
+        fun button(title: String, action: () -> Unit) { buttonView(title, action) }
         button("重新初始化已开启的功能") {
             if (AutoStartup.enabled(this)) startService(Intent(this, AutoService::class.java).setAction("prepare"))
             else result.text = "后台已暂停，请先在首页开启自动运行"
@@ -56,6 +56,18 @@ class DiagnosticActivity : Activity() {
                 result.text = "exit=${value.getInt("exitCode", -1)} timeout=${value.getBoolean("timedOut")}\n${value.getString("error").orEmpty()}\n${value.getString("output").orEmpty()}"
             }
         }
+        // 全目录诊断扫描：默认关。开启后按32项/拍推进整个目录，是唯一会读未订阅属性的入口，
+        // 所以做成显式开关并在结果区说明成本，不参与正常运行的常驻采集。
+        var scanning = false
+        lateinit var scanButton: Button
+        scanButton = buttonView("全目录诊断扫描：关") {
+            scanning = !scanning
+            client?.setVehicleScan(scanning)
+            scanButton.text = if (scanning) "全目录诊断扫描：开（关闭前持续读取全目录）" else "全目录诊断扫描：关"
+            result.text = if (scanning)
+                "已开启全目录诊断扫描：每拍读取32个目录属性，用于核对全量可读范围。诊断完成后请关闭。"
+            else "已关闭全目录诊断扫描；恢复为只采集已订阅键。"
+        }
         var offset = 0
         button("车辆属性：下一页") { client?.vehiclePage(offset) { value ->
             val items = value.getParcelableArrayList<Bundle>("items").orEmpty()
@@ -72,7 +84,16 @@ class DiagnosticActivity : Activity() {
             startService(Intent(this, AutoService::class.java).setAction("model"))
         }
         setContentView(ScrollView(this).apply { setBackgroundColor(ui.background); isFillViewport = true; addView(root) })
-        client = AutoClient(this, AutoContract.OBSERVER, onState = { result.text = it }).also { it.connect() }
+        client = AutoClient(this, AutoContract.OBSERVER,
+            onSnapshot = { snapshot ->
+                // 扫描开关是服务端状态：页面重建后按快照回显，不凭本地变量假设。
+                val actual = snapshot.getBoolean("vehicleScanning")
+                if (actual != scanning) {
+                    scanning = actual
+                    scanButton.text = if (actual) "全目录诊断扫描：开（关闭前持续读取全目录）" else "全目录诊断扫描：关"
+                }
+            },
+            onState = { result.text = it }).also { it.connect() }
     }
     @Deprecated("平台文件选择器")
     override fun onActivityResult(request: Int, code: Int, data: Intent?) {

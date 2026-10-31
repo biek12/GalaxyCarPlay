@@ -17,6 +17,7 @@ class AutoClient(context: Context, private val role: String,
     private val onState: (String) -> Unit = {},
     private val onCommand: (Int) -> Unit = {},
     private val onConfiguredSurface: (Surface?, Long) -> Unit = { _, _ -> },
+    private val onVehicleFeed: (Bundle) -> Unit = {},
 ) : Closeable {
     private val app = context.applicationContext
     private val main = Handler(Looper.getMainLooper())
@@ -35,6 +36,9 @@ class AutoClient(context: Context, private val role: String,
     private var previewSurface: Surface? = null // io线程持有自己的引用
     private var borrowed: Surface? = null
     @Volatile private var active = false
+    /** v4车辆信号订阅键与最小推送间隔；重连后要原样重放，否则断线恢复会静默失去订阅。 */
+    @Volatile private var feedKeys: List<String> = emptyList()
+    @Volatile private var feedInterval: Int = AutoContract.DEFAULT_FEED_INTERVAL_MS
     private val media = AtomicReference<Bundle?>()
     private val navigation = AtomicReference<Bundle?>()
     private val art = AtomicReference<ByteArray?>()
@@ -68,6 +72,12 @@ class AutoClient(context: Context, private val role: String,
                         onState(state)
                     }
                 } }
+                override fun onVehicleFeed(values: Bundle) { main.post {
+                    if (!closed && generation == ticket) {
+                        values.classLoader = javaClass.classLoader
+                        this@AutoClient.onVehicleFeed(values)
+                    }
+                } }
             }
             io.post {
                 try {
@@ -76,6 +86,8 @@ class AutoClient(context: Context, private val role: String,
                     api = next
                     next.attach(lease, role, callback)
                     next.setActive(lease, active)
+                    // 与attach/setActive同一批补发，重连后订阅语义不依赖调用方再次触发。
+                    if (feedKeys.isNotEmpty()) next.setVehicleFeed(lease, feedKeys.toTypedArray(), feedInterval)
                     media.compareAndSet(null, lastMedia)
                     navigation.compareAndSet(null, lastNavigation)
                     art.compareAndSet(null, lastArtwork)
@@ -167,6 +179,32 @@ class AutoClient(context: Context, private val role: String,
         } }
     }
     fun mediaCommand(command: Int) { io.post { call { it.mediaCommand(owner, command) } } }
+    /**
+     * 订阅语义车辆信号（v4）：空集合即取消订阅。
+     *
+     * [intervalMillis] 既是推送间隔也是该键的采集周期——服务端按它决定读车机的频率，
+     * 所以不要为了“更实时”随手填250，先确认消费端真的用得上。
+     * 只在主线程调用；非法键直接失败，不静默丢键——静默丢弃会让调用方以为已订阅。
+     */
+    fun setVehicleFeed(keys: Collection<String>, intervalMillis: Int = AutoContract.DEFAULT_FEED_INTERVAL_MS) {
+        check(Looper.myLooper() == Looper.getMainLooper())
+        val next = keys.distinct().sorted()
+        require(AutoContract.feedKeysValid(next.toTypedArray())) { "invalid_feed_keys" }
+        require(AutoContract.feedIntervalValid(intervalMillis)) { "invalid_feed_interval" }
+        feedKeys = next; feedInterval = intervalMillis
+        io.post { call { it.setVehicleFeed(owner, feedKeys.toTypedArray(), feedInterval) } }
+    }
+    /** 直接读服务端已采集的缓存（不触发车机读取）；结果在主线程回调。 */
+    fun getVehicleValues(keys: Collection<String>, result: (Bundle) -> Unit) {
+        val next = keys.distinct().sorted()
+        require(AutoContract.feedKeysValid(next.toTypedArray())) { "invalid_feed_keys" }
+        io.post { call { remote ->
+            val values = remote.getVehicleValues(next.toTypedArray())
+            main.post { if (!closed) { values.classLoader = javaClass.classLoader; result(values) } }
+        } }
+    }
+    /** 全目录诊断扫描开关；只有本包（AutoService自带诊断界面）能生效。 */
+    fun setVehicleScan(enabled: Boolean) { io.post { call { it.setVehicleScan(enabled) } } }
     private fun call(block: (IAutoService) -> Unit) {
         val remote = api ?: return
         if (!closed) try { block(remote) } catch (error: Exception) { state("ipc:${error.javaClass.simpleName}") }
@@ -201,6 +239,8 @@ class AutoClient(context: Context, private val role: String,
         media.set(null); navigation.set(null); art.set(null)
         scene.set(null); policy.set(null); lastScene = null
         lastMedia = null; lastNavigation = null; lastArtwork = null
+        // close是终态：订阅键一并清空，避免残留意图在下一代连接里复活。
+        feedKeys = emptyList(); feedInterval = AutoContract.DEFAULT_FEED_INTERVAL_MS
         io.post { runCatching { previous?.detach(owner) }; previewSurface?.release(); previewSurface = null; thread.quitSafely() }
     }
     private fun duplicateSurface(value: Surface): Surface {

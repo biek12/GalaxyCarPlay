@@ -7,6 +7,22 @@ internal data class SignalSpec(val key: String, val propertyId: Int, val unit: S
     val payload: String="number", val area: Int=1, val normalizedId: Int = 0, val name: String = key, val mapping: Map<String, String> = emptyMap())
 
 internal object VehicleCatalog {
+    /**
+     * 旧公共键 → 目录基础键。
+     *
+     * 这些别名不是独立属性，而是历史对外键名（快照时代就在发），主题/旧客户端仍在引用。
+     * v4 按订阅采集后，订阅别名必须翻译成基础键去读车机，再由采集侧按别名派生出同名子Bundle，
+     * 否则这些键会从"有值"变成"永远没有"——那是能力缩减，不是优化。
+     */
+    val LEGACY_ALIASES: Map<String, String> = linkedMapOf(
+        "fuelConsumption" to "property.10061",
+        "electricConsumption" to "property.10062",
+        "parkingBrake" to "property.10040",
+        "positionLights" to "property.10041",
+        "driverSeatbeltWarning" to "property.10056",
+    )
+    /** 别名取其基础键；普通键原样返回。 */
+    fun baseKey(key: String): String = LEGACY_ALIASES[key] ?: key
     private val l6Specs by lazy { create("L6") }
     private val l7Specs by lazy { create("L7") }
     fun forModel(model: String): List<SignalSpec> = when (model) {

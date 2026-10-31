@@ -111,8 +111,8 @@
 +        // 本地G733原厂/服务核验材料已落实Android11/API30；产品UI需Android10以上API。
 +        minSdk = 29
          targetSdk = 37
--        versionCode = 40
--        versionName = "0.2.21"
+-        versionCode = 41
+-        versionName = "0.2.22"
 +        versionCode = productVersion.getProperty("versionCode").toInt()
 +        versionName = productVersion.getProperty("versionName")
 +        manifestPlaceholders["diplayCoreVersion"] = productVersion.getProperty("diplayCoreVersion")

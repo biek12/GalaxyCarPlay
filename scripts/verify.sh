@@ -73,7 +73,7 @@ run_step() {
     else
         local status=${PIPESTATUS[0]:-1}
         step_seconds=$(( $(date +%s) - begin ))
-        log_line "<== $name 失败（exit=$status，${step_seconds}s）"
+        log_line "<== $name 失败（exit=${status}，${step_seconds}s）"
         FAILED_STEP=$name
         return 1
     fi
@@ -111,7 +111,7 @@ if [ -d "$SDK" ]; then
     export ANDROID_HOME="$SDK" ANDROID_SDK_ROOT="$SDK"
     log_line "Android SDK: $SDK"
 else
-    log_line "Android SDK: 未找到 $SDK（Gradle 需自行定位）"
+    log_line "Android SDK: 未找到 ${SDK}（Gradle 需自行定位）"
 fi
 
 if [ -f "$ROBOLECTRIC_INIT" ]; then
@@ -166,5 +166,5 @@ if [ -z "$FAILED_STEP" ]; then
     log_line "验证通过（耗时 ${ELAPSED}s）。这是离线源码/单测/编译结论，不代表实车或设备验收。"
     exit 0
 fi
-log_line "验证失败于：$FAILED_STEP（耗时 ${ELAPSED}s）。完整日志：$LOG"
+log_line "验证失败于：${FAILED_STEP}（耗时 ${ELAPSED}s）。完整日志：$LOG"
 exit 1
