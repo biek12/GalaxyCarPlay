@@ -35,7 +35,10 @@ def parse(text):
 def projection_metrics(text):
     """只采自有dump中明确的数值指标，不落盘其余系统/媒体输出。"""
     line = next((line for line in text.splitlines() if line.strip().startswith('hab=')), '')
-    return {key: int(value) for key, value in re.findall(r'([A-Za-z][A-Za-z0-9]*)=(\d+)(?=\s|$)', line)}
+    metrics = {key: int(value) for key, value in re.findall(r'([A-Za-z][A-Za-z0-9]*)=(\d+)(?=\s|$)', line)}
+    stats = next((s.strip() for s in text.splitlines() if s.strip().startswith('vehicleStats=')), '')
+    metrics.update({'vehicle_' + k: int(v) for k, v in re.findall(r'(ticks|reads|bundles|feeds|keys)=(\d+)(?=\s|$)', stats)})
+    return metrics
 
 
 def main():
@@ -85,7 +88,7 @@ def main():
         rates = {}
         if previous_projection:
             old_at, old_metrics = previous_projection
-            for key in ('mapLatched', 'themeLatched', 'outputPosted', 'newFramesSubmitted'):
+            for key in ('mapLatched', 'themeLatched', 'outputPosted', 'newFramesSubmitted', 'vehicle_ticks', 'vehicle_reads', 'vehicle_bundles', 'vehicle_feeds'):
                 if key in projection and key in old_metrics and projection[key] >= old_metrics[key]:
                     rates[key + 'PerSecond'] = round((projection[key] - old_metrics[key]) / (at - old_at), 3)
         previous_projection = at, projection

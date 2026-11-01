@@ -32,3 +32,8 @@ class FieldSnapshotTest(unittest.TestCase):
         result = module.safe_snapshot('automatic=false\nhab=inactive\n')
         self.assertTrue(result['hab_inactive'])
         self.assertFalse(result['automatic'])
+
+    def test_indented_v4_dump_keeps_only_numeric_collection_metrics(self):
+        result = module.safe_snapshot('    automatic=true\n    vehicleStats=ticks=8 reads=16 bundles=8 feeds=8 scan=false active=true keys=2\n    hab=inactive\n')
+        self.assertEqual({'ticks': 8, 'reads': 16, 'bundles': 8, 'feeds': 8, 'keys': 2}, result['vehicle_numeric'])
+        self.assertTrue(result['automatic'])
