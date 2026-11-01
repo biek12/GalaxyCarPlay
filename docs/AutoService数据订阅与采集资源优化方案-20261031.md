@@ -325,3 +325,42 @@ vehicleTickReads=… vehicleTickBundles=… vehicleTickJson=… feedPushesPerSec
 2. **原厂事件覆盖率仍未知**：哪些属性只可读、不发 `SignalFilter` 回调，决定“只靠事件＋到期补读”是否够用。若某属性既无事件又没被订阅，现在**不会**有任何值——这是 B 的语义，不是缺陷；需要实车确认消费端是否接受按订阅取数。
 3. 主题侧只订阅“当前编译主题引用到的键”，其覆盖面等于主题真实引用面；主题编辑器中新绑定的键在重新编译生效前拿不到值。
 4. 契约 v4 是破坏性变更：AutoService / AutoCluster / CarPlay 三个 APK 必须同版本一起更新，不能单独升一个。
+
+### 10.9 审计整改（2026-11-01）
+
+对 48d3fde 的外部审计 4 条逐条核对后**全部成立**（其中 1 条是 v4 重构时把 v3 的
+`current !== cached` 条件删掉造成的回归），已修复；另修 3 处同批发现的关联缺陷。
+下表的行号指整改前。
+
+| # | 问题 | 位置 | 修法 |
+| --- | --- | --- | --- |
+| 1 | 补读结果被同代旧样本永久覆盖：`if (current != null && current.epoch == epoch) current` 让补读值/状态/`receivedAt` 全部丢弃。属性值不变就没有事件，`receivedAt` 停在首次事件时刻，2 秒后 `effectiveStatus`/`SceneData.fresh` 一律判过期（`VehicleSignal.maxAgeMillis` 默认 2000）。仪表显示速度/挡位与 CarPlay `$PASCD` 同时变无数据，全目录扫描同样只写一次 | `EcarxVehicleSource.readProperty` | 读取前取 `beforeRead`，合并条件恢复为 `current !== beforeRead`——只有**读取期间**到达的新事件优先；再加 `ticket = epoch` 早退，跨代读取结果不写回新代 |
+| 2 | `idle()` 用 `removeCallbacksAndMessages(null)` 清空整个 worker 队列：`setDemand(∅)` 与紧随其后的 `setDemand(新键)` 连续排队时，前者把后者删掉，服务端租约已订阅、采集端 `demand` 停在空，一拍不读且无报错 | `VehicleCollector.idle` | 只取消轮询任务，不碰队列中其他消息 |
+| 3 | 诊断扫描结果被丢弃：app 模式 `scanCycle()` 返回值直接扔掉，root 模式只回条数与游标；`VehicleInventory` 只 accept `properties`，未订阅属性读到了却进不了 `getVehicleProperties`/`getVehicleCatalog` 分页（诊断页“车辆属性：下一页”看不到），违反“读尽读” | `VehicleCollector.poll`、`RootServiceMain` | 新增 `VehicleScanMerge`：扫描行并进同一批 `properties`，两条路径都接入 |
+| 4 | 每拍 `postDelayed({ tick() }, …)` 新建 lambda 且 `ticking` 在之后才清：Handler 不去重，每多一次订阅更新就多留一条并行轮询链（实际是 n+1 条），Root IPC/Bundle/回调成倍上升而订阅侧看不出来 | `VehicleCollector.poll` | 抽 `PollSchedule`：同一任务先 `removeCallbacks` 再 `postDelayed`，删除 `ticking` 与嵌套 `poll(ticket)`；`start()/stop()` 与采集线程在锁内排程 |
+
+同批发现并修掉的关联问题：
+
+- `stop()` 也整队清空，而 `AutoService` 是“先 `applyDemand()` 再 `stop()`”：那条退订被吞掉，`demand` 停在旧键；`paused` 恢复只 `collector.start()` 不重算 demand，恢复后按已无人订阅的旧键继续读车机。→ `stop()` 改为只 `cancel()`，清理块用 `demand.assign(emptyMap())`。
+- 扫描期间 `cycle()` 注册订阅集、`scanCycle()` 又切到全目录，每 250ms 多两轮 `registerSignals`+`unregisterSignals`。→ `cycle()` 增加 `scan` 参数，注册集合一次算成并集；扫描关闭后自然收缩回订阅集。
+- `stats()`/`dump()` 在 Binder 线程读 `VehicleDemand.intervals`（只在采集线程写）→ `@Volatile`，让前后对比用的读数可信。
+- 复核阶段补的三处时序边界：`enabled` 加 `@Volatile`（主线程写、采集线程读）；`publishMeta` 改由调用方传入本拍代次（原来在函数内重读 `generation`，`stop()` 自增后恒等，会放行停服后的迟到投递，把 `discovery="stopped"` 覆盖回旧值）；`poll` 在排下一拍前再校验一次代次（`stop()`→`start()` 紧邻时，旧拍会把 `start()` 刚排的立即拍取消掉、改成整周期延迟）。`setDemand` 在 `enabled=false` 时只记需求、不排程；`AutoService` 的 `paused` 恢复分支补一次 `applyDemand()`
+  （初版整改曾在 `enabled=false` 时连需求一起丢弃，复核指出这会让“paused 期间新建的订阅”在恢复后永久失效——
+  服务在 paused 时仍可被绑定，客户端照常 `setVehicleFeed`，而恢复路径只 `start()`；已按“保留需求、只挡排程 + 恢复时重算”改正，
+  并用 `demandSetWhileStoppedAppliesOnStart` 锁定：改回丢弃式写法该用例立即失败）。
+
+离线验证（2026-11-01，本机，未连接设备、未安装、未跑 Lint）：
+
+- `./gradlew --offline -I scripts/verify/lib/robolectric-offline.init.gradle :service:testDebugUnitTest` → **92 项，0 失败**（整改前 83 项，新增 9 项）：
+  - [VehicleEventsTest.freshReadReplacesOlderSampleWhenNoEventArrivesDuringRead](../galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/VehicleEventsTest.kt)：无事件时补读必须改写值并推进 `receivedAt`（整改前会停在 42.0/旧时刻）。
+  - [VehicleScanMergeTest](../galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/VehicleScanMergeTest.kt)：扫描行并入后能被 `VehicleInventory` 落行并分页读到；空扫描不动批次；纯扫描批次（无 `properties`）也能落行。
+  - [VehicleCollectorSchedulingTest](../galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/VehicleCollectorSchedulingTest.kt)：`setDemand(∅)` 后紧跟 `setDemand(新键)` 不得丢订阅（整改前 `demand` 停在空）。
+  - [PollScheduleTest](../galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/PollScheduleTest.kt)：5 次排程只执行 1 次、`cancel()` 幂等、取消后可重排（整改前每次排程都会执行）。
+- `scripts/build_apk_fast.sh` → `:mobile:assembleDebug`、`:service:assembleDebug`、`:cluster:assembleDebug` 全部成功。
+- `scripts/project_checks.py` → 通过：1420 份锁定文件、714 份已登记差异、42 份已登记删除；新增 5 份文件已用 `scripts/record_patches.py --write` 登记。
+
+仍未验证（不得写成已达成）：
+
+1. 实车上“值不变超过 2 秒”时 `displaySpeed`/`gear` 是否仍为 `VALID`、CarPlay `$PASCD` 是否持续有样本——本轮只做了离线断言。
+2. 轮询链数量与 `dump vehicleStats` 的 `ticks/reads` 前后对比仍需上车采样；离线只能证明排程唯一性，不能替代 Root IPC 计数实测。
+3. 扫描关闭后原厂注册集合是否真的收缩（`registerSignals` 调用次数）需真机日志确认。

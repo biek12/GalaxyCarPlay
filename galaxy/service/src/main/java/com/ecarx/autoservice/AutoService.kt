@@ -323,7 +323,10 @@ class AutoService : Service() {
         if (intent?.action == "start") AutoStartup.setEnabled(this, true)
         applyFeatureSettings()
         if (paused) {
-            paused = false; platform = newPlatform(); platform.start(); if (features.vehicle) collector.start(); startPlatformForeground()
+            paused = false; platform = newPlatform(); platform.start()
+            // 恢复时按当前租约重算订阅：停服期间客户端可能已重新订阅，而 stop() 清过 lease.feed。
+            if (features.vehicle) { collector.start(); applyDemand() }
+            startPlatformForeground()
             if (clients.all().any { it.role != AutoContract.OBSERVER }) { ensureComposition(); updateProjection() }
         }
         if (intent?.action == "prepare") { shellAccess.cancel(); platform.retry() }

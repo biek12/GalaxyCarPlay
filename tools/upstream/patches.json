@@ -84,7 +84,7 @@
     {
       "id": "P005",
       "patch": "tools/upstream/patches/P005-galaxy-migration.patch",
-      "sha256": "5910ca206099fa9ebdd7865738d64e9cd2c9cd7e2bd5d5141886f75b24b11c7b",
+      "sha256": "0aecc0dcfbd9ad4947da240abc0387e2eb65fe0a01f2dd0db8294d500d5b020e",
       "source": "旧GalaxyPlay galaxy目录完整迁入 + v0.2.21核心接缝（CarPlayHostActivity抽取CarPlayBackgroundSession/CarPlayHostProduct、音频平台适配注入）",
       "purpose": "按D03学习旧Galaxy产品组织：galaxy/mobile唯一应用、galaxy/common产品适配、galaxy/shared音频/网络策略；核心只保留中性接缝",
       "defaultBehavior": "无产品注入时核心沿用上游默认（HostProductBindings为空、MediaPlatformAdaptation.NONE）",
@@ -2140,7 +2140,7 @@
         },
         "galaxy/service/src/main/java/com/ecarx/autoservice/AutoService.kt": {
           "baselineSha256": null,
-          "productSha256": "5794040bc781b5f15cc29be2aae00e8bd9f0871c94e524622ce219dc65a1192c"
+          "productSha256": "d06bf52d97d8d724823944a2dd98942fd5ca9a35bdabb553b91ad5ee10acc64f"
         },
         "galaxy/service/src/main/java/com/ecarx/autoservice/ClientRegistry.kt": {
           "baselineSha256": null,
@@ -2188,7 +2188,7 @@
         },
         "galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootServiceMain.kt": {
           "baselineSha256": null,
-          "productSha256": "4856f0929557ace5d3bd475288ed30b2b4e76fafaca2498a6e58dd9620e01482"
+          "productSha256": "88ad7819b280092eab25a81bc1c498fab1bb1904473ad73440f682fc9756aef6"
         },
         "galaxy/service/src/main/java/com/ecarx/autoservice/platform/ShellExecutor.kt": {
           "baselineSha256": null,
@@ -2220,7 +2220,7 @@
         },
         "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/EcarxVehicleSource.kt": {
           "baselineSha256": null,
-          "productSha256": "19b0f62ec4b0729eea3c8aa22a10a589d5e33e343aebeadc983f5b436d4171ed"
+          "productSha256": "41ed08bfd780c8ee128ad0e5a06f8c502ed3ce82c01ec0d70ab2678c4e8feebe"
         },
         "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleCatalog.kt": {
           "baselineSha256": null,
@@ -2408,7 +2408,7 @@
         },
         "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleCollector.kt": {
           "baselineSha256": null,
-          "productSha256": "2005682b00f7c6765cfb55ff3bc8d0a5b96d0ab2556432b7b4b8a871cc767ffe"
+          "productSha256": "56cd1bccd6d8ec0cfdecdb3de8e319be830f44b60ca3808217b665e50fe82901"
         },
         "galaxy/service/src/test/java/com/ecarx/autoservice/platform/AdbStartupTest.kt": {
           "baselineSha256": null,
@@ -2432,7 +2432,7 @@
         },
         "galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/VehicleEventsTest.kt": {
           "baselineSha256": null,
-          "productSha256": "0a413d8bb15351ec0a295c3fd7d785b9e32e37fb3f71b091ec19dbadf6b41fab"
+          "productSha256": "47c50c0d2dc2bb95d338d83ae07d7aafa03b3ab7a7a0a0f3fef9c5ec767a10d4"
         },
         "galaxy/service/src/test/java/ecarx/car/IECarXCar.kt": {
           "baselineSha256": null,
@@ -2872,7 +2872,7 @@
         },
         "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleDemand.kt": {
           "baselineSha256": null,
-          "productSha256": "e7126c0391a33b7930dae39f2ace0de59db2e30c3db03a4e61ffeb2760d1531a"
+          "productSha256": "501e9f0f71421ecf7db492597d6e6c28993aaa5715fb317b10dad67984da8bdc"
         },
         "galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/VehicleDemandTest.kt": {
           "baselineSha256": null,
@@ -2881,6 +2881,26 @@
         "galaxy/service/src/test/java/ecarx/car/hal/HalPropertyIdTransformation.kt": {
           "baselineSha256": null,
           "productSha256": "2fe07f20146757a62845321bbfcea6535be15ac019f3d4edcb323b5aa017b978"
+        },
+        "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/PollSchedule.kt": {
+          "baselineSha256": null,
+          "productSha256": "cfc96201d5d1485222de74242a88a582b28540dc919236a719ecb6aa34591714"
+        },
+        "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleScanMerge.kt": {
+          "baselineSha256": null,
+          "productSha256": "d8c1e969599f7fbf006a5b2fdc6678ee806b3ff6a43d625f1d6e725882265770"
+        },
+        "galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/PollScheduleTest.kt": {
+          "baselineSha256": null,
+          "productSha256": "f26fb5f44be0c86069d3beb8017b8018b9968ee5d0d40c3b69a228ad50bec4b9"
+        },
+        "galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/VehicleCollectorSchedulingTest.kt": {
+          "baselineSha256": null,
+          "productSha256": "cff4ef1c7daddcd305a2e1d0060cfdbcd47952e296f6232e2c78cb4eb0a3336f"
+        },
+        "galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/VehicleScanMergeTest.kt": {
+          "baselineSha256": null,
+          "productSha256": "2a3d50f215327787743c1ffb2c41d5011888071850d48c59da48b2c789e96e88"
         }
       }
     }
