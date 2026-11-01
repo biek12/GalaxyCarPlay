@@ -228,6 +228,11 @@ internal class EcarxVehicleSource : Closeable {
     /** 单属性读取；返回null表示本次无新样本（未映射/不可读会写入REJECTED）。 */
     private fun readProperty(property: Property, now: Long) {
         val key = property.id to property.area
+        val ticket = epoch
+        // 读取前的既有样本。补读是唯一能刷新“值没变所以没有事件”的属性的途径，
+        // 因此只有**本次读取期间**到达的新事件才优先于补读结果；读取前就存在的旧样本必须被覆盖，
+        // 否则补读永远写不回去，receivedAt 停在第一次事件的时刻，消费者按 maxAgeMillis 一律判过期。
+        val beforeRead = samples[key]
         var value: Any? = null
         var status = "UNAVAILABLE"
         var error = ""
@@ -252,9 +257,12 @@ internal class EcarxVehicleSource : Closeable {
             status = if (cause is SecurityException) "REJECTED" else "UNAVAILABLE"
             error = cause.javaClass.simpleName // 不把原始载荷、车辆标识或异常message写入日志/诊断。
         }
-        // Binder读取期间到达的事件更新必须保留，旧读取结果不能覆盖较新的回调值。
+        // 读取期间换代谢（close/重连）：本次结果属于旧代，不写回新代缓存。
+        if (ticket != epoch) return
+        // Binder读取期间到达的事件更新必须保留（与读取前那份不是同一个样本对象），
+        // 旧读取结果不能覆盖较新的回调值；没有新事件时用本次补读结果替换旧样本。
         val effective = samples.compute(key) { _, current ->
-            if (current != null && current.epoch == epoch) current
+            if (current != null && current.epoch == epoch && current !== beforeRead) current
             else Sample(value, status, error, responseArea, now, epoch, sampleSequence.incrementAndGet())
         }!!
         record(key, effective)
@@ -277,15 +285,18 @@ internal class EcarxVehicleSource : Closeable {
      *
      * @param wanted 当前订阅键（决定注册集合与返回哪些别名）
      * @param due 本拍到期的键（由[VehicleDemand]判定）；**只有到期键才发起车机读取**
+     * @param scan 本拍是否还要推进全目录诊断扫描。扫描要把整张目录注册上，注册集合必须在这里
+     *   一次算成并集，否则[scanCycle]每拍再切到全目录、下一拍又切回订阅集，
+     *   每250ms就要多两轮`registerSignals`+`unregisterSignals`。
      * @return samples 只含 wanted；properties 只含本拍真正读过的属性；keyEvents 恒定排空
      */
-    fun cycle(specs: List<SignalSpec>, now: Long, model: String, wanted: Set<String>, due: Set<String>): JSONObject {
+    fun cycle(specs: List<SignalSpec>, now: Long, model: String, wanted: Set<String>, due: Set<String>, scan: Boolean = false): JSONObject {
         if (model != lastModel) { close(); lastModel = model }
         val aliases = JSONArray()
         val raw = JSONArray()
         try {
             connect(specs)
-            applyFilter(idsFor(wanted))
+            applyFilter(if (scan) idsFor(specs.mapTo(HashSet()) { it.key }) else idsFor(wanted))
             if (due.isNotEmpty()) {
                 due.forEach { key ->
                     val spec = specs.firstOrNull { it.key == key } ?: return@forEach

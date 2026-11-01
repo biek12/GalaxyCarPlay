@@ -120,6 +120,39 @@ class VehicleEventsTest {
     }
 
     /**
+     * 补读必须能刷新“值没变、所以原厂不发事件”的属性。
+     *
+     * 修复前（48d3fde）：只要同代已有样本就丢弃本次补读的值/状态/receivedAt，
+     * 补读永远写不回去，receivedAt停在第一次事件时刻，消费者按maxAgeMillis(2s)一律判过期，
+     * 仪表显示速度/挡位与CarPlay轮速会同时变成无数据。
+     */
+    @Test fun freshReadReplacesOlderSampleWhenNoEventArrivesDuringRead() {
+        val root = Binder().apply { attachInterface(null, "ecarx.car.IECarXCar") }
+        val property = Binder().apply { attachInterface(null, "ecarx.car.hardware.property.IECarXCarProperty") }
+        IECarXCar.Stub.service = object : IECarXCar { override fun asBinder() = root; override fun getCarService(name: String) = property }
+        val id = 557874774
+        IECarXCarProperty.Stub.service = object : IECarXCarProperty {
+            override fun getProperty(id: Int, area: Int) = ECarXCarPropertyValue(id, area, 10)
+            override fun getPropertyList() = listOf(TestConfig(id, intArrayOf(1)))
+        }
+        ShadowServiceManager.addBinderService("ecarxcar_service", IECarXCar::class.java, IECarXCar.Stub.service)
+        val source = EcarxVehicleSource()
+        val specs = listOf(SignalSpec("speed", id, "km/h"))
+        try {
+            source.read(specs)
+            val callback = checkNotNull(ECarXCarPropertyManagerBase.callback)
+            callback.onChangeEvent(ECarXCarPropertyValue(id, 1, 42))
+            val fromEvent = source.cached(specs).getJSONArray("samples").getJSONObject(0)
+            assertEquals("42.0", fromEvent.getString("value"))
+            val eventAt = fromEvent.getLong("receivedAt")
+            // 此后没有事件，只有一次到期补读：值要回到车机读到的10，receivedAt要前进。
+            val reread = source.readLater(specs, 1000).getJSONArray("samples").getJSONObject(0)
+            assertEquals("10.0", reread.getString("value"))
+            assertTrue("补读必须刷新receivedAt，否则超2秒后消费者判过期", reread.getLong("receivedAt") > eventAt)
+        } finally { source.close(); clearService() }
+    }
+
+    /**
      * v4核心断言：未订阅的目录键一次都不读。
      * 退回“全量轮询”会立刻失败——这是把常驻172次/s的读取压到订阅规模的关键约束。
      */

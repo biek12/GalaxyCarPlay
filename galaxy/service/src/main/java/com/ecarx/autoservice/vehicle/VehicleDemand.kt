@@ -10,7 +10,8 @@ import com.galaxy.auto.contract.AutoContract
  * 同一键被多个租约订阅时取最紧（最小）的间隔，否则慢的那个订阅者会被快的拖慢而不自知。
  */
 internal class VehicleDemand {
-    private var intervals: Map<String, Int> = emptyMap()
+    // dump()/stats() 在Binder线程读这张表，赋值只在采集线程；@Volatile保证诊断读数看到的是一张完整的表。
+    @Volatile private var intervals: Map<String, Int> = emptyMap()
     private val readAt = HashMap<String, Long>()
 
     /** 当前需要采集的键及其最小间隔；空表示无人订阅（采集端应完全停摆）。 */

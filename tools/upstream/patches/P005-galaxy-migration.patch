@@ -38428,7 +38428,7 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +}
 --- /dev/null
 +++ b/galaxy/service/src/main/java/com/ecarx/autoservice/AutoService.kt
-@@ -0,0 +1,557 @@
+@@ -0,0 +1,560 @@
 +package com.ecarx.autoservice
 +
 +import android.app.*
@@ -38754,7 +38754,10 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        if (intent?.action == "start") AutoStartup.setEnabled(this, true)
 +        applyFeatureSettings()
 +        if (paused) {
-+            paused = false; platform = newPlatform(); platform.start(); if (features.vehicle) collector.start(); startPlatformForeground()
++            paused = false; platform = newPlatform(); platform.start()
++            // 恢复时按当前租约重算订阅：停服期间客户端可能已重新订阅，而 stop() 清过 lease.feed。
++            if (features.vehicle) { collector.start(); applyDemand() }
++            startPlatformForeground()
 +            if (clients.all().any { it.role != AutoContract.OBSERVER }) { ensureComposition(); updateProjection() }
 +        }
 +        if (intent?.action == "prepare") { shellAccess.cancel(); platform.retry() }
@@ -40011,7 +40014,7 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +}
 --- /dev/null
 +++ b/galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootServiceMain.kt
-@@ -0,0 +1,127 @@
+@@ -0,0 +1,130 @@
 +package com.ecarx.autoservice.platform
 +
 +import android.net.LocalServerSocket
@@ -40020,6 +40023,7 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +import android.os.SystemClock
 +import com.ecarx.autoservice.vehicle.EcarxVehicleSource
 +import com.ecarx.autoservice.vehicle.VehicleCatalog
++import com.ecarx.autoservice.vehicle.VehicleScanMerge
 +import org.json.JSONObject
 +import java.io.DataInputStream
 +import java.io.DataOutputStream
@@ -40104,15 +40108,17 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +                                when (operation) {
 +                                    0 -> JSONObject().put("state", "root_ready").put("uid", Process.myUid())
 +                                    1 -> synchronized(source) {
-+                                        // 订阅键决定注册与读取；scan=true时额外推进一轮全目录诊断扫描（结果并入同一回复）。
++                                        // 订阅键决定注册与读取；scan=true时额外推进一轮全目录诊断扫描。
++                                        // 扫描行必须并进同一回复的properties：只回条数/游标会让
++                                        // 未订阅属性停在helper里，跨进程分页接口一条也看不到。
 +                                        val now = SystemClock.elapsedRealtime()
 +                                        val keys = request.optJSONArray("keys").toStringSet()
 +                                        val due = request.optJSONArray("due").toStringSet().intersect(keys)
-+                                        val reply = source.cycle(specs, now, args[4], keys, due)
++                                        val reply = source.cycle(specs, now, args[4], keys, due, request.optBoolean("scan"))
 +                                        if (request.optBoolean("scan")) {
 +                                            val scan = source.scanCycle(specs, now, args[4])
-+                                            reply.put("scan", scan.optJSONArray("scan")?.length() ?: 0)
-+                                            reply.put("scanCursor", scan.optInt("cursor"))
++                                            reply.put("scanCount", scan.optJSONArray("scan")?.length() ?: 0)
++                                            VehicleScanMerge.merge(reply, scan)
 +                                        }
 +                                        reply
 +                                    }
@@ -40701,7 +40707,7 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +}
 --- /dev/null
 +++ b/galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/EcarxVehicleSource.kt
-@@ -0,0 +1,381 @@
+@@ -0,0 +1,392 @@
 +package com.ecarx.autoservice.vehicle
 +
 +import android.os.IBinder
@@ -40932,6 +40938,11 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +    /** 单属性读取；返回null表示本次无新样本（未映射/不可读会写入REJECTED）。 */
 +    private fun readProperty(property: Property, now: Long) {
 +        val key = property.id to property.area
++        val ticket = epoch
++        // 读取前的既有样本。补读是唯一能刷新“值没变所以没有事件”的属性的途径，
++        // 因此只有**本次读取期间**到达的新事件才优先于补读结果；读取前就存在的旧样本必须被覆盖，
++        // 否则补读永远写不回去，receivedAt 停在第一次事件的时刻，消费者按 maxAgeMillis 一律判过期。
++        val beforeRead = samples[key]
 +        var value: Any? = null
 +        var status = "UNAVAILABLE"
 +        var error = ""
@@ -40956,9 +40967,12 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +            status = if (cause is SecurityException) "REJECTED" else "UNAVAILABLE"
 +            error = cause.javaClass.simpleName // 不把原始载荷、车辆标识或异常message写入日志/诊断。
 +        }
-+        // Binder读取期间到达的事件更新必须保留，旧读取结果不能覆盖较新的回调值。
++        // 读取期间换代谢（close/重连）：本次结果属于旧代，不写回新代缓存。
++        if (ticket != epoch) return
++        // Binder读取期间到达的事件更新必须保留（与读取前那份不是同一个样本对象），
++        // 旧读取结果不能覆盖较新的回调值；没有新事件时用本次补读结果替换旧样本。
 +        val effective = samples.compute(key) { _, current ->
-+            if (current != null && current.epoch == epoch) current
++            if (current != null && current.epoch == epoch && current !== beforeRead) current
 +            else Sample(value, status, error, responseArea, now, epoch, sampleSequence.incrementAndGet())
 +        }!!
 +        record(key, effective)
@@ -40981,15 +40995,18 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +     *
 +     * @param wanted 当前订阅键（决定注册集合与返回哪些别名）
 +     * @param due 本拍到期的键（由[VehicleDemand]判定）；**只有到期键才发起车机读取**
++     * @param scan 本拍是否还要推进全目录诊断扫描。扫描要把整张目录注册上，注册集合必须在这里
++     *   一次算成并集，否则[scanCycle]每拍再切到全目录、下一拍又切回订阅集，
++     *   每250ms就要多两轮`registerSignals`+`unregisterSignals`。
 +     * @return samples 只含 wanted；properties 只含本拍真正读过的属性；keyEvents 恒定排空
 +     */
-+    fun cycle(specs: List<SignalSpec>, now: Long, model: String, wanted: Set<String>, due: Set<String>): JSONObject {
++    fun cycle(specs: List<SignalSpec>, now: Long, model: String, wanted: Set<String>, due: Set<String>, scan: Boolean = false): JSONObject {
 +        if (model != lastModel) { close(); lastModel = model }
 +        val aliases = JSONArray()
 +        val raw = JSONArray()
 +        try {
 +            connect(specs)
-+            applyFilter(idsFor(wanted))
++            applyFilter(if (scan) idsFor(specs.mapTo(HashSet()) { it.key }) else idsFor(wanted))
 +            if (due.isNotEmpty()) {
 +                due.forEach { key ->
 +                    val spec = specs.firstOrNull { it.key == key } ?: return@forEach
@@ -45363,7 +45380,7 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +}
 --- /dev/null
 +++ b/galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleCollector.kt
-@@ -0,0 +1,219 @@
+@@ -0,0 +1,231 @@
 +package com.ecarx.autoservice.vehicle
 +
 +import android.content.Context
@@ -45403,15 +45420,17 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        return Handler(created.looper).also { worker = it }
 +    }
 +    private fun post(block: () -> Unit) { startWorker().post(block) }
++    /** 唯一一条轮询链：所有“下一拍”都由同一个任务承载，靠[PollSchedule]保证不并行出第二条链。 */
++    private val pollSchedule = PollSchedule(Runnable { poll() })
++    private fun schedule(delayMillis: Long) { pollSchedule.schedule(startWorker(), delayMillis) }
 +    private val main = Handler(Looper.getMainLooper())
 +    private val menu=com.ecarx.autoservice.input.ClusterMenuInput()
 +    private val source = EcarxVehicleSource()
 +    private val demand = VehicleDemand()
 +    @Volatile private var generation = 0
 +    private var modeGeneration = ""
-+    private var enabled = false
++    @Volatile private var enabled = false
 +    @Volatile private var scanEnabled = false
-+    private var ticking = false
 +    private var discovery = "idle"
 +    private var lastMetaSignature = ""
 +    private var lastDeliveredAt = Long.MIN_VALUE
@@ -45424,7 +45443,7 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +    fun start() {
 +        if (enabled) return
 +        enabled = true
-+        tick()
++        schedule(0L)
 +    }
 +
 +    /**
@@ -45433,9 +45452,13 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +     */
 +    fun setDemand(next: Map<String, Int>) {
 +        post {
++            // 需求总要先记下来：停服/paused 期间客户端仍可能订阅（服务还被Binder绑定），
++            // 而恢复路径只 start() 不重算 demand。这里只把“排程”挡在 enabled 之后，
++            // 需求本身必须保留，否则那条订阅会永久失效且客户端因“已订阅”不再重发。
 +            demand.assign(next)
 +            if (next.isNotEmpty()) demand.reset()
-+            if (enabled && (demand.active || scanEnabled)) tick() else idle()
++            if (!enabled) return@post
++            if (demand.active || scanEnabled) schedule(0L) else idle()
 +        }
 +    }
 +    /** 显式全目录诊断扫描；默认关。开启时按250ms推进32项/拍，与订阅无关。 */
@@ -45444,7 +45467,7 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +            if (scanEnabled == value) return@post
 +            scanEnabled = value
 +            if (!enabled) return@post
-+            if (demand.active || scanEnabled) { if (scanEnabled) demand.reset(); tick() } else idle()
++            if (demand.active || scanEnabled) { if (scanEnabled) demand.reset(); schedule(0L) } else idle()
 +        }
 +    }
 +    fun scanning(): Boolean = scanEnabled
@@ -45453,24 +45476,22 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +    fun stats(): String =
 +        "ticks=$tickTotal reads=$readTotal bundles=$bundleTotal feeds=$feedTotal scan=$scanEnabled active=${demand.active} keys=${demand.keys().size}"
 +
-+    /** 没有订阅也没有扫描：停掉自排队，只留一次元数据刷新告诉UI现在是空闲。 */
++    /**
++     * 没有订阅也没有扫描：取消已排的下一拍，只留一次元数据刷新告诉UI现在是空闲。
++     * 只取消轮询任务，不能清整个队列——后面可能已经排着新订阅。
++     */
 +    private fun idle() {
-+        ticking = false
-+        worker?.removeCallbacksAndMessages(null)
-+        if (discovery == "idle") return
++        pollSchedule.cancel()
++        // 停服后的残留块不得把 AutoService 已置的 "stopped" 覆盖回 "idle"/旧值。
++        if (!enabled || discovery == "idle") return
 +        discovery = "idle"
-+        publishMeta()
++        publishMeta(generation)
 +    }
-+    private fun tick() {
-+        if (ticking || !enabled) return
++    /** 采集线程上的一拍：整拍串行执行，过程里到达的setDemand只会排在它之后。 */
++    private fun poll() {
++        if (!enabled) return
 +        if (!demand.active && !scanEnabled) { idle(); return }
-+        ticking = true
 +        val ticket = generation
-+        post { poll(ticket) }
-+    }
-+    private fun poll(ticket: Int) {
-+        if (ticket != generation) return
-+        if (!enabled || (!demand.active && !scanEnabled)) { ticking = false; return }
 +        val now = SystemClock.elapsedRealtime()
 +        val model = prefs.getString("model", "L6")!!
 +        val specs = VehicleCatalog.forModel(model)
@@ -45488,10 +45509,11 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +            com.ecarx.autoservice.ServiceTrace.event("vehicle_root_read_failed", it)
 +            JSONObject().put("session", "$nextMode:disconnected").put("discovery", "root_disconnected")
 +        } else runCatching {
-+            source.cycle(specs, now, model, wanted, due).also {
-+                // 诊断扫描与订阅采集共用同一代source：先补给订阅键，再推进全目录扫描。
-+                if (scanEnabled) source.scanCycle(specs, now, model)
-+            }
++            val result = source.cycle(specs, now, model, wanted, due, scanEnabled)
++            // 诊断扫描与订阅采集共用同一代source：先补给订阅键，再推进全目录扫描。
++            // 扫描结果必须并进同一批properties，否则未订阅属性读到了也进不了对外缓存。
++            if (scanEnabled) VehicleScanMerge.merge(result, source.scanCycle(specs, now, model))
++            result
 +        }.getOrElse {
 +            com.ecarx.autoservice.ServiceTrace.event("vehicle_cycle_failed", it)
 +            JSONObject().put("session", "$nextMode:failed").put("discovery", "not_connected")
@@ -45535,20 +45557,25 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +            bundle.putBundle("driverSeatbeltWarning",next)
 +        }
 +        if (wanted.isNotEmpty()) { ++bundleTotal; ++feedTotal; feed(bundle, now) }
-+        publishMeta()
++        publishMeta(ticket)
 +        val period = if (scanEnabled) SCAN_PERIOD_MS else demand.periodMillis
-+        if (period <= 0L) { ticking = false; return }
-+        worker?.postDelayed({ tick() }, if (discovery in RETRY_STATES) 3000 else period)
-+        ticking = false
++        if (period <= 0L) { idle(); return }
++        // stop()->start() 紧邻时，旧拍可能在代次检查之后才走到这里；再校验一次，
++        // 否则它会把 start() 刚排的“立即拍”取消掉改成整周期延迟。
++        if (ticket != generation) return
++        // schedule() 先取消旧任务再排新任务，整条链在任何时刻最多只有一个待执行任务。
++        schedule(if (discovery in RETRY_STATES) 3000L else period)
 +    }
 +
 +    /** 元数据只在“发现状态/条数”变化或≥1秒时投递一次；逐值变化不再触发整包快照。 */
-+    private fun publishMeta() {
++    private fun publishMeta(ticket: Int) {
++        // 代次由调用方在进入本拍时捕获：这里重读 generation 会在 stop() 自增之后恒等，
++        // 于是停服后的迟到投递会被放行，把 "stopped" 改回旧值。
++        if (ticket != generation) return
 +        val now = SystemClock.elapsedRealtime()
 +        val signature = "$discovery|${inventory.count()}|${inventory.validCount()}|$scanEnabled"
 +        if (signature == lastMetaSignature && now - lastDeliveredAt < 1000) return
 +        lastMetaSignature = signature; lastDeliveredAt = now
-+        val ticket = generation
 +        main.post {
 +            if (ticket != generation) return@post
 +            if (discovery == "root_disconnected") rootLost()
@@ -45556,12 +45583,14 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        }
 +    }
 +    fun stop() {
-+        enabled = false; ++generation; ticking = false; lastMetaSignature = ""; lastDeliveredAt = Long.MIN_VALUE
++        enabled = false; ++generation; lastMetaSignature = ""; lastDeliveredAt = Long.MIN_VALUE
 +        RootServiceClient.closeVehicle()
-+        worker?.removeCallbacksAndMessages(null)
++        // 只取消轮询任务，不清整个队列：调用方常常“先排退订/改订阅，再stop”（见
++        // AutoService 的 applyDemand→stop），清队列会把那条退订吞掉，demand 停在旧键。
++        pollSchedule.cancel()
 +        val current = worker ?: return
 +        current.post {
-+            menu.reset(); source.close(); inventory.clear(); demand.reset(); scanEnabled = false
++            menu.reset(); source.close(); inventory.clear(); demand.assign(emptyMap()); scanEnabled = false
 +            // 车辆采集关闭时也注销helper中的原厂订阅；Root还可独立服务Shell与QNX。
 +            if (com.ecarx.autoservice.settings.ServiceFeatures.read(context).root)
 +                runCatching { RootServiceClient.request(context, 8, JSONObject(), 5000) }
@@ -45830,7 +45859,7 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +}
 --- /dev/null
 +++ b/galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/VehicleEventsTest.kt
-@@ -0,0 +1,152 @@
+@@ -0,0 +1,185 @@
 +package com.ecarx.autoservice.vehicle
 +
 +import android.os.Binder
@@ -45949,6 +45978,39 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +            eventDuringRead = true
 +            val raced = source.readLater(specs, 1000)
 +            assertEquals("77.0", raced.getJSONArray("samples").getJSONObject(0).getString("value"))
++        } finally { source.close(); clearService() }
++    }
++
++    /**
++     * 补读必须能刷新“值没变、所以原厂不发事件”的属性。
++     *
++     * 修复前（48d3fde）：只要同代已有样本就丢弃本次补读的值/状态/receivedAt，
++     * 补读永远写不回去，receivedAt停在第一次事件时刻，消费者按maxAgeMillis(2s)一律判过期，
++     * 仪表显示速度/挡位与CarPlay轮速会同时变成无数据。
++     */
++    @Test fun freshReadReplacesOlderSampleWhenNoEventArrivesDuringRead() {
++        val root = Binder().apply { attachInterface(null, "ecarx.car.IECarXCar") }
++        val property = Binder().apply { attachInterface(null, "ecarx.car.hardware.property.IECarXCarProperty") }
++        IECarXCar.Stub.service = object : IECarXCar { override fun asBinder() = root; override fun getCarService(name: String) = property }
++        val id = 557874774
++        IECarXCarProperty.Stub.service = object : IECarXCarProperty {
++            override fun getProperty(id: Int, area: Int) = ECarXCarPropertyValue(id, area, 10)
++            override fun getPropertyList() = listOf(TestConfig(id, intArrayOf(1)))
++        }
++        ShadowServiceManager.addBinderService("ecarxcar_service", IECarXCar::class.java, IECarXCar.Stub.service)
++        val source = EcarxVehicleSource()
++        val specs = listOf(SignalSpec("speed", id, "km/h"))
++        try {
++            source.read(specs)
++            val callback = checkNotNull(ECarXCarPropertyManagerBase.callback)
++            callback.onChangeEvent(ECarXCarPropertyValue(id, 1, 42))
++            val fromEvent = source.cached(specs).getJSONArray("samples").getJSONObject(0)
++            assertEquals("42.0", fromEvent.getString("value"))
++            val eventAt = fromEvent.getLong("receivedAt")
++            // 此后没有事件，只有一次到期补读：值要回到车机读到的10，receivedAt要前进。
++            val reread = source.readLater(specs, 1000).getJSONArray("samples").getJSONObject(0)
++            assertEquals("10.0", reread.getString("value"))
++            assertTrue("补读必须刷新receivedAt，否则超2秒后消费者判过期", reread.getLong("receivedAt") > eventAt)
 +        } finally { source.close(); clearService() }
 +    }
 +
@@ -53134,7 +53196,7 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 \ No newline at end of file
 --- /dev/null
 +++ b/galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleDemand.kt
-@@ -0,0 +1,74 @@
+@@ -0,0 +1,75 @@
 +package com.ecarx.autoservice.vehicle
 +
 +import com.galaxy.auto.contract.AutoContract
@@ -53147,7 +53209,8 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 + * 同一键被多个租约订阅时取最紧（最小）的间隔，否则慢的那个订阅者会被快的拖慢而不自知。
 + */
 +internal class VehicleDemand {
-+    private var intervals: Map<String, Int> = emptyMap()
++    // dump()/stats() 在Binder线程读这张表，赋值只在采集线程；@Volatile保证诊断读数看到的是一张完整的表。
++    @Volatile private var intervals: Map<String, Int> = emptyMap()
 +    private val readAt = HashMap<String, Long>()
 +
 +    /** 当前需要采集的键及其最小间隔；空表示无人订阅（采集端应完全停摆）。 */
@@ -53307,6 +53370,304 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +    companion object {
 +        @JvmField
 +        val mHaltoMgrPropIdMap: Any = Mapping()
++    }
++}
+\ No newline at end of file
+--- /dev/null
++++ b/galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/PollSchedule.kt
+@@ -0,0 +1,32 @@
++package com.ecarx.autoservice.vehicle
++
++import android.os.Handler
++
++/**
++ * 单一可取消的轮询调度：任何时刻最多只有一个待执行任务。
++ *
++ * 订阅驱动的节拍由`Handler.postDelayed`承载，而Handler不会去重：同一个动作重复排队就是多条
++ * 并行的轮询链，Root IPC、Bundle构造和回调次数按链数成倍上升，订阅侧却看不出任何异常
++ * （服务端照样只看到“已订阅、有数据”）。所以“先取消上一次、只排这一次”必须是唯一用法；
++ * 取消也只针对本任务——`removeCallbacksAndMessages(null)` 会连排在后面的新订阅一起删掉。
++ *
++ * `start()`/`stop()` 在调用线程上执行，`schedule()` 也在采集线程上执行，
++ * 因此排程与取消在同一把锁里做，避免两个线程各排一条。
++ */
++internal class PollSchedule(private val task: Runnable) {
++    private val lock = Any()
++    private var pending: Handler? = null
++
++    /** 在[handler]上替换排定的下一拍；`delayMillis = 0` 表示立即执行（仍排在当前消息之后）。 */
++    fun schedule(handler: Handler, delayMillis: Long) = synchronized(lock) {
++        pending?.removeCallbacks(task)
++        pending = handler
++        handler.postDelayed(task, delayMillis)
++    }
++
++    /** 取消已排的下一拍；重复调用幂等。正在执行的这一拍不受影响（由调用方的enabled/代次守卫兜住）。 */
++    fun cancel() = synchronized(lock) {
++        pending?.removeCallbacks(task)
++        pending = null
++    }
++}
+\ No newline at end of file
+--- /dev/null
++++ b/galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleScanMerge.kt
+@@ -0,0 +1,26 @@
++package com.ecarx.autoservice.vehicle
++
++import org.json.JSONArray
++import org.json.JSONObject
++
++/**
++ * 把[EcarxVehicleSource.scanCycle]的诊断扫描结果并入本拍批次。
++ *
++ * 扫描每拍只读32项，其中绝大多数没有订阅。若只取条数/游标，这些属性虽然真的读了车机，
++ * 却进不了`VehicleInventory`，跨进程分页接口（`getVehicleProperties`/`getVehicleCatalog`）
++ * 就永远看不到它们——"读尽读"只剩helper内部的一次读取。因此扫描行必须并进同一批
++ * `properties`，由库按(propertyId, areaId)落行，原始值、区域、状态和新鲜度随之可查。
++ *
++ * 只做数组拼接，不改写行内容、不补默认值：扫描与订阅两条来源的行格式一致。
++ */
++internal object VehicleScanMerge {
++    /** @return 同一个[batch]对象（便于链式使用）；扫描为空时原样返回。 */
++    fun merge(batch: JSONObject, scan: JSONObject): JSONObject {
++        val items = scan.optJSONArray("scan") ?: return batch
++        if (items.length() == 0) return batch
++        val properties = batch.optJSONArray("properties") ?: JSONArray().also { batch.put("properties", it) }
++        for (index in 0 until items.length()) properties.put(items.getJSONObject(index))
++        batch.put("scanCursor", scan.optInt("cursor", 0))
++        return batch
++    }
++}
+\ No newline at end of file
+--- /dev/null
++++ b/galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/PollScheduleTest.kt
+@@ -0,0 +1,53 @@
++package com.ecarx.autoservice.vehicle
++
++import android.os.Handler
++import android.os.Looper
++import org.junit.Assert.*
++import org.junit.Test
++import org.junit.runner.RunWith
++import org.robolectric.RobolectricTestRunner
++import org.robolectric.Shadows.shadowOf
++import org.robolectric.annotation.Config
++import java.time.Duration
++
++/**
++ * 轮询链唯一性（审计第4条）。
++ *
++ * 脱离真实车机也能验证的判据：同一任务被反复排入只能执行一次。修复前每拍用新的lambda
++ * `postDelayed`，Handler不去重 → n次订阅更新就留下n条并行链，Root IPC/Bundle/回调成倍上升。
++ */
++@RunWith(RobolectricTestRunner::class)
++@Config(sdk = [30], manifest = Config.NONE)
++class PollScheduleTest {
++    private val main = Handler(Looper.getMainLooper())
++
++    @Test fun reschedulingReplacesPendingTickInsteadOfQueueingSecondChain() {
++        var runs = 0
++        val schedule = PollSchedule(Runnable { ++runs })
++        repeat(5) { schedule.schedule(main, 1000) }
++        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(5000))
++        assertEquals("5次排程只应执行1次；多执行就是多条轮询链", 1, runs)
++        // 再等一个周期也不该冒出残留链。
++        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(5000))
++        assertEquals(1, runs)
++    }
++
++    @Test fun cancelStopsTheOnlyPendingTick() {
++        var runs = 0
++        val schedule = PollSchedule(Runnable { ++runs })
++        schedule.schedule(main, 1000)
++        schedule.cancel(); schedule.cancel()
++        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(5000))
++        assertEquals(0, runs)
++    }
++
++    /** 退订取消之后重新订阅必须照常排上（不能把“已取消”记成永久失效）。 */
++    @Test fun scheduleAfterCancelStillRuns() {
++        var runs = 0
++        val schedule = PollSchedule(Runnable { ++runs })
++        schedule.schedule(main, 1000); schedule.cancel()
++        schedule.schedule(main, 1000)
++        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(5000))
++        assertEquals(1, runs)
++    }
++}
+\ No newline at end of file
+--- /dev/null
++++ b/galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/VehicleCollectorSchedulingTest.kt
+@@ -0,0 +1,114 @@
++package com.ecarx.autoservice.vehicle
++
++import android.os.Binder
++import ecarx.car.IECarXCar
++import ecarx.car.hardware.property.*
++import org.junit.Assert.*
++import org.junit.Test
++import org.junit.runner.RunWith
++import org.robolectric.RobolectricTestRunner
++import org.robolectric.RuntimeEnvironment
++import org.robolectric.annotation.Config
++import org.robolectric.shadows.ShadowServiceManager
++import java.util.Collections
++
++/**
++ * 采集器调度约束（v4）：一条可取消的轮询链，且退订只取消轮询、不吞掉排队中的新订阅。
++ * 这两条都只在 worker 线程的消息队列上才暴露，所以用真实 HandlerThread + 假车机服务跑。
++ */
++@RunWith(RobolectricTestRunner::class)
++@Config(sdk = [30], manifest = Config.NONE)
++class VehicleCollectorSchedulingTest {
++    private fun clearService() {
++        val field = ShadowServiceManager::class.java.getDeclaredField("binderServices").apply { isAccessible = true }
++        (field.get(null) as MutableMap<*, *>).remove("ecarxcar_service")
++        ECarXCarPropertyManagerBase.callback = null
++    }
++
++    /** 装一台只会回10的假车机：发现状态离开重试态后，节拍才按订阅间隔走而不是3秒重试。 */
++    private fun installVehicle(propertyId: Int) {
++        val root = Binder().apply { attachInterface(null, "ecarx.car.IECarXCar") }
++        val endpoint = Binder().apply { attachInterface(null, "ecarx.car.hardware.property.IECarXCarProperty") }
++        IECarXCar.Stub.service = object : IECarXCar {
++            override fun asBinder() = root
++            override fun getCarService(name: String) = endpoint
++        }
++        IECarXCarProperty.Stub.service = object : IECarXCarProperty {
++            override fun getProperty(id: Int, area: Int) = ECarXCarPropertyValue(id, area, 10)
++            override fun getPropertyList() = listOf(TestConfig(propertyId, intArrayOf(1)))
++        }
++        ShadowServiceManager.addBinderService("ecarxcar_service", IECarXCar::class.java, IECarXCar.Stub.service)
++    }
++
++    private fun collector(feeds: MutableList<Long>) = VehicleCollector(
++        RuntimeEnvironment.getApplication(), VehicleInventory(), { _, _ -> }, {}, {}, { _, at -> feeds += at })
++
++    private fun awaitCondition(timeoutMillis: Long = 3000, check: () -> Boolean): Boolean {
++        val deadline = System.currentTimeMillis() + timeoutMillis
++        while (System.currentTimeMillis() < deadline) { if (check()) return true; Thread.sleep(20) }
++        return check()
++    }
++
++    /**
++     * “全部退订”和“新客户端订阅”连续排队时，退订只能取消轮询任务。
++     *
++     * 修复前（48d3fde）idle() 用 `removeCallbacksAndMessages(null)` 清空整个 worker 队列，
++     * 把排在前面的那条 setDemand 一起删掉：服务端租约认为已订阅，采集端 demand 却停在空，
++     * 一拍都不读，且没有任何报错可查。
++     */
++    @Test fun unsubscribeThenSubscribeKeepsNewDemand() {
++        installVehicle(VehicleCatalog.forModel("L6").first { it.key == "displaySpeed" }.propertyId)
++        val collector = collector(Collections.synchronizedList(ArrayList()))
++        try {
++            collector.start()
++            collector.setDemand(mapOf("displaySpeed" to 1000))
++            collector.setDemand(emptyMap())
++            collector.setDemand(mapOf("displaySpeed" to 1000))
++            assertTrue("新订阅被退订吞掉了：${collector.stats()}",
++                awaitCondition { collector.stats().let { it.contains("active=true") && it.contains("keys=1") } })
++        } finally { collector.close(); clearService() }
++    }
++
++    /**
++     * 反复更新订阅不得累积出第二条轮询链（审计第4条）。
++     *
++     * 这里只断言可从外部观察到的结果：更新订阅不会让采集端变成“多拍并行”。
++     * 轮询链唯一性本身由 [PollScheduleTest] 在可控时钟上验证——真机节拍依赖
++     * `postDelayed`，Robolectric 的后台Looper不会随 wall clock 推进，按时间窗口数拍数不可靠。
++     */
++    @Test fun repeatedDemandUpdatesKeepDemandStable() {
++        installVehicle(VehicleCatalog.forModel("L6").first { it.key == "displaySpeed" }.propertyId)
++        val collector = collector(Collections.synchronizedList(ArrayList()))
++        try {
++            collector.start()
++            repeat(6) {
++                collector.setDemand(mapOf("displaySpeed" to 250))
++                Thread.sleep(60)
++            }
++            assertTrue("反复更新订阅后订阅集合丢失：${collector.stats()}",
++                awaitCondition { collector.stats().let { it.contains("active=true") && it.contains("keys=1") } })
++        } finally { collector.close(); clearService() }
++    }
++
++    /**
++     * 停服/paused 期间建立的订阅必须在恢复后立即生效。
++     *
++     * 服务在 paused 时仍可被Binder绑定，客户端照常 attach+setVehicleFeed；恢复路径只 `start()`。
++     * 若 setDemand 因 enabled=false 把需求一起丢掉，采集端 demand 停在空、客户端因“已订阅”
++     * 不再重发，就会永久没有车数据。需求必须被记住，只把排程挡在 enabled 之后。
++     */
++    @Test fun demandSetWhileStoppedAppliesOnStart() {
++        installVehicle(VehicleCatalog.forModel("L6").first { it.key == "displaySpeed" }.propertyId)
++        val feeds = Collections.synchronizedList(ArrayList<Long>())
++        val collector = collector(feeds)
++        try {
++            collector.setDemand(mapOf("displaySpeed" to 1000))
++            Thread.sleep(150)                     // 让停服期间那条块先执行完
++            collector.start()
++            assertTrue("停服期间的订阅丢了：${collector.stats()}",
++                awaitCondition { collector.stats().let { it.contains("active=true") && it.contains("keys=1") } })
++            assertTrue("恢复后没有真正采集：${collector.stats()} / feeds=${feeds.size}",
++                awaitCondition { feeds.isNotEmpty() })
++        } finally { collector.close(); clearService() }
++    }
++}
+--- /dev/null
++++ b/galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/VehicleScanMergeTest.kt
+@@ -0,0 +1,54 @@
++package com.ecarx.autoservice.vehicle
++
++import org.json.JSONArray
++import org.json.JSONObject
++import org.junit.Assert.*
++import org.junit.Test
++import org.junit.runner.RunWith
++import org.robolectric.RobolectricTestRunner
++import org.robolectric.annotation.Config
++
++/**
++ * 诊断扫描结果必须进入跨进程缓存。
++ *
++ * 修复前（48d3fde）：扫描只回条数和游标，`VehicleInventory` 只 accept `properties`，
++ * 未订阅属性虽然真的读取了，分页接口（getVehicleProperties/getVehicleCatalog）一条也看不到，
++ * “读尽读”只剩 helper 内部的一次读取。这里锁住“扫描行并进同一批 properties”这一约束。
++ */
++@RunWith(RobolectricTestRunner::class)
++@Config(sdk = [30], manifest = Config.NONE)
++class VehicleScanMergeTest {
++    private fun row(property: Int, area: Int) = JSONObject().apply {
++        put("propertyId", property); put("areaId", area); put("responseAreaId", area)
++        put("name", "p$property"); put("status", "VALID"); put("value", "7"); put("maxAgeMillis", 2000)
++    }
++
++    @Test fun scannedPropertiesBecomePageable() {
++        val batch = JSONObject().put("session", "L6:1:1").put("properties", JSONArray().put(row(1, 1)))
++        val scan = JSONObject().put("scan", JSONArray().put(row(2, 0)).put(row(3, 1))).put("cursor", 64)
++        VehicleScanMerge.merge(batch, scan)
++        assertEquals(3, batch.getJSONArray("properties").length())
++        assertEquals(64, batch.getInt("scanCursor"))
++        val store = VehicleInventory(); store.accept(batch)
++        assertEquals(3, store.count()); assertEquals(3, store.validCount())
++        // 分页结果里必须能看到那条从未被订阅的属性。
++        val page = store.page(0, 32, false)
++        val items = page.getParcelableArrayList<android.os.Bundle>("items").orEmpty()
++        assertTrue(items.any { it.getInt("propertyId") == 2 })
++    }
++
++    @Test fun emptyScanLeavesBatchUntouched() {
++        val batch = JSONObject().put("session", "s").put("properties", JSONArray())
++        VehicleScanMerge.merge(batch, JSONObject().put("scan", JSONArray()))
++        assertEquals(0, batch.getJSONArray("properties").length())
++        assertFalse(batch.has("scanCursor"))
++    }
++
++    /** 没有 subscriptions 的纯扫描批次（properties缺失）也要能落行。 */
++    @Test fun scanOnlyBatchCreatesPropertiesArray() {
++        val batch = JSONObject().put("session", "L6:2:1")
++        VehicleScanMerge.merge(batch, JSONObject().put("scan", JSONArray().put(row(9, 0))))
++        val store = VehicleInventory(); store.accept(batch)
++        assertEquals(1, store.count())
 +    }
 +}
 \ No newline at end of file

@@ -6,6 +6,7 @@ import android.os.Process
 import android.os.SystemClock
 import com.ecarx.autoservice.vehicle.EcarxVehicleSource
 import com.ecarx.autoservice.vehicle.VehicleCatalog
+import com.ecarx.autoservice.vehicle.VehicleScanMerge
 import org.json.JSONObject
 import java.io.DataInputStream
 import java.io.DataOutputStream
@@ -90,15 +91,17 @@ object RootServiceMain {
                                 when (operation) {
                                     0 -> JSONObject().put("state", "root_ready").put("uid", Process.myUid())
                                     1 -> synchronized(source) {
-                                        // 订阅键决定注册与读取；scan=true时额外推进一轮全目录诊断扫描（结果并入同一回复）。
+                                        // 订阅键决定注册与读取；scan=true时额外推进一轮全目录诊断扫描。
+                                        // 扫描行必须并进同一回复的properties：只回条数/游标会让
+                                        // 未订阅属性停在helper里，跨进程分页接口一条也看不到。
                                         val now = SystemClock.elapsedRealtime()
                                         val keys = request.optJSONArray("keys").toStringSet()
                                         val due = request.optJSONArray("due").toStringSet().intersect(keys)
-                                        val reply = source.cycle(specs, now, args[4], keys, due)
+                                        val reply = source.cycle(specs, now, args[4], keys, due, request.optBoolean("scan"))
                                         if (request.optBoolean("scan")) {
                                             val scan = source.scanCycle(specs, now, args[4])
-                                            reply.put("scan", scan.optJSONArray("scan")?.length() ?: 0)
-                                            reply.put("scanCursor", scan.optInt("cursor"))
+                                            reply.put("scanCount", scan.optJSONArray("scan")?.length() ?: 0)
+                                            VehicleScanMerge.merge(reply, scan)
                                         }
                                         reply
                                     }

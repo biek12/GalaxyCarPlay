@@ -37,15 +37,17 @@ internal class VehicleCollector(
         return Handler(created.looper).also { worker = it }
     }
     private fun post(block: () -> Unit) { startWorker().post(block) }
+    /** 唯一一条轮询链：所有“下一拍”都由同一个任务承载，靠[PollSchedule]保证不并行出第二条链。 */
+    private val pollSchedule = PollSchedule(Runnable { poll() })
+    private fun schedule(delayMillis: Long) { pollSchedule.schedule(startWorker(), delayMillis) }
     private val main = Handler(Looper.getMainLooper())
     private val menu=com.ecarx.autoservice.input.ClusterMenuInput()
     private val source = EcarxVehicleSource()
     private val demand = VehicleDemand()
     @Volatile private var generation = 0
     private var modeGeneration = ""
-    private var enabled = false
+    @Volatile private var enabled = false
     @Volatile private var scanEnabled = false
-    private var ticking = false
     private var discovery = "idle"
     private var lastMetaSignature = ""
     private var lastDeliveredAt = Long.MIN_VALUE
@@ -58,7 +60,7 @@ internal class VehicleCollector(
     fun start() {
         if (enabled) return
         enabled = true
-        tick()
+        schedule(0L)
     }
 
     /**
@@ -67,9 +69,13 @@ internal class VehicleCollector(
      */
     fun setDemand(next: Map<String, Int>) {
         post {
+            // 需求总要先记下来：停服/paused 期间客户端仍可能订阅（服务还被Binder绑定），
+            // 而恢复路径只 start() 不重算 demand。这里只把“排程”挡在 enabled 之后，
+            // 需求本身必须保留，否则那条订阅会永久失效且客户端因“已订阅”不再重发。
             demand.assign(next)
             if (next.isNotEmpty()) demand.reset()
-            if (enabled && (demand.active || scanEnabled)) tick() else idle()
+            if (!enabled) return@post
+            if (demand.active || scanEnabled) schedule(0L) else idle()
         }
     }
     /** 显式全目录诊断扫描；默认关。开启时按250ms推进32项/拍，与订阅无关。 */
@@ -78,7 +84,7 @@ internal class VehicleCollector(
             if (scanEnabled == value) return@post
             scanEnabled = value
             if (!enabled) return@post
-            if (demand.active || scanEnabled) { if (scanEnabled) demand.reset(); tick() } else idle()
+            if (demand.active || scanEnabled) { if (scanEnabled) demand.reset(); schedule(0L) } else idle()
         }
     }
     fun scanning(): Boolean = scanEnabled
@@ -87,24 +93,22 @@ internal class VehicleCollector(
     fun stats(): String =
         "ticks=$tickTotal reads=$readTotal bundles=$bundleTotal feeds=$feedTotal scan=$scanEnabled active=${demand.active} keys=${demand.keys().size}"
 
-    /** 没有订阅也没有扫描：停掉自排队，只留一次元数据刷新告诉UI现在是空闲。 */
+    /**
+     * 没有订阅也没有扫描：取消已排的下一拍，只留一次元数据刷新告诉UI现在是空闲。
+     * 只取消轮询任务，不能清整个队列——后面可能已经排着新订阅。
+     */
     private fun idle() {
-        ticking = false
-        worker?.removeCallbacksAndMessages(null)
-        if (discovery == "idle") return
+        pollSchedule.cancel()
+        // 停服后的残留块不得把 AutoService 已置的 "stopped" 覆盖回 "idle"/旧值。
+        if (!enabled || discovery == "idle") return
         discovery = "idle"
-        publishMeta()
+        publishMeta(generation)
     }
-    private fun tick() {
-        if (ticking || !enabled) return
+    /** 采集线程上的一拍：整拍串行执行，过程里到达的setDemand只会排在它之后。 */
+    private fun poll() {
+        if (!enabled) return
         if (!demand.active && !scanEnabled) { idle(); return }
-        ticking = true
         val ticket = generation
-        post { poll(ticket) }
-    }
-    private fun poll(ticket: Int) {
-        if (ticket != generation) return
-        if (!enabled || (!demand.active && !scanEnabled)) { ticking = false; return }
         val now = SystemClock.elapsedRealtime()
         val model = prefs.getString("model", "L6")!!
         val specs = VehicleCatalog.forModel(model)
@@ -122,10 +126,11 @@ internal class VehicleCollector(
             com.ecarx.autoservice.ServiceTrace.event("vehicle_root_read_failed", it)
             JSONObject().put("session", "$nextMode:disconnected").put("discovery", "root_disconnected")
         } else runCatching {
-            source.cycle(specs, now, model, wanted, due).also {
-                // 诊断扫描与订阅采集共用同一代source：先补给订阅键，再推进全目录扫描。
-                if (scanEnabled) source.scanCycle(specs, now, model)
-            }
+            val result = source.cycle(specs, now, model, wanted, due, scanEnabled)
+            // 诊断扫描与订阅采集共用同一代source：先补给订阅键，再推进全目录扫描。
+            // 扫描结果必须并进同一批properties，否则未订阅属性读到了也进不了对外缓存。
+            if (scanEnabled) VehicleScanMerge.merge(result, source.scanCycle(specs, now, model))
+            result
         }.getOrElse {
             com.ecarx.autoservice.ServiceTrace.event("vehicle_cycle_failed", it)
             JSONObject().put("session", "$nextMode:failed").put("discovery", "not_connected")
@@ -169,20 +174,25 @@ internal class VehicleCollector(
             bundle.putBundle("driverSeatbeltWarning",next)
         }
         if (wanted.isNotEmpty()) { ++bundleTotal; ++feedTotal; feed(bundle, now) }
-        publishMeta()
+        publishMeta(ticket)
         val period = if (scanEnabled) SCAN_PERIOD_MS else demand.periodMillis
-        if (period <= 0L) { ticking = false; return }
-        worker?.postDelayed({ tick() }, if (discovery in RETRY_STATES) 3000 else period)
-        ticking = false
+        if (period <= 0L) { idle(); return }
+        // stop()->start() 紧邻时，旧拍可能在代次检查之后才走到这里；再校验一次，
+        // 否则它会把 start() 刚排的“立即拍”取消掉改成整周期延迟。
+        if (ticket != generation) return
+        // schedule() 先取消旧任务再排新任务，整条链在任何时刻最多只有一个待执行任务。
+        schedule(if (discovery in RETRY_STATES) 3000L else period)
     }
 
     /** 元数据只在“发现状态/条数”变化或≥1秒时投递一次；逐值变化不再触发整包快照。 */
-    private fun publishMeta() {
+    private fun publishMeta(ticket: Int) {
+        // 代次由调用方在进入本拍时捕获：这里重读 generation 会在 stop() 自增之后恒等，
+        // 于是停服后的迟到投递会被放行，把 "stopped" 改回旧值。
+        if (ticket != generation) return
         val now = SystemClock.elapsedRealtime()
         val signature = "$discovery|${inventory.count()}|${inventory.validCount()}|$scanEnabled"
         if (signature == lastMetaSignature && now - lastDeliveredAt < 1000) return
         lastMetaSignature = signature; lastDeliveredAt = now
-        val ticket = generation
         main.post {
             if (ticket != generation) return@post
             if (discovery == "root_disconnected") rootLost()
@@ -190,12 +200,14 @@ internal class VehicleCollector(
         }
     }
     fun stop() {
-        enabled = false; ++generation; ticking = false; lastMetaSignature = ""; lastDeliveredAt = Long.MIN_VALUE
+        enabled = false; ++generation; lastMetaSignature = ""; lastDeliveredAt = Long.MIN_VALUE
         RootServiceClient.closeVehicle()
-        worker?.removeCallbacksAndMessages(null)
+        // 只取消轮询任务，不清整个队列：调用方常常“先排退订/改订阅，再stop”（见
+        // AutoService 的 applyDemand→stop），清队列会把那条退订吞掉，demand 停在旧键。
+        pollSchedule.cancel()
         val current = worker ?: return
         current.post {
-            menu.reset(); source.close(); inventory.clear(); demand.reset(); scanEnabled = false
+            menu.reset(); source.close(); inventory.clear(); demand.assign(emptyMap()); scanEnabled = false
             // 车辆采集关闭时也注销helper中的原厂订阅；Root还可独立服务Shell与QNX。
             if (com.ecarx.autoservice.settings.ServiceFeatures.read(context).root)
                 runCatching { RootServiceClient.request(context, 8, JSONObject(), 5000) }
