@@ -33,9 +33,8 @@ def main():
         for label,package in [('CarPlay','com.ecarx.carplay'),('AutoService','com.ecarx.autoservice'),('AutoCluster','com.galaxy.autocluster')]+([('ProjectionSmoke','com.ecarx.autoservice.test')] if args.gpu_smoke else []):
             path=adb('shell','pm','path',package).strip()
             if not re.fullmatch(r'package:/[A-Za-z0-9_./=+~-]+\.apk',path): raise ValueError(f'{label}安装路径缺失或非单APK')
-            with tempfile.TemporaryDirectory(prefix='cluster-installed-check-') as directory:
-                pulled=Path(directory)/'installed.apk';adb('pull',path[len('package:'):],str(pulled))
-                actual=hashlib.sha256(pulled.read_bytes()).hexdigest()
+            actual=adb('shell','sha256sum',path[len('package:'):]).split()[0]
+            if not re.fullmatch(r'[a-f0-9]{64}',actual): raise ValueError('安装包摘要无效')
             relative='tests/ProjectionSmoke-test.apk' if label=='ProjectionSmoke' else f'app/{label}-debug.apk'
             expected=manifest['files'][relative]['sha256']
             report['apps'][label]={'matches_bundle':actual==expected,'apk_sha256':actual}

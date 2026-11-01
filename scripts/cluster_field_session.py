@@ -25,6 +25,7 @@ def write(path, value):
 
 def safe_snapshot(raw):
     """只保留自有dump的固定数值/布尔字段，不保存status、媒体或Shell原文。"""
+    raw = '\n'.join(line.lstrip() for line in raw.splitlines())
     result = {}
     for key in ('vehiclePropertyCount', 'vehicleSampledCount', 'vehicleValidCount'):
         match = re.search(r'^' + key + r'=(\d+)$', raw, re.M)
@@ -38,7 +39,9 @@ def safe_snapshot(raw):
     line = next((line for line in raw.splitlines() if line.strip().startswith('hab=')), '')
     result['hab_numeric'] = {k: int(v) for k, v in re.findall(r'([A-Za-z][A-Za-z0-9]*)=(\d+)(?=\s|$)', line)}
     result['hab_inactive'] = line.strip() == 'hab=inactive'
-    if not result.keys() - {'hab_numeric', 'hab_inactive'}:
+    stats = next((line for line in raw.splitlines() if line.startswith('vehicleStats=')), '')
+    result['vehicle_numeric'] = {k: int(v) for k, v in re.findall(r'(ticks|reads|bundles|feeds|keys)=(\d+)(?=\s|$)', stats)}
+    if not result.keys() - {'hab_numeric', 'hab_inactive', 'vehicle_numeric'}:
         raise ValueError('自有服务无有效诊断数据；检查是否运行，本工具不会自动启动')
     return result
 

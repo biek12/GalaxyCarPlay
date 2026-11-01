@@ -57,12 +57,14 @@ def main():
     copy(ROOT/'docs/design/cluster-acceptance-template.json','acceptance-template.json')
     for name in ('snapshot-qnx.sh','snapshot-android.sh','audio-snapshot-android.sh','telnet_session.py'):
         copy(ROOT/'tools/hab'/name,'diagnostics/'+name)
-    for name in ('measure_autoservice.py','capture_cluster_fields.py','cluster_device_check.py','cluster_field_session.py','prepare_autoservice_adb.py','cluster_preflight.py','prepare_cluster_vehicle_test.py'):
+    for name in ('measure_autoservice.py','capture_cluster_fields.py','cluster_device_check.py','cluster_field_session.py','prepare_autoservice_adb.py','field_telnet_transport.py','field_telnet_install.py','field_ready.sh','cluster_preflight.py','prepare_cluster_vehicle_test.py'):
         copy(ROOT/'scripts'/name,'scripts/'+name)
+    copy(ROOT/'docs/实车测试执行卡-20261101.md','实车测试执行卡-20261101.md')
+    copy(ROOT/'docs/提交审计待修问题-20261101.md','提交审计待修问题-20261101.md')
     for path in report['source_sha256']:
         copy(ROOT/path,'sources/'+path)
     # 不扫描用户目录、旧日志、认证或签名，只允许上面显式选取的自有材料。
-    manifest={'created_at':datetime.now(ZoneInfo('Asia/Shanghai')).isoformat(),'ipc_version':2,
+    manifest={'created_at':datetime.now(ZoneInfo('Asia/Shanghai')).isoformat(),'ipc_version':4,
               'local_preflight_passed':True,'installed':False,'vehicle_tested':False,
               'gpu_smoke_built':True,'gpu_smoke_executed':False,'qnx_sdk_build_complete':False,
               'files':{p.relative_to(target).as_posix():{'sha256':sha(p),'bytes':p.stat().st_size} for p in sorted(target.rglob('*')) if p.is_file()}}
