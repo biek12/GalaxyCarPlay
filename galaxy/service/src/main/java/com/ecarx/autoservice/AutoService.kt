@@ -307,9 +307,8 @@ class AutoService : Service() {
             projectionRequested = false; platformReady = false; rootReady = false; preparing = false
             composition?.close(); composition = null; surfaces.clear()
             clients.all().forEach { lease -> callbacks.post { runCatching { lease.callback.onProjectionState(lease.role, "surface_closed") } } }
-            // 服务停止后租约可能继续存在；不清空就会在恢复时静默沿用旧订阅并发推送。
-            clients.all().forEach { it.feed = emptySet(); it.lastFeedAt = 0L }
-            applyDemand()
+            // 停服只暂停采集，不清空订阅意图（否则客户端不会重发，恢复后永久没有车辆数据）。
+            clients.retainFeeds()
             collector.stop(); signals = Bundle(); discovery = "stopped"; discoveredCount = 0
             if (::platform.isInitialized) platform.close()
             shellAccess.cancel()
@@ -335,10 +334,15 @@ class AutoService : Service() {
                 getSharedPreferences("platform", 0).edit().putString("model", it).commit()
             }
             composition?.setSessionActive(false)
-            // 旧键不一定属于新车型目录；清空后由订阅方按新目录重新订阅。
-            clients.all().forEach { it.feed = emptySet(); it.lastFeedAt = 0L }
-            applyDemand()
-            collector.stop(); ++platformGeneration; platform.close(); platform = newPlatform(); platform.start(); if (features.vehicle) collector.start()
+            // 换车型：订阅意图保留，但旧键未必属于新目录——按新目录摘掉无效键，有效键继续采集。
+            // 整清会让客户端因“本地状态没变”不重发，换车型后永久没有车辆数据。
+            clients.retainFeeds(vehicleKeys().toSet())
+            // 换车型还要丢掉上一个车型的缓存：publishFeedTo（订阅当下补发）没有 paused 守卫，
+            // 留着旧快照会在下一次 setVehicleFeed 时补发上一个车型的值。
+            signals = Bundle()
+            collector.stop(); ++platformGeneration; platform.close(); platform = newPlatform(); platform.start()
+            // 需求必须在采集重启之后重算：stop() 的清理块会清空 demand，先算再停等于没设。
+            if (features.vehicle) { collector.start(); applyDemand() }
             projectionRequested = false; platformReady = false; updateProjection()
         }
         if (features.projection && (intent?.action == "cluster" || getSharedPreferences("platform", 0).getBoolean("themeEnabled", false))) runCatching {
