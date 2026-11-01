@@ -34,6 +34,17 @@ internal object VehicleFeed {
     }
 
     /**
+     * 按当前车型目录过滤租约的订阅键：保留仍有效的意图，摘掉新目录里不存在的键。
+     *
+     * 换车型时不能整清——客户端的本地订阅状态没变就不会重发（`AutoClient` 只在重连时重放
+     * `setVehicleFeed`，`ClusterSceneOutput` 在键集相同时直接返回），整清等于换车型后
+     * 永久没有车辆数据。停服同理：只暂停采集，意图保留在租约里。
+     * @param known 当前车型的目录键＋旧公共别名（与[validate]用的是同一集合）
+     */
+    fun retainKnown(feed: Set<String>, known: Set<String>): Set<String> =
+        if (feed.isEmpty()) feed else feed.filterTo(HashSet()) { it in known }
+
+    /**
      * 从整轮信号快照里只取出该租约订阅的键。
      *
      * 子Bundle必须深拷贝：整轮快照 [values] 是服务端复用的对象，直接共享会让消费者端

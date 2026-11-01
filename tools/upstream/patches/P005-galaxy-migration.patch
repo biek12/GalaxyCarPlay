@@ -38428,7 +38428,7 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +}
 --- /dev/null
 +++ b/galaxy/service/src/main/java/com/ecarx/autoservice/AutoService.kt
-@@ -0,0 +1,560 @@
+@@ -0,0 +1,564 @@
 +package com.ecarx.autoservice
 +
 +import android.app.*
@@ -38738,9 +38738,8 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +            projectionRequested = false; platformReady = false; rootReady = false; preparing = false
 +            composition?.close(); composition = null; surfaces.clear()
 +            clients.all().forEach { lease -> callbacks.post { runCatching { lease.callback.onProjectionState(lease.role, "surface_closed") } } }
-+            // 服务停止后租约可能继续存在；不清空就会在恢复时静默沿用旧订阅并发推送。
-+            clients.all().forEach { it.feed = emptySet(); it.lastFeedAt = 0L }
-+            applyDemand()
++            // 停服只暂停采集，不清空订阅意图（否则客户端不会重发，恢复后永久没有车辆数据）。
++            clients.retainFeeds()
 +            collector.stop(); signals = Bundle(); discovery = "stopped"; discoveredCount = 0
 +            if (::platform.isInitialized) platform.close()
 +            shellAccess.cancel()
@@ -38766,10 +38765,15 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +                getSharedPreferences("platform", 0).edit().putString("model", it).commit()
 +            }
 +            composition?.setSessionActive(false)
-+            // 旧键不一定属于新车型目录；清空后由订阅方按新目录重新订阅。
-+            clients.all().forEach { it.feed = emptySet(); it.lastFeedAt = 0L }
-+            applyDemand()
-+            collector.stop(); ++platformGeneration; platform.close(); platform = newPlatform(); platform.start(); if (features.vehicle) collector.start()
++            // 换车型：订阅意图保留，但旧键未必属于新目录——按新目录摘掉无效键，有效键继续采集。
++            // 整清会让客户端因“本地状态没变”不重发，换车型后永久没有车辆数据。
++            clients.retainFeeds(vehicleKeys().toSet())
++            // 换车型还要丢掉上一个车型的缓存：publishFeedTo（订阅当下补发）没有 paused 守卫，
++            // 留着旧快照会在下一次 setVehicleFeed 时补发上一个车型的值。
++            signals = Bundle()
++            collector.stop(); ++platformGeneration; platform.close(); platform = newPlatform(); platform.start()
++            // 需求必须在采集重启之后重算：stop() 的清理块会清空 demand，先算再停等于没设。
++            if (features.vehicle) { collector.start(); applyDemand() }
 +            projectionRequested = false; platformReady = false; updateProjection()
 +        }
 +        if (features.projection && (intent?.action == "cluster" || getSharedPreferences("platform", 0).getBoolean("themeEnabled", false))) runCatching {
@@ -38991,12 +38995,13 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +}
 --- /dev/null
 +++ b/galaxy/service/src/main/java/com/ecarx/autoservice/ClientRegistry.kt
-@@ -0,0 +1,35 @@
+@@ -0,0 +1,54 @@
 +package com.ecarx.autoservice
 +
 +import android.os.IBinder
 +import android.os.Handler
 +import android.os.Looper
++import com.ecarx.autoservice.vehicle.VehicleFeed
 +import com.galaxy.auto.contract.*
 +
 +/** 主线程持有租约。身份由入口固定，死亡与迟到解绑不能删除下一代owner。 */
@@ -39024,6 +39029,24 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +    fun require(owner: IBinder, uid: Int): Lease = checkNotNull(clients[owner]).also { check(it.uid == uid) }
 +    fun remove(owner: IBinder): Lease? = clients.remove(owner)?.also { runCatching { owner.unlinkToDeath(it.death, 0) } }
 +    fun all() = clients.values.toList()
++
++    /**
++     * 停服/换车型时保留订阅意图，只重置每个租约的推送节流时刻。
++     *
++     * **不能整清 `feed`**：客户端的本地订阅状态不会因为服务端清空而改变，也就不会重发
++     * `setVehicleFeed`（`AutoClient` 只在重连时重放，`ClusterSceneOutput` 键集相同就返回），
++     * 于是“停止→启动”或“换车型”之后会永久没有车辆数据。
++     * 停服期间也不会误推：`publishFeed` 对 paused/closed 直接返回，`signals` 也已清空。
++     *
++     * @param known 换车型时传新目录的键集合（目录键＋旧别名），只保留仍可读的键；
++     *   传null表示车型未变（停服），订阅键原样保留。
++     */
++    fun retainFeeds(known: Set<String>? = null) {
++        clients.values.forEach { lease ->
++            if (known != null) lease.feed = VehicleFeed.retainKnown(lease.feed, known)
++            lease.lastFeedAt = 0L
++        }
++    }
 +    fun role(role: String) = clients.values.firstOrNull { it.role == role }
 +    fun close() { clients.keys.toList().forEach(::remove) }
 +}
@@ -41322,7 +41345,7 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +}
 --- /dev/null
 +++ b/galaxy/service/src/test/java/com/ecarx/autoservice/ClientRegistryTest.kt
-@@ -0,0 +1,32 @@
+@@ -0,0 +1,67 @@
 +package com.ecarx.autoservice
 +
 +import android.os.*
@@ -41353,6 +41376,41 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        assertThrows(IllegalStateException::class.java) { clients.require(map, 10002) }
 +        clients.remove(observer); clients.remove(observer)
 +        assertNotNull(clients.role(AutoContract.MAP)); clients.close(); assertTrue(clients.all().isEmpty())
++    }
++
++    /**
++     * 停服/换车型只重置节流时刻、保留订阅意图。
++     *
++     * 整清 lease.feed 会让客户端与服务端认知分叉：客户端本地状态没变就不重发
++     * setVehicleFeed（AutoClient 只在重连时重放、Cluster 键集相同就返回），
++     * “停止→启动”“换车型”之后会永久没有车辆数据。
++     */
++    @Test fun retainFeedsKeepsIntentAndDropsKeysUnknownToNewModel() {
++        val clients = ClientRegistry {}
++        val map = Binder()
++        val lease = clients.attach(map, 10001, AutoContract.MAP, callback)
++        lease.feed = setOf("displaySpeed", "oldModelOnly"); lease.lastFeedAt = 123L
++        // 停服：键原样保留（车型没变），只把节流时刻归零，恢复后第一拍不被节流。
++        clients.retainFeeds()
++        assertEquals(setOf("displaySpeed", "oldModelOnly"), lease.feed)
++        assertEquals(0L, lease.lastFeedAt)
++        // 换车型：摘掉新目录里不存在的键，仍有效的继续订阅，客户端不必重发。
++        lease.feed = setOf("displaySpeed", "oldModelOnly"); lease.lastFeedAt = 456L
++        clients.retainFeeds(setOf("displaySpeed", "gear"))
++        assertEquals(setOf("displaySpeed"), lease.feed)
++        assertEquals(0L, lease.lastFeedAt)
++        assertNotNull(clients.role(AutoContract.MAP))
++        clients.close()
++    }
++
++    /** 没有订阅者的租约不受停服/换车型影响，也不会凭空产生键。 */
++    @Test fun retainFeedsLeavesUnsubscribedLeasesEmpty() {
++        val clients = ClientRegistry {}
++        val observer = Binder()
++        val lease = clients.attach(observer, 10002, AutoContract.OBSERVER, callback)
++        clients.retainFeeds(); clients.retainFeeds(setOf("displaySpeed"))
++        assertTrue(lease.feed.isEmpty())
++        clients.close()
 +    }
 +}
 --- /dev/null
@@ -53049,7 +53107,7 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 \ No newline at end of file
 --- /dev/null
 +++ b/galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleFeed.kt
-@@ -0,0 +1,48 @@
+@@ -0,0 +1,59 @@
 +package com.ecarx.autoservice.vehicle
 +
 +import android.os.Bundle
@@ -53086,6 +53144,17 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +    }
 +
 +    /**
++     * 按当前车型目录过滤租约的订阅键：保留仍有效的意图，摘掉新目录里不存在的键。
++     *
++     * 换车型时不能整清——客户端的本地订阅状态没变就不会重发（`AutoClient` 只在重连时重放
++     * `setVehicleFeed`，`ClusterSceneOutput` 在键集相同时直接返回），整清等于换车型后
++     * 永久没有车辆数据。停服同理：只暂停采集，意图保留在租约里。
++     * @param known 当前车型的目录键＋旧公共别名（与[validate]用的是同一集合）
++     */
++    fun retainKnown(feed: Set<String>, known: Set<String>): Set<String> =
++        if (feed.isEmpty()) feed else feed.filterTo(HashSet()) { it in known }
++
++    /**
 +     * 从整轮信号快照里只取出该租约订阅的键。
 +     *
 +     * 子Bundle必须深拷贝：整轮快照 [values] 是服务端复用的对象，直接共享会让消费者端
@@ -53101,7 +53170,7 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 \ No newline at end of file
 --- /dev/null
 +++ b/galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/VehicleFeedTest.kt
-@@ -0,0 +1,91 @@
+@@ -0,0 +1,109 @@
 +package com.ecarx.autoservice.vehicle
 +
 +import android.os.Bundle
@@ -53192,8 +53261,25 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        assertTrue(VehicleFeed.select(values, setOf("gear")).isEmpty())
 +        assertTrue(VehicleFeed.select(values, emptySet()).isEmpty())
 +    }
++
++    /**
++     * 换车型只摘掉新目录里没有的键，保留仍有效的订阅意图。
++     *
++     * 整清会让客户端因“本地状态没变”不重发（AutoClient 只在重连时重放、
++     * ClusterSceneOutput 键集相同就返回），换车型后永久没有车辆数据。
++     */
++    @Test fun retainKnownKeepsValidSubscriptionIntent() {
++        val known = setOf("displaySpeed", "gear", "fuelConsumption")
++        assertEquals(setOf("displaySpeed", "fuelConsumption"),
++            VehicleFeed.retainKnown(setOf("displaySpeed", "fuelConsumption", "oldModelOnly"), known))
++        // 全部有效：一个键都不该掉，否则客户端又要重订阅。
++        assertEquals(setOf("displaySpeed", "gear"), VehicleFeed.retainKnown(setOf("displaySpeed", "gear"), known))
++        // 全部无效：结果为空，等于没人订阅（采集停摆），不再读/推不存在的键。
++        assertTrue(VehicleFeed.retainKnown(setOf("oldModelOnly"), known).isEmpty())
++        // 空集保持空集，且不额外分配。
++        assertTrue(VehicleFeed.retainKnown(emptySet(), known).isEmpty())
++    }
 +}
-\ No newline at end of file
 --- /dev/null
 +++ b/galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleDemand.kt
 @@ -0,0 +1,75 @@
@@ -53411,7 +53497,7 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 \ No newline at end of file
 --- /dev/null
 +++ b/galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleScanMerge.kt
-@@ -0,0 +1,26 @@
+@@ -0,0 +1,36 @@
 +package com.ecarx.autoservice.vehicle
 +
 +import org.json.JSONArray
@@ -53425,16 +53511,26 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 + * 就永远看不到它们——"读尽读"只剩helper内部的一次读取。因此扫描行必须并进同一批
 + * `properties`，由库按(propertyId, areaId)落行，原始值、区域、状态和新鲜度随之可查。
 + *
++ * 同理，扫描窗口内排空的方控/菜单事件也必须交出去：`cycle()`先排空、`scanCycle()`后排空，
++ * 两者共用同一个严格递增的`keySequence`，按序追加即可；只并属性行会把这段时间内到达的
++ * 按键边沿丢掉（DOWN丢失后其UP因`downAt==null`不再切页，按键被静默吞掉），app 与 root
++ * 两种采集身份都受影响。
++ *
 + * 只做数组拼接，不改写行内容、不补默认值：扫描与订阅两条来源的行格式一致。
 + */
 +internal object VehicleScanMerge {
-+    /** @return 同一个[batch]对象（便于链式使用）；扫描为空时原样返回。 */
++    /** @return 同一个[batch]对象（便于链式使用）。 */
 +    fun merge(batch: JSONObject, scan: JSONObject): JSONObject {
-+        val items = scan.optJSONArray("scan") ?: return batch
-+        if (items.length() == 0) return batch
-+        val properties = batch.optJSONArray("properties") ?: JSONArray().also { batch.put("properties", it) }
-+        for (index in 0 until items.length()) properties.put(items.getJSONObject(index))
-+        batch.put("scanCursor", scan.optInt("cursor", 0))
++        // 先并事件：扫描行和事件是两条独立输出，任一条为空都不能让另一条被跳过。
++        scan.optJSONArray("keyEvents")?.takeIf { it.length() > 0 }?.let { events ->
++            val merged = batch.optJSONArray("keyEvents") ?: JSONArray().also { batch.put("keyEvents", it) }
++            for (index in 0 until events.length()) merged.put(events.getJSONObject(index))
++        }
++        scan.optJSONArray("scan")?.takeIf { it.length() > 0 }?.let { items ->
++            batch.put("scanCursor", scan.optInt("cursor", 0))
++            val properties = batch.optJSONArray("properties") ?: JSONArray().also { batch.put("properties", it) }
++            for (index in 0 until items.length()) properties.put(items.getJSONObject(index))
++        }
 +        return batch
 +    }
 +}
@@ -53615,7 +53711,7 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +}
 --- /dev/null
 +++ b/galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/VehicleScanMergeTest.kt
-@@ -0,0 +1,54 @@
+@@ -0,0 +1,87 @@
 +package com.ecarx.autoservice.vehicle
 +
 +import org.json.JSONArray
@@ -53669,5 +53765,37 @@ Binary files /dev/null and b/galaxy/common/src/main/res/raw/placeholder_icon.png
 +        val store = VehicleInventory(); store.accept(batch)
 +        assertEquals(1, store.count())
 +    }
++
++    private fun event(action: Int, key: Int, sequence: Long) = JSONObject().apply {
++        put("action", action); put("key", key); put("at", sequence); put("sequence", sequence)
++    }
++
++    /**
++     * 扫描窗口内排空的方控事件必须按 sequence 顺序接在订阅那批之后。
++     * 修复前 merge 只并属性行：`scanCycle` 排空的 keyEvents 被丢弃，那段窗口内到达的
++     * DOWN/UP 边沿永久丢失（DOWN 丢了下一次 UP 因 downAt==null 不再切页）。
++     */
++    @Test fun scanEventsAppendAfterSubscriptionEventsInSequenceOrder() {
++        val batch = JSONObject().put("session", "L6:1:1").put("properties", JSONArray())
++            .put("keyEvents", JSONArray().put(event(0, 6, 1)))
++        val scan = JSONObject().put("scan", JSONArray().put(row(5, 0))).put("cursor", 32)
++            .put("keyEvents", JSONArray().put(event(1, 6, 2)))
++        VehicleScanMerge.merge(batch, scan)
++        val events = batch.getJSONArray("keyEvents")
++        assertEquals(2, events.length())
++        assertEquals(1L, events.getJSONObject(0).getLong("sequence"))
++        assertEquals(2L, events.getJSONObject(1).getLong("sequence"))
++        assertEquals(0, events.getJSONObject(0).getInt("action"))
++        assertEquals(1, events.getJSONObject(1).getInt("action"))
++    }
++
++    /** 扫描行空、但窗口内仍有事件时也不能整段跳过（merge 的早退不能挡在事件之前）。 */
++    @Test fun eventsStillMergeWhenScanRowsAreEmpty() {
++        val batch = JSONObject().put("session", "L6:1:1").put("properties", JSONArray())
++        val scan = JSONObject().put("scan", JSONArray()).put("cursor", 0)
++            .put("keyEvents", JSONArray().put(event(0, 6, 7)))
++        VehicleScanMerge.merge(batch, scan)
++        assertEquals(1, batch.getJSONArray("keyEvents").length())
++        assertEquals(0, batch.getJSONArray("properties").length())
++    }
 +}
-\ No newline at end of file

@@ -88,4 +88,22 @@ class VehicleFeedTest {
         assertTrue(VehicleFeed.select(values, setOf("gear")).isEmpty())
         assertTrue(VehicleFeed.select(values, emptySet()).isEmpty())
     }
+
+    /**
+     * 换车型只摘掉新目录里没有的键，保留仍有效的订阅意图。
+     *
+     * 整清会让客户端因“本地状态没变”不重发（AutoClient 只在重连时重放、
+     * ClusterSceneOutput 键集相同就返回），换车型后永久没有车辆数据。
+     */
+    @Test fun retainKnownKeepsValidSubscriptionIntent() {
+        val known = setOf("displaySpeed", "gear", "fuelConsumption")
+        assertEquals(setOf("displaySpeed", "fuelConsumption"),
+            VehicleFeed.retainKnown(setOf("displaySpeed", "fuelConsumption", "oldModelOnly"), known))
+        // 全部有效：一个键都不该掉，否则客户端又要重订阅。
+        assertEquals(setOf("displaySpeed", "gear"), VehicleFeed.retainKnown(setOf("displaySpeed", "gear"), known))
+        // 全部无效：结果为空，等于没人订阅（采集停摆），不再读/推不存在的键。
+        assertTrue(VehicleFeed.retainKnown(setOf("oldModelOnly"), known).isEmpty())
+        // 空集保持空集，且不额外分配。
+        assertTrue(VehicleFeed.retainKnown(emptySet(), known).isEmpty())
+    }
 }

@@ -364,3 +364,25 @@ vehicleTickReads=… vehicleTickBundles=… vehicleTickJson=… feedPushesPerSec
 1. 实车上“值不变超过 2 秒”时 `displaySpeed`/`gear` 是否仍为 `VALID`、CarPlay `$PASCD` 是否持续有样本——本轮只做了离线断言。
 2. 轮询链数量与 `dump vehicleStats` 的 `ticks/reads` 前后对比仍需上车采样；离线只能证明排程唯一性，不能替代 Root IPC 计数实测。
 3. 扫描关闭后原厂注册集合是否真的收缩（`registerSignals` 调用次数）需真机日志确认。
+
+### 10.10 二次复核整改（2026-11-01，提交 2d01b01 之后）
+
+外部复核在 2d01b01 上又指出 2 条，均已核实成立并修复：
+
+| 编号 | 问题 | 触发链 | 修法 |
+| --- | --- | --- | --- |
+| R1 | 停服/换车型清空租约订阅后，已连接客户端不会自动恢复 | 停服与换车型都把 `lease.feed` 整清；客户端本地订阅状态没变就不重发（`AutoClient` 只在重连时重放 `setVehicleFeed`，`ClusterSceneOutput` 在 `wanted == subscribed` 时直接返回），于是“停止→启动”“换车型”之后**永久**没有车辆数据，且无任何报错 | 停服只暂停采集、**保留订阅意图**（`ClientRegistry.retainFeeds()` 只重置 `lastFeedAt`）；换车型保留意图但按新目录过滤无效键（`VehicleFeed.retainKnown`）。停服期间不会误推：`publishFeed` 对 `paused/closed` 直接返回且 `signals` 已清空 |
+| R2 | 诊断扫描窗口内到达的方控事件被丢弃 | `scanCycle` 会排空 `keyEvents`，而 `VehicleScanMerge.merge` 只合并 `properties` 行；丢失窗口是 `cycle()` 排空到 `scanCycle()` 排空之间的 32 次读取，250ms 节拍下**每拍都发生**。丢 DOWN 会让后续 UP 因 `downAt == null` 不再切页，按键被静默吞掉；app 与 root 两种身份都受影响 | `merge` 先把 `scan.keyEvents` 按 `sequence` 递增顺序追加到批次事件之后（两个数组共用同一计数器，追加即有序），并且**放在属性行早退之前**，避免“扫描行空但事件非空”仍被跳过 |
+
+同时修正一条自查缺陷（同一处链路，复核指出后确认）：换车型路径原先把 `applyDemand()` 放在 `collector.stop()` 之前，而 `stop()` 的清理块会 `demand.assign(emptyMap())`，等于需求没设；现已移到 `collector.start()` 之后，并补 `signals = Bundle()`——`publishFeedTo`（订阅当下补发）没有 `paused` 守卫，留着旧快照会在下一次 `setVehicleFeed` 时补发上一个车型的缓存值。
+
+离线验证（2026-11-01，本机；未连接设备、未安装、未跑 Lint）：
+
+- `:service:testDebugUnitTest` → **98 项，0 失败**（本轮新增 5 项）：
+  - `ClientRegistryTest.retainFeedsKeepsIntentAndDropsKeysUnknownToNewModel` / `retainFeedsLeavesUnsubscribedLeasesEmpty`：停服保留键只重置节流时刻，换车型摘掉新目录不认识的键。
+  - `VehicleScanMergeTest.scanEventsAppendAfterSubscriptionEventsInSequenceOrder` / `eventsStillMergeWhenScanRowsAreEmpty`：扫描窗口事件按序追加，扫描行为空时也不整段跳过。
+  - `VehicleFeedTest.retainKnownKeepsValidSubscriptionIntent`：全有效不掉键、全无效为空、空集保持空集。
+  - 反向验证：把 `merge` 的事件合并段去掉、把 `retainFeeds` 改回清空，上述用例全部 FAILED；恢复后通过。
+- `scripts/build_apk_fast.sh` → 三包 `assembleDebug` 成功；`scripts/project_checks.py` 通过。
+
+仍只有离线证据、**未上车验证**的口径不变（见 10.9 的三条），本轮另加一条：`paused` 恢复后订阅意图是否真的立刻出数，需实机观察“停止→启动”与“L6↔L7 切换”后的首次 `onVehicleFeed` 时刻。
