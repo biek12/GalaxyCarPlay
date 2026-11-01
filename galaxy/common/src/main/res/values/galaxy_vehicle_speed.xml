@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="galaxy_vehicle_speed_iphone">向 iPhone 提供车速与挡位</string>
+    <string name="galaxy_vehicle_speed_iphone_note">经车机 AutoService 订阅车速与挡位，不改变定位来源；仅在“向 iPhone 报告位置”同时开启时生效。下次连接生效。</string>
+</resources>

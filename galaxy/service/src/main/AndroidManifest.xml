@@ -1,0 +1,32 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.WRITE_SECURE_SETTINGS" />
+    <uses-permission android:name="android.permission.READ_LOGS" />
+    <permission android:name="com.ecarx.autoservice.permission.CLIENT" android:protectionLevel="signature" />
+    <permission android:name="com.ecarx.autoservice.permission.ADMIN" android:protectionLevel="signature" />
+    <uses-permission android:name="com.ecarx.autoservice.permission.ADMIN" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CONNECTED_DEVICE" />
+    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
+    <uses-permission android:name="com.ecarx.autoservice.permission.RENDER" />
+    <queries><package android:name="com.flyme.auto.logreport" /><package android:name="com.ecarx.nexusx" /><package android:name="com.galaxy.autocluster" /><package android:name="com.ecarx.carplay" /></queries>
+    <application android:label="AutoService" android:allowBackup="false" android:theme="@style/ServiceTheme">
+        <uses-library android:name="android.car" android:required="false" />
+        <uses-library android:name="ecarx.car" android:required="false" />
+        <uses-library android:name="ecarx.adaptapi" android:required="false" />
+        <activity android:name=".ServiceActivity" android:exported="true">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+        </activity>
+        <service android:name=".AutoService" android:permission="com.ecarx.autoservice.permission.CLIENT" android:exported="true" android:foregroundServiceType="connectedDevice">
+            <intent-filter><action android:name="com.galaxy.auto.BIND_PLATFORM" /></intent-filter>
+        </service>
+        <activity android:name=".DiagnosticActivity" android:exported="false" />
+        <receiver android:name=".startup.AutoBootReceiver" android:exported="false">
+            <intent-filter><action android:name="android.intent.action.BOOT_COMPLETED" /><action android:name="android.intent.action.MY_PACKAGE_REPLACED" /></intent-filter>
+        </receiver>
+        <service android:name=".startup.AutoRecoveryJob" android:permission="android.permission.BIND_JOB_SERVICE" android:exported="true" />
+        <provider android:name=".ArtworkProvider" android:authorities="com.ecarx.autoservice.artwork" android:exported="true" />
+    </application>
+</manifest>

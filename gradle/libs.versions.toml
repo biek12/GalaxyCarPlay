@@ -15,8 +15,10 @@ jmdns = "3.6.3"
 media3 = "1.11.1"
 zxing = "3.5.3"
 work = "2.12.0"
+kadb = "2.1.1"
 
 [libraries]
+kadb = { module = "com.flyfishxu:kadb", version.ref = "kadb" }
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 androidx-lifecycle-runtime-ktx = { group = "androidx.lifecycle", name = "lifecycle-runtime-ktx", version.ref = "lifecycleRuntimeKtx" }
 androidx-activity-compose = { group = "androidx.activity", name = "activity-compose", version.ref = "activityCompose" }

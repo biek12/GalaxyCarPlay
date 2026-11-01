@@ -1,6 +1,6 @@
 --- a/shared/src/main/java/com/shilapi/xcertplay/orchestration/CarPlayController.kt
 +++ b/shared/src/main/java/com/shilapi/xcertplay/orchestration/CarPlayController.kt
-@@ -250,6 +250,8 @@
+@@ -251,6 +251,8 @@
      @Volatile private var dashboardMapOutputVisible = false
      private val dashboardMapEpoch = AtomicInteger()
      private val playbackStatus = com.shilapi.xcertplay.media.CarPlayPlaybackStatus()
@@ -9,7 +9,7 @@
  
      private val albumReplayLock = Any()
      private var initialArtworkReplay: com.shilapi.xcertplay.transport.Iap2ArtworkTransfer? = null
-@@ -351,6 +353,10 @@
+@@ -369,6 +371,10 @@
              if (currentCornerMask?.session !== session) currentCornerMask = null
              val replacement = activeSession !== session
              if (replacement) {
@@ -20,10 +20,11 @@
                  BydNavigationOutputs.start(appContext)
                  BydNavigationOutputs.carPlaySessionStarted()
                  com.shilapi.xcertplay.glance.CarPlayGlance.setConnected(true)
-@@ -473,6 +479,15 @@
+@@ -490,6 +496,15 @@
+     }
  
      fun isClosed(): Boolean = closed
- 
++
 +    /** 产品媒体接入只观察当前真实会话，不自行创建或替换控制通道。 */
 +    fun hasActiveSession(): Boolean = activeMediaSessionOwner() != null
 +    fun activeMediaSessionOwner(): Any? = activeSession?.takeIf { !closed && !it.isClosed }
@@ -32,11 +33,10 @@
 +    val localMediaAudioEnabled: Boolean get() = true
 +    val activeBluetoothDeviceAddress: String? get() = runCatching { bluetoothSocket?.remoteDevice?.address }.getOrNull()
 +        ?: config.wirelessBluetoothDeviceAddress
-+
+ 
      /** Nonblocking identity for wheel controls: only an unclosed phone with an accepted primary stream. */
      fun activeAirPlaySessionToken(): Any? {
-         if (closed) return null
-@@ -648,13 +663,27 @@
+@@ -701,13 +716,27 @@
          }
      }
  
@@ -69,7 +69,7 @@
              false
          }
      }
-@@ -817,10 +846,14 @@
+@@ -870,10 +899,14 @@
      // HUD (SOME/IP) and cluster (AMap broadcast) keep separate state so one failing cannot stall the other.
      private fun onRouteFrame(frame: com.shilapi.xcertplay.iap2.wire.Iap2Frame) {
          BydNavigationOutputs.onFrame(frame)
@@ -86,7 +86,7 @@
          }?.let { (update, playingChanged) ->
              nowPlayingListener?.invoke(update)
              if (playingChanged) playbackListener?.invoke(update.playing)
-@@ -2203,38 +2236,7 @@
+@@ -2262,38 +2295,7 @@
              )
              onStatus(CarPlayStatus.ConnectingControl)
              val carKitClient = LockdownCarKitClient(mux)
@@ -126,7 +126,7 @@
              val carkit = try {
                  carKitClient.open(pairRecord, config.label)
              } catch (error: Throwable) {
-@@ -2440,7 +2442,8 @@
+@@ -2536,7 +2538,8 @@
          }
          val manager: WirelessHotspotManager = when (hotspotMode) {
              WirelessHotspotMode.WIFI_P2P -> WifiP2pGroupManager(appContext, ::debugLog,

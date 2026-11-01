@@ -27,6 +27,12 @@ class L7MediaCenterSessionTest {
         val calls = mutableListOf<String>()
         val updates = mutableListOf<CarPlayNowPlaying>()
         val artworks = mutableListOf<Uri?>()
+        val lyricUpdates = mutableListOf<GalaxyOemLyrics>()
+        var failLyrics = false
+        override fun lyrics(value: GalaxyOemLyrics) {
+            lyricUpdates += value
+            if (failLyrics) throw SecurityException("synthetic-lyrics-rejected")
+        }
         var token = true
         var acceptSource = true
         var failState = false
@@ -76,6 +82,40 @@ class L7MediaCenterSessionTest {
     private val logs = mutableListOf<String>()
     private val retries = java.util.ArrayDeque<Runnable>()
     private val session = L7MediaCenterSession(port, "own", { current }, { index, _ -> sent += index }, worker, main, logs::add, retry = { retries.add(it) })
+    @Test fun lyricRejectionDoesNotBlockCoverOrPlaybackAndHasABoundedRetryBudget() {
+        port.failLyrics = true
+        connect()
+        for (elapsed in 1L..6L) { session.update(playing(elapsed)); worker.drain() }
+        assertTrue(port.updates.isNotEmpty())
+        assertTrue(port.calls.contains("progress:6"))
+        assertEquals(3, port.lyricUpdates.size)
+        session.updateLyrics(playing(), GalaxyOemLyrics("new", "new")); worker.drain()
+        assertEquals(4, port.lyricUpdates.size)
+    }
+
+    @Test fun lyricsFollowTrackAndRegistrationWithoutRepublishingCoverForEachLine() {
+        connect()
+        val track = playing()
+        session.update(track); worker.drain()
+        session.updateLyrics(track, GalaxyOemLyrics("[00:01.00]first", "first")); worker.drain()
+        val states = port.updates.size
+        session.updateLyrics(track, GalaxyOemLyrics("[00:01.00]first", "second")); worker.drain()
+        assertEquals(states, port.updates.size)
+        assertEquals("second", port.lyricUpdates.last().sentence)
+        session.updateLyrics(track.copy(title = "stale"), GalaxyOemLyrics("stale", "stale")); worker.drain()
+        assertEquals("second", port.lyricUpdates.last().sentence)
+        val count = port.lyricUpdates.size
+        port.ready(false); worker.drain(); port.ready(true); worker.drain()
+        assertTrue(port.lyricUpdates.size > count)
+        assertEquals("second", port.lyricUpdates.last().sentence)
+        session.update(track.copy(title = "next")); worker.drain()
+        assertEquals(GalaxyOemLyrics(), port.lyricUpdates.last())
+        session.close(); worker.drain()
+        val closed = port.lyricUpdates.size
+        session.updateLyrics(track, GalaxyOemLyrics("late", "late")); worker.drain()
+        assertEquals(closed, port.lyricUpdates.size)
+    }
+
     @Test fun diagnosticTraceStartsBeforeOemFilteringAndRejectsLateMainDelivery() {
         val store = L7SteeringDiagnostics.store
         store.clear()

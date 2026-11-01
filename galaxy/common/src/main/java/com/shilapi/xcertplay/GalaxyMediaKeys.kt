@@ -30,6 +30,11 @@ internal object GalaxyMediaKeys {
     private var steeringWheel: L7SteeringWheel? = null
     private var commandGate = L7MediaCommandGate()
     private var mediaInfo = CarPlayNowPlaying()
+    private var stopLyrics: (() -> Unit)? = null
+    private var lyricTick: Runnable? = null
+    private var lyricState = ClusterMusicState.Snapshot()
+    private var lyricContentState: List<ClusterLyricLine>? = null
+    private var lyricContent = ""
 
     @Synchronized fun attach(context: Context, next: CarPlayController, onPlaybackStarted: () -> Unit,
                              assistantActive: () -> Boolean = { false }) {
@@ -40,8 +45,11 @@ internal object GalaxyMediaKeys {
             return
         }
         clearAttachment()
-        this.context = context.applicationContext
+        val appContext = context.applicationContext
+        this.context = appContext
+        ClusterMusicSettings.initializeDefaults(appContext, enabledDefault = true, permanentDefault = true)
         this.controller = next
+        GalaxyClusterMusicBinding.attach(appContext, next)
         this.onPlaybackStarted = onPlaybackStarted
         this.assistantActive = assistantActive
         val ticket = attachment
@@ -62,6 +70,7 @@ internal object GalaxyMediaKeys {
                 if (expectedOwner != null && owner === expectedOwner) {
                     bridge?.onArtworkChanged(id, bytes)
                     covers?.submit(id, bytes)
+                    GalaxyClusterMusicBinding.submitArtwork(next, id, bytes)
                 }
             }
         }
@@ -90,10 +99,15 @@ internal object GalaxyMediaKeys {
             owner = currentOwner
             if (currentOwner != null) openSession(app, next, currentOwner)
         }
-        if (currentOwner == null) return
+        if (currentOwner == null) {
+            mediaInfo = CarPlayNowPlaying()
+            GalaxyClusterMusicBinding.update(next, mediaInfo)
+            return
+        }
         // 回调可来自任意链路线程，交付时读最新快照，不把排队旧增量倒灌。
         val update = next.nowPlayingSnapshot()
         mediaInfo = update
+        GalaxyClusterMusicBinding.update(next, update)
         bridge?.onNowPlayingChanged(update)
         if (update.playbackKnown) L7SteeringDiagnostics.store.state("phonePlayback", "playing=${update.playing}")
         if (update == CarPlayNowPlaying()) covers?.reset()
@@ -122,10 +136,12 @@ internal object GalaxyMediaKeys {
         }
         val retained = next.nowPlayingSnapshot()
         mediaInfo = retained
+        GalaxyClusterMusicBinding.update(next, retained)
         bridge?.onNowPlayingChanged(retained)
         next.matchingArtworkSnapshot(retained.artworkTransferId)?.let {
             bridge?.onArtworkChanged(it.id, it.bytes)
             covers?.submit(it.id, it.bytes)
+            GalaxyClusterMusicBinding.submitArtwork(next, it.id, it.bytes)
         }
     }
 
@@ -161,10 +177,26 @@ internal object GalaxyMediaKeys {
             L7ReflectiveMediaCenter(app, next.localMediaAudioEnabled), app.packageName,
             ::current, dispatch, traceSend = traced, localPlayback = next.localMediaAudioEnabled,
         ).also { it.start(); it.update(next.nowPlayingSnapshot(), null) }
+        handler.post { synchronized(this) {
+            if (!current()) return@synchronized
+            stopLyrics = ClusterMusicState.observe { state -> synchronized(this) {
+                if (current()) { lyricState = state; publishOemLyrics() }
+            } }
+            lyricTick = object : Runnable {
+                override fun run() = synchronized(this@GalaxyMediaKeys) {
+                    if (!current() || lyricTick !== this) return@synchronized
+                    publishOemLyrics()
+                    handler.postDelayed(this, 250L)
+                }
+            }.also { handler.post(it) }
+        } }
     }
 
     private fun startNavigation(app: Context, next: CarPlayController, expectedOwner: Any) {
-        navigation = L7NavigationSession(L7ReflectiveNavigation(app), {
+        val navigationPort: L7NavigationPort = if (GalaxyVehicleAudioProfiles.model(app) == GalaxyVehicleAudioProfiles.Model.L6) {
+            GalaxyL6DimNavigationPort(app)
+        } else L7ReflectiveNavigation(app)
+        navigation = L7NavigationSession(navigationPort, {
             synchronized(this) { controller === next && owner === expectedOwner && next.activeMediaSessionOwner() === expectedOwner }
         })
         navigationTick = object : Runnable {
@@ -177,7 +209,24 @@ internal object GalaxyMediaKeys {
         }.also { handler.post(it) }
     }
 
+    private fun publishOemLyrics() {
+        val state = lyricState
+        if (ClusterMusicState.trackChanged(mediaInfo, state.info)) return
+        // 完整LRC仅在歌词集合改变时编码；时钟推进只计算当前句。
+        if (lyricContentState !== state.lyrics) {
+            lyricContentState = state.lyrics
+            lyricContent = GalaxyOemLyrics.from(state, SystemClock.elapsedRealtime()).content
+        }
+        mediaCenter?.updateLyrics(state.info, GalaxyOemLyrics(lyricContent,
+            state.lyricAt(SystemClock.elapsedRealtime())?.text.orEmpty().take(500)))
+    }
+
     private fun releaseSession() {
+        stopLyrics?.let { remove -> handler.post { remove() } }; stopLyrics = null
+        lyricTick?.let(handler::removeCallbacks); lyricTick = null
+        lyricState = ClusterMusicState.Snapshot()
+        lyricContentState = null
+        lyricContent = ""
         navigationTick?.let(handler::removeCallbacks)
         navigationTick = null
         navigation?.close(); navigation = null
@@ -188,6 +237,7 @@ internal object GalaxyMediaKeys {
         steeringWheel?.close(); steeringWheel = null
         commandGate = L7MediaCommandGate()
         mediaInfo = CarPlayNowPlaying()
+        controller?.let(GalaxyClusterMusicBinding::resetSession)
         owner = null
         L7SteeringDiagnostics.store.connection(false)
     }
@@ -199,6 +249,7 @@ internal object GalaxyMediaKeys {
         controller?.artworkListener = null
         controller?.navigationFrameListener = null
         releaseSession()
+        GalaxyClusterMusicBinding.detach(controller)
         controller = null
         context = null
     }

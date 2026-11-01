@@ -51,6 +51,8 @@ class ClusterMusicTest {
         assertEquals(View.GONE, view.visibility)
         val art = Bitmap.createBitmap(32, 32, Bitmap.Config.ARGB_8888)
         ClusterMusicState.publish(track.copy(artworkTransferId = 7), art); idle()
+        assertEquals(View.VISIBLE, view.visibility)
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(9))
         assertEquals(View.GONE, view.visibility)
         ClusterMusicState.publish(track.copy(title = "Next song"), null); idle()
         assertEquals(View.VISIBLE, view.visibility)
@@ -59,7 +61,7 @@ class ClusterMusicTest {
         controller.pause().stop().destroy()
     }
 
-    @Test fun permanentSurvivesPauseButDisableAndDisconnectClearItAndReattachKeepsDeadline() {
+    @Test fun permanentKeepsMusicDetailsWhileDisableAndDisconnectClearIt() {
         val controller = Robolectric.buildActivity(Activity::class.java).setup().visible()
         val view = ClusterMusicView(controller.get())
         controller.get().setContentView(view)
@@ -70,14 +72,14 @@ class ClusterMusicTest {
         assertTrue(ReflectionHelpers.getField<Boolean>(view, "captionVisible"))
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(9))
         assertEquals(View.VISIBLE, view.visibility)
-        assertFalse(ReflectionHelpers.getField<Boolean>(view, "captionVisible"))
+        assertTrue(ReflectionHelpers.getField<Boolean>(view, "captionVisible"))
         ClusterMusicState.publish(track.copy(artworkTransferId = 7), Bitmap.createBitmap(16, 16, Bitmap.Config.ARGB_8888)); idle()
-        assertFalse(ReflectionHelpers.getField<Boolean>(view, "captionVisible"))
+        assertTrue(ReflectionHelpers.getField<Boolean>(view, "captionVisible"))
         ClusterMusicState.publish(track.copy(title = "New song"), null); idle()
         assertTrue(ReflectionHelpers.getField<Boolean>(view, "captionVisible"))
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(9))
         assertEquals(View.VISIBLE, view.visibility)
-        assertFalse(ReflectionHelpers.getField<Boolean>(view, "captionVisible"))
+        assertTrue(ReflectionHelpers.getField<Boolean>(view, "captionVisible"))
         ClusterMusicSettings.saveEnabled(context, false); idle()
         assertEquals(View.GONE, view.visibility)
         ClusterMusicSettings.saveEnabled(context, true); idle()
@@ -93,6 +95,46 @@ class ClusterMusicTest {
         controller.pause().stop().destroy()
     }
 
+    @Test fun progressAndTimedLyricsFollowCarPlayElapsedPosition() {
+        val snapshot = ClusterMusicState.Snapshot(
+            info = CarPlayNowPlaying(title = "Song", artist = "Artist", playing = true,
+                elapsedMillis = 3_000L, durationMillis = 10_000L),
+            lyrics = listOf(ClusterLyricLine(3_000L, "Intro"), ClusterLyricLine(4_000L, "Verse")),
+            elapsedUpdatedAt = 1_000L,
+        )
+        assertEquals(4_500L, snapshot.elapsedAt(2_500L))
+        assertEquals("Verse", snapshot.lyricAt(5_000L)?.text)
+        assertEquals("Intro", snapshot.lyricAt(1_500L)?.text)
+        val plain = snapshot.copy(lyrics = listOf(ClusterLyricLine(null, "First"), ClusterLyricLine(null, "Second")), changedAt = 1_000L)
+        assertEquals("First", plain.lyricAt(1_000L)?.text)
+        assertEquals("Second", plain.lyricAt(1_000L + ClusterMusicState.PLAIN_LYRIC_LINE_MILLIS)?.text)
+        assertEquals(10_000L, snapshot.copy(info = snapshot.info.copy(elapsedMillis = 9_000L)).elapsedAt(20_000L))
+    }
+
+    @Test fun staleLyricsCannotReplaceTheCurrentTrackLyrics() {
+        val track = CarPlayNowPlaying(title = "Current", artist = "Artist", artworkTransferId = 7)
+        var current = ClusterMusicState.Snapshot()
+        val stop = ClusterMusicState.observe { current = it }
+        ClusterMusicState.publishProductInfo(track); idle()
+        ClusterMusicState.publishLyrics(track.copy(title = "Old"), listOf(ClusterLyricLine(0L, "stale"))); idle()
+        assertFalse(current.lyricsResolved)
+        ClusterMusicState.publishLyrics(track, listOf(ClusterLyricLine(0L, "fresh"))); idle()
+        assertTrue(current.lyricsResolved)
+        assertEquals("fresh", current.lyrics.single().text)
+        stop()
+    }
+
+    @Test fun productDefaultsEnablePersistentMusicWithoutOverridingUserChoices() {
+        ClusterMusicSettings.initializeDefaults(context, enabledDefault = true, permanentDefault = true)
+        assertTrue(ClusterMusicSettings.enabled(context))
+        assertTrue(ClusterMusicSettings.permanent(context))
+        ClusterMusicSettings.saveEnabled(context, false)
+        ClusterMusicSettings.savePermanent(context, false)
+        ClusterMusicSettings.initializeDefaults(context, enabledDefault = true, permanentDefault = true)
+        assertFalse(ClusterMusicSettings.enabled(context))
+        assertFalse(ClusterMusicSettings.permanent(context))
+    }
+
     @Test fun sameMillisecondTrackChangesHaveDistinctRevisionAndSettingsClamp() {
         val captured = mutableListOf<ClusterMusicState.Snapshot>()
         val stop = ClusterMusicState.observe { captured.add(it) }
@@ -105,7 +147,7 @@ class ClusterMusicTest {
         ClusterMusicSettings.save(context, "size", 999)
         assertEquals(95, ClusterMusicSettings.x(context))
         assertEquals(5, ClusterMusicSettings.y(context))
-        assertEquals(150, ClusterMusicSettings.size(context))
+        assertEquals(300, ClusterMusicSettings.size(context))
     }
 
     @Test fun rendersRealSettingsCompactFullAndRtlWithLargeFontsAndClusterCard() {
@@ -144,10 +186,13 @@ class ClusterMusicTest {
         card.measure(View.MeasureSpec.makeMeasureSpec(1280, View.MeasureSpec.EXACTLY),
             View.MeasureSpec.makeMeasureSpec(480, View.MeasureSpec.EXACTLY))
         card.layout(0, 0, 1280, 480)
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(500))
         write(card, "cluster-1280x480")
+        ClusterMusicSettings.save(context, "size", 300); idle()
+        write(card, "cluster-1280x480-size-300")
         shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(9))
         assertEquals(View.VISIBLE, card.visibility)
-        assertFalse(ReflectionHelpers.getField<Boolean>(card, "captionVisible"))
+        assertTrue(ReflectionHelpers.getField<Boolean>(card, "captionVisible"))
         write(card, "cluster-1280x480-cover-only")
         controller.pause().stop().destroy()
     }
@@ -156,6 +201,81 @@ class ClusterMusicTest {
         val speed = com.shilapi.xcertplay.airplay.ClusterSpeedometerOverlay.rect(1280, 480, 82, 30, 50)
         assertEquals(speed.height.toFloat(), ClusterMusicView.tileSide(1280, 480, 100), 0.01f)
         assertTrue(ClusterMusicView.tileSide(60, 200, 150) <= 60f)
+    }
+
+    @Test fun missingCoverKeepsLastImageUntilReplacementAndDisconnectClearsIt() {
+        val states = mutableListOf<ClusterMusicState.Snapshot>()
+        val stop = ClusterMusicState.observe { states.add(it) }
+        val art = Bitmap.createBitmap(16, 16, Bitmap.Config.ARGB_8888)
+        val nextArt = Bitmap.createBitmap(16, 16, Bitmap.Config.ARGB_8888)
+        val song = CarPlayNowPlaying(title = "Song", artist = "Artist", artworkTransferId = 7)
+        ClusterMusicState.publish(song, art); idle()
+        ClusterMusicState.publish(song.copy(elapsedMillis = 90_000), null); idle()
+        assertSame(art, states.last().artwork)
+        ClusterMusicState.publish(song.copy(title = "Next", artworkTransferId = 8), null); idle()
+        assertSame(art, states.last().artwork)
+        ClusterMusicState.publish(song.copy(title = "Next", artworkTransferId = 8), nextArt); idle()
+        assertSame(nextArt, states.last().artwork)
+        ClusterMusicState.publish(CarPlayNowPlaying(), null); idle()
+        assertNull(states.last().artwork)
+        stop()
+    }
+
+    @Test fun coverCrossfadeHasIntermediatePixelsAndPositionUpdatesDoNotRestartIt() {
+        val controller = Robolectric.buildActivity(Activity::class.java).setup().visible()
+        val view = ClusterMusicView(controller.get())
+        controller.get().setContentView(view)
+        ClusterMusicSettings.saveEnabled(context, true)
+        ClusterMusicSettings.savePermanent(context, true)
+        view.layout(0, 0, 1280, 480)
+        val red = Bitmap.createBitmap(16, 16, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.RED) }
+        val blue = Bitmap.createBitmap(16, 16, Bitmap.Config.ARGB_8888).apply { eraseColor(Color.BLUE) }
+        val song = CarPlayNowPlaying(title = "A", artworkTransferId = 7)
+        ClusterMusicState.publish(song, red); idle()
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(500))
+        fun pixel(y: Int = 400): Int {
+            view.layout(0, 0, 1280, 480)
+            val image = Bitmap.createBitmap(1280, 480, Bitmap.Config.ARGB_8888)
+            view.draw(Canvas(image))
+            return image.getPixel(640, y).also { image.recycle() }
+        }
+        assertEquals(Color.RED, pixel())
+        ClusterMusicState.publish(song.copy(title = "B", artworkTransferId = 8), blue); idle()
+        val start = ReflectionHelpers.getField<Long>(view, "artworkChangedAt")
+        val beginning = pixel() // The first simulated display frame may already be 16 ms in.
+        assertTrue(Color.red(beginning) > 230)
+        assertTrue(Color.blue(beginning) < 25)
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(200))
+        ClusterMusicState.publish(song.copy(title = "B", artworkTransferId = 8, elapsedMillis = 200), null); idle()
+        assertEquals(start, ReflectionHelpers.getField<Long>(view, "artworkChangedAt"))
+        val middle = pixel()
+        assertTrue(Color.red(middle) in 80..180)
+        assertTrue(Color.blue(middle) in 80..180)
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(250))
+        assertEquals(Color.BLUE, pixel())
+        assertNull(ReflectionHelpers.getField<Bitmap?>(view, "previousArtwork"))
+        assertTrue(Color.blue(pixel(300)) < 100) // Caption's dark band is still visible.
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(
+            start + 7_800 - android.os.SystemClock.elapsedRealtime()))
+        // Galaxy永久模式保留歌词/曲名，不采用上游8秒后只留封面的行为。
+        assertTrue(Color.blue(pixel(300)) < 100)
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(300))
+        assertTrue(Color.blue(pixel(300)) < 100) // 永久模式的曲目详情继续显示。
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(9))
+        assertEquals(View.VISIBLE, view.visibility)
+        assertEquals(Color.BLUE, pixel())
+        controller.pause().stop().destroy()
+    }
+
+    @Test fun sizeAndPositionPersistSinglePercentStepsAndLargeCardFits() {
+        ClusterMusicSettings.save(context, "size", 251)
+        ClusterMusicSettings.save(context, "x", 51)
+        ClusterMusicSettings.save(context, "y", 74)
+        assertEquals(251, ClusterMusicSettings.size(context))
+        assertEquals(51, ClusterMusicSettings.x(context))
+        assertEquals(74, ClusterMusicSettings.y(context))
+        assertEquals(432f, ClusterMusicView.tileSide(1280, 480, 300), .01f)
+        assertEquals(60f, ClusterMusicView.tileSide(60, 200, 300), .01f)
     }
 
     private fun write(view: View, name: String) {

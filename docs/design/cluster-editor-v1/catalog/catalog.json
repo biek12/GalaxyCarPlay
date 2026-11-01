@@ -1,0 +1,506 @@
+[
+  {
+    "id": 0,
+    "type": "gauge",
+    "title": "GT · 细针表盘",
+    "day": "style-0-day.png",
+    "night": "style-0-night.png"
+  },
+  {
+    "id": 1,
+    "type": "gauge",
+    "title": "现代 · 指针与弧",
+    "day": "style-1-day.png",
+    "night": "style-1-night.png"
+  },
+  {
+    "id": 2,
+    "type": "gauge",
+    "title": "经典 · 楔形指针",
+    "day": "style-2-day.png",
+    "night": "style-2-night.png"
+  },
+  {
+    "id": 3,
+    "type": "ring",
+    "title": "极简圆弧",
+    "day": "style-3-day.png",
+    "night": "style-3-night.png"
+  },
+  {
+    "id": 4,
+    "type": "ring",
+    "title": "分度圆环",
+    "day": "style-4-day.png",
+    "night": "style-4-night.png"
+  },
+  {
+    "id": 5,
+    "type": "ring",
+    "title": "宽弧渐变",
+    "day": "style-5-day.png",
+    "night": "style-5-night.png"
+  },
+  {
+    "id": 6,
+    "type": "value",
+    "title": "清晰数字",
+    "day": "style-6-day.png",
+    "night": "style-6-night.png"
+  },
+  {
+    "id": 7,
+    "type": "value",
+    "title": "滚动读数",
+    "day": "style-7-day.png",
+    "night": "style-7-night.png"
+  },
+  {
+    "id": 8,
+    "type": "value",
+    "title": "窄体读数",
+    "day": "style-8-day.png",
+    "night": "style-8-night.png"
+  },
+  {
+    "id": 9,
+    "type": "bar",
+    "title": "连续条形",
+    "day": "style-9-day.png",
+    "night": "style-9-night.png"
+  },
+  {
+    "id": 10,
+    "type": "bar",
+    "title": "分段条形",
+    "day": "style-10-day.png",
+    "night": "style-10-night.png"
+  },
+  {
+    "id": 11,
+    "type": "bar",
+    "title": "阈值提示",
+    "day": "style-11-day.png",
+    "night": "style-11-night.png"
+  },
+  {
+    "id": 12,
+    "type": "map",
+    "title": "完整地图",
+    "day": "style-12-day.png",
+    "night": "style-12-night.png"
+  },
+  {
+    "id": 13,
+    "type": "map",
+    "title": "细圆角地图",
+    "day": "style-13-day.png",
+    "night": "style-13-night.png"
+  },
+  {
+    "id": 14,
+    "type": "map",
+    "title": "圆角地图卡片",
+    "day": "style-14-day.png",
+    "night": "style-14-night.png"
+  },
+  {
+    "id": 15,
+    "type": "lyrics",
+    "title": "四行跟随",
+    "day": "style-15-day.png",
+    "night": "style-15-night.png"
+  },
+  {
+    "id": 16,
+    "type": "lyrics",
+    "title": "三行大字",
+    "day": "style-16-day.png",
+    "night": "style-16-night.png"
+  },
+  {
+    "id": 17,
+    "type": "lyrics",
+    "title": "七行紧凑",
+    "day": "style-17-day.png",
+    "night": "style-17-night.png"
+  },
+  {
+    "id": 18,
+    "type": "track",
+    "title": "标题与歌手",
+    "day": "style-18-day.png",
+    "night": "style-18-night.png"
+  },
+  {
+    "id": 19,
+    "type": "track",
+    "title": "居中音乐信息",
+    "day": "style-19-day.png",
+    "night": "style-19-night.png"
+  },
+  {
+    "id": 20,
+    "type": "track",
+    "title": "超长标题滚动",
+    "day": "style-20-day.png",
+    "night": "style-20-night.png"
+  },
+  {
+    "id": 21,
+    "type": "artwork",
+    "title": "圆角封面",
+    "day": "style-21-day.png",
+    "night": "style-21-night.png"
+  },
+  {
+    "id": 22,
+    "type": "artwork",
+    "title": "圆形封面",
+    "day": "style-22-day.png",
+    "night": "style-22-night.png"
+  },
+  {
+    "id": 23,
+    "type": "artwork",
+    "title": "方形封面",
+    "day": "style-23-day.png",
+    "night": "style-23-night.png"
+  },
+  {
+    "id": 24,
+    "type": "progress",
+    "title": "简洁进度",
+    "day": "style-24-day.png",
+    "night": "style-24-night.png"
+  },
+  {
+    "id": 25,
+    "type": "progress",
+    "title": "完整播放时间",
+    "day": "style-25-day.png",
+    "night": "style-25-night.png"
+  },
+  {
+    "id": 26,
+    "type": "progress",
+    "title": "醒目进度",
+    "day": "style-26-day.png",
+    "night": "style-26-night.png"
+  },
+  {
+    "id": 27,
+    "type": "tires",
+    "title": "四轮胎压 · kPa",
+    "day": "style-27-day.png",
+    "night": "style-27-night.png"
+  },
+  {
+    "id": 28,
+    "type": "tires",
+    "title": "四轮胎压 · bar",
+    "day": "style-28-day.png",
+    "night": "style-28-night.png"
+  },
+  {
+    "id": 29,
+    "type": "tires",
+    "title": "极简轮位",
+    "day": "style-29-day.png",
+    "night": "style-29-night.png"
+  },
+  {
+    "id": 30,
+    "type": "pedals",
+    "title": "踏板与方向盘",
+    "day": "style-30-day.png",
+    "night": "style-30-night.png"
+  },
+  {
+    "id": 31,
+    "type": "pedals",
+    "title": "双踏板",
+    "day": "style-31-day.png",
+    "night": "style-31-night.png"
+  },
+  {
+    "id": 32,
+    "type": "pedals",
+    "title": "细线踏板",
+    "day": "style-32-day.png",
+    "night": "style-32-night.png"
+  },
+  {
+    "id": 33,
+    "type": "status",
+    "title": "车辆状态",
+    "day": "style-33-day.png",
+    "night": "style-33-night.png"
+  },
+  {
+    "id": 34,
+    "type": "status",
+    "title": "能源续航",
+    "day": "style-34-day.png",
+    "night": "style-34-night.png"
+  },
+  {
+    "id": 35,
+    "type": "status",
+    "title": "简洁状态",
+    "day": "style-35-day.png",
+    "night": "style-35-night.png"
+  },
+  {
+    "id": 36,
+    "type": "navigation",
+    "title": "完整导航信息",
+    "day": "style-36-day.png",
+    "night": "style-36-night.png"
+  },
+  {
+    "id": 37,
+    "type": "navigation",
+    "title": "距离与道路",
+    "day": "style-37-day.png",
+    "night": "style-37-night.png"
+  },
+  {
+    "id": 38,
+    "type": "navigation",
+    "title": "到达与剩余",
+    "day": "style-38-day.png",
+    "night": "style-38-night.png"
+  },
+  {
+    "id": 39,
+    "type": "clock",
+    "title": "时间与日期",
+    "day": "style-39-day.png",
+    "night": "style-39-night.png"
+  },
+  {
+    "id": 40,
+    "type": "clock",
+    "title": "简洁时间",
+    "day": "style-40-day.png",
+    "night": "style-40-night.png"
+  },
+  {
+    "id": 41,
+    "type": "clock",
+    "title": "含秒时间",
+    "day": "style-41-day.png",
+    "night": "style-41-night.png"
+  },
+  {
+    "id": 42,
+    "type": "text",
+    "title": "简洁文本",
+    "day": "style-42-day.png",
+    "night": "style-42-night.png"
+  },
+  {
+    "id": 43,
+    "type": "text",
+    "title": "电量标注",
+    "day": "style-43-day.png",
+    "night": "style-43-night.png"
+  },
+  {
+    "id": 44,
+    "type": "text",
+    "title": "音乐标注",
+    "day": "style-44-day.png",
+    "night": "style-44-night.png"
+  },
+  {
+    "id": 45,
+    "type": "image",
+    "title": "完整图片",
+    "day": "style-45-day.png",
+    "night": "style-45-night.png"
+  },
+  {
+    "id": 46,
+    "type": "image",
+    "title": "填满图片",
+    "day": "style-46-day.png",
+    "night": "style-46-night.png"
+  },
+  {
+    "id": 47,
+    "type": "image",
+    "title": "圆角图片",
+    "day": "style-47-day.png",
+    "night": "style-47-night.png"
+  },
+  {
+    "id": 48,
+    "type": "card",
+    "title": "实色卡片",
+    "day": "style-48-day.png",
+    "night": "style-48-night.png"
+  },
+  {
+    "id": 49,
+    "type": "card",
+    "title": "描边卡片",
+    "day": "style-49-day.png",
+    "night": "style-49-night.png"
+  },
+  {
+    "id": 50,
+    "type": "card",
+    "title": "半透明卡片",
+    "day": "style-50-day.png",
+    "night": "style-50-night.png"
+  },
+  {
+    "id": 51,
+    "type": "fuel-range",
+    "title": "燃油续航条",
+    "day": "style-51-day.png",
+    "night": "style-51-night.png"
+  },
+  {
+    "id": 52,
+    "type": "fuel-range",
+    "title": "燃油 · 蓝色条",
+    "day": "style-52-day.png",
+    "night": "style-52-night.png"
+  },
+  {
+    "id": 53,
+    "type": "fuel-range",
+    "title": "燃油 · 细条",
+    "day": "style-53-day.png",
+    "night": "style-53-night.png"
+  },
+  {
+    "id": 54,
+    "type": "ev-range",
+    "title": "纯电续航条",
+    "day": "style-54-day.png",
+    "night": "style-54-night.png"
+  },
+  {
+    "id": 55,
+    "type": "ev-range",
+    "title": "纯电 · 绿色条",
+    "day": "style-55-day.png",
+    "night": "style-55-night.png"
+  },
+  {
+    "id": 56,
+    "type": "ev-range",
+    "title": "纯电 · 细条",
+    "day": "style-56-day.png",
+    "night": "style-56-night.png"
+  },
+  {
+    "id": 57,
+    "type": "regen",
+    "title": "回收 · 低\/中\/高\/自动",
+    "day": "style-57-day.png",
+    "night": "style-57-night.png"
+  },
+  {
+    "id": 58,
+    "type": "regen",
+    "title": "回收 · 大字号",
+    "day": "style-58-day.png",
+    "night": "style-58-night.png"
+  },
+  {
+    "id": 59,
+    "type": "regen",
+    "title": "回收 · 蓝绿色",
+    "day": "style-59-day.png",
+    "night": "style-59-night.png"
+  },
+  {
+    "id": 60,
+    "type": "music-background",
+    "title": "音乐 · 地图毛玻璃",
+    "day": "style-60-day.png",
+    "night": "style-60-night.png"
+  },
+  {
+    "id": 61,
+    "type": "music-background",
+    "title": "音乐 · 封面柔焦",
+    "day": "style-61-day.png",
+    "night": "style-61-night.png"
+  },
+  {
+    "id": 62,
+    "type": "music-background",
+    "title": "音乐 · 渐变背景",
+    "day": "style-62-day.png",
+    "night": "style-62-night.png"
+  },
+  {
+    "id": 63,
+    "type": "pages",
+    "title": "四页信息容器",
+    "day": "style-63-day.png",
+    "night": "style-63-night.png"
+  },
+  {
+    "id": 64,
+    "type": "pages",
+    "title": "淡入切页",
+    "day": "style-64-day.png",
+    "night": "style-64-night.png"
+  },
+  {
+    "id": 65,
+    "type": "pages",
+    "title": "直接切页",
+    "day": "style-65-day.png",
+    "night": "style-65-night.png"
+  },
+  {
+    "id": 66,
+    "type": "consumption",
+    "title": "平均油耗",
+    "day": "style-66-day.png",
+    "night": "style-66-night.png"
+  },
+  {
+    "id": 67,
+    "type": "consumption",
+    "title": "平均电耗",
+    "day": "style-67-day.png",
+    "night": "style-67-night.png"
+  },
+  {
+    "id": 68,
+    "type": "consumption",
+    "title": "简洁能耗",
+    "day": "style-68-day.png",
+    "night": "style-68-night.png"
+  },
+  {
+    "id": 69,
+    "type": "indicators",
+    "title": "灯光转向状态",
+    "day": "style-69-day.png",
+    "night": "style-69-night.png"
+  },
+  {
+    "id": 70,
+    "type": "indicators",
+    "title": "巡航状态图标",
+    "day": "style-70-day.png",
+    "night": "style-70-night.png"
+  },
+  {
+    "id": 71,
+    "type": "indicators",
+    "title": "大尺寸状态图标",
+    "day": "style-71-day.png",
+    "night": "style-71-night.png"
+  }
+]

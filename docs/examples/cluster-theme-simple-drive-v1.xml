@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- 自写草案：借鉴结构化Card/Text/Ring组合，按L6画幅重新布局；尚无运行解析器。 -->
+<cluster-theme schemaVersion="1" status="draft" id="simple-drive-inspired"
+    name="Simple Drive 启发" designWidth="1920" designHeight="532" fit="contain">
+    <render-policy mode="content-aware" maxFps="60" animationFps="30" mapFps="source"
+        static="on-change" keepAliveMs="1000"/>
+    <appearance mode="auto" day="day" night="night" shareDayNight="false"/>
+    <styles>
+        <palette id="day" foreground="#13252F" muted="#50646F" accent="#006FC7" panel="#E8F0F5"/>
+        <palette id="night" foreground="#EFF5F8" muted="#9AAAB2" accent="#1F9EFF" panel="#CC0B161D"/>
+        <override component="soc-ring" mode="day" foreground="#007F60" strokeWidth="14"/>
+        <override component="speed-number" mode="night" foreground="#F1FAFF" fontScale="1.08"/>
+    </styles>
+    <scene>
+        <component id="map" type="map-viewport" x="0" y="0" width="1920" height="532" z="0"
+            source="navigation.map" scale="contain"/>
+        <component id="speed-card" type="card" x="55" y="80" width="470" height="370" z="1"
+            background="@panel" cornerRadius="28"/>
+        <component id="speed-number" type="value-text" x="110" y="125" width="360" height="170" z="2"
+            bind="vehicle.displaySpeed" unit="km/h" invalidText="--"/>
+        <component id="gear" type="value-text" x="165" y="320" width="250" height="90" z="2"
+            bind="vehicle.gear" invalidText="--"/>
+        <component id="energy-card" type="card" x="1395" y="70" width="470" height="385" z="1"
+            background="@panel" cornerRadius="28"/>
+        <component id="soc-ring" type="ring" x="1485" y="100" width="280" height="280" z="2"
+            bind="vehicle.soc" min="0" max="100" startAngle="135" sweepAngle="270"
+            strokeWidth="12" foreground="@accent"/>
+        <component id="soc-number" type="value-text" x="1535" y="180" width="180" height="100" z="3"
+            bind="vehicle.soc" unit="%" invalidText="--"/>
+        <component id="track" type="track-info" x="580" y="420" width="760" height="70" z="2"
+            bind="media.track"/>
+    </scene>
+</cluster-theme>

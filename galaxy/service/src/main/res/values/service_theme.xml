@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 沿项目Flyme设置页色阶；独立App不依赖CarPlay宿主。 -->
+    <color name="service_background">#F6F8FC</color>
+    <color name="service_navigation">#EBF1F8</color>
+    <color name="service_surface">#FFFFFF</color>
+    <color name="service_border">#E0E7F0</color>
+    <color name="service_foreground">#17212F</color>
+    <color name="service_secondary">#687789</color>
+    <color name="service_accent">#1368FB</color>
+    <color name="service_accent_soft">#EAF2FF</color>
+    <color name="service_track">#C3CDD9</color>
+    <color name="service_success">#218464</color>
+    <style name="ServiceTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">@color/service_accent</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">@color/service_background</item>
+        <item name="android:navigationBarColor">@color/service_background</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowBackground">@color/service_background</item>
+    </style>
+</resources>

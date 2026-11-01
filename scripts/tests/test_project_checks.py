@@ -5,6 +5,7 @@ import json
 import sys
 import tempfile
 import unittest
+from unittest.mock import patch
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import project_checks as checks
@@ -118,6 +119,16 @@ class CoreChecksTest(unittest.TestCase):
     def test_generated_output_does_not_count_as_core_source(self):
         (self.root / 'common/build').mkdir()
         (self.root / 'common/build/generated.kt').write_text('generated')
+        self.assertEqual((3, 0), checks.check_core(self.root))
+
+    def test_finder_metadata_is_excluded_by_both_source_enumerators(self):
+        import record_patches
+        metadata = self.root / 'common/src/main/.DS_Store'
+        metadata.parent.mkdir(parents=True)
+        metadata.write_bytes(b'synthetic-finder-metadata')
+        self.assertNotIn(metadata, list(checks.source_files(self.root / 'common')))
+        with patch.object(record_patches, 'ROOT', self.root):
+            self.assertNotIn('common/src/main/.DS_Store', record_patches.product_files())
         self.assertEqual((3, 0), checks.check_core(self.root))
 
     def test_registered_deletion_passes_only_when_file_is_gone(self):

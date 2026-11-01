@@ -71,6 +71,7 @@ android {
 tasks.named("preBuild") { dependsOn(prepareGalaxyLicenses) }
 
 dependencies {
+    implementation(project(":auto-client"))
     api(project(":shared"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)

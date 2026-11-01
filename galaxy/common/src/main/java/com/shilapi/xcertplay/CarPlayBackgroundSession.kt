@@ -8,6 +8,7 @@ import com.shilapi.xcertplay.airplay.CarPlayMediaButton
 internal object CarPlayBackgroundSession {
     @Volatile var active = false
     @Volatile var callPopupReady = false
+    @Volatile var hotspotReady: com.shilapi.xcertplay.orchestration.CarPlayStatus.HotspotReady? = null
     @Volatile var configuration: GalaxyProfile? = null
         private set
     private var stopAction: (((() -> Unit)) -> Unit)? = null
@@ -68,6 +69,7 @@ internal object CarPlayBackgroundSession {
         L7ReportingTests.stop("CARPLAY_SESSION")
         if (this.controller !== controller) {
             callPopupReady = false
+            hotspotReady = null
             bluetoothMediaGuard?.close()
             bluetoothMediaGuard = null
             L7BluetoothAudioSettings.status = BluetoothMediaStatus.IDLE
@@ -96,6 +98,7 @@ internal object CarPlayBackgroundSession {
         if (!keepOwner) { stopAction = null; owner = null }
         active = false
         callPopupReady = false
+        hotspotReady = null
         width = 0
         height = 0
         display = null

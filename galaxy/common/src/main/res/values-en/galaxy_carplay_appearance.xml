@@ -9,6 +9,7 @@
     <string name="galaxy_carplay_return_reset_name">Default name</string>
     <string name="galaxy_carplay_return_preview">CarPlay return button icon preview</string>
     <string name="galaxy_carplay_return_import">Choose button icon</string>
+    <string name="galaxy_carplay_return_picker_unavailable">This car has no available image picker, so the button icon cannot be changed.</string>
     <string name="galaxy_carplay_return_crop_hint">Select a picture and crop it to a square. Confirm to save; cancel to keep the current icon.</string>
     <string name="galaxy_carplay_return_icon_default">Default icon</string>
     <string name="galaxy_carplay_return_icon_custom">Custom icon</string>

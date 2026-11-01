@@ -1,0 +1,4178 @@
+[
+  {
+    "type": "map",
+    "title": "完整导航地图",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "rounded",
+        "label": "使用圆角",
+        "section": "窗口",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "cornerRadius",
+        "label": "窗口圆角",
+        "section": "窗口",
+        "styleable": true,
+        "default": "12",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "videoOpacity",
+        "label": "地图背景亮度\/透明度",
+        "section": "地图背景",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "blurEnabled",
+        "label": "地图虚化",
+        "section": "地图背景",
+        "styleable": true,
+        "default": "false",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "blurStyle",
+        "label": "虚化方式",
+        "section": "地图背景",
+        "styleable": true,
+        "default": "edges",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "blurRadius",
+        "label": "虚化半径",
+        "section": "地图背景",
+        "styleable": true,
+        "default": "12",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "edgeWidth",
+        "label": "边缘虚化宽度",
+        "section": "地图背景",
+        "styleable": true,
+        "default": "100",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "edgeFade",
+        "label": "边缘渐隐",
+        "section": "地图背景",
+        "styleable": true,
+        "default": "false",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "edgeFadeWidth",
+        "label": "边缘渐隐范围",
+        "section": "地图背景",
+        "styleable": true,
+        "default": "90",
+        "kind": "NUMBER"
+      }
+    ]
+  },
+  {
+    "type": "value",
+    "title": "数字读数",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "source",
+        "label": "数据来源",
+        "section": "数据",
+        "styleable": false,
+        "default": "vehicle.displaySpeed",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "unit",
+        "label": "单位",
+        "section": "数据",
+        "styleable": false,
+        "default": "km\/h",
+        "kind": "TEXT"
+      },
+      {
+        "key": "decimals",
+        "label": "小数位",
+        "section": "数据",
+        "styleable": false,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "font",
+        "label": "字体",
+        "section": "文字",
+        "styleable": true,
+        "default": "sans",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "fontAsset",
+        "label": "主题字体文件",
+        "section": "文字",
+        "styleable": true,
+        "default": "",
+        "kind": "ASSET"
+      },
+      {
+        "key": "fontWeight",
+        "label": "字重",
+        "section": "文字",
+        "styleable": true,
+        "default": "400",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "letterSpacing",
+        "label": "字距",
+        "section": "文字",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "foreground",
+        "label": "主要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@foreground",
+        "kind": "COLOR"
+      },
+      {
+        "key": "muted",
+        "label": "次要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@muted",
+        "kind": "COLOR"
+      },
+      {
+        "key": "fontSize",
+        "label": "字号",
+        "section": "文字",
+        "styleable": true,
+        "default": "32",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "align",
+        "label": "对齐",
+        "section": "文字",
+        "styleable": true,
+        "default": "center",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "lineHeight",
+        "label": "行高比例",
+        "section": "文字",
+        "styleable": true,
+        "default": "1.4",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "warningBelow",
+        "label": "低于此值提醒（空为关闭）",
+        "section": "阈值",
+        "styleable": true,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "criticalBelow",
+        "label": "低于此值严重提醒",
+        "section": "阈值",
+        "styleable": true,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "warningAbove",
+        "label": "高于此值提醒",
+        "section": "阈值",
+        "styleable": true,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "criticalAbove",
+        "label": "高于此值严重提醒",
+        "section": "阈值",
+        "styleable": true,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "warningColor",
+        "label": "提醒色",
+        "section": "阈值",
+        "styleable": true,
+        "default": "@warning",
+        "kind": "COLOR"
+      },
+      {
+        "key": "criticalColor",
+        "label": "严重提醒色",
+        "section": "阈值",
+        "styleable": true,
+        "default": "@critical",
+        "kind": "COLOR"
+      },
+      {
+        "key": "followMs",
+        "label": "数值跟随时长（ms）",
+        "section": "动画",
+        "styleable": true,
+        "default": "160",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "easing",
+        "label": "缓动",
+        "section": "动画",
+        "styleable": true,
+        "default": "ease-out",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "label",
+        "label": "标题",
+        "section": "文字",
+        "styleable": true,
+        "default": "速度",
+        "kind": "TEXT"
+      },
+      {
+        "key": "valueSize",
+        "label": "读数字号",
+        "section": "文字",
+        "styleable": true,
+        "default": "92",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "unitSize",
+        "label": "单位字号",
+        "section": "文字",
+        "styleable": true,
+        "default": "24",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "unitPosition",
+        "label": "单位位置",
+        "section": "文字",
+        "styleable": true,
+        "default": "below",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "rolling",
+        "label": "数字滚动过渡",
+        "section": "动画",
+        "styleable": true,
+        "default": "false",
+        "kind": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "type": "gauge",
+    "title": "GT指针仪表",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "source",
+        "label": "数据来源",
+        "section": "数据",
+        "styleable": false,
+        "default": "vehicle.displaySpeed",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "minimum",
+        "label": "最小值",
+        "section": "数据",
+        "styleable": false,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "maximum",
+        "label": "最大值",
+        "section": "数据",
+        "styleable": false,
+        "default": "260",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "unit",
+        "label": "单位",
+        "section": "数据",
+        "styleable": false,
+        "default": "km\/h",
+        "kind": "TEXT"
+      },
+      {
+        "key": "decimals",
+        "label": "小数位",
+        "section": "数据",
+        "styleable": false,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "font",
+        "label": "字体",
+        "section": "文字",
+        "styleable": true,
+        "default": "sans",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "fontAsset",
+        "label": "主题字体文件",
+        "section": "文字",
+        "styleable": true,
+        "default": "",
+        "kind": "ASSET"
+      },
+      {
+        "key": "fontWeight",
+        "label": "字重",
+        "section": "文字",
+        "styleable": true,
+        "default": "400",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "letterSpacing",
+        "label": "字距",
+        "section": "文字",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "foreground",
+        "label": "主要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@foreground",
+        "kind": "COLOR"
+      },
+      {
+        "key": "muted",
+        "label": "次要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@muted",
+        "kind": "COLOR"
+      },
+      {
+        "key": "warningBelow",
+        "label": "低于此值提醒（空为关闭）",
+        "section": "阈值",
+        "styleable": true,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "criticalBelow",
+        "label": "低于此值严重提醒",
+        "section": "阈值",
+        "styleable": true,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "warningAbove",
+        "label": "高于此值提醒",
+        "section": "阈值",
+        "styleable": true,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "criticalAbove",
+        "label": "高于此值严重提醒",
+        "section": "阈值",
+        "styleable": true,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "warningColor",
+        "label": "提醒色",
+        "section": "阈值",
+        "styleable": true,
+        "default": "@warning",
+        "kind": "COLOR"
+      },
+      {
+        "key": "criticalColor",
+        "label": "严重提醒色",
+        "section": "阈值",
+        "styleable": true,
+        "default": "@critical",
+        "kind": "COLOR"
+      },
+      {
+        "key": "followMs",
+        "label": "数值跟随时长（ms）",
+        "section": "动画",
+        "styleable": true,
+        "default": "160",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "easing",
+        "label": "缓动",
+        "section": "动画",
+        "styleable": true,
+        "default": "ease-out",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "regenVisible",
+        "label": "显示回收档位与功率",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "false",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "regenLevelSource",
+        "label": "回收档位来源",
+        "section": "动能回收",
+        "styleable": false,
+        "default": "vehicle.regenLevel",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "regenPowerSource",
+        "label": "独立回收功率来源（kW）",
+        "section": "动能回收",
+        "styleable": false,
+        "default": "vehicle.regenPowerKw",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "regenMaximum",
+        "label": "回收功率满量程（kW）",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "120",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "powerDisplay",
+        "label": "功率显示方式",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "regen-only",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "powerInput",
+        "label": "功率数据合同",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "independent",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "drivePowerSource",
+        "label": "独立驱动功率来源（kW）",
+        "section": "动能回收",
+        "styleable": false,
+        "default": "vehicle.drivePowerKw",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "signedPowerSource",
+        "label": "有符号功率来源（kW）",
+        "section": "动能回收",
+        "styleable": false,
+        "default": "vehicle.tractionPowerKw",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "powerPositive",
+        "label": "已核实正号代表",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "drive",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "driveMaximum",
+        "label": "驱动功率满量程（kW）",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "200",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "driveColor",
+        "label": "驱动颜色",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "#6FBEF5",
+        "kind": "COLOR"
+      },
+      {
+        "key": "regenColor",
+        "label": "回收颜色",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "#56D9AE",
+        "kind": "COLOR"
+      },
+      {
+        "key": "regenRadius",
+        "label": "回收弧半径比例",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "0.96",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "regenWidth",
+        "label": "回收弧宽度",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "5",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "regenY",
+        "label": "回收文字纵向偏移",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "171",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "regenSize",
+        "label": "回收字号",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "17",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "indicator",
+        "label": "显示方式",
+        "section": "圆弧",
+        "styleable": true,
+        "default": "needle",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "startAngle",
+        "label": "起始角度",
+        "section": "圆弧",
+        "styleable": true,
+        "default": "135",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "sweepAngle",
+        "label": "扫过角度",
+        "section": "圆弧",
+        "styleable": true,
+        "default": "270",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "radius",
+        "label": "圆弧半径比例",
+        "section": "圆弧",
+        "styleable": true,
+        "default": "0.88",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "arcWidth",
+        "label": "圆弧线宽",
+        "section": "圆弧",
+        "styleable": true,
+        "default": "12",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "trackVisible",
+        "label": "显示底轨",
+        "section": "圆弧",
+        "styleable": true,
+        "default": "false",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "trackColor",
+        "label": "底轨色",
+        "section": "圆弧",
+        "styleable": true,
+        "default": "@track",
+        "kind": "COLOR"
+      },
+      {
+        "key": "accent",
+        "label": "指示弧色",
+        "section": "圆弧",
+        "styleable": true,
+        "default": "@accent",
+        "kind": "COLOR"
+      },
+      {
+        "key": "accentEnd",
+        "label": "弧渐变终点",
+        "section": "圆弧",
+        "styleable": true,
+        "default": "@accent",
+        "kind": "COLOR"
+      },
+      {
+        "key": "roundEnds",
+        "label": "圆角端点",
+        "section": "圆弧",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "tickStyle",
+        "label": "刻度样式",
+        "section": "刻度",
+        "styleable": true,
+        "default": "line",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "majorStep",
+        "label": "主刻度间隔",
+        "section": "刻度",
+        "styleable": true,
+        "default": "20",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "minorCount",
+        "label": "每段次刻度数",
+        "section": "刻度",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "tickRadius",
+        "label": "刻度半径比例",
+        "section": "刻度",
+        "styleable": true,
+        "default": "0.91",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "majorLength",
+        "label": "主刻度长度",
+        "section": "刻度",
+        "styleable": true,
+        "default": "18",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "minorLength",
+        "label": "次刻度长度",
+        "section": "刻度",
+        "styleable": true,
+        "default": "8",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "tickWidth",
+        "label": "主刻度线宽",
+        "section": "刻度",
+        "styleable": true,
+        "default": "2.5",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "minorWidth",
+        "label": "次刻度线宽",
+        "section": "刻度",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "tickColor",
+        "label": "刻度色",
+        "section": "刻度",
+        "styleable": true,
+        "default": "@muted",
+        "kind": "COLOR"
+      },
+      {
+        "key": "litTicks",
+        "label": "点亮当前值之前的刻度",
+        "section": "刻度",
+        "styleable": true,
+        "default": "false",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "litColor",
+        "label": "点亮色",
+        "section": "刻度",
+        "styleable": true,
+        "default": "@accent",
+        "kind": "COLOR"
+      },
+      {
+        "key": "secondTickStep",
+        "label": "外圈第二组间隔（0关闭）",
+        "section": "第二组刻度",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "secondTickLength",
+        "label": "外圈刻度长度",
+        "section": "第二组刻度",
+        "styleable": true,
+        "default": "5",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "secondTickColor",
+        "label": "外圈刻度色",
+        "section": "第二组刻度",
+        "styleable": true,
+        "default": "@track",
+        "kind": "COLOR"
+      },
+      {
+        "key": "numerals",
+        "label": "显示刻度数字",
+        "section": "刻度数字",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "numeralRadius",
+        "label": "数字半径比例",
+        "section": "刻度数字",
+        "styleable": true,
+        "default": "0.72",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "numeralSize",
+        "label": "数字字号",
+        "section": "刻度数字",
+        "styleable": true,
+        "default": "22",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "numeralDivisor",
+        "label": "数字除数",
+        "section": "刻度数字",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "numeralSkip",
+        "label": "不显示的刻度值（逗号分隔）",
+        "section": "刻度数字",
+        "styleable": true,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "numeralRotate",
+        "label": "沿圆弧旋转数字",
+        "section": "刻度数字",
+        "styleable": true,
+        "default": "false",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "numeralColor",
+        "label": "刻度数字色",
+        "section": "刻度数字",
+        "styleable": true,
+        "default": "@foreground",
+        "kind": "COLOR"
+      },
+      {
+        "key": "needleShape",
+        "label": "指针形状",
+        "section": "指针",
+        "styleable": true,
+        "default": "line",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "needleLength",
+        "label": "指针长度比例",
+        "section": "指针",
+        "styleable": true,
+        "default": "0.85",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "needleTail",
+        "label": "尾部长度",
+        "section": "指针",
+        "styleable": true,
+        "default": "18",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "needleWidth",
+        "label": "指针宽度",
+        "section": "指针",
+        "styleable": true,
+        "default": "4",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "needleColor",
+        "label": "指针色",
+        "section": "指针",
+        "styleable": true,
+        "default": "@foreground",
+        "kind": "COLOR"
+      },
+      {
+        "key": "hubRadius",
+        "label": "轴心半径",
+        "section": "指针",
+        "styleable": true,
+        "default": "9",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "hubRing",
+        "label": "空心轴心",
+        "section": "指针",
+        "styleable": true,
+        "default": "false",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "hubColor",
+        "label": "轴心色",
+        "section": "指针",
+        "styleable": true,
+        "default": "@foreground",
+        "kind": "COLOR"
+      },
+      {
+        "key": "faceVisible",
+        "label": "显示盘面",
+        "section": "盘面",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "faceColor",
+        "label": "盘面色",
+        "section": "盘面",
+        "styleable": true,
+        "default": "@panel",
+        "kind": "COLOR"
+      },
+      {
+        "key": "faceRadius",
+        "label": "盘面半径比例",
+        "section": "盘面",
+        "styleable": true,
+        "default": "0.98",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "bezelWidth",
+        "label": "表圈线宽",
+        "section": "盘面",
+        "styleable": true,
+        "default": "2",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "bezelColor",
+        "label": "表圈色",
+        "section": "盘面",
+        "styleable": true,
+        "default": "@track",
+        "kind": "COLOR"
+      },
+      {
+        "key": "gloss",
+        "label": "表面柔光",
+        "section": "盘面",
+        "styleable": true,
+        "default": "false",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "valueSize",
+        "label": "中心读数字号",
+        "section": "中心读数",
+        "styleable": true,
+        "default": "56",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "valueY",
+        "label": "中心读数Y偏移",
+        "section": "中心读数",
+        "styleable": true,
+        "default": "80",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "valueVisible",
+        "label": "显示实时数字",
+        "section": "中心读数",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "unitSize",
+        "label": "单位字号",
+        "section": "中心读数",
+        "styleable": true,
+        "default": "18",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "secondarySource",
+        "label": "辅助读数来源",
+        "section": "辅助读数",
+        "styleable": false,
+        "default": "vehicle.evRange",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "secondaryUnit",
+        "label": "辅助单位",
+        "section": "辅助读数",
+        "styleable": true,
+        "default": "km",
+        "kind": "TEXT"
+      },
+      {
+        "key": "secondarySize",
+        "label": "辅助字号",
+        "section": "辅助读数",
+        "styleable": true,
+        "default": "20",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "leftSatellite",
+        "label": "左侧辅助弧来源",
+        "section": "辅助圆弧",
+        "styleable": false,
+        "default": "",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "rightSatellite",
+        "label": "右侧辅助弧来源",
+        "section": "辅助圆弧",
+        "styleable": false,
+        "default": "",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "satelliteMaximum",
+        "label": "辅助弧量程上限",
+        "section": "辅助圆弧",
+        "styleable": true,
+        "default": "100",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "satelliteWidth",
+        "label": "辅助弧线宽",
+        "section": "辅助圆弧",
+        "styleable": true,
+        "default": "5",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "satelliteColor",
+        "label": "辅助弧色",
+        "section": "辅助圆弧",
+        "styleable": true,
+        "default": "@accent",
+        "kind": "COLOR"
+      },
+      {
+        "key": "cruiseSource",
+        "label": "巡航目标速度",
+        "section": "巡航",
+        "styleable": false,
+        "default": "vehicle.cruiseSetSpeed",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "cruiseStateSource",
+        "label": "巡航状态来源",
+        "section": "巡航",
+        "styleable": false,
+        "default": "vehicle.cruiseState",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "cruiseVisible",
+        "label": "显示巡航信息",
+        "section": "巡航",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "cruiseStandbyColor",
+        "label": "开启未激活颜色",
+        "section": "巡航",
+        "styleable": true,
+        "default": "#FFFFFF",
+        "kind": "COLOR"
+      },
+      {
+        "key": "cruiseY",
+        "label": "巡航文字纵向偏移",
+        "section": "巡航",
+        "styleable": true,
+        "default": "32",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "cruiseSize",
+        "label": "巡航字号",
+        "section": "巡航",
+        "styleable": true,
+        "default": "22",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "cruiseDotRadius",
+        "label": "目标速度圆点半径",
+        "section": "巡航",
+        "styleable": true,
+        "default": "8",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "cruiseMarkerMode",
+        "label": "巡航弧语义",
+        "section": "巡航",
+        "styleable": true,
+        "default": "difference",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "cruiseMarkerSweep",
+        "label": "目标短弧角度",
+        "section": "巡航",
+        "styleable": true,
+        "default": "8",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "cruiseDotPosition",
+        "label": "圆点半径比例",
+        "section": "巡航",
+        "styleable": true,
+        "default": "0.89",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "limiterSource",
+        "label": "限速器目标来源",
+        "section": "标记",
+        "styleable": false,
+        "default": "",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "roadLimitSource",
+        "label": "道路限速来源",
+        "section": "标记",
+        "styleable": false,
+        "default": "",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "cruiseColor",
+        "label": "激活巡航颜色",
+        "section": "巡航",
+        "styleable": true,
+        "default": "#29D953",
+        "kind": "COLOR"
+      },
+      {
+        "key": "limiterColor",
+        "label": "限速器标记色",
+        "section": "标记",
+        "styleable": true,
+        "default": "@warning",
+        "kind": "COLOR"
+      },
+      {
+        "key": "extraMarks",
+        "label": "额外标记值（逗号分隔）",
+        "section": "标记",
+        "styleable": true,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "intro",
+        "label": "首次显示扫表",
+        "section": "动画",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "introMs",
+        "label": "启动扫表时长（ms）",
+        "section": "动画",
+        "styleable": true,
+        "default": "1200",
+        "kind": "NUMBER"
+      }
+    ]
+  },
+  {
+    "type": "ring",
+    "title": "圆弧仪表",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "source",
+        "label": "数据来源",
+        "section": "数据",
+        "styleable": false,
+        "default": "vehicle.soc",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "minimum",
+        "label": "最小值",
+        "section": "数据",
+        "styleable": false,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "maximum",
+        "label": "最大值",
+        "section": "数据",
+        "styleable": false,
+        "default": "100",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "unit",
+        "label": "单位",
+        "section": "数据",
+        "styleable": false,
+        "default": "%",
+        "kind": "TEXT"
+      },
+      {
+        "key": "decimals",
+        "label": "小数位",
+        "section": "数据",
+        "styleable": false,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "font",
+        "label": "字体",
+        "section": "文字",
+        "styleable": true,
+        "default": "sans",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "fontAsset",
+        "label": "主题字体文件",
+        "section": "文字",
+        "styleable": true,
+        "default": "",
+        "kind": "ASSET"
+      },
+      {
+        "key": "fontWeight",
+        "label": "字重",
+        "section": "文字",
+        "styleable": true,
+        "default": "400",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "letterSpacing",
+        "label": "字距",
+        "section": "文字",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "foreground",
+        "label": "主要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@foreground",
+        "kind": "COLOR"
+      },
+      {
+        "key": "muted",
+        "label": "次要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@muted",
+        "kind": "COLOR"
+      },
+      {
+        "key": "warningBelow",
+        "label": "低于此值提醒（空为关闭）",
+        "section": "阈值",
+        "styleable": true,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "criticalBelow",
+        "label": "低于此值严重提醒",
+        "section": "阈值",
+        "styleable": true,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "warningAbove",
+        "label": "高于此值提醒",
+        "section": "阈值",
+        "styleable": true,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "criticalAbove",
+        "label": "高于此值严重提醒",
+        "section": "阈值",
+        "styleable": true,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "warningColor",
+        "label": "提醒色",
+        "section": "阈值",
+        "styleable": true,
+        "default": "@warning",
+        "kind": "COLOR"
+      },
+      {
+        "key": "criticalColor",
+        "label": "严重提醒色",
+        "section": "阈值",
+        "styleable": true,
+        "default": "@critical",
+        "kind": "COLOR"
+      },
+      {
+        "key": "followMs",
+        "label": "数值跟随时长（ms）",
+        "section": "动画",
+        "styleable": true,
+        "default": "160",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "easing",
+        "label": "缓动",
+        "section": "动画",
+        "styleable": true,
+        "default": "ease-out",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "indicator",
+        "label": "显示方式",
+        "section": "圆弧",
+        "styleable": true,
+        "default": "arc",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "startAngle",
+        "label": "起始角度",
+        "section": "圆弧",
+        "styleable": true,
+        "default": "135",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "sweepAngle",
+        "label": "扫过角度",
+        "section": "圆弧",
+        "styleable": true,
+        "default": "270",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "radius",
+        "label": "圆弧半径比例",
+        "section": "圆弧",
+        "styleable": true,
+        "default": "0.88",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "arcWidth",
+        "label": "圆弧线宽",
+        "section": "圆弧",
+        "styleable": true,
+        "default": "12",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "trackVisible",
+        "label": "显示底轨",
+        "section": "圆弧",
+        "styleable": true,
+        "default": "false",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "trackColor",
+        "label": "底轨色",
+        "section": "圆弧",
+        "styleable": true,
+        "default": "@track",
+        "kind": "COLOR"
+      },
+      {
+        "key": "accent",
+        "label": "指示弧色",
+        "section": "圆弧",
+        "styleable": true,
+        "default": "@accent",
+        "kind": "COLOR"
+      },
+      {
+        "key": "accentEnd",
+        "label": "弧渐变终点",
+        "section": "圆弧",
+        "styleable": true,
+        "default": "@accent",
+        "kind": "COLOR"
+      },
+      {
+        "key": "roundEnds",
+        "label": "圆角端点",
+        "section": "圆弧",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "tickStyle",
+        "label": "刻度样式",
+        "section": "刻度",
+        "styleable": true,
+        "default": "line",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "majorStep",
+        "label": "主刻度间隔",
+        "section": "刻度",
+        "styleable": true,
+        "default": "25",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "minorCount",
+        "label": "每段次刻度数",
+        "section": "刻度",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "tickRadius",
+        "label": "刻度半径比例",
+        "section": "刻度",
+        "styleable": true,
+        "default": "0.91",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "majorLength",
+        "label": "主刻度长度",
+        "section": "刻度",
+        "styleable": true,
+        "default": "18",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "minorLength",
+        "label": "次刻度长度",
+        "section": "刻度",
+        "styleable": true,
+        "default": "8",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "tickWidth",
+        "label": "主刻度线宽",
+        "section": "刻度",
+        "styleable": true,
+        "default": "2.5",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "minorWidth",
+        "label": "次刻度线宽",
+        "section": "刻度",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "tickColor",
+        "label": "刻度色",
+        "section": "刻度",
+        "styleable": true,
+        "default": "@muted",
+        "kind": "COLOR"
+      },
+      {
+        "key": "litTicks",
+        "label": "点亮当前值之前的刻度",
+        "section": "刻度",
+        "styleable": true,
+        "default": "false",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "litColor",
+        "label": "点亮色",
+        "section": "刻度",
+        "styleable": true,
+        "default": "@accent",
+        "kind": "COLOR"
+      },
+      {
+        "key": "numerals",
+        "label": "显示刻度数字",
+        "section": "刻度数字",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "numeralRadius",
+        "label": "数字半径比例",
+        "section": "刻度数字",
+        "styleable": true,
+        "default": "0.72",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "numeralSize",
+        "label": "数字字号",
+        "section": "刻度数字",
+        "styleable": true,
+        "default": "22",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "numeralDivisor",
+        "label": "数字除数",
+        "section": "刻度数字",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "numeralSkip",
+        "label": "不显示的刻度值（逗号分隔）",
+        "section": "刻度数字",
+        "styleable": true,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "numeralRotate",
+        "label": "沿圆弧旋转数字",
+        "section": "刻度数字",
+        "styleable": true,
+        "default": "false",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "numeralColor",
+        "label": "刻度数字色",
+        "section": "刻度数字",
+        "styleable": true,
+        "default": "@foreground",
+        "kind": "COLOR"
+      },
+      {
+        "key": "faceVisible",
+        "label": "显示盘面",
+        "section": "盘面",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "faceColor",
+        "label": "盘面色",
+        "section": "盘面",
+        "styleable": true,
+        "default": "@panel",
+        "kind": "COLOR"
+      },
+      {
+        "key": "faceRadius",
+        "label": "盘面半径比例",
+        "section": "盘面",
+        "styleable": true,
+        "default": "0.98",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "bezelWidth",
+        "label": "表圈线宽",
+        "section": "盘面",
+        "styleable": true,
+        "default": "2",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "bezelColor",
+        "label": "表圈色",
+        "section": "盘面",
+        "styleable": true,
+        "default": "@track",
+        "kind": "COLOR"
+      },
+      {
+        "key": "gloss",
+        "label": "表面柔光",
+        "section": "盘面",
+        "styleable": true,
+        "default": "false",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "valueSize",
+        "label": "中心读数字号",
+        "section": "中心读数",
+        "styleable": true,
+        "default": "56",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "valueY",
+        "label": "中心读数Y偏移",
+        "section": "中心读数",
+        "styleable": true,
+        "default": "80",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "valueVisible",
+        "label": "显示实时数字",
+        "section": "中心读数",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "unitSize",
+        "label": "单位字号",
+        "section": "中心读数",
+        "styleable": true,
+        "default": "18",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "secondarySource",
+        "label": "辅助读数来源",
+        "section": "辅助读数",
+        "styleable": false,
+        "default": "vehicle.evRange",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "secondaryUnit",
+        "label": "辅助单位",
+        "section": "辅助读数",
+        "styleable": true,
+        "default": "km",
+        "kind": "TEXT"
+      },
+      {
+        "key": "secondarySize",
+        "label": "辅助字号",
+        "section": "辅助读数",
+        "styleable": true,
+        "default": "20",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "intro",
+        "label": "首次显示扫表",
+        "section": "动画",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "introMs",
+        "label": "启动扫表时长（ms）",
+        "section": "动画",
+        "styleable": true,
+        "default": "1200",
+        "kind": "NUMBER"
+      }
+    ]
+  },
+  {
+    "type": "bar",
+    "title": "条形仪表",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "source",
+        "label": "数据来源",
+        "section": "数据",
+        "styleable": false,
+        "default": "vehicle.displaySpeed",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "minimum",
+        "label": "最小值",
+        "section": "数据",
+        "styleable": false,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "maximum",
+        "label": "最大值",
+        "section": "数据",
+        "styleable": false,
+        "default": "260",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "unit",
+        "label": "单位",
+        "section": "数据",
+        "styleable": false,
+        "default": "km\/h",
+        "kind": "TEXT"
+      },
+      {
+        "key": "decimals",
+        "label": "小数位",
+        "section": "数据",
+        "styleable": false,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "warningBelow",
+        "label": "低于此值提醒（空为关闭）",
+        "section": "阈值",
+        "styleable": true,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "criticalBelow",
+        "label": "低于此值严重提醒",
+        "section": "阈值",
+        "styleable": true,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "warningAbove",
+        "label": "高于此值提醒",
+        "section": "阈值",
+        "styleable": true,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "criticalAbove",
+        "label": "高于此值严重提醒",
+        "section": "阈值",
+        "styleable": true,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "warningColor",
+        "label": "提醒色",
+        "section": "阈值",
+        "styleable": true,
+        "default": "@warning",
+        "kind": "COLOR"
+      },
+      {
+        "key": "criticalColor",
+        "label": "严重提醒色",
+        "section": "阈值",
+        "styleable": true,
+        "default": "@critical",
+        "kind": "COLOR"
+      },
+      {
+        "key": "followMs",
+        "label": "数值跟随时长（ms）",
+        "section": "动画",
+        "styleable": true,
+        "default": "160",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "easing",
+        "label": "缓动",
+        "section": "动画",
+        "styleable": true,
+        "default": "ease-out",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "font",
+        "label": "字体",
+        "section": "文字",
+        "styleable": true,
+        "default": "sans",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "fontAsset",
+        "label": "主题字体文件",
+        "section": "文字",
+        "styleable": true,
+        "default": "",
+        "kind": "ASSET"
+      },
+      {
+        "key": "fontWeight",
+        "label": "字重",
+        "section": "文字",
+        "styleable": true,
+        "default": "400",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "letterSpacing",
+        "label": "字距",
+        "section": "文字",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "foreground",
+        "label": "主要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@foreground",
+        "kind": "COLOR"
+      },
+      {
+        "key": "muted",
+        "label": "次要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@muted",
+        "kind": "COLOR"
+      },
+      {
+        "key": "direction",
+        "label": "方向",
+        "section": "条形",
+        "styleable": true,
+        "default": "horizontal",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "accent",
+        "label": "填充色",
+        "section": "配色",
+        "styleable": true,
+        "default": "@accent",
+        "kind": "COLOR"
+      },
+      {
+        "key": "trackColor",
+        "label": "底轨色",
+        "section": "配色",
+        "styleable": true,
+        "default": "@track",
+        "kind": "COLOR"
+      },
+      {
+        "key": "segments",
+        "label": "分段数（0连续）",
+        "section": "条形",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "gap",
+        "label": "段间距",
+        "section": "条形",
+        "styleable": true,
+        "default": "4",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "cornerRadius",
+        "label": "圆角",
+        "section": "条形",
+        "styleable": true,
+        "default": "4",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "showValue",
+        "label": "显示数值与单位",
+        "section": "文字",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "fontSize",
+        "label": "字号",
+        "section": "文字",
+        "styleable": true,
+        "default": "24",
+        "kind": "NUMBER"
+      }
+    ]
+  },
+  {
+    "type": "tires",
+    "title": "四轮胎压",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "font",
+        "label": "字体",
+        "section": "文字",
+        "styleable": true,
+        "default": "sans",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "fontAsset",
+        "label": "主题字体文件",
+        "section": "文字",
+        "styleable": true,
+        "default": "",
+        "kind": "ASSET"
+      },
+      {
+        "key": "fontWeight",
+        "label": "字重",
+        "section": "文字",
+        "styleable": true,
+        "default": "400",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "letterSpacing",
+        "label": "字距",
+        "section": "文字",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "foreground",
+        "label": "主要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@foreground",
+        "kind": "COLOR"
+      },
+      {
+        "key": "muted",
+        "label": "次要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@muted",
+        "kind": "COLOR"
+      },
+      {
+        "key": "fontSize",
+        "label": "读数字号",
+        "section": "文字",
+        "styleable": true,
+        "default": "32",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "unit",
+        "label": "显示单位",
+        "section": "数据",
+        "styleable": true,
+        "default": "kPa",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "low",
+        "label": "低压提醒阈值（kPa）",
+        "section": "数据",
+        "styleable": true,
+        "default": "190",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "high",
+        "label": "高压提醒阈值（kPa）",
+        "section": "数据",
+        "styleable": true,
+        "default": "300",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "warningColor",
+        "label": "提醒色",
+        "section": "配色",
+        "styleable": true,
+        "default": "@warning",
+        "kind": "COLOR"
+      },
+      {
+        "key": "carColor",
+        "label": "车辆轮廓色",
+        "section": "配色",
+        "styleable": true,
+        "default": "@track",
+        "kind": "COLOR"
+      },
+      {
+        "key": "wheelLabels",
+        "label": "显示轮位名称",
+        "section": "文字",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "type": "pedals",
+    "title": "踏板与方向盘",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "font",
+        "label": "字体",
+        "section": "文字",
+        "styleable": true,
+        "default": "sans",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "fontAsset",
+        "label": "主题字体文件",
+        "section": "文字",
+        "styleable": true,
+        "default": "",
+        "kind": "ASSET"
+      },
+      {
+        "key": "fontWeight",
+        "label": "字重",
+        "section": "文字",
+        "styleable": true,
+        "default": "400",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "letterSpacing",
+        "label": "字距",
+        "section": "文字",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "foreground",
+        "label": "主要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@foreground",
+        "kind": "COLOR"
+      },
+      {
+        "key": "muted",
+        "label": "次要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@muted",
+        "kind": "COLOR"
+      },
+      {
+        "key": "fontSize",
+        "label": "文字字号",
+        "section": "文字",
+        "styleable": true,
+        "default": "32",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "acceleratorColor",
+        "label": "油门色",
+        "section": "配色",
+        "styleable": true,
+        "default": "#3EBB92",
+        "kind": "COLOR"
+      },
+      {
+        "key": "brakeColor",
+        "label": "刹车色",
+        "section": "配色",
+        "styleable": true,
+        "default": "@warning",
+        "kind": "COLOR"
+      },
+      {
+        "key": "showSteering",
+        "label": "显示方向盘角度",
+        "section": "内容",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "barWidth",
+        "label": "进度条宽度",
+        "section": "内容",
+        "styleable": true,
+        "default": "20",
+        "kind": "NUMBER"
+      }
+    ]
+  },
+  {
+    "type": "status",
+    "title": "车辆状态行",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "font",
+        "label": "字体",
+        "section": "文字",
+        "styleable": true,
+        "default": "sans",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "fontAsset",
+        "label": "主题字体文件",
+        "section": "文字",
+        "styleable": true,
+        "default": "",
+        "kind": "ASSET"
+      },
+      {
+        "key": "fontWeight",
+        "label": "字重",
+        "section": "文字",
+        "styleable": true,
+        "default": "400",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "letterSpacing",
+        "label": "字距",
+        "section": "文字",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "foreground",
+        "label": "主要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@foreground",
+        "kind": "COLOR"
+      },
+      {
+        "key": "muted",
+        "label": "次要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@muted",
+        "kind": "COLOR"
+      },
+      {
+        "key": "fontSize",
+        "label": "读数字号",
+        "section": "文字",
+        "styleable": true,
+        "default": "32",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "fields",
+        "label": "显示字段（逗号分隔）",
+        "section": "数据",
+        "styleable": false,
+        "default": "gear,soc,fuel,evRange",
+        "kind": "TEXT"
+      },
+      {
+        "key": "showNames",
+        "label": "显示字段名称",
+        "section": "文字",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "spacing",
+        "label": "项目间距",
+        "section": "文字",
+        "styleable": true,
+        "default": "18",
+        "kind": "NUMBER"
+      }
+    ]
+  },
+  {
+    "type": "artwork",
+    "title": "专辑封面",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "shape",
+        "label": "形状",
+        "section": "图像",
+        "styleable": true,
+        "default": "rounded",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "cornerRadius",
+        "label": "圆角",
+        "section": "图像",
+        "styleable": true,
+        "default": "20",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "fadeMs",
+        "label": "换封面淡入时长（ms）",
+        "section": "动画",
+        "styleable": true,
+        "default": "240",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "placeholderColor",
+        "label": "无封面底色",
+        "section": "配色",
+        "styleable": true,
+        "default": "@track",
+        "kind": "COLOR"
+      }
+    ]
+  },
+  {
+    "type": "music-background",
+    "title": "音乐背景区域",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "backgroundStyle",
+        "label": "背景样式",
+        "section": "背景",
+        "styleable": true,
+        "default": "none",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "backgroundColor",
+        "label": "背景颜色",
+        "section": "背景",
+        "styleable": true,
+        "default": "#99101B24",
+        "kind": "COLOR"
+      },
+      {
+        "key": "backgroundEndColor",
+        "label": "渐变终点",
+        "section": "背景",
+        "styleable": true,
+        "default": "#33101B24",
+        "kind": "COLOR"
+      },
+      {
+        "key": "backgroundRounded",
+        "label": "背景使用圆角",
+        "section": "背景",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "backgroundRadius",
+        "label": "背景圆角",
+        "section": "背景",
+        "styleable": true,
+        "default": "24",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "backgroundEdgeFade",
+        "label": "背景边缘渐隐",
+        "section": "背景",
+        "styleable": true,
+        "default": "false",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "backgroundFadeWidth",
+        "label": "背景渐隐宽度",
+        "section": "背景",
+        "styleable": true,
+        "default": "65",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "backgroundBlur",
+        "label": "背景模糊",
+        "section": "背景",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "backgroundBlurRadius",
+        "label": "模糊半径",
+        "section": "背景",
+        "styleable": true,
+        "default": "12",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "backgroundOpacity",
+        "label": "背景透明度",
+        "section": "背景",
+        "styleable": true,
+        "default": "0.7",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "backgroundInset",
+        "label": "背景内缩",
+        "section": "背景",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      }
+    ]
+  },
+  {
+    "type": "regen",
+    "title": "动能回收",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "regenLevelSource",
+        "label": "回收档位来源",
+        "section": "动能回收",
+        "styleable": false,
+        "default": "vehicle.regenLevel",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "regenPowerSource",
+        "label": "独立回收功率来源（kW）",
+        "section": "动能回收",
+        "styleable": false,
+        "default": "vehicle.regenPowerKw",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "regenMaximum",
+        "label": "回收功率满量程（kW）",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "120",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "powerDisplay",
+        "label": "功率显示方式",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "regen-only",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "powerInput",
+        "label": "功率数据合同",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "independent",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "drivePowerSource",
+        "label": "独立驱动功率来源（kW）",
+        "section": "动能回收",
+        "styleable": false,
+        "default": "vehicle.drivePowerKw",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "signedPowerSource",
+        "label": "有符号功率来源（kW）",
+        "section": "动能回收",
+        "styleable": false,
+        "default": "vehicle.tractionPowerKw",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "powerPositive",
+        "label": "已核实正号代表",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "drive",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "driveMaximum",
+        "label": "驱动功率满量程（kW）",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "200",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "driveColor",
+        "label": "驱动颜色",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "#6FBEF5",
+        "kind": "COLOR"
+      },
+      {
+        "key": "regenColor",
+        "label": "回收颜色",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "#56D9AE",
+        "kind": "COLOR"
+      },
+      {
+        "key": "regenRadius",
+        "label": "回收弧半径比例",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "0.96",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "regenWidth",
+        "label": "回收弧宽度",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "5",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "regenY",
+        "label": "回收文字纵向偏移",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "171",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "regenSize",
+        "label": "回收字号",
+        "section": "动能回收",
+        "styleable": true,
+        "default": "17",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "font",
+        "label": "字体",
+        "section": "文字",
+        "styleable": true,
+        "default": "sans",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "fontAsset",
+        "label": "主题字体文件",
+        "section": "文字",
+        "styleable": true,
+        "default": "",
+        "kind": "ASSET"
+      },
+      {
+        "key": "fontWeight",
+        "label": "字重",
+        "section": "文字",
+        "styleable": true,
+        "default": "400",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "letterSpacing",
+        "label": "字距",
+        "section": "文字",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "foreground",
+        "label": "主要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@foreground",
+        "kind": "COLOR"
+      },
+      {
+        "key": "muted",
+        "label": "次要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@muted",
+        "kind": "COLOR"
+      }
+    ]
+  },
+  {
+    "type": "fuel-range",
+    "title": "燃油续航条",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "font",
+        "label": "字体",
+        "section": "文字",
+        "styleable": true,
+        "default": "sans",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "fontAsset",
+        "label": "主题字体文件",
+        "section": "文字",
+        "styleable": true,
+        "default": "",
+        "kind": "ASSET"
+      },
+      {
+        "key": "fontWeight",
+        "label": "字重",
+        "section": "文字",
+        "styleable": true,
+        "default": "400",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "letterSpacing",
+        "label": "字距",
+        "section": "文字",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "foreground",
+        "label": "主要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@foreground",
+        "kind": "COLOR"
+      },
+      {
+        "key": "muted",
+        "label": "次要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@muted",
+        "kind": "COLOR"
+      },
+      {
+        "key": "source",
+        "label": "续航来源",
+        "section": "数据",
+        "styleable": false,
+        "default": "vehicle.fuelRange",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "levelSource",
+        "label": "剩余百分比来源",
+        "section": "数据",
+        "styleable": false,
+        "default": "vehicle.fuel",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "label",
+        "label": "名称",
+        "section": "文字",
+        "styleable": false,
+        "default": "燃油",
+        "kind": "TEXT"
+      },
+      {
+        "key": "rangeIcon",
+        "label": "图标",
+        "section": "外观",
+        "styleable": true,
+        "default": "fuel",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "fontSize",
+        "label": "字号",
+        "section": "文字",
+        "styleable": true,
+        "default": "22",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "trackHeight",
+        "label": "条高",
+        "section": "外观",
+        "styleable": true,
+        "default": "5",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "accent",
+        "label": "进度色",
+        "section": "外观",
+        "styleable": true,
+        "default": "@accent",
+        "kind": "COLOR"
+      },
+      {
+        "key": "trackColor",
+        "label": "底轨色",
+        "section": "外观",
+        "styleable": true,
+        "default": "@track",
+        "kind": "COLOR"
+      }
+    ]
+  },
+  {
+    "type": "ev-range",
+    "title": "纯电续航条",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "font",
+        "label": "字体",
+        "section": "文字",
+        "styleable": true,
+        "default": "sans",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "fontAsset",
+        "label": "主题字体文件",
+        "section": "文字",
+        "styleable": true,
+        "default": "",
+        "kind": "ASSET"
+      },
+      {
+        "key": "fontWeight",
+        "label": "字重",
+        "section": "文字",
+        "styleable": true,
+        "default": "400",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "letterSpacing",
+        "label": "字距",
+        "section": "文字",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "foreground",
+        "label": "主要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@foreground",
+        "kind": "COLOR"
+      },
+      {
+        "key": "muted",
+        "label": "次要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@muted",
+        "kind": "COLOR"
+      },
+      {
+        "key": "source",
+        "label": "续航来源",
+        "section": "数据",
+        "styleable": false,
+        "default": "vehicle.evRange",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "levelSource",
+        "label": "剩余百分比来源",
+        "section": "数据",
+        "styleable": false,
+        "default": "vehicle.soc",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "label",
+        "label": "名称",
+        "section": "文字",
+        "styleable": false,
+        "default": "纯电",
+        "kind": "TEXT"
+      },
+      {
+        "key": "rangeIcon",
+        "label": "图标",
+        "section": "外观",
+        "styleable": true,
+        "default": "bolt",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "fontSize",
+        "label": "字号",
+        "section": "文字",
+        "styleable": true,
+        "default": "22",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "trackHeight",
+        "label": "条高",
+        "section": "外观",
+        "styleable": true,
+        "default": "5",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "accent",
+        "label": "进度色",
+        "section": "外观",
+        "styleable": true,
+        "default": "@accent",
+        "kind": "COLOR"
+      },
+      {
+        "key": "trackColor",
+        "label": "底轨色",
+        "section": "外观",
+        "styleable": true,
+        "default": "@track",
+        "kind": "COLOR"
+      }
+    ]
+  },
+  {
+    "type": "pages",
+    "title": "信息分页容器",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "backgroundStyle",
+        "label": "背景样式",
+        "section": "背景",
+        "styleable": true,
+        "default": "none",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "backgroundColor",
+        "label": "背景颜色",
+        "section": "背景",
+        "styleable": true,
+        "default": "#99101B24",
+        "kind": "COLOR"
+      },
+      {
+        "key": "backgroundEndColor",
+        "label": "渐变终点",
+        "section": "背景",
+        "styleable": true,
+        "default": "#33101B24",
+        "kind": "COLOR"
+      },
+      {
+        "key": "backgroundRounded",
+        "label": "背景使用圆角",
+        "section": "背景",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "backgroundRadius",
+        "label": "背景圆角",
+        "section": "背景",
+        "styleable": true,
+        "default": "24",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "backgroundEdgeFade",
+        "label": "背景边缘渐隐",
+        "section": "背景",
+        "styleable": true,
+        "default": "false",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "backgroundFadeWidth",
+        "label": "背景渐隐宽度",
+        "section": "背景",
+        "styleable": true,
+        "default": "65",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "backgroundBlur",
+        "label": "背景模糊",
+        "section": "背景",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "backgroundBlurRadius",
+        "label": "模糊半径",
+        "section": "背景",
+        "styleable": true,
+        "default": "12",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "backgroundOpacity",
+        "label": "背景透明度",
+        "section": "背景",
+        "styleable": true,
+        "default": "0.7",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "backgroundInset",
+        "label": "背景内缩",
+        "section": "背景",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageOrder",
+        "label": "页序ID（逗号分隔）",
+        "section": "分页",
+        "styleable": false,
+        "default": "music,tires,fuel,electric",
+        "kind": "TEXT"
+      },
+      {
+        "key": "initialPage",
+        "label": "初始页\/草稿预览页",
+        "section": "分页",
+        "styleable": true,
+        "default": "music",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "pageTransition",
+        "label": "切页动画",
+        "section": "分页",
+        "styleable": true,
+        "default": "slide-fade",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "pageDuration",
+        "label": "切页时长（ms）",
+        "section": "分页",
+        "styleable": true,
+        "default": "260",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageDistance",
+        "label": "切页距离",
+        "section": "分页",
+        "styleable": true,
+        "default": "28",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageDots",
+        "label": "竖向页码点",
+        "section": "分页",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "pageDotColor",
+        "label": "当前页码色",
+        "section": "分页",
+        "styleable": true,
+        "default": "@foreground",
+        "kind": "COLOR"
+      }
+    ]
+  },
+  {
+    "type": "consumption",
+    "title": "油耗\/电耗",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "font",
+        "label": "字体",
+        "section": "文字",
+        "styleable": true,
+        "default": "sans",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "fontAsset",
+        "label": "主题字体文件",
+        "section": "文字",
+        "styleable": true,
+        "default": "",
+        "kind": "ASSET"
+      },
+      {
+        "key": "fontWeight",
+        "label": "字重",
+        "section": "文字",
+        "styleable": true,
+        "default": "400",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "letterSpacing",
+        "label": "字距",
+        "section": "文字",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "foreground",
+        "label": "主要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@foreground",
+        "kind": "COLOR"
+      },
+      {
+        "key": "muted",
+        "label": "次要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@muted",
+        "kind": "COLOR"
+      },
+      {
+        "key": "source",
+        "label": "平均值来源",
+        "section": "数据",
+        "styleable": false,
+        "default": "vehicle.fuelConsumption",
+        "kind": "SOURCE"
+      },
+      {
+        "key": "label",
+        "label": "名称",
+        "section": "文字",
+        "styleable": false,
+        "default": "平均油耗",
+        "kind": "TEXT"
+      },
+      {
+        "key": "unit",
+        "label": "单位",
+        "section": "数据",
+        "styleable": false,
+        "default": "L\/100km",
+        "kind": "TEXT"
+      },
+      {
+        "key": "valueSize",
+        "label": "字号",
+        "section": "文字",
+        "styleable": true,
+        "default": "72",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "showChart",
+        "label": "显示实际样本趋势",
+        "section": "图表",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "type": "indicators",
+    "title": "状态图标行",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "fields",
+        "label": "状态字段列表",
+        "section": "数据",
+        "styleable": false,
+        "default": "leftTurn,lowBeam,highBeam,rightTurn",
+        "kind": "TEXT"
+      },
+      {
+        "key": "iconSize",
+        "label": "图标大小",
+        "section": "外观",
+        "styleable": true,
+        "default": "28",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "onColor",
+        "label": "开启色",
+        "section": "外观",
+        "styleable": true,
+        "default": "#29D953",
+        "kind": "COLOR"
+      },
+      {
+        "key": "offColor",
+        "label": "关闭色",
+        "section": "外观",
+        "styleable": true,
+        "default": "#31414A",
+        "kind": "COLOR"
+      }
+    ]
+  },
+  {
+    "type": "track",
+    "title": "曲目信息",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "font",
+        "label": "字体",
+        "section": "文字",
+        "styleable": true,
+        "default": "sans",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "fontAsset",
+        "label": "主题字体文件",
+        "section": "文字",
+        "styleable": true,
+        "default": "",
+        "kind": "ASSET"
+      },
+      {
+        "key": "fontWeight",
+        "label": "字重",
+        "section": "文字",
+        "styleable": true,
+        "default": "400",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "letterSpacing",
+        "label": "字距",
+        "section": "文字",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "foreground",
+        "label": "主要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@foreground",
+        "kind": "COLOR"
+      },
+      {
+        "key": "muted",
+        "label": "次要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@muted",
+        "kind": "COLOR"
+      },
+      {
+        "key": "align",
+        "label": "对齐",
+        "section": "文字",
+        "styleable": true,
+        "default": "center",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "lineHeight",
+        "label": "行高比例",
+        "section": "文字",
+        "styleable": true,
+        "default": "1.4",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "titleSize",
+        "label": "标题字号",
+        "section": "文字",
+        "styleable": true,
+        "default": "38",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "artistSize",
+        "label": "歌手字号",
+        "section": "文字",
+        "styleable": true,
+        "default": "26",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "showAlbum",
+        "label": "显示专辑",
+        "section": "内容",
+        "styleable": true,
+        "default": "false",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "gap",
+        "label": "行间距",
+        "section": "文字",
+        "styleable": true,
+        "default": "12",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "overflow",
+        "label": "超长文字",
+        "section": "文字",
+        "styleable": true,
+        "default": "ellipsis",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "marqueeSpeed",
+        "label": "滚动速度（设计像素\/秒）",
+        "section": "动画",
+        "styleable": true,
+        "default": "24",
+        "kind": "NUMBER"
+      }
+    ]
+  },
+  {
+    "type": "progress",
+    "title": "音乐进度",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "font",
+        "label": "字体",
+        "section": "文字",
+        "styleable": true,
+        "default": "sans",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "fontAsset",
+        "label": "主题字体文件",
+        "section": "文字",
+        "styleable": true,
+        "default": "",
+        "kind": "ASSET"
+      },
+      {
+        "key": "fontWeight",
+        "label": "字重",
+        "section": "文字",
+        "styleable": true,
+        "default": "400",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "letterSpacing",
+        "label": "字距",
+        "section": "文字",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "muted",
+        "label": "次要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@muted",
+        "kind": "COLOR"
+      },
+      {
+        "key": "trackHeight",
+        "label": "进度条高度",
+        "section": "进度",
+        "styleable": true,
+        "default": "5",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "accent",
+        "label": "已播色",
+        "section": "配色",
+        "styleable": true,
+        "default": "@accent",
+        "kind": "COLOR"
+      },
+      {
+        "key": "trackColor",
+        "label": "底轨色",
+        "section": "配色",
+        "styleable": true,
+        "default": "@track",
+        "kind": "COLOR"
+      },
+      {
+        "key": "showTime",
+        "label": "显示播放时间",
+        "section": "文字",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "fontSize",
+        "label": "时间字号",
+        "section": "文字",
+        "styleable": true,
+        "default": "20",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "roundEnds",
+        "label": "圆角端点",
+        "section": "进度",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      }
+    ]
+  },
+  {
+    "type": "lyrics",
+    "title": "多行歌词",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "font",
+        "label": "字体",
+        "section": "文字",
+        "styleable": true,
+        "default": "sans",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "fontAsset",
+        "label": "主题字体文件",
+        "section": "文字",
+        "styleable": true,
+        "default": "",
+        "kind": "ASSET"
+      },
+      {
+        "key": "fontWeight",
+        "label": "字重",
+        "section": "文字",
+        "styleable": true,
+        "default": "400",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "letterSpacing",
+        "label": "字距",
+        "section": "文字",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "fontSize",
+        "label": "普通行字号",
+        "section": "文字",
+        "styleable": true,
+        "default": "25",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "align",
+        "label": "对齐",
+        "section": "文字",
+        "styleable": true,
+        "default": "center",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "lineHeight",
+        "label": "行高比例",
+        "section": "文字",
+        "styleable": true,
+        "default": "1.125",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "lines",
+        "label": "可见行数",
+        "section": "排版",
+        "styleable": true,
+        "default": "4",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "activeRow",
+        "label": "当前行位置",
+        "section": "排版",
+        "styleable": true,
+        "default": "auto",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "activeSize",
+        "label": "当前行字号",
+        "section": "文字",
+        "styleable": true,
+        "default": "32",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "lineGap",
+        "label": "行距",
+        "section": "排版",
+        "styleable": true,
+        "default": "7",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pastOpacity",
+        "label": "已播行透明度",
+        "section": "排版",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "futureOpacity",
+        "label": "未播行透明度",
+        "section": "排版",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "outerOpacity",
+        "label": "最外行相对透明度",
+        "section": "排版",
+        "styleable": true,
+        "default": "0.74",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "outerSizeScale",
+        "label": "最外行字号比例",
+        "section": "排版",
+        "styleable": true,
+        "default": "0.96",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "activeColor",
+        "label": "当前行颜色",
+        "section": "配色",
+        "styleable": true,
+        "default": "@foreground",
+        "kind": "COLOR"
+      },
+      {
+        "key": "lineColor",
+        "label": "普通行颜色",
+        "section": "配色",
+        "styleable": true,
+        "default": "@muted",
+        "kind": "COLOR"
+      },
+      {
+        "key": "transition",
+        "label": "切行方式",
+        "section": "动画",
+        "styleable": true,
+        "default": "scroll",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "transitionMs",
+        "label": "切行时长（ms）",
+        "section": "动画",
+        "styleable": true,
+        "default": "420",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "easing",
+        "label": "切行缓动",
+        "section": "动画",
+        "styleable": true,
+        "default": "smooth",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "edgeFade",
+        "label": "边缘淡化",
+        "section": "排版",
+        "styleable": true,
+        "default": "false",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "emptyText",
+        "label": "无歌词提示",
+        "section": "内容",
+        "styleable": false,
+        "default": "暂无同步歌词",
+        "kind": "TEXT"
+      }
+    ]
+  },
+  {
+    "type": "navigation",
+    "title": "导航信息",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "font",
+        "label": "字体",
+        "section": "文字",
+        "styleable": true,
+        "default": "sans",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "fontAsset",
+        "label": "主题字体文件",
+        "section": "文字",
+        "styleable": true,
+        "default": "",
+        "kind": "ASSET"
+      },
+      {
+        "key": "fontWeight",
+        "label": "字重",
+        "section": "文字",
+        "styleable": true,
+        "default": "400",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "letterSpacing",
+        "label": "字距",
+        "section": "文字",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "foreground",
+        "label": "主要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@foreground",
+        "kind": "COLOR"
+      },
+      {
+        "key": "muted",
+        "label": "次要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@muted",
+        "kind": "COLOR"
+      },
+      {
+        "key": "fontSize",
+        "label": "字号",
+        "section": "文字",
+        "styleable": true,
+        "default": "32",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "align",
+        "label": "对齐",
+        "section": "文字",
+        "styleable": true,
+        "default": "center",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "lineHeight",
+        "label": "行高比例",
+        "section": "文字",
+        "styleable": true,
+        "default": "1.4",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "navigationLayout",
+        "label": "布局",
+        "section": "内容",
+        "styleable": true,
+        "default": "full",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "showArrow",
+        "label": "显示已知转向图形",
+        "section": "内容",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "arrowSize",
+        "label": "转向图形大小",
+        "section": "内容",
+        "styleable": true,
+        "default": "64",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "showRoad",
+        "label": "显示道路",
+        "section": "内容",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "showDistance",
+        "label": "显示距离",
+        "section": "内容",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "showArrival",
+        "label": "显示到达与剩余",
+        "section": "内容",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      },
+      {
+        "key": "accent",
+        "label": "方向强调色",
+        "section": "配色",
+        "styleable": true,
+        "default": "@accent",
+        "kind": "COLOR"
+      }
+    ]
+  },
+  {
+    "type": "clock",
+    "title": "日期与时间",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "font",
+        "label": "字体",
+        "section": "文字",
+        "styleable": true,
+        "default": "sans",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "fontAsset",
+        "label": "主题字体文件",
+        "section": "文字",
+        "styleable": true,
+        "default": "",
+        "kind": "ASSET"
+      },
+      {
+        "key": "fontWeight",
+        "label": "字重",
+        "section": "文字",
+        "styleable": true,
+        "default": "400",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "letterSpacing",
+        "label": "字距",
+        "section": "文字",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "foreground",
+        "label": "主要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@foreground",
+        "kind": "COLOR"
+      },
+      {
+        "key": "muted",
+        "label": "次要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@muted",
+        "kind": "COLOR"
+      },
+      {
+        "key": "fontSize",
+        "label": "字号",
+        "section": "文字",
+        "styleable": true,
+        "default": "32",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "align",
+        "label": "对齐",
+        "section": "文字",
+        "styleable": true,
+        "default": "center",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "lineHeight",
+        "label": "行高比例",
+        "section": "文字",
+        "styleable": true,
+        "default": "1.4",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "timeFormat",
+        "label": "时间格式",
+        "section": "内容",
+        "styleable": true,
+        "default": "HH:mm",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "dateFormat",
+        "label": "日期格式",
+        "section": "内容",
+        "styleable": true,
+        "default": "MM月dd日 EEE",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "dateSize",
+        "label": "日期字号",
+        "section": "文字",
+        "styleable": true,
+        "default": "20",
+        "kind": "NUMBER"
+      }
+    ]
+  },
+  {
+    "type": "text",
+    "title": "文本与图标",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "font",
+        "label": "字体",
+        "section": "文字",
+        "styleable": true,
+        "default": "sans",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "fontAsset",
+        "label": "主题字体文件",
+        "section": "文字",
+        "styleable": true,
+        "default": "",
+        "kind": "ASSET"
+      },
+      {
+        "key": "fontWeight",
+        "label": "字重",
+        "section": "文字",
+        "styleable": true,
+        "default": "400",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "letterSpacing",
+        "label": "字距",
+        "section": "文字",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "foreground",
+        "label": "主要文字",
+        "section": "配色",
+        "styleable": true,
+        "default": "@foreground",
+        "kind": "COLOR"
+      },
+      {
+        "key": "fontSize",
+        "label": "字号",
+        "section": "文字",
+        "styleable": true,
+        "default": "32",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "align",
+        "label": "对齐",
+        "section": "文字",
+        "styleable": true,
+        "default": "center",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "text",
+        "label": "文字",
+        "section": "内容",
+        "styleable": false,
+        "default": "自定义文字",
+        "kind": "TEXT"
+      },
+      {
+        "key": "icon",
+        "label": "内置图标",
+        "section": "内容",
+        "styleable": true,
+        "default": "none",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "iconSize",
+        "label": "图标大小",
+        "section": "文字",
+        "styleable": true,
+        "default": "32",
+        "kind": "NUMBER"
+      }
+    ]
+  },
+  {
+    "type": "image",
+    "title": "图片",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "image",
+        "label": "图片文件",
+        "section": "图像",
+        "styleable": true,
+        "default": "",
+        "kind": "ASSET"
+      },
+      {
+        "key": "fit",
+        "label": "缩放方式",
+        "section": "图像",
+        "styleable": true,
+        "default": "contain",
+        "kind": "CHOICE"
+      },
+      {
+        "key": "cornerRadius",
+        "label": "圆角",
+        "section": "图像",
+        "styleable": true,
+        "default": "12",
+        "kind": "NUMBER"
+      }
+    ]
+  },
+  {
+    "type": "card",
+    "title": "卡片与分组",
+    "properties": [
+      {
+        "key": "opacity",
+        "label": "透明度",
+        "section": "外观",
+        "styleable": true,
+        "default": "1",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "pageId",
+        "label": "所属页ID（容器子层）",
+        "section": "分页",
+        "styleable": false,
+        "default": "",
+        "kind": "TEXT"
+      },
+      {
+        "key": "background",
+        "label": "背景色",
+        "section": "配色",
+        "styleable": true,
+        "default": "@panel",
+        "kind": "COLOR"
+      },
+      {
+        "key": "borderColor",
+        "label": "边框色",
+        "section": "配色",
+        "styleable": true,
+        "default": "@track",
+        "kind": "COLOR"
+      },
+      {
+        "key": "borderWidth",
+        "label": "边框宽度",
+        "section": "外观",
+        "styleable": true,
+        "default": "0",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "cornerRadius",
+        "label": "圆角",
+        "section": "外观",
+        "styleable": true,
+        "default": "22",
+        "kind": "NUMBER"
+      },
+      {
+        "key": "clip",
+        "label": "裁剪内部组件",
+        "section": "分组",
+        "styleable": true,
+        "default": "true",
+        "kind": "BOOLEAN"
+      }
+    ]
+  }
+]

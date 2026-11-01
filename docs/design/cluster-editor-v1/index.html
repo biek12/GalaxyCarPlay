@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AutoCluster · 仪表主题编辑器提案</title>
+  <link rel="stylesheet" href="prototype.css">
+</head>
+<body>
+<main class="app" id="app">
+  <p class="quiet-note">早期页面交互稿。正式Android组件与详细属性已实现，组件库图片来自同一原生绘制器；此网页不连接仪表。</p>
+  <header class="header">
+    <div class="brand"><span class="brand-mark">◫</span><div><h1>仪表</h1><p>AutoCluster</p></div></div>
+    <div class="header-actions"><button id="appearance" aria-label="切换编辑器日夜模式">夜间</button><button id="display-open">显示设置</button></div>
+  </header>
+  <nav class="tabs" aria-label="主要页面">
+    <button data-page="themes" aria-selected="true">我的主题</button>
+    <button data-page="editor" aria-selected="false">编辑主题</button>
+    <button data-page="components" aria-selected="false">组件库</button>
+  </nav>
+  <section id="themes-page" class="page">
+    <div class="section-head"><div><h2>当前主题</h2><p id="active-name"></p></div><span class="preview-label">演示预览 · 未连接车辆</span></div>
+    <div class="instrument" id="active-preview" aria-label="当前主题仪表演示预览"></div>
+    <div class="actions main-actions"><button class="primary" id="edit-active">编辑当前主题</button><button id="new-theme">新建空白主题</button><button id="import-theme">导入主题包</button><input type="file" id="package-file" accept=".json" hidden></div>
+    <div class="section-head library-head"><div><h2>主题库</h2><p>保存布局、背景和日夜样式，随时继续编辑</p></div><span id="theme-count"></span></div>
+    <div class="theme-grid" id="theme-grid"></div>
+    <div class="quiet-note">主题应用后独立运行。退出编辑页面，地图与仪表继续显示。</div>
+  </section>
+  <section id="editor-page" class="page" hidden>
+    <div class="section-head editor-heading"><div><h2 id="editing-name">编辑主题</h2><p id="dirty-label">已保存</p></div><div class="actions"><button id="save-theme">保存</button><button class="primary" id="apply-theme">应用到仪表</button></div></div>
+    <div class="editor-bar"><div class="segments" aria-label="预览日夜"><button data-mode="day" class="selected">日间</button><button data-mode="night">夜间</button></div><div class="actions"><button id="undo" aria-label="撤销修改">撤销</button><button id="redo" aria-label="重做修改">重做</button><button id="show-guides" aria-pressed="false">参考线</button></div></div>
+    <div class="instrument editable" id="edit-preview" aria-label="可拖拽仪表画布"></div>
+    <div class="canvas-meta"><span>1920 × 532 · 拖动组件，右下角缩放</span><span>演示数据</span></div>
+    <div class="edit-tools"><button class="primary" id="add-component">＋ 添加组件</button><button id="layers-open">图层</button><button id="background-open">更换背景</button><button id="rename-theme">重命名</button></div>
+    <section class="inspector" id="inspector" aria-label="选中组件属性"></section>
+    <div class="quiet-note">保存保留草稿；“应用到仪表”才更新正在显示的主题。</div>
+  </section>
+  <section id="components-page" class="page" hidden>
+    <div class="section-head"><div><h2>组件库</h2><p>首批组件提案 · 确认后实现</p></div></div>
+    <div class="catalog" id="catalog"></div>
+    <div class="quiet-note">组件只读取 AutoService 已提供的数据。原车告警和指示灯由原系统保持，编辑器不修改原车窗口。</div>
+  </section>
+  <footer><span>银河 L6 / L7 · 竖屏车机</span><span id="footer-state" role="status">交互提案，尚未接入真实仪表</span></footer>
+  <div class="scrim" id="scrim" hidden><section class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title"><div class="section-head"><h2 id="sheet-title"></h2><button id="close-sheet" aria-label="关闭面板">关闭</button></div><div id="sheet-body"></div></section></div>
+  <div class="toast" id="toast" role="status" hidden></div>
+</main>
+<script src="prototype.js"></script>
+</body>
+</html>

@@ -1,6 +1,7 @@
 package com.shilapi.xcertplay.media
 
 import android.media.AudioFormat as AndroidAudioFormat
+import android.media.AudioManager
 import android.media.AudioRecord
 import android.media.MediaRecorder
 import android.media.audiofx.AcousticEchoCanceler
@@ -44,10 +45,13 @@ internal class MicrophoneUplink(
     },
     private val noAudioRestartMillis: Long = NO_AUDIO_RESTART_MILLIS,
     private val factorySource: Int? = null,
+    private val appCommunication: Boolean = false,
     private val audioRouting: AudioRouteProvider? = null,
     private val callProcessingEnabled: Boolean = true,
     private val onCaptureStarted: () -> Unit = {},
     private val onCaptureReleased: () -> Unit = {},
+    /** Read for a report window that recorded no sound; see [silenceDetail]. */
+    private val audioManager: AudioManager? = null,
 ) : Closeable {
     private val running = AtomicBoolean(false)
     private val stats = MicrophoneCaptureStats(config, report = { message ->
@@ -98,6 +102,8 @@ internal class MicrophoneUplink(
                 } else {
                     MediaRecorder.AudioSource.VOICE_RECOGNITION
                 }
+            MicrophoneInputPolicy.communication(config.audioType, appCommunication) ->
+                MediaRecorder.AudioSource.VOICE_COMMUNICATION
             else -> MediaRecorder.AudioSource.MIC
         }
         val nextEncoder = if (config.codec == AudioCodecKind.OPUS) {
@@ -123,7 +129,7 @@ internal class MicrophoneUplink(
             MediaRecorder.AudioSource.VOICE_COMMUNICATION.takeIf {
                 standardSource == MediaRecorder.AudioSource.VOICE_RECOGNITION
             }).distinct().firstNotNullOfOrNull { source ->
-                if (source == MediaRecorder.AudioSource.VOICE_COMMUNICATION) stats.useVoiceCommunicationSource()
+                stats.useSource(source)
                 createRecorder(source, channelMask, bufferSize)
             }
         if (nextRecorder == null) {
@@ -157,11 +163,7 @@ internal class MicrophoneUplink(
                     Log.i(TAG, "microphone echo canceller enabled=${echoCanceller != null} tail=${ECHO_TAIL_MILLIS}ms")
                 }
             }
-            val channel = when (config.audioType.lowercase()) {
-                "telephony" -> AudioChannel.PHONE
-                "speechrecognition" -> AudioChannel.ASSISTANT
-                else -> AudioChannel.NAVIGATION
-            }
+            val channel = MicrophoneInputPolicy.channel(config.audioType)
             routeBinding = audioRouting?.bind(nextRecorder, channel, true, config.sampleRate, config.channels)
             nextRecorder.startRecording()
             onCaptureStarted()
@@ -295,6 +297,8 @@ internal class MicrophoneUplink(
         val readBuffer = ByteArray(maxOf(frame.size, MIN_READ_BYTES))
         val counters = MicrophoneCounters()
         val routeInfo = { routeType(recorder) }
+        val ownSession = recorder.audioSessionId
+        val silence = audioManager?.let { manager -> { silenceDetail(manager, ownSession) } }
         var canceller = echoCanceller
         val clock = canceller?.let { CaptureClock(config.sampleRate) }
         val reference = canceller?.let { ShortArray(it.frameSamples) }
@@ -326,7 +330,7 @@ internal class MicrophoneUplink(
                     return
                 }
                 if (count == 0) {
-                    stats.flush(routeType = routeInfo)
+                    stats.flush(routeType = routeInfo, silence = silence)
                     // A recorder that starts with no input device routed returns 0 bytes at once, for
                     // as long as it runs: a Leapmotor T03 (Android 7.1) did this for minutes of Siri and
                     // call capture (#566). Restart it, and pause between empty reads instead of spinning.
@@ -376,7 +380,7 @@ internal class MicrophoneUplink(
                         filled = 0
                     }
                 }
-                stats.flush(routeType = routeInfo)
+                stats.flush(routeType = routeInfo, silence = silence)
             }
         } catch (error: Exception) {
             if (running.get()) {
@@ -384,7 +388,7 @@ internal class MicrophoneUplink(
                 stats.failure(MicrophoneFailureStage.CAPTURE, error)
             }
         } finally {
-            stats.flush(ended = true, routeType = routeInfo)
+            stats.flush(ended = true, routeType = routeInfo, silence = silence)
             running.set(false)
             release()
         }
@@ -439,6 +443,19 @@ internal class MicrophoneUplink(
     }
 
     private fun routeType(recorder: AudioRecord): Int? = runCatching { recorder.routedDevice?.type }.getOrNull()
+
+    /**
+     * The audio mode and the sources of the other recordings running now. A head unit that stays in
+     * communication mode after a call, or another app holding the microphone, can each leave this one silent.
+     * Other apps' recordings carry no package name for a normal app, only their source.
+     */
+    private fun silenceDetail(manager: AudioManager, ownSession: Int): String {
+        val others = manager.activeRecordingConfigurations
+            .filter { it.clientAudioSessionId != ownSession }
+            .map { MicrophoneCaptureStats.sourceName(it.clientAudioSource) }
+        return "audioMode=${manager.mode} otherRecordings=" +
+            if (others.isEmpty()) "none" else others.take(MAX_LISTED_RECORDINGS).joinToString(",", "[", "]")
+    }
 
     /** Capture can continue with the same recorder if the optional native processor stops working. */
     @Synchronized
@@ -534,6 +551,7 @@ internal class MicrophoneUplink(
         const val NO_AUDIO_RESTART_MILLIS = 1_000L
         const val MAX_NO_AUDIO_RESTARTS = 3
         const val EMPTY_READ_PAUSE_MILLIS = 5L
+        const val MAX_LISTED_RECORDINGS = 4
     }
 }
 

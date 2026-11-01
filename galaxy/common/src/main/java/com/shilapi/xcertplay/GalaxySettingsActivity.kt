@@ -76,7 +76,8 @@ class GalaxySettingsActivity : ComponentActivity() {
     private var phoneDialog: AlertDialog? = null
     private var pendingWireless = false
     private var initialLaunch = true
-    private val appUpdate = GalaxyAppUpdate(this)
+    // GalaxyAppUpdate 读取 Activity 的资源与 Lifecycle；必须等 Activity attachBaseContext 后再创建。
+    private val appUpdate by lazy { GalaxyAppUpdate(this) }
     private val audioModelConfirmation = GalaxyVehicleModelConfirmation(this)
     private var notificationTransport = true
     private var exportInProgress = false
@@ -657,7 +658,7 @@ class GalaxySettingsActivity : ComponentActivity() {
                 card.addView(L7Components.actionRow(this, getString(R.string.l7_auth_quick_import), getString(R.string.l7_auth_import_row_hint)) { authenticationDialog().quickImport() })
             }
             "settings-general" -> GalaxyApplicationSettingsPage.add(this, content,
-                onChooseIcon = { carPlayIconPicker.launch("image/*") }) {
+                onChooseIcon = ::chooseCarPlayIcon) {
                 page = "settings-auth"; render()
             }
             "settings-permissions" -> section(content, getString(R.string.permissions_and_connection_help), R.drawable.ic_dp_permissions) { card ->
@@ -1046,7 +1047,7 @@ class GalaxySettingsActivity : ComponentActivity() {
                     appendLine("Authentication backend: ${AirPlayPersistence.loadMfiTarget(appContext)}")
                     appendLine("CarPlay setup: ${if (setupError == null) "ready" else "authentication unavailable"}")
                     appendLine("Saved video preference (may differ from active session): ${if (AirPlayPersistence.loadHevcEnabled(appContext)) "HEVC" else "H.264"}; ${AirPlayPersistence.loadFps(appContext)} fps")
-                    appendLine("CarPlay size: ${if (l7Ui) "L7 viewport physical geometry" else com.shilapi.xcertplay.airplay.CarPlaySize.fromWidthMillimeters(AirPlayPersistence.loadWidthPhysicalMm(appContext)).label}")
+                    appendLine("CarPlay size: ${if (l7Ui) "L7 viewport physical geometry" else (com.shilapi.xcertplay.airplay.CarPlaySize.exact(AirPlayPersistence.loadWidthPhysicalMm(appContext))?.label ?: "${AirPlayPersistence.loadWidthPhysicalMm(appContext)} mm")}")
                     appendLine("Saved resolution preference (may differ from active session): ${AirPlayPersistence.loadDisplayScaleTenths(appContext) * 10}%")
                     appendLine("Session: ${if (CarPlayBackgroundSession.active) "active" else if (CarPlayBackgroundSession.hasSession()) "connecting" else "stopped"}")
                     appendLine("Head-unit board: ${Build.BOARD}; hardware: ${Build.HARDWARE}; build: ${Build.DISPLAY}")
@@ -1116,6 +1117,15 @@ class GalaxySettingsActivity : ComponentActivity() {
         }.setNegativeButton(getString(R.string.later), null).show()
     }
     private fun openSystem(intent: Intent) { runCatching { startActivity(intent) }.onFailure { toast(getString(R.string.open_this_setting_from_your_car_s_settings_app)) } }
+
+    private fun chooseCarPlayIcon() {
+        try {
+            carPlayIconPicker.launch("image/*")
+        } catch (_: android.content.ActivityNotFoundException) {
+            // 车机系统可能未预装图片选择器；保留当前图标并提示该环境不支持导入。
+            toast(getString(R.string.galaxy_carplay_return_picker_unavailable))
+        }
+    }
     private fun toast(message: String) {
         if (l7Ui) L7Notice.show(this, message) else Toast.makeText(this, message, Toast.LENGTH_LONG).show()
     }
