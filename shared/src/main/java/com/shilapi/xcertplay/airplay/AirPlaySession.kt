@@ -64,6 +64,8 @@ interface AirPlayMediaHandler {
     fun onSetupResponseSent(session: AirPlaySession) {}
     /** duckAudio (true) and unduckAudio (false): the iPhone marks the start and end of a navigation prompt. */
     fun onAudioDuck(session: AirPlaySession, ducked: Boolean) {}
+    fun onAudioDuck(session: AirPlaySession, ducked: Boolean, volumeDb: Float, durationMs: Int?) =
+        onAudioDuck(session, ducked)
 }
 
 /**
@@ -200,6 +202,26 @@ class AirPlaySession(
     private val clusterCommandLock = Any()
     @Volatile private var clusterContent: ClusterContent? = null
     private var requestedClusterUrl = config.cluster?.initialUrl // guarded by clusterContentLock
+    @Volatile private var offeredClusterUrls = emptyList<String>()
+    @Volatile private var suggestedClusterUrls = emptyList<String>()
+    @Volatile private var clusterSuggestionSeen = false
+
+    /** 显式诊断仅返回已知地图上下文；URL选择/命令成功均不能证明手机正在绘制车道级。 */
+    fun displayDiagnostics(): Map<String, Any?> = linkedMapOf(
+        "mainFrameRendered" to hasRenderedMainFrame,
+        "clusterStreamGeneration" to clusterStream,
+        "selectedClusterUrl" to clusterUrl(),
+        "offeredClusterUrls" to offeredClusterUrls,
+        "suggestionSeen" to clusterSuggestionSeen,
+        "suggestedClusterUrls" to suggestedClusterUrls,
+        "detailMode" to "unknown",
+    )
+
+    private fun knownClusterUrls(value: Any?): List<String> {
+        val known = CarPlayClusterDisplay.Content.entries.map { it.url }.toSet()
+        return (value as? List<*>)?.filterIsInstance<String>()?.filter { it in known }
+            ?.distinct()?.take(3).orEmpty()
+    }
 
     /** Last delivered content for this stream. Pending selections never grant wheel zoom eligibility. */
     fun clusterUrl(): String? = clusterContentRoute()?.second
@@ -587,12 +609,10 @@ class AirPlaySession(
             path.endsWith("/info") -> {
                 val info = AirPlayInfoPlist.build(config)
                 if (request.body.isNotEmpty()) {
-                    val requestInfo = try {
-                        BplistCodec.decode(request.body).toString()
-                    } catch (_: Exception) {
-                        "<unparseable ${request.body.size} bytes>"
-                    }
-                    debugLog("airplay /info request=$requestInfo")
+                    val requestInfo = runCatching { asMap(BplistCodec.decode(request.body)) }.getOrNull()
+                    offeredClusterUrls = knownClusterUrls(requestInfo?.get("altScreenURLs"))
+                    // 不再把整份手机/info或标识落日志；只观察已知仪表上下文。
+                    debugLog("airplay /info clusterUrls=$offeredClusterUrls parsed=${requestInfo != null}")
                 }
                 Log.i(
                     TAG,
@@ -775,8 +795,13 @@ class AirPlaySession(
             return RtspMessage.Response(status = 200)
         }
         when (type) {
-            "duckAudio" -> media.onAudioDuck(this, true)
-            "unduckAudio" -> media.onAudioDuck(this, false)
+            "duckAudio", "unduckAudio" -> media.onAudioDuck(this, type == "duckAudio",
+                (params["volume"] as? Number)?.toFloat()?.takeIf { it.isFinite() } ?: 0f,
+                (params["durationMs"] as? Number)?.toLong()?.coerceIn(0, 30_000)?.toInt())
+            "suggestUI" -> {
+                suggestedClusterUrls = knownClusterUrls(params["urls"])
+                clusterSuggestionSeen = true
+            }
         }
         if (type == "requestUI" && string(params["url"]) == VideoInCar.UI_URL) {
             listener.onVideoPlaybackUiRequested(this)

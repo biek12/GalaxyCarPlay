@@ -58,14 +58,14 @@ def main():
         dest = target / relative; dest.parent.mkdir(parents=True, exist_ok=True); shutil.copy2(path, dest)
     def copy(path, relative):
         dest = target / relative; dest.parent.mkdir(parents=True, exist_ok=True); shutil.copy2(ROOT / path, dest)
-    for name in ('measure_autoservice.py', 'capture_cluster_fields.py', 'cluster_device_check.py',
+    for name in ('capture_navigation_state.py','check_lyrics_cache.py','remote_car.py','remote_field_transport.py','install_field_http.py','bootstrap_remote_bridge.py','measure_autoservice.py', 'capture_cluster_fields.py', 'cluster_device_check.py',
                  'cluster_field_session.py', 'prepare_autoservice_adb.py', 'field_telnet_transport.py',
                  'field_telnet_install.py'):
         copy('scripts/' + name, 'scripts/' + name)
     copy('tools/hab/telnet_session.py', 'diagnostics/telnet_session.py')
     copy('tools/hab/verify_bundle.py', 'verify_bundle.py')
     copy('docs/design/cluster-acceptance-template.json', 'acceptance-template.json')
-    for name in ('实车测试执行卡-20261101.md', '提交审计待修问题-20261101.md'):
+    for name in ('实车测试执行卡-20261101.md', '提交审计待修问题-20261101.md', '远程服务与歌词车辆数据整改-20261102.md'):
         copy('docs/' + name, name)
     preflight = ROOT / '.work/logs/cluster-preflight.json'
     if preflight.is_file(): copy('.work/logs/cluster-preflight.json', 'validation/full-preflight-attempt.json')

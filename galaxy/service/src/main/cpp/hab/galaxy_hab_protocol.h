@@ -40,6 +40,10 @@ int galaxy_hab_encode_init(uint8_t *packet,
 int galaxy_hab_encode_frame(uint8_t *packet,
                             const struct galaxy_hab_layout *layout, uint32_t export_id,
                             uint32_t sequence, uint32_t stream, uint32_t slot_hash);
+/* GLC2在协商成功后逐帧校验；旧帧编码仍保留每30帧采样的合同。 */
+int galaxy_hab_encode_owned_frame(uint8_t *packet,
+                            const struct galaxy_hab_layout *layout, uint32_t export_id,
+                            uint32_t sequence, uint32_t stream, uint32_t slot_hash);
 int galaxy_hab_encode_control(uint8_t *packet,
                               uint32_t type, uint32_t sequence, uint32_t export_id,
                               uint64_t session, int32_t stream, int32_t z_order,

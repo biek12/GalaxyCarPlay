@@ -7,7 +7,7 @@ import org.json.JSONObject
  *  v4下“缓存”是当前订阅采集的结果，因此未订阅的键不出现——这是设计而非缺失，
  *  全目录可读范围仍可在诊断页按属性翻页核对。 */
 internal object ClusterFieldDiagnostics {
-    private val keys = listOf("gear", "driveMode", "displaySpeed", "cruiseState", "cruiseSetSpeed", "regenLevel", "electricPowerRaw", "electricPowerStateRaw", "drivePowerKw", "regenPowerKw", "tractionPowerKw",
+    private val keys = listOf("gear", "driveMode", "displaySpeed", "leftTurn", "rightTurn", "cruiseState", "cruiseSetSpeed", "regenLevel", "electricPowerRaw", "electricPowerStateRaw", "drivePowerKw", "regenPowerKw", "tractionPowerKw",
         "fuelRange", "evRange", "fuel", "soc", "fuelConsumption", "electricConsumption", "outsideTemperature",
         "tire.frontLeft", "tire.frontRight", "tire.rearLeft", "tire.rearRight")
     fun collect(snapshot: Bundle, now: Long): JSONObject {

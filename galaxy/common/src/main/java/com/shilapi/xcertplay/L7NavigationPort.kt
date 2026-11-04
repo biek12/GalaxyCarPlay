@@ -13,6 +13,7 @@ internal interface L7NavigationPort : Closeable {
     fun connectionToken(): Any? = if (ready()) this else null
     fun start()
     fun road(value: String)
+    fun guidance(value: com.shilapi.xcertplay.hud.CarPlayNavigationSnapshot) {}
     fun stop()
     fun invalidate() {}
 }

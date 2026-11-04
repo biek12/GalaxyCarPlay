@@ -57,7 +57,7 @@ object CarPlayGlance {
             val lanes = runCatching { Iap2LaneGuidance.parse(frame.payload) }.getOrDefault(emptyList())
             if (lanes != loggedLanes) {
                 loggedLanes = lanes
-                android.util.Log.i(TAG, "0x5204 " + describeLanes(lanes, frame.payload))
+                android.util.Log.i(TAG, "0x5204 " + describeLanes(lanes))
             }
             laneListener?.invoke(lanes)
             return
@@ -87,18 +87,13 @@ object CarPlayGlance {
         changed?.let { listener?.invoke(it) }
     }
 
-    /**
-     * One line per lane strip for the diagnostic report: the parsed fields, and the raw payload once,
-     * so a report from a car we cannot test still shows what the phone actually sent.
-     */
-    private fun describeLanes(lanes: List<LaneGuidanceLane>, payload: ByteArray): String {
+    /** 仅保留已解析的车道状态，不把完整手机协议载荷写入现场日志。 */
+    private fun describeLanes(lanes: List<LaneGuidanceLane>): String {
         if (lanes.isEmpty()) return "lane strip cleared"
         val strip = lanes.joinToString("; ") {
             "i=${it.index} st=${it.status} a=${it.angle} h=${it.highlightAngle}"
         }
-        return "lanes=${lanes.size} [$strip] raw=" + payload.joinToString("") {
-            "%02x".format(it.toInt() and 0xff)
-        }
+        return "lanes=${lanes.size} [$strip]"
     }
 
     private fun publishLocked(): Snapshot? {

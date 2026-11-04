@@ -36,7 +36,10 @@ class VehicleCatalogTest {
         val specs=VehicleCatalog.forModel("L6")
         val cruise=specs.first { it.key=="cruiseState" };val regen=specs.first { it.key=="regenLevel" }
         assertEquals(listOf("off","standby","active"),(1..3).map { VehicleCatalog.convert(cruise,it) })
-        assertEquals(listOf("low","medium","high","auto"),(0..3).map { VehicleCatalog.convert(regen,it) })
+        fun packet(value: Int)=java.nio.ByteBuffer.allocate(16).order(java.nio.ByteOrder.LITTLE_ENDIAN).putInt(1).putInt(value).putInt(0).putInt(0).array()
+        assertEquals(561024796,regen.propertyId);assertEquals(1,regen.area)
+        assertEquals(listOf("low","medium","high","auto"),(0..3).map { VehicleCatalog.convert(regen,packet(it)) })
+        assertNull(VehicleCatalog.convert(regen,packet(4)))
         assertNull(VehicleCatalog.convert(cruise,0));assertNull(VehicleCatalog.convert(regen,4));assertNull(VehicleCatalog.convert(regen,1.5))
         val keys=specs.first { it.key=="property.10037" }
         assertEquals("0,6,0",VehicleCatalog.convert(keys,intArrayOf(0,6,0)))

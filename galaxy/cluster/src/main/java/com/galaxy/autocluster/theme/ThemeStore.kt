@@ -81,7 +81,27 @@ internal class ThemeStore(
         prepared
     }
 
-    fun active(): ThemePackage? = transaction { read(activeFile()) }
+    fun active(): ThemePackage? = transaction {
+        val stored = read(activeFile()) ?: return@transaction null
+        // 内置主题本身不可编辑；用户副本具有独立ID，升级只更新选中的旧内置版本。
+        val updated = builtIns[stored.metadata.id]?.takeIf { it.metadata.revision > stored.metadata.revision }
+        if (updated != null) writeAtomic(activeFile(), ThemePackageCodec.bytes(updated))
+        updated ?: stored
+    }
+    fun syncEnergy(): ThemePackage? = transaction {
+        val original=read(activeFile())?:return@transaction null
+        val next=EnergyThemeSync.merge(original)
+        if(next===original)return@transaction original
+        val backup=File(root,"backups/${original.metadata.id}-before-energy-sync.gctheme")
+        backup.parentFile?.mkdirs()
+        if(!backup.exists())writeAtomic(AtomicFile(backup),ThemePackageCodec.bytes(original))
+        val library=loadLocked(original.metadata.id)
+        val entries=original.copyEntries()
+        val matches=library?.copyEntries()?.let{other->entries.keys==other.keys&&entries.all{(key,bytes)->bytes.contentEquals(other.getValue(key))}}==true
+        if(original.metadata.id !in builtIns&&matches)writeAtomic(file(original.metadata.id),ThemePackageCodec.bytes(next))
+        writeAtomic(activeFile(),ThemePackageCodec.bytes(next))
+        next
+    }
 
     fun delete(id: String, expectedRevision: Long) = transaction {
         require(id !in builtIns) { "theme_builtin_readonly" }

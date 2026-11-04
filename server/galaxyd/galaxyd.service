@@ -1,0 +1,22 @@
+[Unit]
+Description=GalaxyPlay personal bridge and lyrics
+After=network-online.target
+
+[Service]
+User=galaxybridge
+Group=galaxybridge
+ExecStart=/opt/galaxyplay-bridge/galaxyd
+Environment=GALAXY_STATE=/var/lib/galaxyplay-bridge/state.json
+Environment=GALAXY_ENROLLMENT_FILE=/var/lib/galaxyplay-bridge/enrollment
+Environment=GALAXY_LISTEN=127.0.0.1:8781
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+ReadWritePaths=/var/lib/galaxyplay-bridge
+UMask=0077
+
+[Install]
+WantedBy=multi-user.target

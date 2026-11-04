@@ -151,7 +151,7 @@ internal class L7ReflectiveMediaCenter(
                         val caller = android.os.Binder.getCallingUid()
                         var failures = 0
                         try {
-                            if (artwork != null) app.packageManager.getPackagesForUid(caller)?.forEach { name ->
+                            if (artwork?.scheme == "content") app.packageManager.getPackagesForUid(caller)?.forEach { name ->
                                 if (name != app.packageName) try {
                                     app.grantUriPermission(name, artwork, android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                 } catch (_: Exception) { failures++ }

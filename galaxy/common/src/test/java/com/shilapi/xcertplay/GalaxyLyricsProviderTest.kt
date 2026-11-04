@@ -18,7 +18,7 @@ class GalaxyLyricsProviderTest {
     @Test fun querySendsOnlyEncodedTitleAndArtist() {
         val url = GalaxyLyricsHttpClient().requestUrl(GalaxyLyricQuery("A song & title", "Artist / band"))!!
         assertEquals("https", url.protocol)
-        assertEquals("lrclib.net", url.host)
+        assertEquals("bridge.example.invalid", url.host)
         assertEquals("/api/search", url.path)
         assertTrue(url.query.contains("track_name=A+song+%26+title"))
         assertTrue(url.query.contains("artist_name=Artist+%2F+band"))

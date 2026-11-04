@@ -50,6 +50,11 @@ internal class GalaxyL6DimNavigationPort(context: Context) : L7NavigationPort {
         transact(TRANSACTION_NEXT_GUIDANCE_NAME) { writeString(value.take(MAX_ROAD_NAME_CHARS)) }
     }
 
+    override fun guidance(value: com.shilapi.xcertplay.hud.CarPlayNavigationSnapshot) {
+        val target = binder?.takeIf { valid && it.isBinderAlive } ?: throw RemoteException("L6_DIM_BINDER_UNAVAILABLE")
+        publishGuidance(target, value)
+    }
+
     override fun stop() {
         transact(TRANSACTION_TBT_EVENT, allowInvalid = true) { writeInt(TBT_EVENT_STOP) }
         transact(TRANSACTION_NAVIGATION_STATUS, allowInvalid = true) { writeInt(STATUS_STOP) }
@@ -81,11 +86,27 @@ internal class GalaxyL6DimNavigationPort(context: Context) : L7NavigationPort {
         const val TRANSACTION_NAVIGATION_STATUS = 1
         const val TRANSACTION_TBT_EVENT = 11
         const val TRANSACTION_NEXT_GUIDANCE_NAME = 23
+        const val TRANSACTION_TURN_ID = 2
+        const val TRANSACTION_DESTINATION_DISTANCE = 7
+        const val TRANSACTION_NEXT_DISTANCE = 8
+        const val TRANSACTION_ETA = 12
         const val STATUS_STOP = 0
         const val STATUS_START = 1
         const val TBT_EVENT_START = 0
         const val TBT_EVENT_STOP = 1
         const val MAX_ROAD_NAME_CHARS = 256
+
+        internal fun publishGuidance(target: IBinder, value: com.shilapi.xcertplay.hud.CarPlayNavigationSnapshot) {
+            if (!value.active) return
+            fun integer(code: Int, number: Int?) {
+                if (number != null) transactBinder(target, code) { writeInt(number) }
+            }
+            integer(TRANSACTION_TURN_ID, GalaxyL6NavigationValues.turnId(value))
+            integer(TRANSACTION_DESTINATION_DISTANCE, GalaxyL6NavigationValues.nonNegativeInt(value.remainingMeters))
+            integer(TRANSACTION_NEXT_DISTANCE, value.distanceToNextMeters?.takeIf { it >= 0 })
+            // G733服务以ETA调度这一批缓存字段的发布，因此最后发送，单位为剩余秒。
+            integer(TRANSACTION_ETA, GalaxyL6NavigationValues.nonNegativeInt(value.remainingSeconds))
+        }
 
         internal fun transactBinder(target: IBinder, code: Int, writeArguments: Parcel.() -> Unit) {
             val data = Parcel.obtain()

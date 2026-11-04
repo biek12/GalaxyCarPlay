@@ -657,6 +657,19 @@ class CarPlayController(
     /** Immutable stream geometry retained when a new host adopts this background controller. */
     fun configuredClusterSize(): Pair<Int, Int>? = airPlayConfig.cluster?.let { it.widthPixels to it.heightPixels }
 
+    /** 两路握手几何与手机上下文分别报告；不含手机/车辆标识或原始协议载荷。 */
+    fun displayDiagnostics(): Map<String, Any?> {
+        fun geometry(display: com.shilapi.xcertplay.airplay.AirPlayDisplayConfig) = mapOf(
+            "width" to display.widthPixels, "height" to display.heightPixels,
+        )
+        return linkedMapOf(
+            "main" to geometry(airPlayConfig.main),
+            "cluster" to airPlayConfig.cluster?.let(::geometry),
+            "active" to (!closed && activeSession?.isClosed == false),
+            "session" to activeSession?.displayDiagnostics(),
+        )
+    }
+
     /** A visible physical map and its session/stream generation; null for a paused/virtual/turn-card route. */
     fun dashboardMapRoute(): Any? {
         val session = activeSession ?: return null

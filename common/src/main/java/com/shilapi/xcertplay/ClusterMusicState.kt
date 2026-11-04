@@ -45,7 +45,8 @@ internal object ClusterMusicState {
 
     private val main = Handler(Looper.getMainLooper())
     private val listeners = mutableSetOf<(Snapshot) -> Unit>()
-    private var state = Snapshot()
+    @Volatile private var state = Snapshot()
+    fun diagnosticSnapshot() = state
 
     /** Core media owner publishes a borrowed bitmap; do not recycle it here. */
     fun publish(info: CarPlayNowPlaying, artwork: Bitmap?) = apply(info, artwork, ownsArtwork = false, preserveProductState = false)

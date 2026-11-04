@@ -52,6 +52,7 @@ class CarPlayHostClusterStartupTest {
     }
 
     @After fun tearDown() {
+        HostProductBindings.factory = null
         (get("mainHandler") as Handler).removeCallbacksAndMessages(null)
         ClusterActivityOutput.stop(activity)
         CarPlayBackgroundSession.clear()
@@ -147,6 +148,26 @@ class CarPlayHostClusterStartupTest {
         firstFrame()
         verify(sink).setSurface(111, cluster)
         assertFalse(get("reconnectScheduled") as Boolean)
+    }
+
+    @Test fun productClusterNeverUsesMainSurfaceWhenLegacyClusterSwitchIsOff() {
+        val product = mock(CarPlayHostProduct::class.java)
+        `when`(product.clusterDisplayConfiguration()).thenReturn(AirPlayDisplayConfig(800, 400))
+        HostProductBindings.factory = { _, _ -> product }
+        AirPlayPersistence.saveClusterMapEnabled(activity, false)
+        val main = mock(Surface::class.java)
+        val replacementMain = mock(Surface::class.java)
+        val cluster = mock(Surface::class.java)
+        invokeSurface("attachSurface", main)
+        verify(sink).setSurface(110, main)
+        verify(sink, never()).setSurface(111, main)
+        // 仪表Surface晚到且主Surface在重连后重建，仍只能把111送到独立输出。
+        set("clusterSurface", cluster)
+        `when`(session.hasRenderedMainFrame).thenReturn(true)
+        invokeSurface("attachSurface", replacementMain)
+        verify(sink).setSurface(110, replacementMain)
+        verify(sink).setSurface(111, cluster)
+        verify(sink, never()).setSurface(111, replacementMain)
     }
 
     @Test fun staleSessionsAndControllerGenerationsCannotLaunchTheCluster() {

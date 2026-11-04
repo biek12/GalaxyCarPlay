@@ -11,6 +11,26 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [29])
 class AudioDuckCommandTest {
+    @Test fun commandPreservesIphoneDbAndRampAndOldSessionCannotUnduckNewPrompt() {
+        val values = mutableListOf<Triple<Boolean, Float, Int?>>()
+        val engine = CarPlayMediaEngine(object : MediaSink {
+            override fun onAudioDuck(ducked: Boolean, volumeDb: Float, durationMs: Int?) {
+                values += Triple(ducked, volumeDb, durationMs)
+            }
+        })
+        val first = session(engine)
+        val second = session(engine)
+        try {
+            val body = BplistCodec.encode(mapOf("type" to "duckAudio", "params" to mapOf("volume" to -18.0, "durationMs" to 250)))
+            AirPlaySession::class.java.getDeclaredMethod("handle", RtspMessage.Request::class.java)
+                .apply { isAccessible = true }.invoke(first,
+                    RtspMessage.Request("POST", "/command", "RTSP/1.0", emptyMap(), body))
+            engine.onAudioDuck(second, true, -12f, 100)
+            engine.onAudioDuck(first, false)
+            assertEquals(listOf(Triple(true, -18f, 250), Triple(true, -12f, 100)), values)
+            engine.onSessionClosed(second)
+        } finally { first.close(); second.close() }
+    }
     @Test fun duckCommandsReachTheMediaHandlerAndOtherCommandsDoNot() {
         val ducks = mutableListOf<Boolean>()
         val commands = mutableListOf<String>()

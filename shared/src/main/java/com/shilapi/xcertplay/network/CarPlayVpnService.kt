@@ -98,7 +98,21 @@ class CarPlayVpnService : VpnService() {
             }
             require(hostMac.size == 6) { "hostMac must be 6 bytes" }
 
+            val connectivity = getSystemService(android.net.ConnectivityManager::class.java)
+            val internet = connectivity.allNetworks.firstOrNull { network ->
+                val caps = connectivity.getNetworkCapabilities(network)
+                caps?.hasTransport(android.net.NetworkCapabilities.TRANSPORT_WIFI) == true &&
+                    !caps.hasTransport(android.net.NetworkCapabilities.TRANSPORT_VPN) &&
+                    caps.hasCapability(android.net.NetworkCapabilities.NET_CAPABILITY_INTERNET)
+            } ?: connectivity.activeNetwork
+            // VPN拥有独立DNS配置；只配置现有底层网的非链路本地DNS，避免fe80解析流量进入iPhone TUN。
+            val dns = internet?.let(connectivity::getLinkProperties)?.dnsServers.orEmpty()
+                .filter { !it.isLinkLocalAddress && !it.isLoopbackAddress }
             val tunFd = Builder()
+                .apply {
+                    internet?.let { setUnderlyingNetworks(arrayOf(it)) }
+                    dns.forEach { addDnsServer(it) }
+                }
                 .addAddress(linkLocal, LINK_PREFIX)
                 .addRoute(LINK_LOCAL_ROUTE, LINK_PREFIX)
                 .setSession(SESSION_NAME)
@@ -107,6 +121,10 @@ class CarPlayVpnService : VpnService() {
                 // An empty app list routes every UID through this VPN. Scope it before establish;
                 // rejection must reach the existing attachment cleanup, never an unscoped retry.
                 .addAllowedApplication(packageName)
+                // TUN只承接iPhone链路本地IPv6。未配置的IPv4默认会被VPN阻断，
+                // 导致同一App的公网DNS/歌词请求失败；公网请求可按连接选用底层网络。
+                .allowFamily(android.system.OsConstants.AF_INET)
+                .allowBypass()
                 .establish()
                 ?: throw IOException("VpnService.establish returned null")
             tun = tunFd

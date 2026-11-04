@@ -33,4 +33,6 @@ interface IAutoService {
     Bundle getVehicleValues(in String[] keys);
     /** 显式全目录诊断扫描（默认关）；只允许本包调用，用于保留“读尽读”能力。 */
     void setVehicleScan(boolean enabled);
+    /** 追加式接口：只为调用者自身申请明确允许的权限，完成后回调实际授权结果。 */
+    void requestClientPermissions(IBinder owner, in String[] permissions, IAutoResult result);
 }

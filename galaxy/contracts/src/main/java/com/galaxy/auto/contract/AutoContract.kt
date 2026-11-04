@@ -54,5 +54,10 @@ object AutoContract {
         for (key in listOf("road", "instruction", "distance", "arrival", "remaining", "remainingDistance")) copyText(source, this, key)
         putInt("maneuver", source.getInt("maneuver", -1))
         putInt("roundaboutExit",source.getInt("roundaboutExit",-1).coerceIn(-1,99))
+        val angles=source.getString("laneAngles").orEmpty().split(',').mapNotNull{it.toIntOrNull()}.take(8)
+        val recommended=source.getString("laneRecommended").orEmpty().split(',').mapNotNull{it.toIntOrNull()}.take(8)
+        if(angles.isNotEmpty()&&angles.size==recommended.size&&angles.all{it in -180..180}&&recommended.all{it in 0..1}){
+            putString("laneAngles",angles.joinToString(","));putString("laneRecommended",recommended.joinToString(","))
+        }
     }
 }

@@ -38,7 +38,11 @@ internal object VehicleCatalog {
             SignalSpec("driveMode",561023639,"state",payload="ecarx-pa-enum",area=0,normalizedId=10106,name="PA_DriveMode",mapping=mapOf("1" to "增程","2" to "纯电","3" to "性能","6" to "智能")),
             // 原厂CarSignalManager及注解的只读枚举；未知枚举不沿用原始数字。
             SignalSpec("cruiseState",557874311,"state",normalizedId=10101,name="CrsCtrlrSts",mapping=mapOf("1" to "off","2" to "standby","3" to "active")),
-            SignalSpec("regenLevel",557874243,"state",normalizedId=10102,name="EgyRgnLvlSet",mapping=mapOf("0" to "low","1" to "medium","2" to "high","3" to "auto")),
+            // 本车SDK ECarXCarVfsmallcycleManager.getPA_EgyRgnLvlSet：561024796/area1，PA_IntBase的16字节状态。
+            // 原信号在本轮L6现场为UNAVAILABLE，仍单列保留；设置档位改读原厂明确提供的PA getter合同。
+            SignalSpec("regenLevel",if(l6)561024796 else 557874243,"state",payload=if(l6)"ecarx-pa-enum"else"number",
+                normalizedId=10102,name=if(l6)"PA_EgyRgnLvlSet"else"EgyRgnLvlSet",mapping=mapOf("0" to "low","1" to "medium","2" to "high","3" to "auto")),
+            SignalSpec("regenLevelSignal",557874243,"state",name="EgyRgnLvlSet",mapping=mapOf("0" to "low","1" to "medium","2" to "high","3" to "auto")),
             // CLUSTER_ADAS原厂声明；当前设定速度与实际车速保持独立。
             SignalSpec("cruiseSetSpeed",557849309,"km/h",minimum=0.0,maximum=300.0,normalizedId=10103,name="CLUSTER_ADAS_DRVRACCRSSETSPDREQDRVRCRSSETSPDREQ"),
             // 原始电功率/状态没有明确kW和回收方向合同，不冒充regenPowerKw。

@@ -135,7 +135,9 @@ int galaxy_hab_sender_frame(struct galaxy_hab_sender *s, uint32_t index,
             }
             hash = packed_hash;
         }
-        result = galaxy_hab_encode_frame(packet, &s->layout, s->export_id, s->sequence, index, hash);
+        result = s->owned_consumption
+            ? galaxy_hab_encode_owned_frame(packet, &s->layout, s->export_id, s->sequence, index, hash)
+            : galaxy_hab_encode_frame(packet, &s->layout, s->export_id, s->sequence, index, hash);
         if (result) return result;
         result = galaxy_hab_transport_send(&s->transport, packet, sizeof(packet));
         if (!s->owned_consumption) return result;

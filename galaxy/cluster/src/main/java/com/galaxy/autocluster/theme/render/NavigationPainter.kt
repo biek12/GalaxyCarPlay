@@ -32,6 +32,21 @@ internal class NavigationPainter(private val tools: DrawTools) {
             line(data.navigation["road"],p.color("foreground"))
         }
         if(p.bool("showArrival"))line(listOfNotNull(data.navigation["remaining"],data.navigation["arrival"],data.navigation["remainingDistance"]).joinToString(" · "),p.color("muted"))
+        val lanes=data.navigation["laneAngles"].orEmpty().split(',').mapNotNull{it.toIntOrNull()}.take(8)
+        val preferred=data.navigation["laneRecommended"].orEmpty().split(',').mapNotNull{it.toIntOrNull()}
+        if(lanes.isNotEmpty()&&lanes.size==preferred.size){
+            val laneSize=minOf(44f,w/lanes.size);val start=(w-laneSize*lanes.size)/2
+            for((index,angle)in lanes.withIndex()){
+                val save=canvas.save();canvas.translate(start+index*laneSize,h-laneSize)
+                canvas.rotate(angle.toFloat(),laneSize/2,laneSize/2)
+                val color=p.color(if(preferred[index]==1)"accent"else"muted")
+                val stroke=tools.stroke(color,3f,true)
+                canvas.drawLine(laneSize/2,laneSize*.85f,laneSize/2,laneSize*.15f,stroke)
+                canvas.drawLine(laneSize/2,laneSize*.15f,laneSize*.3f,laneSize*.35f,stroke)
+                canvas.drawLine(laneSize/2,laneSize*.15f,laneSize*.7f,laneSize*.35f,stroke)
+                canvas.restoreToCount(save)
+            }
+        }
     }
     private fun arrow(canvas: Canvas,icon: Int,exit: Int?,size: Float,color: Int){
         val saved=canvas.save();canvas.scale(size/64,size/64)

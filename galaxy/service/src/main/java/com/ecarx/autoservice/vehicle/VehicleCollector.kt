@@ -56,6 +56,8 @@ internal class VehicleCollector(
     @Volatile private var readTotal = 0L
     @Volatile private var bundleTotal = 0L
     @Volatile private var feedTotal = 0L
+    @Volatile private var lastCycleMillis = 0L
+    @Volatile private var maxCycleMillis = 0L
     private val prefs = context.getSharedPreferences("platform", 0)
     fun start() {
         if (enabled) return
@@ -91,7 +93,7 @@ internal class VehicleCollector(
 
     /** 采集量累计值（诊断用，只增不减）。 */
     fun stats(): String =
-        "ticks=$tickTotal reads=$readTotal bundles=$bundleTotal feeds=$feedTotal scan=$scanEnabled active=${demand.active} keys=${demand.keys().size}"
+        "ticks=$tickTotal reads=$readTotal bundles=$bundleTotal feeds=$feedTotal scan=$scanEnabled active=${demand.active} keys=${demand.keys().size} period=${demand.periodMillis}ms cycle=$lastCycleMillis/${maxCycleMillis}ms"
 
     /**
      * 没有订阅也没有扫描：取消已排的下一拍，只留一次元数据刷新告诉UI现在是空闲。
@@ -181,7 +183,10 @@ internal class VehicleCollector(
         // 否则它会把 start() 刚排的“立即拍”取消掉改成整周期延迟。
         if (ticket != generation) return
         // schedule() 先取消旧任务再排新任务，整条链在任何时刻最多只有一个待执行任务。
-        schedule(if (discovery in RETRY_STATES) 3000L else period)
+        lastCycleMillis = (SystemClock.elapsedRealtime()-now).coerceAtLeast(0)
+        maxCycleMillis = maxOf(maxCycleMillis, lastCycleMillis)
+        // 周期从采集开始计；否则“读取耗时+最小间隔”会把250ms订阅拖成300–500ms。
+        schedule(if (discovery in RETRY_STATES) 3000L else (period-lastCycleMillis).coerceAtLeast(0))
     }
 
     /** 元数据只在“发现状态/条数”变化或≥1秒时投递一次；逐值变化不再触发整包快照。 */

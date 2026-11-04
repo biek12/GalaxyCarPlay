@@ -49,6 +49,10 @@ internal object L7AudioSettings {
                 text(R.string.settings_navigation_prompt_audio_focus_description), AirPlayPersistence.loadNavigationPromptAudioFocus(context)) {
                 AirPlayPersistence.saveNavigationPromptAudioFocus(context, it)
             })
+            card.addView(L7Components.switchRow(context, text(R.string.galaxy_navigation_ducks_media),
+                text(R.string.galaxy_navigation_ducks_media_note), GalaxyPreferencePolicy.loadNavigationDucksMedia(context)) {
+                GalaxyPreferencePolicy.saveNavigationDucksMedia(context, it)
+            })
             card.addView(L7Components.switchRow(context, text(R.string.settings_call_at_call_rate),
                 text(R.string.settings_call_at_call_rate_description), AirPlayPersistence.loadCallAtCallRate(context)) {
                 AirPlayPersistence.saveCallAtCallRate(context, it)

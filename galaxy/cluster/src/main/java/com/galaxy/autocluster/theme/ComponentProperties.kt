@@ -101,6 +101,8 @@ internal object ComponentProperties {
     private val textStyle = type + listOf(number("fontSize", "字号", 32, "文字", 8f, 180f), alignment,
         number("lineHeight", "行高比例", 1.4, "文字", 1f, 2.5f))
     private fun rangeBar(range: String,level: String,label: String,icon: String)=type+listOf(
+        choice("rangeStyle","样式","standard","外观","standard" to "图标条","l6" to "L6原车位置样式"),
+        number("unitSize","单位字号",22,"文字",8f,80f),
         source("source","续航来源","vehicle.$range"),source("levelSource","剩余百分比来源","vehicle.$level"),
         text("label","名称",label,"文字",false),choice("rangeIcon","图标",icon,"外观","fuel" to "燃油","bolt" to "电池"),
         number("fontSize","字号",22,"文字",8f,80f),number("trackHeight","条高",5,"外观",1f,30f),

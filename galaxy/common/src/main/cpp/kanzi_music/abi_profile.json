@@ -1,0 +1,53 @@
+{
+  "schema": 1,
+  "target": "G733-L6-FlymeAuto-2.3.1",
+  "elfSha256": "385d8fc526936a32fa08cf8dfd51db731a58c8a3c86fd43709a6269bdf080e64",
+  "compatibleElfSha256": [
+    "5ceff21b4ac5b651b1b629095aa6da0bcb84e0d7ea6b4a569b6a1913c0c1f94d"
+  ],
+  "compatibilityEvidence": "2026-11-03 L6实车：25字节仅在.note.gnu.build-id和.rodata；完整.text、PHDR、动态符号、动态表、重定位一致。只允许此精确摘要，非通用版本兼容。",
+  "machine": "AArch64",
+  "kanzi": "3.6.9",
+  "applicationVtable": "_ZTV15ClusterFunction",
+  "applicationFactoryVtableGot": "0xa4ce18",
+  "applicationFactoryCallsite": "0x15be88",
+  "propertyObjectOffset": 8,
+  "sharedPtrBytes": 16,
+  "sharedPtrUseCountOffset": 8,
+  "callbacks": {
+    "_ZN5kanzi11Application8onUpdateENSt6chrono8durationIlSt5ratioILl1ELl1000EEEE": "galaxy_music_on_update",
+    "_ZN5kanzi11Application10onShutdownEv": "galaxy_music_on_shutdown"
+  },
+  "androidState": "/data/vendor/nfs/nfs_ota/galaxy-kanzi-field/galaxy-carplay-kanzi-music.bin",
+  "qnxState": "/otaupdate/galaxy-kanzi-field/galaxy-carplay-kanzi-music.bin",
+  "qnxPhaseLog": "/tmp/galaxy-carplay-kanzi-status.log",
+  "componentInstallPath": "/var/data/galaxy-kanzi-field/libgalaxy_kanzi_music.so",
+  "wire": {
+    "magic": "GKM1",
+    "version": 1,
+    "headerBytes": 72,
+    "maxBytes": 8192,
+    "expiresAfterMs": 7000,
+    "flagsMask": 15
+  },
+  "targetContainer": {
+    "name": "Media_Text",
+    "children": [
+      "Media_Title",
+      "Media_Artist"
+    ]
+  },
+  "fieldValidated": false,
+  "vtableSlots": {
+    "onUpdate": {
+      "offset": "0x60",
+      "callsite": "0x2837f4",
+      "original": "0x27d2a0"
+    },
+    "onShutdown": {
+      "offset": "0x48",
+      "callsite": "0x27d48c",
+      "original": "0x27d2a8"
+    }
+  }
+}

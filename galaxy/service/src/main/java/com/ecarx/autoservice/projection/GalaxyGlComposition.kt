@@ -24,6 +24,7 @@ internal class GalaxyGlComposition(
     private var previewDestination: EGLSurface?=null
     private var previewSurface: Surface?=null
     private var map: GalaxyTextureInput?=null
+    private var mapSize=MapStreamSize.DEFAULT
     private data class Slot(var scene: SceneConfiguration,val input: GalaxyTextureInput)
     private var activeTheme: Slot?=null
     private var pendingTheme: Slot?=null
@@ -96,6 +97,12 @@ internal class GalaxyGlComposition(
         pacer.setRate(policy.maximumFps,SystemClock.elapsedRealtimeNanos())
         if(drawPending){worker.removeCallbacks(draw);drawPending=false;requestDraw()}
     } }
+    fun setMapStreamSize(size: MapStreamSize) { worker.post {
+        if(closed || size==mapSize)return@post
+        mapSize=size
+        map?.surfaceTexture?.setDefaultBufferSize(size.width,size.height)
+        outputDirty=true;previewDirty=true;requestDraw()
+    } }
     fun setOutputActive(active: Boolean) { worker.post { if(!closed){outputActive=active;outputDirty=active;requestDraw()} } }
     fun setMapActive(active: Boolean) { worker.post { if(!closed&&mapActive!=active){mapActive=active;outputDirty=true;previewDirty=true;requestDraw()} } }
     fun setPreviewSurface(value: Surface?) {
@@ -167,8 +174,8 @@ internal class GalaxyGlComposition(
         val w=(AutoContract.WIDTH*scale).toInt();val h=(AutoContract.HEIGHT*scale).toInt()
         GLES20.glViewport((width-w)/2,(height-h)/2,w,h)
         val viewport=slot?.scene?.map ?: if(slot==null)full else null
-        if(mapActive&&viewport!=null)map?.let { program.draw(it,viewport.fitted(),false,slot?.scene?.appearance?:MapAppearance())
-            slot?.scene?.backdrops?.forEach { region->program.draw(it,viewport.fitted(),true,backdrop=region) } }
+        if(mapActive&&viewport!=null)map?.let { program.draw(it,viewport.fitted(mapSize.width,mapSize.height),false,slot?.scene?.appearance?:MapAppearance())
+            slot?.scene?.backdrops?.forEach { region->program.draw(it,viewport.fitted(mapSize.width,mapSize.height),true,backdrop=region) } }
         slot?.let { program.draw(it.input,full,true) }
         context.swap(destination)
     }

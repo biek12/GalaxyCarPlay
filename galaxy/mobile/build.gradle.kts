@@ -131,3 +131,16 @@ tasks.register("assembleStandaloneDebug") {
     description = "Build a standalone car-test APK with explicitly provisioned authentication."
     dependsOn(verifyStandaloneAuthentication, "assembleDebug")
 }
+
+// 本车Kanzi试验包只携带自有SO与合同；常规源码构建不依赖私有OEM材料。
+if (providers.gradleProperty("galaxyKanziMusicTrial").orNull == "true") {
+    val trialAssets = layout.buildDirectory.dir("generated/kanzi-music-assets")
+    val prepareGalaxyKanziMusic by tasks.registering(Exec::class) {
+        commandLine("python3", rootProject.file("scripts/prepare_kanzi_music_asset.py"),
+            "--output", trialAssets.get().dir("kanzi-music").asFile)
+        // 每次核对源摘要，不能由Gradle缓存跳过对外部候选的验证。
+        outputs.upToDateWhen { false }
+    }
+    android.sourceSets.getByName("main").assets.directories.add(trialAssets.get().asFile.path)
+    tasks.named("preBuild") { dependsOn(prepareGalaxyKanziMusic) }
+}

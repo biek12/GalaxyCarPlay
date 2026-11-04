@@ -1,0 +1,21 @@
+// 仅给Lead的候选单测使用；不修改产品sourceSets配置文件，不允许打包/安装任务。
+gradle.beforeProject { project ->
+    if (project.path == ':record') project.pluginManager.withPlugin('com.android.application') {
+        project.extensions.getByName('androidComponents').finalizeDsl { android ->
+            def candidate = new File(project.rootDir, '.workbuddy/tasks/autorecord-storage-20261104')
+            // AGP9内置Kotlin不再把java.srcDir当作额外Kotlin源目录。
+            android.sourceSets.getByName('main').kotlin.srcDir(new File(candidate, 'src'))
+            android.sourceSets.getByName('test').kotlin.srcDir(new File(candidate, 'test'))
+            android.sourceSets.getByName('test').kotlin.srcDir(new File(project.rootDir, 'tools/autorecord/storage-review'))
+        }
+    }
+}
+gradle.taskGraph.whenReady { graph ->
+    // packageDebugResources 等是单测资源处理的必要前置，不能与APK打包混为一谈。
+    def apkTasks = ['packageDebug', 'packageField', 'packageEmulator', 'packageRelease',
+                    'assembleDebug', 'assembleField', 'assembleEmulator', 'assembleRelease']
+    def blocked = graph.allTasks.findAll { it.name in apkTasks || it.name.startsWith('install') }
+    if (!graph.allTasks.any { it.path == ':record:testDebugUnitTest' } || !blocked.isEmpty()) {
+        throw new GradleException('WorkBuddy候选只允许编译与单测，拒绝APK任务：' + blocked*.path)
+    }
+}

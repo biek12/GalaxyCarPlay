@@ -14,6 +14,19 @@ import java.io.IOException
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [30], manifest = Config.NONE)
 class ThemeStoreTest {
+    @Test fun energySyncPreservesEditedNodesAndDoesNotDuplicateOnRepeat(){
+        val root=java.nio.file.Files.createTempDirectory("energy-sync").toFile()
+        try{
+            val node=SceneNode("user-map","map","自定义地图",SceneRect(520f,50f,800f,400f))
+            val theme=SceneXml.write(ThemeMetadata("custom","用户主题",1),ThemeScene(SceneDocument(listOf(node)),SceneStyles()))
+            val store=ThemeStore(root);val saved=store.save(theme,null);store.apply("custom",saved.metadata.revision)
+            val synchronized=store.syncEnergy()!!;val nodes=SceneXml.read(synchronized).document.nodes
+            assertEquals(node,nodes.first());assertEquals(setOf("fuel-range","ev-range"),nodes.drop(1).map{it.type}.toSet())
+            assertEquals(synchronized.metadata.revision,store.syncEnergy()!!.metadata.revision)
+            assertEquals(synchronized.metadata,store.load("custom")!!.metadata)
+            assertTrue(java.io.File(root,"backups/custom-before-energy-sync.gctheme").isFile)
+        }finally{root.deleteRecursively()}
+    }
     @get:Rule val temporary = TemporaryFolder()
     private fun rejects(action: () -> Unit) { try { action(); fail("应拒绝本次操作") } catch (_: Exception) {} }
 

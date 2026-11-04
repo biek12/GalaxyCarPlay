@@ -116,6 +116,34 @@ class ServiceActivity : Activity() {
             isFocusable = true
         }
         content.addView(diagnostics)
+        section(content,"远程连接")
+        val remoteCard=ui.card(20)
+        remoteCard.addView(ui.label("验证码连接 · 免重复验证",21f))
+        remoteCard.addView(ui.label("车机主动联网，在授权时间内可诊断和更新应用",14f,true))
+        val remoteStatus=ui.label("",17f)
+        remoteCard.addView(remoteStatus)
+        val remoteButtons=ui.row()
+        for(hours in listOf(12,24))remoteButtons.addView(ui.button("开启${hours}小时"){
+            startForegroundService(Intent(this,AutoService::class.java).setAction("remote-authorize").putExtra("hours",hours))
+        },LinearLayout.LayoutParams(0,-2,1f))
+        remoteButtons.addView(ui.button("关闭"){
+            startForegroundService(Intent(this,AutoService::class.java).setAction("remote-disable"))
+        },LinearLayout.LayoutParams(0,-2,1f))
+        remoteCard.addView(remoteButtons);content.addView(remoteCard)
+        remoteStatus.post(object:Runnable{
+            override fun run(){
+                if(isFinishing||isDestroyed)return
+                val settings=com.ecarx.autoservice.remote.RemoteSettings(this@ServiceActivity)
+                remoteStatus.text=when{
+                    !settings.enabled->"远程连接已关闭"
+                    settings.paired->"已配对 · ${snapshot.getString("remoteState", "连接中") } · 免验证至 ${android.text.format.DateFormat.format("MM-dd HH:mm",settings.until*1000)}"
+                    settings.code.isNotBlank()&&settings.codeUntil<System.currentTimeMillis()/1000->"验证码已过期，请重新开启授权"
+                    settings.code.isNotBlank()->"验证码：${settings.code}（5分钟内有效）"
+                    else->"正在连接服务端…"
+                }
+                remoteStatus.postDelayed(this,1000)
+            }
+        })
         content.addView(ui.label("AutoService · GalaxyPlay", 12f, true).apply { gravity = Gravity.CENTER },
             LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(24) })
         root.addView(ScrollView(this).apply { isFillViewport = true; addView(content) }, LinearLayout.LayoutParams(-1, 0, 1f))
@@ -128,6 +156,7 @@ class ServiceActivity : Activity() {
         })
     }
     private fun disableAll() {
+        com.ecarx.autoservice.remote.RemoteSettings(this).disable()
         ServiceFeatures.disableAll(this)
         AutoStartup.cancel(this)
         dispatch("stop")

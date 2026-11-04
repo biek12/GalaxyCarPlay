@@ -71,6 +71,7 @@ internal class CompiledScene(val scene: ThemeScene, val night: Boolean, resource
                         }
                     }
                     "tires" -> listOf("frontLeft", "frontRight", "rearLeft", "rearRight").forEach { dependencies.add("vehicle.tire.$it") }
+                    "gauge" -> if(item.properties.bool("regenVisible"))dependencies.addAll(listOf("vehicle.electricPowerRaw","vehicle.electricPowerStateRaw"))
                     "pedals" -> dependencies.addAll(listOf("vehicle.accelerator", "vehicle.brake", "vehicle.steeringAngle"))
                     "indicators" -> item.properties.string("fields").split(',').map { it.trim() }.filter { it.isNotEmpty() }.forEach { dependencies.add("vehicle.$it") }
                     "status" -> item.properties.string("fields").split(',').map { it.trim() }.filter { it.isNotEmpty() }.forEach { dependencies.add("vehicle.$it") }

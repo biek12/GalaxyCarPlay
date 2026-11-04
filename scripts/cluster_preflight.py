@@ -14,8 +14,8 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parents[1]
 REPORT = ROOT / '.work/logs/cluster-preflight.json'
 SOURCE_DIRS = ('galaxy/contracts', 'galaxy/client', 'galaxy/service', 'galaxy/cluster', 'galaxy/common',
-               'galaxy/mobile', 'common/src', 'shared/src', 'scripts', 'tools/hab', 'tools/upstream')
-SUFFIXES = {'.kt','.java','.aidl','.xml','.c','.h','.kts','.gradle','.py','.sh','.cjs','.json','.txt','.toml','.patch','.S'}
+               'galaxy/mobile', 'common/src', 'shared/src', 'scripts', 'tools/hab', 'tools/upstream', 'server/galaxyd')
+SUFFIXES = {'.kt','.java','.aidl','.xml','.c','.h','.kts','.gradle','.py','.sh','.cjs','.json','.txt','.toml','.patch','.S','.go','.mod','.sum','.service'}
 
 def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()

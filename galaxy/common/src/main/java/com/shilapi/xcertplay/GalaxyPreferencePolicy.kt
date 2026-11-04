@@ -8,6 +8,14 @@ import com.shilapi.xcertplay.orchestration.WirelessHotspotMode
 
 /** 产品默认值、升级迁移与限制集中在 Galaxy；沿用原偏好空间和键，不迁移身份。 */
 internal object GalaxyPreferencePolicy {
+    /** 产品音乐PCM按手机dB压低；默认与持久化只在Galaxy层决定。 */
+    fun loadNavigationDucksMedia(context: Context): Boolean =
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).getBoolean("navigation_ducks_media", true)
+
+    fun saveNavigationDucksMedia(context: Context, enabled: Boolean) {
+        context.getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putBoolean("navigation_ducks_media", enabled).apply()
+    }
     private const val PREFS = "xcertplay_airplay"
     private const val KEY_ADVANCED_AUDIO_CHANNEL_MAPPING = "advanced_audio_channel_mapping"
     private const val KEY_CALL_PROCESSING_ENABLED = "l7_call_processing_enabled"

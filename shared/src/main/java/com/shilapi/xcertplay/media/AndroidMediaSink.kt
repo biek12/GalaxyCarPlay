@@ -234,6 +234,7 @@ class AndroidMediaSink(
     private val preferredAvcDecoder: String? = null,
     /** Opt-in (#946): navigation prompts request duckable focus while the iPhone ducks audio. Needs [audioFocusEnabled]. */
     navigationPromptAudioFocus: Boolean = false,
+    navigationDucksMedia: Boolean = false,
 ) : MediaSink {
     @Volatile private var mediaAudioChanged = onMediaAudioChanged
     fun setMediaAudioChangedListener(listener: (Boolean) -> Unit) { mediaAudioChanged = listener }
@@ -264,7 +265,27 @@ class AndroidMediaSink(
     )
 
     override fun onAudioDuck(ducked: Boolean) {
+        onAudioDuck(ducked, 0f, null)
+    }
+
+    private data class DuckTarget(val db: Float = 0f, val durationMs: Int? = null)
+    @Volatile private var duckTarget = DuckTarget()
+    @Volatile private var mediaDuckingEnabled = navigationDucksMedia
+    fun setNavigationDucksMedia(enabled: Boolean) {
+        mediaDuckingEnabled = enabled
+        if (!enabled) updateMediaDuck(DuckTarget())
+    }
+
+    override fun onAudioDuck(ducked: Boolean, volumeDb: Float, durationMs: Int?) {
         if (ducked) navigationPromptFocus.onDuck() else navigationPromptFocus.onUnduck()
+        updateMediaDuck(DuckTarget(if (ducked && mediaDuckingEnabled && volumeDb.isFinite())
+            volumeDb.coerceIn(-96f, 0f) else 0f, durationMs))
+    }
+
+    private fun updateMediaDuck(value: DuckTarget) {
+        duckTarget = value
+        audioRenderers.values.forEach { it.setMediaDuck(value.db, value.durationMs) }
+        runCatching { onAudioDiagnostic("Audio: media duck db=${value.db} rampMs=${value.durationMs ?: 500} enabled=$mediaDuckingEnabled") }
     }
 
     /** The media-key session may own Android's current focus request for this same sink. */
@@ -310,6 +331,20 @@ class AndroidMediaSink(
     fun isAssistantAudioActive(): Boolean = !videoClosed && (assistantMicrophoneStreams.isNotEmpty() ||
         audioRenderers.values.any { it.format.audioType.equals("speechrecognition", true) })
     fun hasMicrophoneUplink(): Boolean = !videoClosed && microphoneUplinks.values.any { it.isActive() }
+    private val recentMicrophoneDiagnostics = java.util.concurrent.ConcurrentLinkedDeque<String>()
+    private fun reportMicrophoneDiagnostic(message: String) {
+        recentMicrophoneDiagnostics.addLast(message.take(2048))
+        while (recentMicrophoneDiagnostics.size > 16) recentMicrophoneDiagnostics.pollFirst()
+        runCatching { onAudioDiagnostic(message) }
+    }
+    /** 只读本App录音/路由状态；既不改变手机路由，也不包含音频或远端地址。 */
+    fun audioInputDiagnostics(): Map<String, Any?> = mapOf(
+        "audioMode" to runCatching { audioManager?.mode }.getOrNull(),
+        "microphoneMuted" to runCatching { audioManager?.isMicrophoneMute }.getOrNull(),
+        "uplinks" to microphoneUplinks.entries.take(8).map { (id, input) -> mapOf(
+            "audioType" to id.audioType, "active" to input.isActive(), "capture" to input.diagnosticSnapshot()) },
+        "recent" to recentMicrophoneDiagnostics.toList().takeLast(16),
+    )
     @Volatile private var navigationAttenuationDb = NavigationAudioGain.clamp(navigationAttenuationDb)
 
     /** Apply a saved Audio setting to existing navigation tracks without reconnecting CarPlay. */
@@ -360,6 +395,18 @@ class AndroidMediaSink(
             surfaces[type] = surface
             videoDecoders[type]?.setSurface(surface)
         }
+    }
+
+    /** 显式诊断绑定关系，不公开Surface句柄；assigned不是已渲染回执。 */
+    fun videoOutputDiagnostics(): Map<String, Any?> = synchronized(videoOwnershipLock) {
+        val main = surfaces[110] ?: defaultSurface
+        val cluster = surfaces[111] ?: defaultSurface
+        mapOf(
+            "mainAssigned" to (main != null),
+            "clusterAssigned" to (cluster != null),
+            "sharedSurface" to (main != null && main === cluster),
+            "mainVideoReceived" to mainVideoReceived,
+        )
     }
 
     fun clearSurface(type: Int, surface: Surface) {
@@ -608,7 +655,7 @@ class AndroidMediaSink(
             if (callProcessingEnabled && communication && !speakerphoneCall) enterCommunicationMode(id)
             val uplink = microphoneUplinks.computeIfAbsent(id) {
                 val owner = Any()
-                MicrophoneUplink(routedConfig, onAudioDiagnostic,
+                MicrophoneUplink(routedConfig, ::reportMicrophoneDiagnostic,
                     speakerphoneCall = speakerphoneCall,
                     echoReference = if (routeType == TELEPHONY_AUDIO_TYPE) callEchoReferences[id] else null,
                     factorySource = factoryAudio?.microphoneSource(routeType, config.sampleRate, wirelessAudio),
@@ -824,8 +871,10 @@ class AndroidMediaSink(
             onReleased = { communicationFocusReleased(communicationOwner) },
         ).also {
             it.setNavigationAttenuationDb(navigationAttenuationDb)
+            duckTarget.let { target -> it.setMediaDuck(target.db, target.durationMs) }
             if (phoneRoute) it.onRoutedToEarpiece = { moveCallToLoudspeaker(id) }
             audioRenderers[id] = it
+            duckTarget.let { target -> it.setMediaDuck(target.db, target.durationMs) }
             // Cover a Settings change made while this renderer was being prepared.
             it.setNavigationAttenuationDb(navigationAttenuationDb)
         }
@@ -1900,6 +1949,8 @@ private class AudioRenderer(
     private var routeBinding: AudioRouteBinding? = null
     @Volatile private var navigationAttenuationDb = 0
     private var appliedNavigationAttenuationDb: Int? = null
+    private val mediaDucking = MediaDuckingGain(format.sampleRate, pcmChannels)
+    fun setMediaDuck(db: Float, durationMs: Int?) { mediaDucking.target(db, durationMs) }
     private var pcm = ByteArray(64 * 1024)
     private var playbackStarted = false
     private var prebufferBytes = 0
@@ -2531,6 +2582,7 @@ private class AudioRenderer(
         voiceFilter?.process(data, offset, length)
         applyNavigationAttenuation()
         attenuateNavigation(data, offset, length)
+        if (mappedChannel == AudioChannel.MEDIA) mediaDucking.apply(data, offset, length)
         if (!fadeApplied) {
             applyFadeIn(data, offset, length)
             fadeApplied = true

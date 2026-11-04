@@ -36,18 +36,45 @@ internal object GalaxyClusterMusicBinding {
     private var lyricsEnabled: Boolean? = null
     private var lookupTicket = 0L
     private var pendingLyrics: Runnable? = null
+    private var lyricPhase = "idle"
+    private val projectionOwners = java.util.Collections.newSetFromMap(java.util.IdentityHashMap<Any, Boolean>())
+
+    @Synchronized fun projectionDemand(owner: Any, active: Boolean) {
+        if (active) projectionOwners.add(owner) else projectionOwners.remove(owner)
+        val app = appContext ?: return
+        val enabled = lyricsWanted(app)
+        if (lyricsEnabled == enabled) return
+        lyricsEnabled = enabled
+        cancelLyricsLocked()
+        if (enabled) requestLyricsLocked(mediaInfo)
+        else ClusterMusicState.publishLyrics(mediaInfo, emptyList())
+    }
+
+    @Synchronized fun phoneLyrics(expected: CarPlayController, info: CarPlayNowPlaying, sentence: String) {
+        if (controller !== expected || appContext?.let(::lyricsWanted) != false) return
+        ClusterMusicState.publishLyrics(info, if (sentence.isBlank()) emptyList() else listOf(ClusterLyricLine(null, sentence)))
+    }
+
+    @Synchronized fun diagnostics(): Map<String, Any?> = mapOf(
+        "enabled" to lyricsEnabled, "projectionDemand" to projectionOwners.isNotEmpty(), "phase" to lyricPhase,
+        "pending" to (pendingLyrics != null), "cacheEntries" to lyricsCache.size,
+    )
 
     @Synchronized fun attach(context: Context, next: CarPlayController) {
         if (controller === next) return
         clearLocked()
         val app = context.applicationContext
+        GalaxyLyricsNetwork.initialize(app)
         appContext = app
         controller = next
         artworkSession = artworkQueue.newSession()
-        lyricsEnabled = ClusterMusicSettings.enabled(app)
-        stopSettings = ClusterMusicSettings.observe(app) {
+        lyricsEnabled = lyricsWanted(app)
+        val preferences = app.getSharedPreferences("xcertplay_airplay", Context.MODE_PRIVATE)
+        val listener = android.content.SharedPreferences.OnSharedPreferenceChangeListener { _, key ->
+            if (key != null && key != "cluster_music_enabled")
+                return@OnSharedPreferenceChangeListener
             synchronized(this) {
-                val enabled = ClusterMusicSettings.enabled(app)
+                val enabled = lyricsWanted(app)
                 if (lyricsEnabled != enabled) {
                     lyricsEnabled = enabled
                     if (enabled) {
@@ -57,6 +84,8 @@ internal object GalaxyClusterMusicBinding {
                 }
             }
         }
+        preferences.registerOnSharedPreferenceChangeListener(listener)
+        stopSettings = { preferences.unregisterOnSharedPreferenceChangeListener(listener) }
     }
 
     @Synchronized fun update(expected: CarPlayController, info: CarPlayNowPlaying) {
@@ -103,31 +132,50 @@ internal object GalaxyClusterMusicBinding {
         ClusterMusicState.publishProductArtwork(mediaInfo, image)
     }
 
-    private fun requestLyricsLocked(info: CarPlayNowPlaying) {
+    /** 网络歌词只供实际请求投屏时的自定义仪表；原车当前行独立使用iPhone推送。 */
+    private fun lyricsWanted(app: Context) =
+        projectionOwners.isNotEmpty() && ClusterMusicSettings.enabled(app)
+
+    private fun requestLyricsLocked(info: CarPlayNowPlaying, attempt: Int = 0) {
         val app = appContext ?: return
-        if (!ClusterMusicSettings.enabled(app)) return
+        if (!lyricsWanted(app)) { lyricPhase = "disabled"; return }
         val title = info.title?.trim().orEmpty()
         val artist = info.artist?.trim().orEmpty()
         if (title.isEmpty() || artist.isEmpty() || title.length > 300 || artist.length > 300) return
         val query = GalaxyLyricQuery(title, artist)
         val key = TrackKey(title, artist)
-        lyricsCache[key]?.let { ClusterMusicState.publishLyrics(info, it); return }
+        lyricsCache[key]?.let { lyricPhase = "cache_hit"; ClusterMusicState.publishLyrics(info, it); return }
         val ticket = ++lookupTicket
         val runnable = Runnable {
             synchronized(this) {
                 if (controller == null || lookupTicket != ticket || !sameQuery(mediaInfo, key)) return@Runnable
                 pendingLyrics = null
+                lyricPhase = "querying"
                 lyricsLookup.lookup(query) { lines ->
                     synchronized(this) {
                         if (controller == null || lookupTicket != ticket || !sameQuery(mediaInfo, key)) return@lookup
-                        if (lines == null) return@lookup // Transient/network failure is not a negative cache entry.
-                        lyricsCache[key] = lines
-                        ClusterMusicState.publishLyrics(info, lines)
+                        if (lines == null) {
+                            lyricPhase = "failed"
+                            if (attempt < 3) {
+                                val retry = Runnable { synchronized(this) {
+                                    if (controller != null && lookupTicket == ticket && sameQuery(mediaInfo, key))
+                                        requestLyricsLocked(mediaInfo, attempt + 1)
+                                } }
+                                pendingLyrics = retry
+                                main.postDelayed(retry, longArrayOf(2000, 5000, 10000)[attempt])
+                            }
+                            return@lookup
+                        }
+                        lyricPhase = if (lines.isEmpty()) "not_found" else "resolved"
+                        if (lines.isNotEmpty()) lyricsCache[key] = lines
+                        // 查询身份已核验；用当前元数据发布，避免封面/专辑增量使早期快照被拒绝。
+                        ClusterMusicState.publishLyrics(mediaInfo, lines)
                     }
                 }
             }
         }
         pendingLyrics = runnable
+        lyricPhase = "scheduled"
         main.postDelayed(runnable, LOOKUP_DEBOUNCE_MILLIS)
     }
 
@@ -135,6 +183,7 @@ internal object GalaxyClusterMusicBinding {
         info.title?.trim() == key.title && info.artist?.trim() == key.artist
 
     private fun cancelLyricsLocked() {
+        lyricPhase = "cancelled"
         lookupTicket++
         pendingLyrics?.let(main::removeCallbacks)
         pendingLyrics = null
