@@ -30,10 +30,14 @@ data class RecordSettings(
     val audio: Boolean = false,
     val autoOnBoot: Boolean = false,
     val autoOnLaunch: Boolean = false,
+    val turnAssist: Boolean = false,
+    val flatView: Boolean = false,
+    val sentinelEnabled: Boolean = false,
+    val recoverAfterCrash: Boolean = true,
     val background: Boolean = true,
     val screenOff: Boolean = true,
     val protectDeleting: Boolean = true,
-    val vehicleIntervalMs: Int = 250,
+    val vehicleIntervalMs: Int = 100,
     val extraVehicleGroups: Set<String> = emptySet(),
     val brakeEnter: Int = 5,
     val brakeExit: Int = 3,
@@ -89,7 +93,7 @@ data class RecordSettings(
         val SEGMENT_OPTIONS = listOf(60, 180, 300)
         val QUOTA_OPTIONS_GB = listOf(8, 16, 32, 64)
         val MIN_FREE_OPTIONS_GB = listOf(1, 2, 5)
-        val VEHICLE_INTERVAL_OPTIONS = listOf(250, 500, 1000)
+        val VEHICLE_INTERVAL_OPTIONS = listOf(100, 250, 500, 1000)
         val GOP_OPTIONS = listOf(1, 2)
         val FPS_OPTIONS = listOf(15, 20, 25, 30)
         val SPEED_OPTIONS = listOf(0.5f, 1f, 2f)
@@ -138,6 +142,10 @@ class PrefsSettingsStore(context: Context) : SettingsStore {
             audio = bool(KEY_AUDIO, d.audio),
             autoOnBoot = bool(KEY_AUTO_BOOT, d.autoOnBoot),
             autoOnLaunch = bool(KEY_AUTO_LAUNCH, d.autoOnLaunch),
+            turnAssist = bool("assist.turn", d.turnAssist),
+            flatView = bool("view.flat",d.flatView),
+            sentinelEnabled = bool("sentinel.enabled",d.sentinelEnabled),
+            recoverAfterCrash = bool(KEY_RECOVER, d.recoverAfterCrash),
             background = bool(KEY_BACKGROUND, d.background),
             screenOff = bool(KEY_SCREEN_OFF, d.screenOff),
             protectDeleting = bool(KEY_PROTECT_DELETE, d.protectDeleting),
@@ -182,6 +190,10 @@ class PrefsSettingsStore(context: Context) : SettingsStore {
             .putBoolean(KEY_AUDIO, settings.audio)
             .putBoolean(KEY_AUTO_BOOT, settings.autoOnBoot)
             .putBoolean(KEY_AUTO_LAUNCH, settings.autoOnLaunch)
+            .putBoolean("assist.turn", settings.turnAssist)
+            .putBoolean("view.flat",settings.flatView)
+            .putBoolean("sentinel.enabled",settings.sentinelEnabled)
+            .putBoolean(KEY_RECOVER, settings.recoverAfterCrash)
             .putBoolean(KEY_BACKGROUND, settings.background)
             .putBoolean(KEY_SCREEN_OFF, settings.screenOff)
             .putBoolean(KEY_PROTECT_DELETE, settings.protectDeleting)
@@ -226,6 +238,7 @@ class PrefsSettingsStore(context: Context) : SettingsStore {
         const val KEY_AUDIO = "encode.audio"
         const val KEY_AUTO_BOOT = "record.autoOnBoot"
         const val KEY_AUTO_LAUNCH = "record.autoOnLaunch"
+        const val KEY_RECOVER = "record.recoverAfterCrash"
         const val KEY_BACKGROUND = "record.background"
         const val KEY_SCREEN_OFF = "record.screenOff"
         const val KEY_PROTECT_DELETE = "record.protectDeleting"

@@ -80,7 +80,7 @@ class RecordPermissionSequenceTest {
                 is android.view.ViewGroup -> (0 until view.childCount).flatMap {texts(view.getChildAt(it))}
                 else -> emptyList()
             }
-            assertTrue(texts(activity.currentPageView()!!).contains("17.0"))
+            assertTrue(texts(activity.currentPageView()!!).contains("17km/h"))
         } finally {controller.pause().stop().destroy()}
     }
     private fun waitFor(predicate:()->Boolean) {

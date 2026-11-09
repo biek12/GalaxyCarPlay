@@ -54,6 +54,9 @@ class ServiceActivity : Activity() {
         root.addView(header)
 
         val content = ui.column(if (compact) 20 else 32)
+        content.addView(ui.button("车辆与账号") {
+            startActivity(Intent(this,com.galaxy.auto.client.vehicle.VehicleAccountActivity::class.java))
+        })
         val overview = ui.card(24)
         val heading = ui.row()
         headline = ui.label("后台运行中", 25f)
@@ -134,12 +137,14 @@ class ServiceActivity : Activity() {
             override fun run(){
                 if(isFinishing||isDestroyed)return
                 val settings=com.ecarx.autoservice.remote.RemoteSettings(this@ServiceActivity)
+                val connection = com.ecarx.autoservice.remote.RemoteConnectionStatus.label(snapshot.getString("remoteState"))
                 remoteStatus.text=when{
                     !settings.enabled->"远程连接已关闭"
-                    settings.paired->"已配对 · ${snapshot.getString("remoteState", "连接中") } · 免验证至 ${android.text.format.DateFormat.format("MM-dd HH:mm",settings.until*1000)}"
+                    settings.paired->"已配对 · $connection · 免验证至 ${android.text.format.DateFormat.format("MM-dd HH:mm",settings.until*1000)}"
+                    snapshot.getString("remoteState") in setOf("tls_initialization_failed", "tls_failed", "reconnecting")->connection
                     settings.code.isNotBlank()&&settings.codeUntil<System.currentTimeMillis()/1000->"验证码已过期，请重新开启授权"
                     settings.code.isNotBlank()->"验证码：${settings.code}（5分钟内有效）"
-                    else->"正在连接服务端…"
+                    else->connection
                 }
                 remoteStatus.postDelayed(this,1000)
             }

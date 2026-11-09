@@ -62,6 +62,7 @@ class SegmentTransaction(
 
     @Volatile private var phase = Phase.PENDING
     @Volatile private var ownerThread: Thread? = null
+    private var transferred=false
 
     /** 每路提交结果（方向 → 结果）。提交前为空。保持插入顺序便于清单稳定。 */
     private val channelResults = LinkedHashMap<String, ChannelCommitOutcome>()
@@ -103,6 +104,15 @@ class SegmentTransaction(
         check(Thread.currentThread() == owner) {
             "SegmentTransaction 只能由 begin() 所在的写线程操作（owner=${owner.name}, current=${Thread.currentThread().name}）"
         }
+    }
+
+    /** 全部方向跨过边界、旧段不再接包后，由当前所有者显式移交给唯一收尾线程。 */
+    @Synchronized
+    fun transferToFinalizer(next:Thread) {
+        checkOwner()
+        check(phase==Phase.WRITING){"only_writing_transaction_can_transfer"}
+        check(!transferred&&ownerThread!==next){"transaction_already_transferred"}
+        transferred=true;ownerThread=next
     }
 
     /**

@@ -20,13 +20,14 @@ internal class RemoteHttp(context: Context,private val settings: RemoteSettings)
         check(!closed)
         val url=URL(settings.origin+path)
         require(url.protocol=="https"&&url.userInfo==null)
-        val cellular=networks.allNetworks.firstOrNull { network -> networks.getNetworkCapabilities(network)?.let {
+        val cellular=if(path.startsWith("/device/v1/"))null else networks.allNetworks.firstOrNull { network -> networks.getNetworkCapabilities(network)?.let {
             it.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR)&&it.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
         }==true }
         val connection=(cellular?.openConnection(url)?:url.openConnection())as HttpURLConnection
         connection.connectTimeout=10000;connection.readTimeout=30000;connection.instanceFollowRedirects=false
         connection.setRequestProperty("Authorization","Bearer ${settings.secret}")
-        if(path=="/bridge/register")enrollment?.let{connection.setRequestProperty("X-Galaxy-Enrollment",it)}
+        if(path.startsWith("/device/v1/"))connection.setRequestProperty("X-Galaxy-Device",settings.id)
+        if(path=="/bridge/register" || path=="/telemetry/events" || path=="/device/v1/register")enrollment?.let{connection.setRequestProperty("X-Galaxy-Enrollment",it)}
         current.set(connection)
         if(closed){connection.disconnect();error("remote_closed")}
         return connection
@@ -36,9 +37,21 @@ internal class RemoteHttp(context: Context,private val settings: RemoteSettings)
         try {
             c.requestMethod="POST";c.doOutput=true;c.setRequestProperty("Content-Type","application/json")
             c.outputStream.use{it.write(value.toString().toByteArray())}
-            check(c.responseCode==200){"remote_http_${c.responseCode}"}
+            check(c.responseCode in 200..299){"remote_http_${c.responseCode}"}
             val bytes=c.inputStream.use{it.readBytesBounded(256*1024)}
             return JSONObject(String(bytes,Charsets.UTF_8))
+        }finally{current.compareAndSet(c,null);c.disconnect()}
+    }
+    fun upload(path:String, input:java.io.InputStream, length:Long, method:String="PUT", contentType:String="video/mp4") {
+        val c=open(path)
+        try {
+            c.requestMethod=method;c.doOutput=true;c.readTimeout=60000
+            c.setRequestProperty("Content-Type",contentType);c.setFixedLengthStreamingMode(length)
+            c.outputStream.use{output->val b=ByteArray(65536);var count=0L
+                while(true){check(!closed);val n=input.read(b);if(n<0)break;count+=n;check(count<=length);output.write(b,0,n)}
+                check(count==length)
+            }
+            check(c.responseCode in 200..299){"media_upload_failed"}
         }finally{current.compareAndSet(c,null);c.disconnect()}
     }
     fun download(id: String,destination: File) {

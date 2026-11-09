@@ -49,6 +49,14 @@ func (r *Relay) auth(q *http.Request, device bool) *Device {
 }
 func (r *Relay) handler() http.Handler {
 	m := http.NewServeMux()
+	m.HandleFunc("POST /internal/v1/web-invite", r.inviteWeb)
+	if dir := os.Getenv("GALAXY_WEB_DIST"); dir != "" {
+		m.HandleFunc("/app/", webStatic(dir))
+	}
+	if r.web != nil {
+		m.Handle("/web/v1/", r.web)
+		m.HandleFunc("/device/v1/", r.web.device)
+	}
 	m.HandleFunc("GET /bridge/health", func(w http.ResponseWriter, q *http.Request) { reply(w, 200, map[string]int{"protocol": 1}) })
 	m.HandleFunc("POST /bridge/register", r.register)
 	m.HandleFunc("POST /bridge/pair", r.pair)
@@ -61,6 +69,8 @@ func (r *Relay) handler() http.Handler {
 	m.HandleFunc("GET /bridge/artifact", r.download)
 	m.HandleFunc("DELETE /bridge/artifact", r.deleteArtifact)
 	m.HandleFunc("GET /lyrics/search", lyricsSearch)
+	m.HandleFunc("POST /telemetry/events", r.telemetry)
+	m.HandleFunc("GET /telemetry/events", r.telemetry)
 	return m
 }
 func (r *Relay) register(w http.ResponseWriter, q *http.Request) {
@@ -166,6 +176,13 @@ func (r *Relay) revoke(w http.ResponseWriter, q *http.Request) {
 	reply(w, 200, map[string]bool{"revoked": true})
 }
 func main() {
+	if len(os.Args) == 3 && os.Args[1] == "web-invite" {
+		if e := inviteWebCLI(os.Args[2]); e != nil {
+			log.Fatal("invitation failed")
+		}
+		log.Print("Web invitation saved; TOTP confirmation required")
+		return
+	}
 	path := os.Getenv("GALAXY_STATE")
 	if path == "" {
 		path = "/var/lib/galaxyd/state.json"
@@ -174,6 +191,7 @@ func main() {
 	if e != nil {
 		log.Fatal("state unavailable")
 	}
+
 	bootstrap, e := os.ReadFile(os.Getenv("GALAXY_ENROLLMENT_FILE"))
 	if e != nil || len(strings.TrimSpace(string(bootstrap))) != 64 {
 		log.Fatal("enrollment unavailable")

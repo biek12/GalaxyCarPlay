@@ -47,6 +47,7 @@ enum class VehicleKey(
     RIGHT_TURN("rightTurn", "右转向灯", "", VehicleGroup.LIGHT),
     LOW_BEAM("lowBeam", "近光", "", VehicleGroup.LIGHT),
     HIGH_BEAM("highBeam", "远光", "", VehicleGroup.LIGHT),
+    AUTO_HIGH_BEAM("autoHighBeamEnabled", "自动远光", "", VehicleGroup.LIGHT),
     POSITION_LIGHT("positionLights", "示宽灯", "", VehicleGroup.LIGHT),
     REAR_FOG("rearFog", "后雾灯", "", VehicleGroup.LIGHT),
 
@@ -109,7 +110,11 @@ interface VehicleFeed {
     fun snapshot(): VehicleSnapshot
     fun setInterval(intervalMs: Int)
     fun release()
+    /** 录制专用逐包历史；null表示仅快照源，空列表表示这一拍没有新更新。 */
+    fun drainRecordedUpdates(): List<RecordedVehicleUpdate>? = null
 }
+
+data class RecordedVehicleUpdate(val atNanos: Long, val snapshot: VehicleSnapshot)
 
 /** 未接入实现：如实报告"没有数据"，而不是给 0。 */
 class OfflineVehicleFeed(private val reason: String = "AutoService 车辆数据通道未接入（B2 后由服务订阅提供）") : VehicleFeed {

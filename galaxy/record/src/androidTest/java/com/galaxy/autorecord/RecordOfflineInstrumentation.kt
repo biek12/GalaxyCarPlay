@@ -11,10 +11,12 @@ class RecordOfflineInstrumentation : Instrumentation() {
     private var implementation = RecordSettings.IMPL_SOFTWARE
     private var codecName: String? = null
     private var action = "codec"
+    private var seconds = 1800
     override fun onCreate(arguments: Bundle?) {
         implementation = arguments?.getString("implementation") ?: RecordSettings.IMPL_SOFTWARE
         codecName = arguments?.getString("codecName")
         action = arguments?.getString("action") ?: "codec"
+        seconds = arguments?.getString("seconds")?.toIntOrNull() ?: 1800
         super.onCreate(arguments); start()
     }
     override fun onStart() {
@@ -22,7 +24,51 @@ class RecordOfflineInstrumentation : Instrumentation() {
         val outcome = runCatching {
             check(BuildConfig.EMULATOR_CAMERA) { "emulator_build_required" }
             check(android.os.Build.FINGERPRINT.contains("generic") || android.os.Build.HARDWARE in setOf("ranchu", "goldfish"))
+            if(action=="flat-render"){FlatRenderProbe.run(report);return@runCatching}
+            if(action=="sentinel-ui"){SentinelUiProbe.run(this,report);return@runCatching}
+            if(action=="recovery-session"){RecordRecoveryProbe.start(this,report);return@runCatching}
+            if (action == "stall") { RecordStallProbe.run(this,report);return@runCatching }
+            if (action == "diagnostic-native-crash") {
+                saveCrashMarker()
+                android.os.Process.sendSignal(android.os.Process.myPid(),11)
+                Thread.sleep(5000);error("native_signal_did_not_exit")
+            }
+            if (action == "native-diagnostics") {
+                val deadline=android.os.SystemClock.elapsedRealtime()+15_000
+                var status: Bundle?=null
+                while(android.os.SystemClock.elapsedRealtime()<deadline) {
+                    com.galaxy.auto.client.diagnostics.DiagnosticEvents.send()
+                    status=targetContext.contentResolver.call(android.net.Uri.parse("content://com.ecarx.autoservice.diagnostics"),"status",null,crashSelector())
+                    if((status?.getInt("nativeProbeMatches") ?: 0)>0)break
+                    Thread.sleep(200)
+                }
+                check((status?.getInt("nativeProbeMatches") ?: 0)>0){"native_trace_recovery_missing:$status"}
+                report.putString("nativeDiagnostics","PASS: isolated SIGSEGV injection, recovery exit, own App/PID/time matched crash backtrace")
+                return@runCatching
+            }
+            if (action == "diagnostic-crash") {
+                saveCrashMarker()
+                Thread({throw IllegalStateException("synthetic_crash_probe")},"diagnostic-crash-probe").start()
+                Thread.sleep(10_000);error("expected_process_exit_missing")
+            }
+            if (action == "diagnostics") {
+                com.galaxy.auto.client.diagnostics.DiagnosticEvents.error("diagnostic_probe",IllegalArgumentException("synthetic invalid width"),mapOf("width" to 1280,"caller" to "instrumentation"))
+                val deadline=android.os.SystemClock.elapsedRealtime()+10_000
+                var status: Bundle?=null
+                while(android.os.SystemClock.elapsedRealtime()<deadline) {
+                    com.galaxy.auto.client.diagnostics.DiagnosticEvents.send()
+                    status=targetContext.contentResolver.call(android.net.Uri.parse("content://com.ecarx.autoservice.diagnostics"),"status",null,crashSelector())
+                    if(status?.getBoolean("probe")==true && status.getInt("javaProbeMatches")>0 && status.getInt("exitProbeMatches")>0)break
+                    Thread.sleep(200)
+                }
+                check(status?.getBoolean("probe")==true && status.getInt("javaProbeMatches")>0 && status.getInt("exitProbeMatches")>0){"diagnostic_crash_recovery_inbox_missing:$status"}
+                report.putString("diagnostics","PASS: handled error, persisted uncaught crash, recovered system exit, signature inbox ACK")
+                return@runCatching
+            }
+            if (action == "soak") { ContinuousSoakProbe.run(this,seconds,report);return@runCatching }
+            if (action == "design") { RecordDesignProbe(this).run(report); return@runCatching }
             if (action == "ui") { RecordUiProbe(this).run(report); return@runCatching }
+            if (action == "rollover") { RecordRolloverProbe.run(this, codecName ?: "OMX.google.h264.encoder", report); return@runCatching }
             report.putString("encoderInventory",MediaCodecList(MediaCodecList.REGULAR_CODECS).codecInfos.filter {it.isEncoder}.joinToString("; ") {
                 "${it.name}: hardware=${it.isHardwareAccelerated}, software=${it.isSoftwareOnly}, types=${it.supportedTypes.joinToString()}"
             })
@@ -36,11 +82,22 @@ class RecordOfflineInstrumentation : Instrumentation() {
                 check(AtomicFiles.writeAtomically(manifest,"new".toByteArray(), true))
                 check(manifest.readText()=="new")
                 report.putString("storage","PASS: write/fsync/atomic replace")
-                codecProbe(File(dir,"probe.mp4"), report)
+                val video = File(dir, "probe.mp4")
+                codecProbe(video, report)
+                if(action=="flat-playback")FlatPlaybackProbe.run(video,report)
+                if (action == "export") RecordExportProbe.run(targetContext, video, report)
             } finally { dir.deleteRecursively() }
         }
         outcome.exceptionOrNull()?.let { report.putString("failure", it.stackTraceToString()); finish(0,report); return }
         report.putString("result","PASS"); finish(-1,report)
+    }
+    private fun saveCrashMarker() {
+        val marker=org.json.JSONObject().put("pid",android.os.Process.myPid()).put("at",System.currentTimeMillis())
+        check(AtomicFiles.writeAtomically(File(targetContext.cacheDir,"diagnostic-crash-marker.json"),marker.toString().toByteArray()))
+    }
+    private fun crashSelector():Bundle {
+        val marker=org.json.JSONObject(File(targetContext.cacheDir,"diagnostic-crash-marker.json").readText())
+        return Bundle().apply{putInt("targetPid",marker.getInt("pid"));putLong("afterAt",marker.getLong("at"))}
     }
     private fun codecProbe(file: File, report: Bundle) {
         // 此模拟器将 Google AVC 两个分类位都报 false，必须保持“未知”。仅测试 APK 允许明确点名，
@@ -72,7 +129,8 @@ class RecordOfflineInstrumentation : Instrumentation() {
                             image.planes.forEachIndexed { planeIndex,plane ->
                                 val w=if(planeIndex==0)width else width/2;val h=if(planeIndex==0)height else height/2
                                 val buffer=plane.buffer; val offset=buffer.position()
-                                for(y in 0 until h) for(x in 0 until w) buffer.put(offset+y*plane.rowStride+x*plane.pixelStride,if(planeIndex==0)16.toByte() else 128.toByte())
+                                for(y in 0 until h) for(x in 0 until w) buffer.put(offset+y*plane.rowStride+x*plane.pixelStride,
+                                    if(planeIndex==0)(if(action=="flat-playback")16+x*219/w else 16).toByte()else 128.toByte())
                             }
                             codec.queueInputBuffer(input,0,width*height*3/2,sent*50_000L,0);sent++
                         }

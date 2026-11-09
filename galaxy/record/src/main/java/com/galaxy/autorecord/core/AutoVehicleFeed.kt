@@ -4,11 +4,11 @@ import android.os.Bundle
 import com.galaxy.auto.contract.SignalStatus
 import com.galaxy.auto.contract.VehicleSignal
 
-/** L6/L7 的已核验 AutoService 目录映射；没有来源证据的 AutoHold/里程等保持未支持，不猜 ID。 */
+/** L6/L7 的已核验 AutoService 目录映射；字段来源与状态枚举记录在数据对齐台账，不猜 ID。 */
 object RecordVehicleAdapter {
     fun keys(key: VehicleKey): List<String> = when (key) {
-        VehicleKey.AUTO_HOLD, VehicleKey.ODOMETER, VehicleKey.ADAS_LATERAL -> emptyList()
-        VehicleKey.REAR_FOG -> listOf("property.10042")
+        VehicleKey.ADAS_LATERAL -> listOf("property.10057")
+        VehicleKey.ODOMETER -> listOf("odometer")
         VehicleKey.DOOR_STATE -> (10017..10020).map { "property.$it" }
         VehicleKey.SEAT_BELT -> listOf("driverSeatbeltWarning")
         VehicleKey.TIRE_PRESSURE -> listOf("tire.frontLeft", "tire.frontRight", "tire.rearLeft", "tire.rearRight")
@@ -23,7 +23,7 @@ class AutoVehicleFeed(private val now: () -> Long) : VehicleFeed {
     private var connected = false
     private var reason = "等待 AutoService 授权与订阅"
     private var interval = 500
-    fun accept(bundle: Bundle) {
+    @Synchronized fun accept(bundle: Bundle) {
         VehicleKey.entries.flatMap(RecordVehicleAdapter::keys).distinct().forEach { key ->
             val next = bundle.getBundle(key)?.let(VehicleSignal::parse)?.takeIf { it.key == key } ?: return@forEach
             val old = values.getBundle(key)?.let(VehicleSignal::parse)
@@ -32,11 +32,11 @@ class AutoVehicleFeed(private val now: () -> Long) : VehicleFeed {
             }
         }
     }
-    fun connected(value: Boolean, message: String = "") {
+    @Synchronized fun connected(value: Boolean, message: String = "") {
         connected = value; reason = message
         if (!value) values = Bundle()
     }
-    override fun snapshot(): VehicleSnapshot {
+    @Synchronized override fun snapshot(): VehicleSnapshot {
         val at = now()
         return VehicleSnapshot(VehicleKey.entries.associateWith { key ->
             val names = RecordVehicleAdapter.keys(key)
@@ -50,10 +50,17 @@ class AutoVehicleFeed(private val now: () -> Long) : VehicleFeed {
                 else -> VehicleValueStatus.LIVE
             }
             // 缺失/不可用不补零；过期值也不伪装当前值，回放原始记录另走历史模型。
-            VehicleValue(key, if (status == VehicleValueStatus.LIVE) signals.joinToString(" / ") { it.value.orEmpty() } else "—",
+            val value = if (status == VehicleValueStatus.LIVE) {
+                if (key == VehicleKey.ADAS_LATERAL) when (signals.single().value?.toDoubleOrNull()) {
+                    0.0, 1.0 -> "off"
+                    2.0 -> "active"
+                    else -> "—"
+                } else signals.joinToString(" / ") { it.value.orEmpty() }
+            } else "—"
+            VehicleValue(key, value,
                 status, signals.minOfOrNull { it.receivedAt } ?: 0)
         }, connected, interval, reason)
     }
-    override fun setInterval(intervalMs: Int) { interval = intervalMs }
-    override fun release() { connected(false, "已停止订阅") }
+    @Synchronized override fun setInterval(intervalMs: Int) { interval = intervalMs }
+    @Synchronized override fun release() { connected(false, "已停止订阅") }
 }

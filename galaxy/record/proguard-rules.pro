@@ -18,3 +18,13 @@
     public static *** v(...);
     public static *** d(...);
 }
+
+# WebRTC AAR 无 consumer rules；native JNI 通过固定类/方法名回调 Java。
+# 保留第三方边界，不扩大为本项目 core 类的保留规则。
+-keep class org.webrtc.** { *; }
+-keepattributes *Annotation*
+# M150的JNI注册同时依赖jni_zero固定Java名称。
+-keep class org.jni_zero.** { *; }
+# 上游AAR未附带可选setJniClassLoader的生成桥；本App不调用该方法。
+# JNI_ZERO仍需保留JniZero类与其native回调，不能整包忽略missing警告。
+-dontwarn org.jni_zero.JniZeroJni

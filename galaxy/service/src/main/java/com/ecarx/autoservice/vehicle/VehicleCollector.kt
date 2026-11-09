@@ -58,6 +58,9 @@ internal class VehicleCollector(
     @Volatile private var feedTotal = 0L
     @Volatile private var lastCycleMillis = 0L
     @Volatile private var maxCycleMillis = 0L
+    @Volatile private var cycleTotalMillis = 0L
+    @Volatile private var overruns = 0L
+    private var lastScanAt = Long.MIN_VALUE
     private val prefs = context.getSharedPreferences("platform", 0)
     fun start() {
         if (enabled) return
@@ -93,7 +96,7 @@ internal class VehicleCollector(
 
     /** 采集量累计值（诊断用，只增不减）。 */
     fun stats(): String =
-        "ticks=$tickTotal reads=$readTotal bundles=$bundleTotal feeds=$feedTotal scan=$scanEnabled active=${demand.active} keys=${demand.keys().size} period=${demand.periodMillis}ms cycle=$lastCycleMillis/${maxCycleMillis}ms"
+        "ticks=$tickTotal reads=$readTotal bundles=$bundleTotal feeds=$feedTotal scan=$scanEnabled active=${demand.active} keys=${demand.keys().size} period=${demand.periodMillis}ms cycle=$lastCycleMillis/${maxCycleMillis}ms cycleTotalMs=$cycleTotalMillis overruns=$overruns"
 
     /**
      * 没有订阅也没有扫描：取消已排的下一拍，只留一次元数据刷新告诉UI现在是空闲。
@@ -112,6 +115,7 @@ internal class VehicleCollector(
         if (!demand.active && !scanEnabled) { idle(); return }
         val ticket = generation
         val now = SystemClock.elapsedRealtime()
+        val scanDue = scanEnabled && (lastScanAt == Long.MIN_VALUE || now - lastScanAt >= SCAN_PERIOD_MS)
         val model = prefs.getString("model", "L6")!!
         val specs = VehicleCatalog.forModel(model)
         val mode = prefs.getString("vehicleMode", "app")
@@ -123,7 +127,7 @@ internal class VehicleCollector(
         val due = if (wanted.isEmpty()) emptySet() else demand.due(now)
         ++tickTotal; readTotal += due.size
         val batch = if (mode == "root") runCatching {
-            RootServiceClient.read(context, wanted, due, scanEnabled)
+            RootServiceClient.read(context, wanted, due, scanDue)
         }.getOrElse {
             com.ecarx.autoservice.ServiceTrace.event("vehicle_root_read_failed", it)
             JSONObject().put("session", "$nextMode:disconnected").put("discovery", "root_disconnected")
@@ -131,13 +135,14 @@ internal class VehicleCollector(
             val result = source.cycle(specs, now, model, wanted, due, scanEnabled)
             // 诊断扫描与订阅采集共用同一代source：先补给订阅键，再推进全目录扫描。
             // 扫描结果必须并进同一批properties，否则未订阅属性读到了也进不了对外缓存。
-            if (scanEnabled) VehicleScanMerge.merge(result, source.scanCycle(specs, now, model))
+            if (scanDue) VehicleScanMerge.merge(result, source.scanCycle(specs, now, model))
             result
         }.getOrElse {
             com.ecarx.autoservice.ServiceTrace.event("vehicle_cycle_failed", it)
             JSONObject().put("session", "$nextMode:failed").put("discovery", "not_connected")
         }
         if (ticket != generation) return
+        if (scanDue) lastScanAt = now
         discovery = batch.optString("discovery", discovery)
         // 断连/失败时不计“已读”，否则要等满一个订阅周期才会重试，恢复延迟被放大。
         if (discovery !in RETRY_STATES) demand.markRead(due, now)
@@ -161,8 +166,8 @@ internal class VehicleCollector(
             if (spec.key !in wanted) continue
             val item = byKey[spec.key]
             val signal = VehicleSignal(spec.key, item?.takeUnless { it.isNull("value") }?.optString("value"), spec.unit,
-                if (mode == "root") "ROOT.ECARX.car_signal" else "ECARX.car_signal", item?.optInt("property", spec.propertyId) ?: spec.propertyId,
-                item?.optLong("receivedAt") ?: now, null, item?.optLong("epoch") ?: 0,
+                if (mode == "root") "ROOT.ECARX.${spec.backend}" else "ECARX.${spec.backend}", item?.optInt("property", spec.propertyId) ?: spec.propertyId,
+                item?.optLong("receivedAt") ?: now, item?.takeIf { it.has("sourceTimestamp") }?.optLong("sourceTimestamp"), item?.optLong("epoch") ?: 0,
                 item?.optString("status")?.let { SignalStatus.valueOf(it) } ?: SignalStatus.UNAVAILABLE)
             bundle.putBundle(spec.key, signal.bundle(SystemClock.elapsedRealtime()))
         }
@@ -177,7 +182,7 @@ internal class VehicleCollector(
         }
         if (wanted.isNotEmpty()) { ++bundleTotal; ++feedTotal; feed(bundle, now) }
         publishMeta(ticket)
-        val period = if (scanEnabled) SCAN_PERIOD_MS else demand.periodMillis
+        val period = listOfNotNull(demand.periodMillis.takeIf { it > 0 }, if (scanEnabled) SCAN_PERIOD_MS else null).minOrNull() ?: 0L
         if (period <= 0L) { idle(); return }
         // stop()->start() 紧邻时，旧拍可能在代次检查之后才走到这里；再校验一次，
         // 否则它会把 start() 刚排的“立即拍”取消掉改成整周期延迟。
@@ -185,8 +190,13 @@ internal class VehicleCollector(
         // schedule() 先取消旧任务再排新任务，整条链在任何时刻最多只有一个待执行任务。
         lastCycleMillis = (SystemClock.elapsedRealtime()-now).coerceAtLeast(0)
         maxCycleMillis = maxOf(maxCycleMillis, lastCycleMillis)
+        cycleTotalMillis += lastCycleMillis
+        if (lastCycleMillis > period) ++overruns
         // 周期从采集开始计；否则“读取耗时+最小间隔”会把250ms订阅拖成300–500ms。
-        schedule(if (discovery in RETRY_STATES) 3000L else (period-lastCycleMillis).coerceAtLeast(0))
+        val completedAt = SystemClock.elapsedRealtime()
+        val nextRead = demand.nextDelayMillis(completedAt)
+        val nextScan = if (scanEnabled) (lastScanAt + SCAN_PERIOD_MS - completedAt).coerceAtLeast(0) else null
+        schedule(if (discovery in RETRY_STATES) 3000L else listOfNotNull(nextRead, nextScan).minOrNull() ?: period)
     }
 
     /** 元数据只在“发现状态/条数”变化或≥1秒时投递一次；逐值变化不再触发整包快照。 */

@@ -5,14 +5,14 @@ import android.view.View
 import android.widget.LinearLayout
 
 /**
- * 设置行（80dp 基准）。
+ * 设置行（71dp 基准）。
  *
  * 口径（样式基线 §4/§5）：
- * - 整行 80dp、左右 20dp、上下 10dp；标题 LABEL 20sp + 副标题 DESCRIPTION 16sp；
+ * - 整行 71dp、左右 20dp、上下 10dp；标题 LABEL 16sp + 副标题 DESCRIPTION 12sp；
  * - 行内反馈 FEEDBACK 16sp 就地显示（错误用 danger），不弹 Toast 代替；
- * - 右侧当前值 VALUE 18sp muted + 箭头；只读行不装箭头，也不装开关。
+ * - 右侧当前值 VALUE 14sp muted + 箭头；只读行不装箭头，也不装开关。
  *
- * 高度由内容决定并受 80dp 下限约束：有副标题时正好 80dp，出现反馈行时自然增高，
+ * 高度由内容决定并受 71dp 下限约束：有副标题时正好 71dp，出现反馈行时自然增高，
  * 不截断错误原因（错误必须可读完整）。
  */
 internal open class SettingRow(
@@ -22,7 +22,10 @@ internal open class SettingRow(
     icon: String? = null,
 ) : LinearLayout(ui.context) {
 
-    val labelView: android.widget.TextView = ui.text(title, RecordRole.LABEL)
+    val labelView: android.widget.TextView = ui.text(title, RecordRole.LABEL).apply {
+        maxLines = 1
+        ellipsize = android.text.TextUtils.TruncateAt.END
+    }
     val descriptionView: android.widget.TextView = ui.text(description, RecordRole.DESCRIPTION).apply {
         visibility = if (description.isEmpty()) GONE else VISIBLE
     }
@@ -33,6 +36,9 @@ internal open class SettingRow(
     val valueView: android.widget.TextView = ui.text("", RecordRole.VALUE).apply {
         gravity = Gravity.END
         visibility = GONE
+        maxLines = 1
+        maxWidth = ui.dp(240)
+        ellipsize = android.text.TextUtils.TruncateAt.END
     }
     private val arrow: View = ui.glyph("chevron", ui.disabled, 4)
     private val trailing = ui.row().apply {
@@ -48,10 +54,10 @@ internal open class SettingRow(
     init {
         orientation = HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
-        minimumHeight = ui.dp(80)
-        setPadding(ui.dp(20), ui.dp(10), ui.dp(20), ui.dp(10))
+        minimumHeight = ui.dp(71)
+        setPadding(ui.dp(16), ui.dp(12), ui.dp(16), ui.dp(12))
         if (icon != null) {
-            addView(ui.glyph(icon, ui.textColor, 4), LayoutParams(ui.dp(32), ui.dp(32)).apply { marginEnd = ui.dp(16) })
+            addView(ui.glyph(icon, ui.textColor, 4), LayoutParams(ui.dp(28), ui.dp(28)).apply { marginEnd = ui.dp(12) })
         }
         textColumn.addView(labelView, LayoutParams(-1, -2))
         textColumn.addView(descriptionView, LayoutParams(-1, -2))
@@ -102,14 +108,14 @@ internal open class SettingRow(
         isClickable = enabled && hasOnClickListeners()
     }
 
-    /** 开关行把开关放在文字之前，命中区仍是整行 80dp。 */
+    /** 开关行把开关放在文字右侧，命中区仍是整行 71dp。 */
     protected fun insertLeadingControl(control: View) {
         leadingControl = control
-        addView(control, if (hasIcon) 1 else 0, LayoutParams(-2, -2).apply { marginEnd = ui.dp(16) })
+        addView(control, LayoutParams(-2, -2).apply { marginStart = ui.dp(12) })
     }
 }
 
-/** 开关行：整行可点、开关在文字前；服务/设置回填走 setCheckedSilently 避免回环。 */
+/** 开关行：整行可点、开关在文字右侧；服务/设置回填走 setCheckedSilently 避免回环。 */
 internal class SwitchSettingRow(
     ui: RecordUi,
     title: String,

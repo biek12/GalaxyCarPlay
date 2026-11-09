@@ -4,6 +4,7 @@ android {
     compileSdk = 37
     buildFeatures { buildConfig = true }
     defaultConfig {
+        ndk { abiFilters += "arm64-v8a" }
         applicationId = "com.galaxy.autorecord"
         minSdk = 29
         targetSdk = 37
@@ -14,6 +15,8 @@ android {
     }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_11; targetCompatibility = JavaVersion.VERSION_11 }
     testOptions { unitTests.isIncludeAndroidResources = true }
+    // 本车标定由可复现本机脚本生成；原厂二进制和私有原件不进入源码。
+    sourceSets.getByName("main").assets.srcDir(rootProject.file(".work/autorecord-lens-assets"))
     testBuildType = if (providers.gradleProperty("galaxyRecordEmulatorTest").orNull == "true") "emulator" else "debug"
 
     /**
@@ -41,6 +44,7 @@ android {
     }
 }
 dependencies {
+    implementation("io.github.webrtc-sdk:android:150.7871.04")
     implementation(project(":auto-client"))
     testImplementation(libs.junit)
     testImplementation("org.robolectric:robolectric:4.17")

@@ -13,6 +13,9 @@ import java.io.File
 data class VehicleSample(
     val timeMs: Long,
     val values: Map<String, String>,
+    val sampledAtMs: Map<String, Long> = emptyMap(),
+    val quality: Map<String, String> = emptyMap(),
+    val intervalMs: Int? = null,
 )
 
 /**
@@ -64,7 +67,12 @@ object VehicleHistory {
                 if (key !in setOf("t", "ts", "time")) values[key] = json.optString(key)
             }
         }
-        VehicleSample(time, values)
+        val sampled = json.optJSONObject("a")
+        val quality = json.optJSONObject("q")
+        VehicleSample(time, values,
+            sampled?.keys()?.asSequence()?.associateWith { sampled.optLong(it) }.orEmpty(),
+            quality?.keys()?.asSequence()?.associateWith { quality.optString(it) }.orEmpty(),
+            if (json.has("intervalMs")) json.optInt("intervalMs") else null)
     }.getOrNull()
 
     /** 取 `timeMs` 之前最近的一个样本；超过 [maxAgeMs] 视为缺失（不无限沿用）。 */
@@ -72,5 +80,31 @@ object VehicleHistory {
         if (samples.isEmpty()) return null
         val candidate = samples.lastOrNull { it.timeMs <= timeMs } ?: return null
         return if (timeMs - candidate.timeMs <= maxAgeMs) candidate else null
+    }
+
+    /** 保留原始 sidecar 为真相；仅在回看时生成可定位的转向/灯光/车辆变化，不重复落盘或自动锁片。 */
+    fun stateEvents(samples: List<VehicleSample>, maxAgeMs: Long): List<EventMark> {
+        var previous: VehicleSample? = null
+        val events = mutableListOf<EventMark>()
+        for (sample in samples) {
+            val old = previous?.takeIf { sample.timeMs - it.timeMs <= maxAgeMs }
+            val grouped = linkedMapOf<EventKind, MutableMap<String, String>>()
+            for ((name, value) in sample.values) {
+                val key = VehicleKey.of(name) ?: continue
+                val before = old?.values?.get(name)
+                if (before == value) continue
+                val kind = when (key) {
+                    VehicleKey.STEERING, VehicleKey.LEFT_TURN, VehicleKey.RIGHT_TURN -> EventKind.TURN
+                    else -> if (key.group == VehicleGroup.LIGHT) EventKind.LIGHT else EventKind.VEHICLE_STATE
+                }
+                grouped.getOrPut(kind) { linkedMapOf() }[name] =
+                    if (before == null) value else "$before → $value"
+            }
+            grouped.forEach { (kind, values) ->
+                events += EventMark(kind, sample.timeMs, sample.timeMs, ruleVersion = "vehicle_samples_v1", changes = values)
+            }
+            previous = sample
+        }
+        return events
     }
 }

@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import shlex
 import sys
-from remote_car import Car
+from remote_car import Car, resolve_session
 
 
 def main():
@@ -14,7 +14,7 @@ def main():
         raise ValueError('只接受 -s remote shell 命令')
     parts = args[3:]
     command = parts[0] if len(parts) == 1 else shlex.join(parts)
-    session = Path(os.environ.get('GALAXY_REMOTE_SESSION', '.local/remote-session.json'))
+    session = resolve_session()
     car = Car(json.loads(session.read_text()))
     result = car.job(dict(kind='shell', transport='ROOT', command=command))
     if result.get('error') or result.get('timedOut') or result.get('truncated') or result.get('exitCode') != 0:

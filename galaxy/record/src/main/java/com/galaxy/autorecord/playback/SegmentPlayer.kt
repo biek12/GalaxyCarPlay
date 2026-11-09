@@ -28,10 +28,29 @@ class SegmentPlayer(
     private val segmentDir: File,
     directions: List<String>,
     private val durationMs: Long,
+    private val lensProfiles: Map<String,com.galaxy.autorecord.preview.LensProfile> = emptyMap(),
+    flat: Boolean = false,
 ) {
     private val channels = ConcurrentHashMap<String, Channel>()
     private val wanted: List<String> = directions.filter { it in SegmentLayout.DIRECTIONS }.distinct()
     private val released = AtomicBoolean(false)
+    private val gpuThread=android.os.HandlerThread("playback-gpu").apply{start()}
+    private val gpu=android.os.Handler(gpuThread.looper)
+    private val renderer=com.galaxy.autorecord.preview.PreviewDistributor(gpu){onError?.invoke("回放渲染失败：${it.javaClass.simpleName}")}
+    @Volatile private var flatMode=flat
+    private val workers=java.util.concurrent.atomic.AtomicInteger()
+    private val gpuClosed=AtomicBoolean(false)
+    private fun closeGpuIfIdle(){if(released.get()&&workers.get()==0&&gpuClosed.compareAndSet(false,true))gpu.post{renderer.release();gpuThread.quitSafely()}}
+    fun setFlat(value:Boolean):Boolean {
+        if(value&&wanted.any{hasVideo(it)&&it !in lensProfiles})return false
+        flatMode=value;gpu.post{if(!gpuClosed.get())renderer.flat(value)};return true
+    }
+    private fun <T> onGpu(action:()->T):T {
+        val task=java.util.concurrent.FutureTask<T>{action()}
+        check(gpu.post(task)){"playback_gpu_stopped"}
+        // 等待真正完成：超时后释放输入会与仍在configure/release的codec竞态。
+        return task.get()
+    }
 
     @Volatile var playing = false
         private set
@@ -64,7 +83,7 @@ class SegmentPlayer(
     fun attach(direction: String, surface: Surface) {
         if (released.get() || direction !in wanted) return
         val previous = channels.remove(direction)
-        previous?.stop()
+        if(previous?.stop()==false){onError?.invoke("解码器仍在释放，请稍后重试");return}
         val file = SegmentLayout.videoFile(segmentDir, direction)
         if (!file.isFile || file.length() == 0L) {
             Log.i(TAG, "缺路或文件为空 $direction，不解码")
@@ -115,6 +134,7 @@ class SegmentPlayer(
         playing = false
         channels.values.forEach { it.stop() }
         channels.clear()
+        closeGpuIfIdle()
     }
 
     /** 单路解码线程：喂样本 → 按时钟渲染 → seek/收尾。 */
@@ -127,8 +147,10 @@ class SegmentPlayer(
         private val seekFlag = AtomicBoolean(false)
         @Volatile private var seekTargetUs = 0L
         private var thread: Thread? = null
+        private var sourceOffsetUs = 0L
 
         fun start() {
+            workers.incrementAndGet()
             thread = Thread({ run() }, "playback-$direction").apply {
                 priority = Thread.NORM_PRIORITY - 1
                 start()
@@ -140,25 +162,39 @@ class SegmentPlayer(
             seekFlag.set(true)
         }
 
-        fun stop() {
+        fun stop():Boolean {
             stopFlag.set(true)
             seekFlag.set(true) // 唤醒等待
             thread?.let { runCatching { it.join(1500) } }
-            thread = null
+            val complete=thread?.isAlive!=true
+            if(complete)thread=null
+            return complete
         }
 
         private fun run() {
             var extractor: MediaExtractor? = null
             var codec: MediaCodec? = null
+            var use: java.io.Closeable? = null
+            var input:Surface?=null
+            val route=direction+"@"+System.identityHashCode(this)
             try {
+                use = com.galaxy.autorecord.core.SegmentAccess.hold(segmentDir)
                 extractor = MediaExtractor().apply { setDataSource(file.absolutePath) }
                 val trackIndex = (0 until extractor.trackCount).firstOrNull { i ->
                     extractor.getTrackFormat(i).getString(MediaFormat.KEY_MIME)?.startsWith("video/") == true
                 } ?: throw IllegalStateException("no_video_track")
                 extractor.selectTrack(trackIndex)
+                // 实车 MPEG4Writer 将每路首帧归零；恢复清单中真实的段内偏移，和车辆侧录同域。
+                val sourceFirst = com.galaxy.autorecord.export.ExportPlanner.readManifest(segmentDir)
+                    ?.channels?.firstOrNull { it.direction == direction }?.firstPtsUs
+                if (sourceFirst != null && extractor.sampleTime >= 0) sourceOffsetUs = sourceFirst - extractor.sampleTime
                 val format = extractor.getTrackFormat(trackIndex)
                 codec = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
-                codec.configure(format, surface, null, 0)
+                val width=format.getInteger(MediaFormat.KEY_WIDTH);val height=format.getInteger(MediaFormat.KEY_HEIGHT)
+                val profile=lensProfiles[direction]?.let{com.galaxy.autorecord.preview.LensProfile.parse(it.toJson().toString(),width=width,height=height)}
+                check(!flatMode||profile!=null){"playback_lens_profile_missing"}
+                input=onGpu{renderer.input(route,width,height,profile).also{renderer.bind(route,"page",surface,flatMode)}}
+                codec.configure(format, input, null, 0)
                 codec.start()
                 loop(extractor, codec)
             } catch (error: Exception) {
@@ -170,6 +206,9 @@ class SegmentPlayer(
                 runCatching { codec?.stop() }
                 runCatching { codec?.release() }
                 runCatching { extractor?.release() }
+                use?.close()
+                if(input!=null)runCatching{onGpu{renderer.removeInput(route)}}
+                workers.decrementAndGet();closeGpuIfIdle()
             }
         }
 
@@ -178,6 +217,7 @@ class SegmentPlayer(
             var inputDone = false
             var outputDone = false
             var heldIndex = -1
+            var renderFromUs = 0L
 
             fun releaseHeld(render: Boolean) {
                 if (heldIndex >= 0) {
@@ -190,7 +230,8 @@ class SegmentPlayer(
                 if (seekFlag.compareAndSet(true, false)) {
                     releaseHeld(false)
                     codec.flush()
-                    extractor.seekTo(seekTargetUs, MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
+                    renderFromUs = seekTargetUs
+                    extractor.seekTo((seekTargetUs - sourceOffsetUs).coerceAtLeast(0), MediaExtractor.SEEK_TO_PREVIOUS_SYNC)
                     inputDone = false
                     outputDone = false
                 }
@@ -222,10 +263,12 @@ class SegmentPlayer(
                 }
 
                 if (heldIndex >= 0) {
-                    val ptsMs = info.presentationTimeUs / 1000
+                    val sourcePtsUs = info.presentationTimeUs + sourceOffsetUs
+                    val ptsMs = sourcePtsUs / 1000
                     val eos = info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0
                     val target = positionMs
                     when {
+                        !eos && sourcePtsUs < renderFromUs -> releaseHeld(false)
                         // 未来帧：持有缓冲等待时钟（不丢帧）
                         !eos && ptsMs > target + TOLERANCE_MS -> Thread.sleep(4)
                         else -> {

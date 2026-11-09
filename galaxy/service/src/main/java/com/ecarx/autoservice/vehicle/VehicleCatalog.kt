@@ -4,7 +4,8 @@ package com.ecarx.autoservice.vehicle
 internal data class SignalSpec(val key: String, val propertyId: Int, val unit: String,
     val divisor: Double = 1.0, val minimum: Double = -Double.MAX_VALUE,
     val maximum: Double = Double.MAX_VALUE, val gear: Boolean = false,
-    val payload: String="number", val area: Int=1, val normalizedId: Int = 0, val name: String = key, val mapping: Map<String, String> = emptyMap())
+    val payload: String="number", val area: Int=1, val normalizedId: Int = 0, val name: String = key, val mapping: Map<String, String> = emptyMap(),
+    val backend: String = "car_signal")
 
 internal object VehicleCatalog {
     /**
@@ -34,6 +35,10 @@ internal object VehicleCatalog {
         require(model in setOf("L6", "L7"))
         val l6 = model == "L6"
         return listOf(
+            // 原厂VSTD专用状态，独立于驾驶模式；Vehicle.java的vstdModes与PA_IntBase合同。
+            SignalSpec("sentinelMode",561024477,"state",payload="ecarx-pa-enum",name="pavstdmodests",
+                mapping=mapOf("0" to "off","1" to "standby","2" to "on","3" to "alert","4" to "alarm")),
+            SignalSpec("centralLock",557873516,"raw",name="LockgCenStsLockSt"),
             // G733既有实测PA：读取area0；16字节availability/data/format/status，不能当VSTD防盗状态。
             SignalSpec("driveMode",561023639,"state",payload="ecarx-pa-enum",area=0,normalizedId=10106,name="PA_DriveMode",mapping=mapOf("1" to "增程","2" to "纯电","3" to "性能","6" to "智能")),
             // 原厂CarSignalManager及注解的只读枚举；未知枚举不沿用原始数字。
@@ -68,7 +73,18 @@ internal object VehicleCatalog {
             SignalSpec("property.10018", if (l6) 557873277 else 557873277, "raw", 1.0, normalizedId = 10018, name = "DoorPassSts", mapping = mapOf("2" to "0")),
             SignalSpec("property.10019", if (l6) 557873271 else 557873271, "raw", 1.0, normalizedId = 10019, name = "DoorLeReSts", mapping = mapOf("2" to "0")),
             SignalSpec("property.10020", if (l6) 557873278 else 557873278, "raw", 1.0, normalizedId = 10020, name = "DoorRiReSts", mapping = mapOf("2" to "0")),
-            SignalSpec("rpm", if (l6) 557850019 else 557850019, "rpm", 2.0, normalizedId = 10021, name = "CLUSTER_POWERFLOW_ENGSPDDISPD", mapping = emptyMap()),
+            // G733 原厂 SDK CarSignalManager.getEngNSafeEngN()：Float/area1，原值为转速。
+            // 保留原来的仪表显示信号供独立诊断，不再拿它充当发动机基础转速。
+            SignalSpec("rpm",559971540,"rpm",normalizedId=10021,name="EngNSafeEngN"),
+            SignalSpec("rpmClusterDisplay",557850019,"rpm",2.0,name="CLUSTER_POWERFLOW_ENGSPDDISPD"),
+            // 原厂 ECarXCarVfmiscManager.getPA_Total_Traveled_Distance()，PA_IntBase/area1。
+            SignalSpec("odometer",561024172,"km",name="patotaltraveleddistance"),
+            // G733 getPA_AutoHoldStatus / getPA_AutHiBeamSwt：PA_IntBase + OnOff1(0/1)。
+            // AutoHoldStatus 与自动驻车设置键 AutHldSoftSwtEnaSts 不混用。
+            SignalSpec("autoHold",561024171,"state",payload="ecarx-pa-enum",name="paautoholdstatus",
+                mapping=mapOf("0" to "off", "1" to "active")),
+            SignalSpec("autoHighBeamEnabled",561024368,"state",payload="ecarx-pa-enum",name="paauthibeamswt",
+                mapping=mapOf("0" to "off", "1" to "on")),
             SignalSpec("fuelRange", if (l6) 561024546 else 561024549, "km", 1.0, normalizedId = 10022, name = "patsdteindicated", mapping = emptyMap()),
             SignalSpec("property.10023", if (l6) 557871401 else 557871401, "raw", 1.0, normalizedId = 10023, name = "AsyLineLeColor", mapping = emptyMap()),
             SignalSpec("property.10024", if (l6) 557871402 else 557871402, "raw", 1.0, normalizedId = 10024, name = "AsyLineLeTyp", mapping = emptyMap()),
@@ -85,10 +101,14 @@ internal object VehicleCatalog {
             SignalSpec("property.10035", if (l6) 557848145 else 557848145, "raw", 1.0, normalizedId = 10035, name = "APA_INSDSNSRDSTOFRERIBLK1", mapping = emptyMap()),
             SignalSpec("property.10036", if (l6) 557848147 else 557848147, "raw", 1.0, normalizedId = 10036, name = "APA_OUTDSNSRDSTOFRERIBLK1", mapping = emptyMap()),
             SignalSpec("property.10037", if (l6) 289475088 else 289475088, "raw", 1.0, payload="key-event", normalizedId = 10037, name = "HW_KEY_INPUT", mapping = emptyMap()),
-            SignalSpec("lowBeam", if (l6) 557849510 else 557849510, "raw", 1.0, normalizedId = 10038, name = "CLUSTER_WARNING_EXTRLTGSTSLOBEAM", mapping = emptyMap()),
-            SignalSpec("highBeam", if (l6) 557849181 else 557849181, "raw", 1.0, normalizedId = 10039, name = "CLUSTER_WARNING_EXTRLTGSTSHIBEAM", mapping = emptyMap()),
+            SignalSpec("lowBeam",557873483,"state",normalizedId=10038,name="ExtrLtgStsLoBeam"),
+            SignalSpec("lowBeamClusterDisplay",557849510,"raw",name="CLUSTER_WARNING_EXTRLTGSTSLOBEAM"),
+            SignalSpec("highBeam",557873481,"state",normalizedId=10039,name="ExtrLtgStsHiBeam"),
+            SignalSpec("highBeamClusterDisplay",557849181,"raw",name="CLUSTER_WARNING_EXTRLTGSTSHIBEAM"),
+            SignalSpec("rearFog",557873487,"state",name="ExtrLtgStsReFog"),
             SignalSpec("property.10040", if (l6) 557850632 else 557850632, "raw", 1.0, normalizedId = 10040, name = "LCM_EPBLAMPREQEPBLAMPREQ", mapping = mapOf("0" to "1", "1" to "0")),
-            SignalSpec("property.10041", if (l6) 557849179 else 557849179, "raw", 1.0, normalizedId = 10041, name = "CLUSTER_WARNING_EXTRLTGSTSPOSLIFRNT", mapping = emptyMap()),
+            SignalSpec("property.10041",557873485,"state",normalizedId=10041,name="ExtrLtgStsPosLiFrnt"),
+            SignalSpec("positionLightsClusterDisplay",557849179,"raw",name="CLUSTER_WARNING_EXTRLTGSTSPOSLIFRNT"),
             SignalSpec("property.10042", if (l6) 557855125 else 557855125, "raw", 1.0, normalizedId = 10042, name = "HU_EXTRLTGSTSREFOG", mapping = emptyMap()),
             SignalSpec("property.10043", if (l6) 557969412 else 557969412, "raw", 1.0, normalizedId = 10043, name = "AP_POWER_MODE_REQUEST", mapping = emptyMap()),
             SignalSpec("property.10044", if (l6) 557848166 else 557848166, "raw", 1.0, normalizedId = 10044, name = "APA_INDCRSTS", mapping = emptyMap()),
@@ -111,11 +131,23 @@ internal object VehicleCatalog {
             SignalSpec("property.10051", if (l6) 561024572 else 561024575, "raw", 1.0, normalizedId = 10051, name = "pavehchargchargacst", mapping = emptyMap()),
             SignalSpec("property.10052", if (l6) 561024475 else 561024477, "raw", 1.0, normalizedId = 10052, name = "pavstdmodests", mapping = emptyMap()),
             SignalSpec("property.10053", if (l6) 557850644 else 557850644, "raw", 1.0, normalizedId = 10053, name = "LCM_ALRMSTSALRMST", mapping = emptyMap()),
-            SignalSpec("accelerator", if (l6) 559947208 else 559947208, "%", 1.0, normalizedId = 10054, name = "CLUSTER_VEHMODMNGTGLBSAFE1ACCRPEDLRAT", mapping = emptyMap()),
-            SignalSpec("brake", if (l6) 557855126 else 557855126, "%", 1.0, normalizedId = 10055, name = "HU_BRKPEDLRRATPERC", mapping = emptyMap()),
+            // 指定L6的VHAL配置与get已实测存在，car_signal转换表反而没有这两个ID。
+            // 原始量纲仍按范围核验，不能把4339/4608之类的原始编码直接标成百分比。
+            SignalSpec("accelerator",559947208,"%",normalizedId=10054,name="CLUSTER_VEHMODMNGTGLBSAFE1ACCRPEDLRAT",
+                area=if(l6)0 else 1,backend=if(l6)"vhal"else"car_signal"),
+            SignalSpec("brake",557855126,"%",normalizedId=10055,name="HU_BRKPEDLRRATPERC",
+                area=if(l6)0 else 1,backend=if(l6)"vhal"else"car_signal"),
             SignalSpec("property.10056", if (l6) 557855239 else 557855239, "raw", 1.0, normalizedId = 10056, name = "HU_BLTLOCKSTATDRVRBLTLOCKST1", mapping = emptyMap()),
             SignalSpec("property.10057", if (l6) 557849285 else 557849285, "raw", 1.0, normalizedId = 10057, name = "CLUSTER_ADAS_ASYAUTDRVCTRLTYP", mapping = emptyMap()),
-            SignalSpec("steeringAngle", if (l6) 557849839 else 557849839, "°", 1.0, normalizedId = 10058, name = "CLUSTER_ARHUD_STEERWHLSNSRAG", mapping = emptyMap()),
+            // G733 SDK getSteerWhlSnsrAg()：Float/area1；ARHUD 画面字段另保留。
+            // L6原有559971591接口返回常量0，VHAL无此配置；实际ARHUD原始角度会变化。
+            // 保留旧键另供诊断，负值编码尚未核实，不擅自截位、换字节或加偏移。
+            SignalSpec("steeringAngle",if(l6)557849839 else 559971591,"°",normalizedId=10058,
+                name=if(l6)"CLUSTER_ARHUD_STEERWHLSNSRAG"else"SteerWhlSnsrAg",
+                area=if(l6)0 else 1,backend=if(l6)"vhal"else"car_signal",
+                payload=if(l6)"fs12-steering-angle"else"number"),
+            SignalSpec("steeringAngleSignal",559971591,"°",name="SteerWhlSnsrAg"),
+            SignalSpec("steeringAngleHud",557849839,"°",name="CLUSTER_ARHUD_STEERWHLSNSRAG"),
             SignalSpec("property.10059", if (l6) 561024700 else 561024703, "raw", 1.0, normalizedId = 10059, name = "padtetypebutton", mapping = emptyMap()),
             SignalSpec("evRange", if (l6) 561025075 else 561025079, "km", 1.0, normalizedId = 10060, name = "patcdtehvbattindicated", mapping = emptyMap()),
             SignalSpec("property.10061", if (l6) 561024414 else 561024416, "L/100km", 10.0, normalizedId = 10061, name = "patripaverageconsumption100", mapping = emptyMap()),
@@ -123,6 +155,15 @@ internal object VehicleCatalog {
         )
     }
     fun convert(spec: SignalSpec, raw: Any?): String? {
+        if (spec.payload == "fs12-steering-angle") {
+            // 固定参考AutoDisplay v3.6.2 vehicle/b.java:702（FS12属性10058）。
+            // 15位编码的左右两半分别换算，18个原始刻度为1度；不套用通用signed16。
+            val value = (raw as? Number)?.toDouble() ?: return null
+            if (!value.isFinite() || value % 1.0 != 0.0 || value !in 0.0..32767.0) return null
+            val encoded = value.toInt()
+            return (if (encoded > 16383) Math.round((32767 - encoded) / 18.0f)
+                else -Math.round(encoded / 18.0f)).toString()
+        }
         if(spec.payload=="key-event")return when(raw){
             is IntArray->raw.takeIf { it.size>=2&&it.size<=8 }?.joinToString(",")
             is Array<*>->raw.takeIf { it.size in 2..8&&it.all { n->n is Int } }?.joinToString(",")

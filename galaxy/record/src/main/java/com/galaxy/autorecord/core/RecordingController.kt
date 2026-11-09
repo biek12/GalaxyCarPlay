@@ -20,6 +20,7 @@ interface CameraChannelSource {
     /** 诊断页显示用，例如"AutoService（IAutoCamera）"。 */
     val label: String
     fun cameraId(direction: String): String? = null
+    fun lensProfile(direction:String):com.galaxy.autorecord.preview.LensProfile? = null
 
     fun statuses(): Map<String, ChannelStatus>
 
@@ -102,6 +103,9 @@ interface RecordingEnginePort {
 /** 相机录制 Surface 绑定出口：引擎把编码器输入 Surface 交给相机源（会话重配由相机源负责）。 */
 interface RecordSurfaceBinder {
     fun bindRecordSurface(direction: String, surface: android.view.Surface?, previous: android.view.Surface? = null)
+
+    /** 完成回执只在所有使用这些 Surface 的旧设备 onClosed 后发出；调用方才可关闭 Reader。 */
+    fun detachRecordSurfaces(surfaces: Map<String, android.view.Surface>, completed: (Result<Unit>) -> Unit)
 }
 
 /**
@@ -199,6 +203,9 @@ class RecordingController(
     @Volatile private var preflightToken = 0
     @Volatile private var closed = false
     private var stopRequested = false
+
+    /** FGS拥有真实会话；新建页面直接接续其快照，不新开编码器。 */
+    fun syncFromSession(value:RecordingSnapshot) { if(!closed)publish(value) }
 
     fun requestStart() {
         if (closed) return
@@ -311,6 +318,8 @@ class RecordingController(
 
     /** 每秒由界面调用：只推进展示用的计时，不产生任何"正在录制"的错觉（状态没到 RECORDING 就不计时）。 */
     fun tick(nowMillis: Long) {
+        // 真实引擎/FGS 已发布分段单调时钟；UI 不得再用墙钟取模覆盖它。
+        if (engine != null) return
         if (snapshot.state != RecordingState.RECORDING) return
         val elapsed = nowMillis - snapshot.startedAtMillis
         pub(snapshot.copy(

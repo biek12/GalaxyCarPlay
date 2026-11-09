@@ -1,0 +1,6 @@
+<!-- Volvo Cars shared icons v5 / parking-brake; original path geometry; assets/licenses/vehicle-assets.json -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd" android:pathData="M9.5 8v8h1v-3.1571h2.0786c1.3373 0 2.4214-1.0842 2.4214-2.4215S13.9159 8 12.5786 8zm3.0786 3.8429H10.5V9h2.0786C13.3636 9 14 9.6364 14 10.4214s-.6364 1.4215-1.4214 1.4215" />
+    <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd" android:pathData="M12 21c4.9706 0 9-4.0294 9-9s-4.0294-9-9-9-9 4.0294-9 9 4.0294 9 9 9m7.2866-5.693C19.7448 14.2991 20 13.1794 20 12c0-4.4183-3.5817-8-8-8s-8 3.5817-8 8c0 1.1794.2552 2.2991.7134 3.307.1408.3098.3008.609.4784.8962C6.6016 18.4819 9.1235 20 12 20s5.3984-1.5181 6.8082-3.7969a8 8 0 0 0 .4784-.8961" />
+    <path android:fillColor="#FFFFFFFF" android:fillType="evenOdd" android:pathData="M23 12c0 3.038-1.231 5.788-3.222 7.778l.707.707C22.657 18.314 24 15.314 24 12s-1.343-6.314-3.515-8.485l-.707.707C21.769 6.213 23 8.963 23 12M4.222 4.222C2.231 6.213 1 8.963 1 12c0 3.038 1.231 5.788 3.222 7.778l-.707.707C1.343 18.314 0 15.314 0 12s1.343-6.314 3.515-8.485z" />
+</vector>

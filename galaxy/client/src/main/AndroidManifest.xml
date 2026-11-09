@@ -1,4 +1,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
     <uses-permission android:name="com.ecarx.autoservice.permission.CLIENT" />
     <queries><package android:name="com.ecarx.autoservice" /></queries>
+    <application>
+        <activity android:name="com.galaxy.auto.client.vehicle.VehicleAccountActivity" android:exported="false" />
+        <provider android:name="com.galaxy.auto.client.diagnostics.DiagnosticsInitProvider"
+            android:authorities="${applicationId}.diagnostics-init" android:exported="false" android:initOrder="100" />
+    </application>
 </manifest>

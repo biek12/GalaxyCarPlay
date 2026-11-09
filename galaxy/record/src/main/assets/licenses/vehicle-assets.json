@@ -1,0 +1,102 @@
+{
+  "assets": [
+    {
+      "name": "auto-brake",
+      "source": "https://www.volvocars.com/static/shared/icons/v5/auto-brake-24.svg",
+      "catalog": "https://designsystem.volvocars.com/web/components/icon/library/",
+      "owner": "Volvo Cars",
+      "license": "No open-source licence asserted; public website asset, source retained",
+      "sourceSha256": "c52c56ac841fea6b69be96abe0fbd5a055b18564d777ea2ceebc26a8446ff3ca",
+      "conversion": "symbol#icon path geometry preserved; tint only"
+    },
+    {
+      "name": "brake",
+      "title": "press-brake-pedal",
+      "author": "Mateusz Skrzyniecki",
+      "source": "https://thenounproject.com/icon/press-brake-pedal-1353193/",
+      "asset": "https://static.thenounproject.com/png/1353193-512.png",
+      "license": "CC BY 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+      "sha256": "a4fe07059aa65a5ffacd6b873ca926b08fdea53c5c5024c226001c262f6e79b5",
+      "changes": "Original PNG bytes unchanged; Android display tint/scale only"
+    },
+    {
+      "name": "accelerator",
+      "title": "pedal",
+      "author": "LAFS",
+      "source": "https://thenounproject.com/icon/pedal-1368276/",
+      "asset": "https://static.thenounproject.com/png/1368276-512.png",
+      "license": "CC BY 3.0",
+      "licenseUrl": "https://creativecommons.org/licenses/by/3.0/",
+      "sha256": "6e0dae435be5cf24bcbbdaaa54f14c16ed1a5ce5a9e9e7dbaa026b1d664ed738",
+      "changes": "Original PNG bytes unchanged; Android display tint/scale only"
+    },
+    {
+      "name": "cruise",
+      "title": "speedo-set",
+      "author": "Volvo Cars",
+      "source": "https://www.volvocars.com/static/shared/icons/v5/speedo-set-24.svg",
+      "catalog": "https://designsystem.volvocars.com/web/components/icon/library/",
+      "license": "No open-source licence asserted; public website asset, source retained",
+      "sha256": "99c99920ab435adc3a1a6b32f4e61b5d3a09d873d174a6f63a63eaa0a88f8213",
+      "changes": "Original symbol#icon geometry; Android tint only"
+    },
+    {
+      "name": "steering",
+      "title": "steering-wheel",
+      "author": "Volvo Cars",
+      "source": "https://www.volvocars.com/static/shared/icons/v5/steering-wheel-24.svg",
+      "catalog": "https://designsystem.volvocars.com/web/components/icon/library/",
+      "license": "No open-source licence asserted; public website asset, source retained",
+      "sha256": "e35530168b72ec0e63cdf8efcd7b5043fa643dd481e96aecf7a0b90cfb98331b",
+      "changes": "Original symbol#icon geometry; Android tint only"
+    },
+    {
+      "name": "fog",
+      "title": "foglight-rear",
+      "author": "Volvo Cars",
+      "source": "https://www.volvocars.com/static/shared/icons/v5/foglight-rear-24.svg",
+      "catalog": "https://designsystem.volvocars.com/web/components/icon/library/",
+      "license": "No open-source licence asserted; public website asset, source retained",
+      "sha256": "0e2e472aea8c0f09d0ceee33b4ddf1d7dfbf4bace31ed0981ba00e2d8d125811",
+      "changes": "Original symbol#icon geometry; Android tint only"
+    },
+    {
+      "name": "parking",
+      "title": "parking-brake",
+      "author": "Volvo Cars",
+      "source": "https://www.volvocars.com/static/shared/icons/v5/parking-brake-24.svg",
+      "catalog": "https://designsystem.volvocars.com/web/components/icon/library/",
+      "license": "No open-source licence asserted; public website asset, source retained",
+      "sha256": "e22dfc38c793846dca7359e21cf40cec45469badaf13665b2a22751c444e8459",
+      "changes": "Original symbol#icon geometry; Android tint only"
+    },
+    {
+      "name": "low_beam",
+      "title": "low-beam",
+      "author": "Volvo Cars",
+      "source": "https://www.volvocars.com/static/shared/icons/v5/low-beam-24.svg",
+      "sha256": "7b60228e8c85a37e8e3091276677bbb5e6b202a6ead2b4bf5f08725a491c04c4",
+      "license": "No open-source licence asserted; public website asset, source retained",
+      "changes": "Original symbol#icon geometry; display tint only"
+    },
+    {
+      "name": "high_beam",
+      "title": "high-beam",
+      "author": "Volvo Cars",
+      "source": "https://www.volvocars.com/static/shared/icons/v5/high-beam-24.svg",
+      "sha256": "c82ebb0cddcdbe03226943ed331992d9e7799054df58d4af7579d16961ca1fa1",
+      "license": "No open-source licence asserted; public website asset, source retained",
+      "changes": "Original symbol#icon geometry; display tint only"
+    },
+    {
+      "name": "position",
+      "title": "lights",
+      "author": "Volvo Cars",
+      "source": "https://www.volvocars.com/static/shared/icons/v5/lights-24.svg",
+      "sha256": "dd397304a55ff95c02da9e5eb730d8c0e2c9323f879d260a03c0c729a734ee52",
+      "license": "No open-source licence asserted; public website asset, source retained",
+      "changes": "Original symbol#icon geometry; display tint only"
+    }
+  ]
+}

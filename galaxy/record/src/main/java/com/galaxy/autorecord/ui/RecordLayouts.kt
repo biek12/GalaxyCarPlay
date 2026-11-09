@@ -74,3 +74,12 @@ internal class WrapRow(context: Context, private val gapX: Int, private val gapY
     }
 }
 
+
+/** 当前车型的 1280×800 原生画面比例；缩略图继续保留自己的 16:9 容器。 */
+internal class CameraAspectFrame(context: Context) : FrameLayout(context) {
+    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+        val width = MeasureSpec.getSize(widthMeasureSpec)
+        super.onMeasure(MeasureSpec.makeMeasureSpec(width, MeasureSpec.EXACTLY),
+            MeasureSpec.makeMeasureSpec((width / 1.6f).toInt(), MeasureSpec.EXACTLY))
+    }
+}

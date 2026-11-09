@@ -20,6 +20,8 @@ import com.galaxy.autorecord.core.SegmentLayout
 import com.galaxy.autorecord.core.VehicleHistory
 import com.galaxy.autorecord.core.VehicleKey
 import com.galaxy.autorecord.core.VehicleSample
+import com.galaxy.autorecord.core.VehicleTrace
+import com.galaxy.autorecord.core.VehicleHistoryTracks
 import com.galaxy.autorecord.playback.SegmentPlayer
 import java.io.File
 
@@ -41,28 +43,42 @@ internal class PlaybackPage(
 ) : RecordPage(host, recordUi) {
 
     override val title: String
-        get() = entry?.let { RecordTime.wallTime(it.startedAtMillis) } ?: "回放"
+        get() = entry?.let { RecordTime.dayTime(it.startedAtMillis) + "\n" +
+            java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US).format(java.util.Date(it.startedAtMillis)) } ?: "回放"
 
     private var entry: SegmentEntry? = host.library.find(segmentId)
     private var events: List<EventMark> = emptyList()
     private var samples: List<VehicleSample> = emptyList()
+    private var traces: List<VehicleTrace> = emptyList()
+    private var historyIntervalMs = 250
+    private data class HistoryData(val samples: List<VehicleSample>, val traces: List<VehicleTrace>, val events: List<EventMark>,
+        val error: String?, val firstFrameMs: Long, val intervalMs: Int,
+        val lenses:Map<String,com.galaxy.autorecord.preview.LensProfile>,val legacyLens:Boolean)
     private var sidecarError: String? = null
+    private var lensesLoaded=false
+    private var lenses=emptyMap<String,com.galaxy.autorecord.preview.LensProfile>()
+    private var flat=host.settings.flatView
+    private var legacyLens=false
 
     private var playing = false
     private var positionMs = 0L
     private var speed = host.settings.playbackSpeed
     private var singleDirection: String? = null
-    private var visibleKinds: LinkedHashSet<EventKind> = LinkedHashSet()
-    private var onlySelectedEvent = false
+    private var visibleKinds = EventKind.entries.toMutableSet()
+    private var selectedEvent: EventMark? = null
+    private var showSelected = false
+    private lateinit var selectedTab: TextView
+    private lateinit var allTab: TextView
 
+    private lateinit var panel: RecordPlayerPanel
     private lateinit var pictureHost: FrameLayout
-    private lateinit var dataHost: LinearLayout
+    private val surfaces = mutableMapOf<String, Surface>()
     private lateinit var timeline: EventTimelineView
     private lateinit var progress: SeekBar
     private lateinit var timeLabel: TextView
     private lateinit var playButton: TextView
     private lateinit var eventCountLabel: TextView
-    private lateinit var eventListHost: LinearLayout
+    private lateinit var eventDetail: TextView
     private lateinit var neighborRow: LinearLayout
 
     private val handler = Handler(Looper.getMainLooper())
@@ -103,56 +119,100 @@ internal class PlaybackPage(
 
     private fun loadSidecar() {
         val dir = entry?.dir ?: return
-        samples = VehicleHistory.read(dir)
-        events = runCatching { EventReader.read(dir) }.getOrElse {
-            sidecarError = it.message ?: "事件数据读取失败"
-            emptyList()
+        host.readPlaybackData({
+            val history = VehicleHistory.read(dir)
+            val recorded = runCatching { EventReader.read(dir) }
+            val manifest = com.galaxy.autorecord.export.ExportPlanner.readManifest(dir)
+            val interval = history.mapNotNull { it.intervalMs }.maxOrNull() ?: manifest?.vehicle?.intervalMs ?: 250
+            val tracks = VehicleHistoryTracks.build(history, duration(), interval)
+            val intervalKeys = tracks.filter { it.pedal || it.binary }.map { it.key.key }.toSet()
+            val changes = VehicleHistory.stateEvents(history, interval * 2L + 25).mapNotNull { mark ->
+                val values = mark.changes.filterKeys { it !in intervalKeys }
+                if (values.isEmpty()) null else mark.copy(changes = values)
+            }
+            val intervals = tracks.filter { it.pedal || it.binary }.flatMap { it.intervals() }
+            val firstFrameMs = manifest?.channels
+                ?.filter { it.status == com.galaxy.autorecord.core.SegmentManifest.CHANNEL_COMPLETE }
+                ?.minOfOrNull { it.firstPtsUs / 1000 } ?: 0L
+            val lensFile=File(dir,"lens.json")
+            val savedLens=if(lensFile.exists())org.json.JSONObject(lensFile.readText())else null
+            val profiles=manifest?.channels.orEmpty().mapNotNull{ch->
+                val profile=if(savedLens!=null)savedLens.optJSONObject(ch.direction)?.let{com.galaxy.autorecord.preview.LensProfile.parse(it.toString(),width=ch.width,height=ch.height)}
+                else com.galaxy.autorecord.core.CameraLayoutStore(host).load().cameraIdOf(ch.direction)?.let{id->
+                    com.galaxy.autorecord.preview.LensProfile.read(host,ch.direction,id.toString(),ch.width,ch.height)}
+                profile?.let{ch.direction to it}
+            }.toMap()
+            HistoryData(history, tracks, (recorded.getOrDefault(emptyList()).filter { it.kind !in setOf(EventKind.BRAKE,EventKind.ACCEL) } + changes + intervals).sortedBy { it.startMs },
+                recorded.exceptionOrNull()?.message, firstFrameMs, interval,profiles,savedLens==null)
+        }) { result ->
+            if (entry?.dir != dir) return@readPlaybackData
+            result.onSuccess { loaded ->
+                lenses=loaded.lenses;lensesLoaded=true;legacyLens=loaded.legacyLens
+                if(flat&&lenses.isEmpty())flat=false
+                rebuildPlayer()
+                samples = loaded.samples; traces = loaded.traces; events = loaded.events; sidecarError = loaded.error
+                historyIntervalMs = loaded.intervalMs
+                if (::timeline.isInitialized) timeline.traces = traces
+                if (positionMs == 0L) { positionMs = loaded.firstFrameMs; player?.seekTo(positionMs) }
+                updateEvents(); syncPosition()
+            }.onFailure { lensesLoaded=true;flat=false;rebuildPlayer();sidecarError = it.message ?: "历史数据读取失败"; updateEvents() }
         }
     }
 
     override fun build(): View {
-        val root = ui.column().apply { setPadding(ui.dp(16), ui.dp(8), ui.dp(16), ui.dp(16)) }
-
-        pictureHost = FrameLayout(ui.context)
-        root.addView(pictureHost, LinearLayout.LayoutParams(-1, 0, 1f))
+        val root = ui.column()
+        panel = RecordPlayerPanel(ui)
+        panel.fitPictureToAvailableHeight()
+        pictureHost = panel.picture
+        root.addView(panel, LinearLayout.LayoutParams(-1, 0, 1f))
+        root.addView(buildControls(), LinearLayout.LayoutParams(-1, ui.dp(60)))
+        root.addView(buildTimeline(), LinearLayout.LayoutParams(-1, -2))
+        neighborRow = ui.row().apply { setPadding(ui.dp(16), 0, ui.dp(16), 0) }
+        root.addView(neighborRow, LinearLayout.LayoutParams(-1, ui.dp(44)))
+        renderNeighbors()
         renderPicture()
-
-        root.addView(buildDataCard(), LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(10) })
-        root.addView(buildControls(), LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(10) })
-        root.addView(buildTimeline(), LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(10) })
         return root
     }
 
-    // ---- 画面区 ----
+    override fun rightSlot(container: LinearLayout) {
+        val chips = mutableMapOf<String?, TextView>()
+        (listOf<String?>(null) + SegmentLayout.DIRECTIONS).forEach { direction ->
+            val chip = ui.tab(direction?.let { directionLabel(it).take(1) } ?: "全部", singleDirection == direction) {
+                singleDirection = direction
+                chips.forEach { (key, view) ->
+                    ui.styleTab(view, key == direction)
+                }
+                renderPicture()
+            }.apply { textSize = 16f; setPadding(ui.dp(12), 0, ui.dp(12), 0) }
+            chips[direction] = chip
+            container.addView(chip, LinearLayout.LayoutParams(-2, ui.dp(44)))
+        }
+        val viewMode=ui.tab(if(flat)"广角平面"else"鱼眼",flat){}
+        viewMode.setOnClickListener{
+            val next=!flat
+            if(!lensesLoaded){host.toastLine("正在读取录像镜头参数");return@setOnClickListener}
+            val directions=singleDirection?.let{listOf(it)}?:SegmentLayout.DIRECTIONS
+            if(next&&directions.any{entry?.let{e->hasVideoFile(e,it)}==true&&it !in lenses}){
+                host.toastLine("这段录像缺少对应镜头标定，无法展平");return@setOnClickListener
+            }
+            if(player?.setFlat(next)!=false){flat=next;viewMode.text=if(flat)"广角平面"else"鱼眼";ui.styleTab(viewMode,flat);host.saveFlatView(flat)
+                if(flat&&legacyLens)host.toastLine("旧录像使用当前镜头标定，请核对当时的镜头方位")}
+        }
+        container.addView(viewMode,LinearLayout.LayoutParams(-2,ui.dp(44)))
+        container.addView(transport("more", "片段操作") { entry?.let { SegmentActions.show(host, it) } },
+            LinearLayout.LayoutParams(ui.dp(44), ui.dp(44)))
+    }
 
     private fun renderPicture() {
+        player?.let { positionMs = it.positionMs }
+        player?.release()
+        player = null
+        surfaces.values.forEach { it.release() }
+        surfaces.clear()
         pictureHost.removeAllViews()
         textureViews.clear()
-        val direction = singleDirection
-        if (direction == null) {
-            val grid = ui.column()
-            SegmentLayout.DIRECTIONS.chunked(2).forEachIndexed { index, pair ->
-                val row = ui.row()
-                pair.forEachIndexed { position, dir ->
-                    if (position > 0) row.addView(View(ui.context), LinearLayout.LayoutParams(ui.dp(10), 1))
-                    row.addView(frameCell(dir), LinearLayout.LayoutParams(0, -2, 1f))
-                }
-                grid.addView(row, LinearLayout.LayoutParams(-1, -2).apply { if (index > 0) topMargin = ui.dp(10) })
-            }
-            pictureHost.addView(grid, FrameLayout.LayoutParams(-1, -2, Gravity.TOP))
-        } else {
-            pictureHost.addView(frameCell(direction), FrameLayout.LayoutParams(-1, -2, Gravity.TOP))
-        }
-        val switcher = ui.row().apply { setPadding(0, ui.dp(8), 0, 0) }
-        val options = listOf<String?>(null) + SegmentLayout.DIRECTIONS
-        options.forEach { option ->
-            val label = option?.let { directionLabel(it) } ?: "全部"
-            switcher.addView(ui.chip(label, singleDirection == option) {
-                singleDirection = option
-                renderPicture()
-            }, LinearLayout.LayoutParams(-2, ui.dp(40)).apply { marginEnd = ui.dp(8) })
-        }
-        pictureHost.addView(switcher, FrameLayout.LayoutParams(-1, -2, Gravity.BOTTOM))
+        val directions = singleDirection?.let { listOf(it) } ?: SegmentLayout.DIRECTIONS
+        pictureHost.addView(RecordPlayerPanel.grid(ui, directions, true, ::frameCell), FrameLayout.LayoutParams(-1, -1))
         rebuildPlayer()
     }
 
@@ -160,18 +220,24 @@ internal class PlaybackPage(
     private fun rebuildPlayer() {
         player?.release()
         player = null
+        if(!lensesLoaded)return
         val current = entry ?: return
         val directions = (singleDirection?.let { listOf(it) } ?: SegmentLayout.DIRECTIONS)
             .filter { !current.missingDirections.contains(it) && hasVideoFile(current, it) }
         if (directions.isEmpty()) return
-        val p = SegmentPlayer(current.dir, directions, duration())
+        if(flat&&directions.any{it !in lenses})flat=false
+        val p = SegmentPlayer(current.dir, directions, duration(),lenses,flat)
         p.speed = speed
         p.onError = { message -> handler.post { host.toastLine(message) } }
         player = p
         textureViews.forEach { (dir, view) ->
-            view.surfaceTexture?.let { st -> p.attach(dir, Surface(st)) }
+            view.surfaceTexture?.let { st ->
+                val surface = surfaces.getOrPut(dir) { Surface(st) }
+                p.attach(dir, surface)
+            }
         }
-        if (playing) p.play() else p.seekTo(positionMs)
+        p.seekTo(positionMs)
+        if (playing) p.play()
     }
 
     private fun hasVideoFile(entry: SegmentEntry, direction: String): Boolean =
@@ -182,21 +248,31 @@ internal class PlaybackPage(
         val missing = current == null ||
             current.missingDirections.contains(direction) ||
             !hasVideoFile(current, direction)
-        val frame = Aspect16x9(ui.context).apply {
-            background = ui.rounded(ui.control, 4).apply { setStroke(ui.dp(1).coerceAtLeast(1), ui.border) }
-            clipToOutline = true
-        }
+        val frame = FrameLayout(ui.context).apply { setBackgroundColor(android.graphics.Color.BLACK) }
         if (!missing && current != null) {
             val texture = TextureView(ui.context)
             textureViews[direction] = texture
             frame.addView(texture, FrameLayout.LayoutParams(-1, -1))
             texture.surfaceTextureListener = object : TextureView.SurfaceTextureListener {
+                private var ownedSurface: Surface? = null
                 override fun onSurfaceTextureAvailable(st: android.graphics.SurfaceTexture, w: Int, h: Int) {
-                    player?.attach(direction, Surface(st))
+                    if (textureViews[direction] !== texture) return
+                    surfaces.remove(direction)?.release()
+                    val surface = Surface(st)
+                    ownedSurface = surface
+                    surfaces[direction] = surface
+                    fitTexture(texture, direction, w, h)
+                    player?.attach(direction, surface)
                 }
-                override fun onSurfaceTextureSizeChanged(st: android.graphics.SurfaceTexture, w: Int, h: Int) = Unit
+                override fun onSurfaceTextureSizeChanged(st: android.graphics.SurfaceTexture, w: Int, h: Int) { fitTexture(texture, direction, w, h) }
                 override fun onSurfaceTextureDestroyed(st: android.graphics.SurfaceTexture): Boolean {
-                    player?.detach(direction)
+                    // 旧布局的迟到销毁只能释放它借出的 Surface，不能拆掉同方向的新解码器。
+                    if (textureViews[direction] === texture) {
+                        player?.detach(direction)
+                        surfaces.remove(direction)
+                    }
+                    ownedSurface?.release()
+                    ownedSurface = null
                     return true
                 }
                 override fun onSurfaceTextureUpdated(st: android.graphics.SurfaceTexture) = Unit
@@ -229,143 +305,75 @@ internal class PlaybackPage(
         return frame
     }
 
-    // ---- 数据条 ----
-
-    private fun buildDataCard(): View {
-        val card = ui.card()
-        dataHost = ui.column().apply { setPadding(ui.dp(14), ui.dp(8), ui.dp(14), ui.dp(10)) }
-        card.addView(dataHost, LinearLayout.LayoutParams(-1, -2))
-        renderData()
-        return card
+    /** 按录像真实宽高等比完整显示，不拉伸鱼眼画面。 */
+    private fun fitTexture(texture: TextureView, direction: String, width: Int, height: Int) {
+        if (width <= 0 || height <= 0) return
+        val channel = entry?.dir?.let(com.galaxy.autorecord.export.ExportPlanner::readManifest)
+            ?.channels?.firstOrNull { it.direction == direction }
+        val ratio = if (channel != null && channel.height > 0) channel.width.toFloat() / channel.height else 1.6f
+        val viewRatio = width.toFloat() / height
+        texture.setTransform(android.graphics.Matrix().apply {
+            setScale(if (viewRatio > ratio) ratio / viewRatio else 1f,
+                if (viewRatio < ratio) viewRatio / ratio else 1f, width / 2f, height / 2f)
+        })
     }
 
-    /** 历史数据条：只读录像当时的样本；缺失显示"缺失"，超时显示"过期"（规格 R05-4）。 */
     private fun renderData() {
-        dataHost.removeAllViews()
-        if (sidecarError != null) {
-            dataHost.addView(ui.note(sidecarError!!, error = true), LinearLayout.LayoutParams(-1, -2))
-        }
-        val row = WrapRow(ui.context, 0, ui.dp(6))
-        val sample = VehicleHistory.sampleAt(samples, positionMs, host.settings.vehicleIntervalMs * 4L)
-        if (samples.isEmpty()) {
-            dataHost.addView(
-                ui.text("本段没有车辆数据（录像时未订阅或数据未落盘）", RecordRole.DESCRIPTION),
-                LinearLayout.LayoutParams(-1, -2),
-            )
-            return
-        }
-        VehicleKey.minimal.forEach { key ->
-            val raw = sample?.values?.get(key.key)
-            val value = if (sample == null) "过期" else raw ?: "缺失"
-            row.addView(dataItem(key.displayLabel(), value), LinearLayout.LayoutParams(-2, -2))
-        }
-        dataHost.addView(row, LinearLayout.LayoutParams(-1, -2))
-        dataHost.addView(
-            ui.text(
-                "样本 ${samples.size} 条 · 间隔 ${host.settings.vehicleIntervalMs} ms · 只读历史，不叠加实时值",
-                RecordRole.DESCRIPTION,
-            ),
-            LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(6) },
-        )
+        if (!::panel.isInitialized) return
+        val values = traces.mapNotNull { trace ->
+            val point = trace.points.lastOrNull { it.timeMs <= positionMs }?.takeIf { positionMs-it.timeMs <= trace.maxGapMs }
+            point?.value?.let { trace.key.key to it }
+        }.toMap()
+        panel.bind(values, (entry?.startedAtMillis ?: 0L) + positionMs)
     }
 
-    private fun dataItem(label: String, value: String): View {
-        val item = ui.column().apply { setPadding(0, ui.dp(2), ui.dp(16), ui.dp(2)) }
-        item.addView(ui.text(label, RecordRole.DESCRIPTION), LinearLayout.LayoutParams(-2, -2))
-        item.addView(ui.text(value, RecordRole.VALUE), LinearLayout.LayoutParams(-2, -2))
-        return item
-    }
-
-    // ---- 播放控制 ----
+    private fun transport(kind: String, label: String, action: () -> Unit): TextView =
+        ui.transport(kind, label, action)
 
     private fun buildControls(): View {
-        val card = ui.card()
-        val body = ui.column().apply { setPadding(ui.dp(14), ui.dp(10), ui.dp(14), ui.dp(12)) }
-        card.addView(body, LinearLayout.LayoutParams(-1, -2))
-
+        val row = ui.row().apply { setPadding(ui.dp(12), ui.dp(4), ui.dp(12), ui.dp(4)); setBackgroundColor(ui.surface) }
+        row.addView(transport("previous", "上一事件") { jumpEvent(-1) }, LinearLayout.LayoutParams(ui.dp(48), ui.dp(48)))
+        playButton = transport("play", "播放") { togglePlay() }
+        row.addView(playButton, LinearLayout.LayoutParams(ui.dp(48), ui.dp(48)))
+        row.addView(transport("next", "下一事件") { jumpEvent(1) }, LinearLayout.LayoutParams(ui.dp(48), ui.dp(48)))
         progress = SeekBar(ui.context).apply {
             max = 1000
-            progress = 0
             setOnSeekBarChangeListener(object : SeekBar.OnSeekBarChangeListener {
                 override fun onProgressChanged(bar: SeekBar?, value: Int, fromUser: Boolean) {
-                    if (!fromUser) return
-                    positionMs = duration() * value / 1000
-                    syncPosition()
+                    if (fromUser) { positionMs = duration() * value / 1000; syncPosition() }
                 }
                 override fun onStartTrackingTouch(bar: SeekBar?) { pause() }
-                override fun onStopTrackingTouch(bar: SeekBar?) { syncPosition() }
+                override fun onStopTrackingTouch(bar: SeekBar?) { player?.seekTo(positionMs); syncPosition() }
             })
         }
-        body.addView(progress, LinearLayout.LayoutParams(-1, -2))
-
-        val row = ui.row()
-        row.addView(ui.chip("上一事件", false) { jumpEvent(-1) }, LinearLayout.LayoutParams(-2, ui.dp(44)))
-        playButton = ui.chip("播放", false) { togglePlay() }
-        row.addView(playButton, LinearLayout.LayoutParams(-2, ui.dp(44)).apply { marginStart = ui.dp(8) })
-        row.addView(ui.chip("下一事件", false) { jumpEvent(1) }, LinearLayout.LayoutParams(-2, ui.dp(44)).apply {
-            marginStart = ui.dp(8)
-        })
-        row.addView(ui.column(), LinearLayout.LayoutParams(0, 1, 1f))
-        timeLabel = ui.text("00:00 / 00:00", RecordRole.VALUE)
+        row.addView(progress, LinearLayout.LayoutParams(0, ui.dp(48), 1f))
+        timeLabel = ui.text("", RecordRole.DESCRIPTION).apply { textSize = 14f; isSingleLine = true }
         row.addView(timeLabel, LinearLayout.LayoutParams(-2, -2))
-        body.addView(row, LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(6) })
-
-        val speedRow = ui.row()
-        speedRow.addView(ui.text("倍速", RecordRole.DESCRIPTION), LinearLayout.LayoutParams(-2, -2).apply {
-            marginEnd = ui.dp(8)
-        })
-        RecordSettings.SPEED_OPTIONS.forEach { option ->
-            speedRow.addView(ui.chip("${option}×", speed == option) {
-                speed = option
-                player?.let { it.speed = option }
-                host.updateSettings { it.copy(playbackSpeed = option) }
-                renderSpeedRow(speedRow)
-            }, LinearLayout.LayoutParams(-2, ui.dp(40)).apply { marginEnd = ui.dp(8) })
-        }
-        body.addView(speedRow, LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(4) })
-
-        neighborRow = ui.row()
-        body.addView(neighborRow, LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(6) })
-        renderNeighbors()
+        val speedButton = ui.tab("${speed}×", false) {
+            android.app.AlertDialog.Builder(host).setTitle("播放速度")
+                .setSingleChoiceItems(RecordSettings.SPEED_OPTIONS.map { "${it}×" }.toTypedArray(),
+                    RecordSettings.SPEED_OPTIONS.indexOf(speed)) { dialog, index ->
+                    speed = RecordSettings.SPEED_OPTIONS[index]
+                    player?.speed = speed
+                    host.updateSettings { it.copy(playbackSpeed = speed) }
+                    (row.getChildAt(row.childCount - 1) as TextView).text = "${speed}×"
+                    dialog.dismiss()
+                }.show()
+        }.apply { textSize = 14f; setPadding(ui.dp(10), 0, ui.dp(10), 0) }
+        row.addView(speedButton, LinearLayout.LayoutParams(-2, ui.dp(44)).apply { marginStart = ui.dp(8) })
         syncPosition()
-        return card
+        return row
     }
 
-    private fun renderSpeedRow(row: LinearLayout) {
-        row.removeAllViews()
-        row.addView(ui.text("倍速", RecordRole.DESCRIPTION), LinearLayout.LayoutParams(-2, -2).apply {
-            marginEnd = ui.dp(8)
-        })
-        RecordSettings.SPEED_OPTIONS.forEach { option ->
-            row.addView(ui.chip("${option}×", speed == option) {
-                speed = option
-                player?.let { it.speed = option }
-                host.updateSettings { it.copy(playbackSpeed = option) }
-                renderSpeedRow(row)
-            }, LinearLayout.LayoutParams(-2, ui.dp(40)).apply { marginEnd = ui.dp(8) })
-        }
-    }
-
-    /** 跨片段：同会话相邻段可切换；段界不拼接时间轴（RV-09）。 */
     private fun renderNeighbors() {
+        if (!::neighborRow.isInitialized) return
         neighborRow.removeAllViews()
         val current = entry ?: return
+        neighborRow.addView(ui.text(entry?.let { RecordTime.wallTime(it.startedAtMillis + positionMs) + " · 历史车辆数据" } ?: "历史车辆数据", RecordRole.DESCRIPTION), LinearLayout.LayoutParams(0, -2, 1f))
         val (prev, next) = host.library.neighbors(current, host.settings.segmentSeconds)
-        if (prev == null && next == null) {
-            neighborRow.addView(
-                ui.text("本段前后没有同会话片段", RecordRole.DESCRIPTION),
-                LinearLayout.LayoutParams(-1, -2),
-            )
-            return
-        }
-        prev?.let {
-            neighborRow.addView(ui.chip("上一段 ${RecordTime.dayTime(it.startedAtMillis)}", false) {
-                host.openPlayback(it.id)
-            }, LinearLayout.LayoutParams(-2, ui.dp(40)).apply { marginEnd = ui.dp(8) })
-        }
-        next?.let {
-            neighborRow.addView(ui.chip("下一段 ${RecordTime.dayTime(it.startedAtMillis)}", false) {
-                host.openPlayback(it.id)
+        listOf(prev to "上一段", next to "下一段").forEach { (segment, label) ->
+            neighborRow.addView(ui.tab(label, false) { segment?.let { host.openPlayback(it.id) } }.apply {
+                isEnabled = segment != null; alpha = if (isEnabled) 1f else .4f; textSize = 14f
             }, LinearLayout.LayoutParams(-2, ui.dp(40)))
         }
     }
@@ -404,7 +412,10 @@ internal class PlaybackPage(
         val total = duration()
         progress.progress = if (total <= 0) 0 else (positionMs * 1000 / total).toInt().coerceIn(0, 1000)
         timeLabel.text = "${RecordTime.clock(positionMs)} / ${RecordTime.clock(total)}"
-        playButton.text = if (playing) "暂停" else "播放"
+        playButton.contentDescription = if (playing) "暂停" else "播放"
+        playButton.setCompoundDrawables(ui.glyphDrawable(if (playing) "pause" else "play", ui.textColor).apply {
+            setBounds(0, 0, ui.dp(24), ui.dp(24))
+        }, null, null, null)
         if (::timeline.isInitialized) timeline.positionMs = positionMs
         renderData()
     }
@@ -423,6 +434,8 @@ internal class PlaybackPage(
         } else {
             val target = if (direction > 0) ordered.firstOrNull { it.startMs > positionMs }
             else ordered.lastOrNull { it.startMs < positionMs }
+            selectedEvent = target
+            updateEvents()
             positionMs = (target?.startMs ?: if (direction > 0) duration() else 0L).coerceIn(0, duration())
         }
         player?.seekTo(positionMs)
@@ -430,100 +443,77 @@ internal class PlaybackPage(
     }
 
     private fun filteredEvents(): List<EventMark> {
-        val base = if (visibleKinds.isEmpty()) events else events.filter { it.kind in visibleKinds }
+        val base = events.filter { it.kind in visibleKinds }
         return base.sortedBy { it.startMs }
     }
 
     // ---- 事件时间轴 ----
 
     private fun buildTimeline(): View {
-        val card = ui.card()
-        val body = ui.column().apply { setPadding(ui.dp(14), ui.dp(10), ui.dp(14), ui.dp(12)) }
-        card.addView(body, LinearLayout.LayoutParams(-1, -2))
-
+        val body = ui.column().apply { setPadding(ui.dp(16), 0, ui.dp(16), ui.dp(8)); setBackgroundColor(ui.surface) }
         val header = ui.row()
-        header.addView(ui.text("驾驶事件", RecordRole.LABEL), LinearLayout.LayoutParams(0, -2, 1f))
-        eventCountLabel = ui.text("事件 ${events.size}", RecordRole.DESCRIPTION)
-        header.addView(eventCountLabel, LinearLayout.LayoutParams(-2, -2))
-        body.addView(header, LinearLayout.LayoutParams(-1, -2))
-
-        val filterRow = WrapRow(ui.context, ui.dp(8), ui.dp(6)).apply { setPadding(0, ui.dp(6), 0, ui.dp(4)) }
-        EventKind.entries.forEach { kind ->
-            filterRow.addView(ui.chip(kind.label, kind in visibleKinds || visibleKinds.isEmpty()) {
-                if (visibleKinds.isEmpty()) {
-                    visibleKinds.add(kind)
-                } else if (kind in visibleKinds) {
-                    visibleKinds.remove(kind)
-                } else {
-                    visibleKinds.add(kind)
-                }
-                timeline.visibleKinds = visibleKinds.toSet()
-                renderEventChips(filterRow)
-            }, LinearLayout.LayoutParams(-2, ui.dp(40)))
-        }
-        body.addView(filterRow, LinearLayout.LayoutParams(-1, -2))
-
+        eventCountLabel = ui.text("", RecordRole.DESCRIPTION)
+        header.addView(eventCountLabel, LinearLayout.LayoutParams(0, -2, 1f))
+        selectedTab = ui.tab("选中事件") {
+            selectedEvent = selectedEvent ?: filteredEvents().minByOrNull { kotlin.math.abs(it.startMs - positionMs) }
+            showSelected = selectedEvent != null
+            updateEvents()
+        }.apply { textSize = 12f }
+        allTab = ui.tab("全部事件", true) { showSelected = false; updateEvents() }.apply { textSize = 12f }
+        header.addView(selectedTab, LinearLayout.LayoutParams(-2, ui.dp(36)))
+        header.addView(allTab, LinearLayout.LayoutParams(-2, ui.dp(36)))
+        header.addView(transport("event_previous", "上一事件") { jumpEvent(-1) }, LinearLayout.LayoutParams(ui.dp(38), ui.dp(42)))
+        header.addView(transport("event_next", "下一事件") { jumpEvent(1) }, LinearLayout.LayoutParams(ui.dp(38), ui.dp(42)))
+        header.addView(transport("sliders", "事件筛选") { showEventFilter() }, LinearLayout.LayoutParams(ui.dp(38), ui.dp(42)))
+        body.addView(header, LinearLayout.LayoutParams(-1, ui.dp(48)))
         timeline = EventTimelineView(ui.context, ui) { fraction -> seekTo(fraction) }
-        timeline.events = events
-        timeline.durationMs = duration()
-        timeline.positionMs = positionMs
-        body.addView(timeline, LinearLayout.LayoutParams(-1, -2))
-
-        eventListHost = ui.column()
-        body.addView(eventListHost, LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(6) })
-        val toggle = ui.chip("事件摘要", false) { onlySelectedEvent = !onlySelectedEvent; renderEvents() }
-        body.addView(toggle, LinearLayout.LayoutParams(-2, ui.dp(40)).apply { topMargin = ui.dp(4) })
-        renderEvents()
-        if (sidecarError != null) {
-            body.addView(ui.note(sidecarError!!, error = true), LinearLayout.LayoutParams(-1, -2))
-        }
-        return card
+        timeline.durationMs = duration(); timeline.positionMs = positionMs
+        timeline.traces = traces
+        timeline.onEventSelected = { event -> selectedEvent = event; updateEvents() }
+        body.addView(android.widget.ScrollView(ui.context).apply {
+            isFillViewport = false
+            addView(timeline, android.widget.FrameLayout.LayoutParams(-1,-2))
+        }, LinearLayout.LayoutParams(-1, ui.dp(210)))
+        eventDetail = ui.text("正在读取历史车辆数据…", RecordRole.DESCRIPTION).apply { maxLines = 2 }
+        body.addView(eventDetail, LinearLayout.LayoutParams(-1, -2))
+        updateEvents()
+        if (sidecarError != null) body.addView(ui.note(sidecarError!!, true), LinearLayout.LayoutParams(-1, -2))
+        return body
     }
 
-    private fun renderEventChips(row: WrapRow) {
-        row.removeAllViews()
-        EventKind.entries.forEach { kind ->
-            row.addView(ui.chip(kind.label, kind in visibleKinds || visibleKinds.isEmpty()) {
-                if (visibleKinds.isEmpty()) {
-                    visibleKinds.add(kind)
-                } else if (kind in visibleKinds) {
-                    visibleKinds.remove(kind)
-                } else {
-                    visibleKinds.add(kind)
-                }
-                timeline.visibleKinds = visibleKinds.toSet()
-                renderEventChips(row)
-                renderEvents()
-            }, LinearLayout.LayoutParams(-2, ui.dp(40)))
-        }
-    }
-
-    /** 事件摘要：点一条就 seek 到那一刻——这是取证时跳过"拖进度条找画面"的最短路径。 */
-    private fun renderEvents() {
-        if (!::eventListHost.isInitialized) return
-        eventListHost.removeAllViews()
-        eventListHost.visibility = if (onlySelectedEvent) View.VISIBLE else View.GONE
-        if (events.isEmpty()) {
-            eventListHost.addView(ui.text("本段无事件", RecordRole.DESCRIPTION), LinearLayout.LayoutParams(-1, -2))
-            return
-        }
-        EventReader.summarize(events, 10).forEach { event ->
-            val row = ui.row().apply {
-                minimumHeight = ui.dp(56)
-                isClickable = true
-                setOnClickListener { positionMs = event.startMs; syncPosition() }
+    private fun updateEvents() {
+        if (!::timeline.isInitialized) return
+        val filtered = filteredEvents()
+        val selected = selectedEvent?.takeIf { it.kind in visibleKinds && (it in filtered || it.ruleVersion == "raw_trace_v1") }
+        if (showSelected && selected == null) showSelected = false
+        timeline.events = if (showSelected) listOfNotNull(selected) else filtered
+        timeline.visibleKinds = if (showSelected && selected != null) setOf(selected.kind) else visibleKinds
+        eventCountLabel.text = if (showSelected) "1 个选中事件" else "${filtered.size} 个事件"
+        if (::eventDetail.isInitialized) {
+            eventDetail.text = when {
+                sidecarError != null -> sidecarError
+                selected != null -> selected.timeLabel() + " · " + selected.kind.label + "  " +
+                    selected.changes.entries.joinToString("；") { (key, value) -> "${VehicleKey.of(key)?.label ?: key} $value" }
+                samples.isEmpty() -> "本段没有可用车辆样本，回看不使用实时车辆值"
+                else -> "${samples.size}条样本 · 周期${historyIntervalMs}ms · 油门绿/刹车红，浅轻深重 · 点行首展开曲线"
             }
-            row.addView(ui.text(event.timeLabel(), RecordRole.VALUE), LinearLayout.LayoutParams(ui.dp(56), -2))
-            row.addView(ui.text(event.kind.label, RecordRole.LABEL), LinearLayout.LayoutParams(0, -2, 1f))
-            val detail = if (event.isDiscrete) "瞬时" else "${event.durationMs} ms" +
-                (event.peak?.let { " · 峰值 ${it.toInt()}%" } ?: "")
-            row.addView(ui.text(detail, RecordRole.DESCRIPTION), LinearLayout.LayoutParams(-2, -2))
-            eventListHost.addView(row, LinearLayout.LayoutParams(-1, -2))
         }
-        eventListHost.addView(
-            ui.text("事件由制动/油门/辅助状态阈值判定，仅用于定位与保留保护，不做碰撞或事故认定。", RecordRole.DESCRIPTION),
-            LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(4) },
-        )
+        selectedTab.isEnabled = filtered.isNotEmpty()
+        selectedTab.alpha = if (selectedTab.isEnabled) 1f else .45f
+        ui.styleTab(selectedTab, showSelected)
+        ui.styleTab(allTab, !showSelected)
+    }
+
+    private fun showEventFilter() {
+        val kinds = EventKind.entries
+        val pending = visibleKinds.toMutableSet()
+        android.app.AlertDialog.Builder(host).setTitle("事件筛选")
+            .setMultiChoiceItems(kinds.map { it.label }.toTypedArray(),
+                BooleanArray(kinds.size) { kinds[it] in pending }) { _, index, checked ->
+                if (checked) pending.add(kinds[index]) else pending.remove(kinds[index])
+            }.setPositiveButton("完成") { _, _ -> visibleKinds = pending; updateEvents() }
+            .setNeutralButton("全部") { _, _ -> visibleKinds = kinds.toMutableSet(); updateEvents() }
+            .setNegativeButton("取消", null).show()
     }
 
     private fun playbackHint() {
@@ -547,6 +537,8 @@ internal class PlaybackPage(
         pause()
         player?.release()
         player = null
+        surfaces.values.forEach { it.release() }
+        surfaces.clear()
         textureViews.clear()
     }
 

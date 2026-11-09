@@ -59,12 +59,12 @@ internal object SegmentActions {
 
         body.addView(row(ui, "删除", "同时删除四路视频、车辆数据与索引项", danger = true) {
             dismiss()
-            if (entry.isProtected) {
-                host.toastLine("该片段受保护（已锁定或含事件），请先解锁")
+            if (entry.locked) {
+                host.toastLine("该片段已锁定，请先解锁")
                 return@row
             }
             RecordDialogs.confirm(host, "删除片段", "将同时删除四路视频、车辆数据与索引项，不可恢复。", "删除") {
-                host.deleteSegment(entry)?.let { host.toastLine(it) } ?: host.toastLine("已删除")
+                host.deleteSegments(listOf(entry)) { host.toastLine(it) }
             }
         }, LinearLayout.LayoutParams(-1, -2))
 
@@ -82,8 +82,6 @@ internal object SegmentActions {
     /** 只读信息：编码器硬/软如实显示，路径做简写（不暴露完整绝对路径）。 */
     private fun infoBlock(ui: RecordUi, host: RecordActivity, entry: SegmentEntry): View {
         val column = ui.column().apply { setPadding(ui.dp(16), 0, ui.dp(16), ui.dp(8)) }
-        val events = runCatching { EventReader.read(entry.dir) }.getOrNull()
-        val samples = VehicleHistory.read(entry.dir)
         val lines = listOf(
             "完整度" to entry.completeness.label,
             "时长" to if (entry.durationMillis > 0) RecordTime.clock(entry.durationMillis) else "—",
@@ -91,8 +89,8 @@ internal object SegmentActions {
             "分辨率" to entry.resolutionSummary.ifEmpty { "—" },
             "编码器" to entry.encoderSummary.ifEmpty { "—" },
             "码率" to entry.bitrateSummary.ifEmpty { "—" },
-            "车辆样本" to if (samples.isEmpty()) "无" else "${samples.size} 条",
-            "事件" to (events?.let { "${it.size} 条" } ?: "读取失败"),
+            "车辆样本" to if (entry.hasVehicleData) "已记录（回放时加载）" else "无",
+            "事件" to "${entry.eventCount} 条",
             "事件规则版本" to (entry.ruleVersion ?: "—"),
             "大小" to RecordFmt.bytes(entry.bytes),
             "介质" to entry.volumeLabel,

@@ -34,21 +34,25 @@ internal class RecordTitleBar(context: Context, private val ui: RecordUi) : Line
     init {
         orientation = HORIZONTAL
         gravity = Gravity.CENTER_VERTICAL
-        minimumHeight = ui.dp(64)
+        minimumHeight = ui.dp(70)
         setPadding(ui.dp(16), 0, ui.dp(16), 0)
-        addView(leftSlot, LayoutParams(0, ui.dp(64)))
+        addView(leftSlot, LayoutParams(0, ui.dp(48)))
         addView(titleView, LayoutParams(0, -2, 1f).apply { marginStart = ui.dp(4) })
         addView(rightSlot, LayoutParams(-2, -2).apply { marginStart = ui.dp(8) })
     }
 
     fun bind(title: String, showBack: Boolean, backLabel: String, onBack: () -> Unit) {
-        titleView.text = title
+        titleView.maxLines = if ('\n' in title) 2 else 1
+        titleView.text = if ('\n' in title) android.text.SpannableString(title).apply {
+            setSpan(android.text.style.RelativeSizeSpan(.6f), title.indexOf('\n') + 1, title.length,
+                android.text.Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        } else title
         leftSlot.removeAllViews()
-        leftSlot.layoutParams = LayoutParams(if (showBack) ui.dp(64) else 0, ui.dp(64))
+        leftSlot.layoutParams = LayoutParams(if (showBack) ui.dp(48) else 0, ui.dp(48))
         if (showBack) {
             leftSlot.addView(
                 ui.iconButton("back", backLabel, ui.textColor, onBack),
-                FrameLayout.LayoutParams(ui.dp(64), ui.dp(64)),
+                FrameLayout.LayoutParams(ui.dp(48), ui.dp(48)),
             )
         }
     }
@@ -65,7 +69,7 @@ internal class RecordTitleBar(context: Context, private val ui: RecordUi) : Line
 }
 
 /**
- * 一级页左侧导航栏：164dp（内层 132dp + 两侧 16dp），项高 90dp、图标 48dp。
+ * 一级页左侧导航栏：120dp，图标与文字上下排布，仅导航保留此结构。
  * 选中：底色用 selected、图标与文字用 accent；未选中用 text。
  */
 internal class RecordNavRail(
@@ -85,10 +89,10 @@ internal class RecordNavRail(
 
     init {
         orientation = VERTICAL
-        setPadding(ui.dp(16), ui.dp(10), ui.dp(16), ui.dp(10))
+        setPadding(ui.dp(8), ui.dp(10), ui.dp(8), ui.dp(10))
         background = ui.navRailBackground()
         for (page in MainPage.entries) {
-            val icon = ui.glyph(page.glyph, ui.textColor, 12)
+            val icon = ui.glyph(page.glyph, ui.textColor, 0)
             val label = ui.text(page.label, RecordRole.NAV).apply {
                 gravity = Gravity.CENTER
                 maxLines = 1
@@ -96,15 +100,15 @@ internal class RecordNavRail(
             val item = LinearLayout(context).apply {
                 orientation = VERTICAL
                 gravity = Gravity.CENTER
-                minimumHeight = ui.dp(90)
+                minimumHeight = ui.dp(98)
                 setPadding(ui.dp(4), ui.dp(13), ui.dp(4), ui.dp(13))
                 isClickable = true
                 isFocusable = true
                 contentDescription = page.label
                 setOnClickListener { onSelect(page) }
             }
-            item.addView(icon, LayoutParams(ui.dp(48), ui.dp(48)))
-            item.addView(label, LayoutParams(-1, -2).apply { topMargin = ui.dp(2) })
+            item.addView(icon, LayoutParams(ui.dp(29), ui.dp(29)))
+            item.addView(label, LayoutParams(-1, -2).apply { topMargin = ui.dp(9) })
             addView(item, LayoutParams(-1, -2).apply { bottomMargin = ui.dp(6) })
             items += Item(page, item, icon, label)
         }

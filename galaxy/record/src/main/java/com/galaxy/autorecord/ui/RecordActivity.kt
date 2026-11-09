@@ -15,6 +15,7 @@ import android.view.Surface
 import android.widget.FrameLayout
 import android.widget.LinearLayout
 import com.galaxy.autorecord.BuildConfig
+import com.galaxy.autorecord.runtime.RecordSessionHub
 import com.galaxy.autorecord.core.RecordAccessGate
 import com.galaxy.autorecord.core.AutoServiceRecordFeed
 import com.galaxy.autorecord.core.L6RecordCameraAdapter
@@ -95,7 +96,19 @@ class RecordActivity : Activity() {
 
     private var directCamera: DirectCameraSource? = null
     private var surfaceCamera: SurfaceCameraSource? = null
-    private var recordingEngine: com.galaxy.autorecord.recording.RecordingEngine? = null
+    private val recordHub by lazy { RecordSessionHub.get(applicationContext) }
+    private var autoLaunchPending=false
+    private var libraryRevisionSeen=0L
+    private val sessionObserver:(Boolean)->Unit = { changed ->
+        settings=store.load()
+        if((changed||recordHub.running||recordHub.wanted) && ::controller.isInitialized && !(controller.snapshot.state==RecordingState.STARTING && !recordHub.wanted && !recordHub.running))
+            controller.syncFromSession(recordHub.snapshot)
+        if(!isFinishing&&!isDestroyed&&!changed){currentPage?.onDataChanged();maybeAutoStart()}
+        if (libraryRevisionSeen != recordHub.libraryRevision) {
+            libraryRevisionSeen = recordHub.libraryRevision
+            if (foreground && currentPage is LibraryPage) refreshLibrary()
+        }
+    }
     private val previewSurfaces = mutableMapOf<String, Surface>()
 
     /** 最近一帧（按方向缓存）；页面只读，不持有生命周期。 */
@@ -167,28 +180,8 @@ class RecordActivity : Activity() {
     }
 
     override fun attachBaseContext(newBase: Context) {
-        // 与 CarPlay L7UiDensity.DEFAULT=280 一致；只改应用资源密度，不改系统/相机像素。
-        val base = Configuration(newBase.resources.configuration)
-        val ratio = base.densityDpi.toFloat() / 280f
-        val density = Configuration().apply {
-            setLocales(base.locales)
-            densityDpi = 280
-            screenWidthDp = (base.screenWidthDp * ratio).toInt()
-            screenHeightDp = (base.screenHeightDp * ratio).toInt()
-            smallestScreenWidthDp = (base.smallestScreenWidthDp * ratio).toInt()
-        }
-        val mode = runCatching { PrefsSettingsStore(newBase).load().themeMode }
-            .getOrDefault(RecordSettings.THEME_SYSTEM)
-        if (mode != RecordSettings.THEME_SYSTEM) {
-            val override = Configuration(newBase.resources.configuration).apply {
-                uiMode = (uiMode and Configuration.UI_MODE_NIGHT_MASK.inv()) or
-                    if (mode == RecordSettings.THEME_DARK) Configuration.UI_MODE_NIGHT_YES
-                    else Configuration.UI_MODE_NIGHT_NO
-            }
-            density.uiMode = override.uiMode
-        }
-        runCatching { applyOverrideConfiguration(density) }
-                .onFailure { Log.w(TAG, "uiMode 覆盖失败，本次按系统日夜显示：$mode", it) }
+        runCatching { applyOverrideConfiguration(RecordUiConfiguration.from(newBase)) }
+            .onFailure { Log.w(TAG,"UI配置覆盖失败，按系统显示",it) }
         super.attachBaseContext(newBase)
     }
 
@@ -210,7 +203,7 @@ class RecordActivity : Activity() {
                 volumes = storageVolumes,
                 cameraSourceProvider = { cameraSource },
                 layoutProvider = { cameraLayout },
-                engineAvailable = !BuildConfig.EMULATOR_CAMERA,
+                engineAvailable = !BuildConfig.EMULATOR_CAMERA || recordHub.testMode,
             ),
             settingsProvider = { settings },
             worker = preflightWorker,
@@ -218,22 +211,11 @@ class RecordActivity : Activity() {
         ).also { c ->
             c.listener = { next -> snapshot = next; dispatchSnapshot() }
             c.preflightListener = { outcome -> (currentPage as? LivePage)?.onPreflight(outcome) }
-            // B3 录制引擎：模拟器构建不挂（JPEG 通路无法直喂编码 Surface，如实保持"引擎不可用"）
-            if (!BuildConfig.EMULATOR_CAMERA) {
-                recordingEngine = com.galaxy.autorecord.recording.RecordingEngine(
-                    volumes = storageVolumes,
-                    feed = vehicleFeed,
-                    surfaceBinder = object : com.galaxy.autorecord.core.RecordSurfaceBinder {
-                        override fun bindRecordSurface(direction: String, surface: Surface?, previous: Surface?) {
-                            surfaceCamera?.bindRecordSurface(direction, surface, previous)
-                        }
-                    },
-                    settingsProvider = { settings },
-                    appVersionName = BuildConfig.VERSION_NAME,
-                )
-                c.engine = recordingEngine
-            }
+            if(!BuildConfig.EMULATOR_CAMERA || recordHub.testMode)c.engine=recordHub.port
         }
+        recordHub.observe(sessionObserver)
+        if(recordHub.running||recordHub.wanted||recordHub.snapshot.state==RecordingState.ERROR)controller.syncFromSession(recordHub.snapshot)
+        autoLaunchPending=savedInstanceState==null && settings.autoOnLaunch && !recordHub.wanted
         vehicleFeed.setInterval(settings.vehicleIntervalMs)
 
         restoreState(savedInstanceState)
@@ -270,7 +252,8 @@ class RecordActivity : Activity() {
         foreground = false
         serviceFeed?.foreground(false)
         uiHandler.removeCallbacks(ticker)
-        // 离开前台就释放相机：不占相机、不烧电，符合"最少资源"
+        if(!settings.background && recordHub.running)recordHub.stopRequested()
+        // 页面退出只释放预览，录制资源由前台服务持有。
         currentPage?.onHidden()
         stopPreview()
         super.onPause()
@@ -306,7 +289,7 @@ class RecordActivity : Activity() {
     private fun buildShell() {
         val root = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         navRail = RecordNavRail(this, ui) { page -> openMainPage(page) }
-        root.addView(navRail, LinearLayout.LayoutParams(ui.dp(164), LinearLayout.LayoutParams.MATCH_PARENT))
+        root.addView(navRail, LinearLayout.LayoutParams(ui.dp(120), LinearLayout.LayoutParams.MATCH_PARENT))
 
         val content = FrameLayout(this).apply { background = ui.contentGradient() }
         root.addView(content, LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.MATCH_PARENT, 1f))
@@ -315,7 +298,7 @@ class RecordActivity : Activity() {
         content.addView(column, FrameLayout.LayoutParams(-1, -1))
 
         titleBar = RecordTitleBar(this, ui)
-        column.addView(titleBar, LinearLayout.LayoutParams(-1, ui.dp(64)))
+        column.addView(titleBar, LinearLayout.LayoutParams(-1, ui.dp(70)))
 
         contentHost = FrameLayout(this)
         column.addView(contentHost, LinearLayout.LayoutParams(-1, 0, 1f))
@@ -434,6 +417,9 @@ class RecordActivity : Activity() {
             state == RecordingState.ERROR -> "● "
             else -> null
         }
+        val badgeKey = "$state:$text:${snap.missingDirections}:${snap.storage}"
+        if (badge.tag == badgeKey) return
+        badge.tag = badgeKey
         if (healthDot == null) {
             badge.text = text
         } else {
@@ -453,7 +439,8 @@ class RecordActivity : Activity() {
         }
         badge.setTextColor(
             when (state) {
-                RecordingState.RECORDING, RecordingState.ERROR -> ui.danger
+                RecordingState.RECORDING -> ui.connected
+                RecordingState.ERROR -> ui.danger
                 RecordingState.STARTING, RecordingState.STOPPING -> ui.warning
                 RecordingState.IDLE -> ui.muted
             },
@@ -587,6 +574,7 @@ class RecordActivity : Activity() {
     }
 
     internal fun clearRecordingError() {
+        recordHub.clearError()
         controller.clearError()
         snapshot = controller.snapshot
         dispatchSnapshot()
@@ -620,23 +608,54 @@ class RecordActivity : Activity() {
         refreshLibrary()
     }
 
+    internal fun lockSegments(entries:List<SegmentEntry>,locked:Boolean,completed:(String)->Unit) {
+        io.run({
+            val base=checkNotNull(resolveAppDirSync()) { "存储卷不可用" }
+            val ids=entries.map{it.id}.distinct()
+            check(SegmentMarks(SegmentLayout.indexDir(base)).setLocked(ids,locked)!=null){"片段正在删除或标记不可写"}
+            "已${if(locked)"锁定"else"解锁"} ${ids.size} 段"
+        }) { result->refreshLibrary();completed(result.getOrElse{"操作失败：${it.message}"}) }
+    }
+
     /** 删除片段（只删本 App 段目录，永不格式化、不碰其他文件）。 */
-    internal fun deleteSegment(entry: SegmentEntry): String? {
-        if (entry.isProtected) return "该片段受保护（已锁定或含事件），请先解锁"
-        if (entry.completeness == com.galaxy.autorecord.core.SegmentCompleteness.WRITING) return "该片段仍在写入中"
-        val ok = runCatching { entry.dir.deleteRecursively() }.getOrDefault(false)
-        if (!ok) return "删除失败：目录不可写或文件被占用"
-        refreshLibrary()
-        return null
+    internal fun deleteSegments(entries: List<SegmentEntry>, completed: (String) -> Unit) {
+        io.run({
+            val base = checkNotNull(resolveAppDirSync()) { "存储卷不可用" }
+            val allowed = SegmentLayout.segmentsRoot(base).canonicalFile
+            val marks = SegmentMarks(SegmentLayout.indexDir(base))
+            var removed=0
+            val errors=mutableListOf<String>()
+            for (entry in entries.distinctBy { it.id }) {
+                val dir=entry.dir.canonicalFile
+                if (dir.parentFile?.parentFile != allowed || dir.name!=entry.id) { errors+="${entry.id}：目录不属于本录像库";continue }
+                val deleted = com.galaxy.autorecord.core.SegmentAccess.delete(dir) {
+                    val manifest=com.galaxy.autorecord.export.ExportPlanner.readManifest(dir)
+                    when {
+                        entry.id in marks.locks() -> { errors+="${entry.id}：已锁定";false }
+                        manifest?.state==com.galaxy.autorecord.core.SegmentManifest.STATE_WRITING -> { errors+="${entry.id}：仍在写入";false }
+                        else -> dir.deleteRecursively() && !dir.exists()
+                    }
+                }
+                if (deleted) {
+                    removed++
+                    if (!marks.forget(listOf(entry.id))) errors+="${entry.id}：已删除，索引清理失败"
+                } else if (errors.none { it.startsWith(entry.id) }) errors+="${entry.id}：正在录制/回放/导出或目录不可写"
+            }
+            "已删除 $removed/${entries.size} 段（含四路视频、车辆数据和事件）" + if(errors.isEmpty())""else"；"+errors.joinToString("；")
+        }) { result -> refreshLibrary(); completed(result.getOrElse { "删除失败：${it.message}" }) }
     }
 
     internal fun refreshLibrary() {
-        val baseDir = resolveAppDirSync()
-        io.run({ LocalLibrary.load(baseDir, baseDir?.let { SegmentMarks(SegmentLayout.indexDir(it)) }, volumeLabel()) }) { result ->
+        io.run({
+            val baseDir = resolveAppDirSync()
+            LocalLibrary.load(baseDir, baseDir?.let { SegmentMarks(SegmentLayout.indexDir(it)) }, volumeLabel())
+        }) { result ->
             library = result.getOrElse { LibraryState(scanned = true, error = "读取片段失败：${it.message ?: "未知错误"}") }
             currentPage?.onDataChanged()
         }
     }
+
+    internal fun <T> readPlaybackData(task: () -> T, deliver: (Result<T>) -> Unit) = io.run(task, deliver)
 
     private fun marksForCurrentVolume(): SegmentMarks? {
         val dir = resolveAppDirSync() ?: return null
@@ -718,10 +737,8 @@ class RecordActivity : Activity() {
             return
         }
         cameraPermissionState = "已授予"
-        if (!BuildConfig.EMULATOR_CAMERA) {
-            val source = SurfaceCameraSource(this, L6RecordCameraAdapter { cameraLayout }) {
-                uiHandler.post { if (!isFinishing && !isDestroyed) currentPage?.onDataChanged() }
-            }
+        if (!BuildConfig.EMULATOR_CAMERA || recordHub.testMode) {
+            val source = recordHub.camera()
             surfaceCamera = source
             cameraSource = source
             previewSurfaces.forEach { (direction, surface) -> source.bind(direction, surface) }
@@ -845,14 +862,46 @@ class RecordActivity : Activity() {
 
     internal fun stopPreview() {
         // 后台录制（P8 S-REC 后台开关）：录制中且允许后台时保留相机流，录制不因切页/退后台中断
-        if (controller.snapshot.isRecording && settings.background) return
+        if (controller.snapshot.isRecording && settings.background && surfaceCamera==null) return
         directCamera?.stop()
         surfaceCamera?.stop()
     }
 
-    internal val usesSurfacePreview get() = !BuildConfig.EMULATOR_CAMERA
+    internal fun enableTurnAssist(enabled:Boolean,done:(Boolean)->Unit) {
+        if(!enabled){updateSettings{it.copy(turnAssist=false)};done(false);return}
+        if(android.provider.Settings.canDrawOverlays(this)&&checkSelfPermission(Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED){
+            updateSettings{it.copy(turnAssist=true)};done(settings.turnAssist);return
+        }
+        val feed=serviceFeed
+        if(feed==null||!feed.connected){toastLine("等待 AutoService 准备悬浮窗和相机权限");done(false);return}
+        feed.requestAssistPermissions{granted,error->
+            val ready=granted&&android.provider.Settings.canDrawOverlays(this)&&checkSelfPermission(Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED
+            if(ready)updateSettings{it.copy(turnAssist=true)}else toastLine("转向辅助权限未就绪：$error")
+            done(ready&&settings.turnAssist)
+        }
+    }
+    internal fun enableSentinel(enabled:Boolean,done:(Boolean)->Unit){
+        if(!enabled){updateSettings{it.copy(sentinelEnabled=false)};done(false);return}
+        if(isDriving()){toastLine("请停稳后开启哨兵");done(false);return}
+        val feed=serviceFeed
+        if(feed==null||!feed.connected){toastLine("等待AutoService连接");done(false);return}
+        feed.requestAssistPermissions{granted,error->
+            val ready=granted&&android.provider.Settings.canDrawOverlays(this)&&checkSelfPermission(Manifest.permission.CAMERA)==PackageManager.PERMISSION_GRANTED
+            if(ready)updateSettings{it.copy(sentinelEnabled=true)}else toastLine("哨兵权限未就绪：$error")
+            done(ready&&settings.sentinelEnabled)
+        }
+    }
+    internal fun saveFlatView(flat:Boolean){settings=settings.copy(flatView=flat);store.save(settings)}
+    internal fun setFlatPreview(flat:Boolean,directions:List<String> = SegmentLayout.DIRECTIONS):Boolean {
+        if(flat && directions.any { surfaceCamera?.flatAvailable(it)!=true }) {
+            toastLine("本车镜头标定正在核验，尚未启用平面映射");return false
+        }
+        surfaceCamera?.setFlat(flat);saveFlatView(flat);return true
+    }
+    internal val usesSurfacePreview get() = !BuildConfig.EMULATOR_CAMERA || recordHub.testMode
     internal fun bindPreviewSurface(direction: String, surface: Surface) {
         previewSurfaces[direction] = surface
+        surfaceCamera?.setFlat(settings.flatView)
         surfaceCamera?.bind(direction, surface)
     }
     internal fun unbindPreviewSurface(direction: String, surface: Surface) {
@@ -897,6 +946,12 @@ class RecordActivity : Activity() {
         }
     }
 
+    private fun maybeAutoStart() {
+        if(!autoLaunchPending || !foreground || !cameraAccessReady || recordHub.running || recordHub.wanted)return
+        if(!SegmentLayout.DIRECTIONS.all{cameraSource.statuses()[it]?.isLive==true})return
+        autoLaunchPending=false
+        requestStartRecording()
+    }
     private fun dispatchSnapshot() {
         renderBadge()
         currentPage?.onSnapshotChanged()
@@ -918,6 +973,7 @@ class RecordActivity : Activity() {
         val next = block(settings)
         settings = next
         store.save(next)
+        recordHub.settingsChanged()
         serviceFeed?.configure()
         if (next.vehicleIntervalMs != previousInterval) vehicleFeed.setInterval(next.vehicleIntervalMs)
         return next
@@ -953,12 +1009,14 @@ class RecordActivity : Activity() {
         accessGate.close()
         uiHandler.removeCallbacks(permissionTimeout)
         permissionCompletion = null
-        recordingEngine?.release()
+        recordHub.removeObserver(sessionObserver)
+        previewSurfaces.toMap().forEach{(direction,surface)->surfaceCamera?.bind(direction,null,surface)}
+        surfaceCamera?.stop()
         controller.close()
         preflightWorker.shutdownNow()
         io.close()
         directCamera?.release()
-        surfaceCamera?.release()
+        recordHub.releasePreviewIfUnused()
         vehicleFeed.release()
         super.onDestroy()
     }

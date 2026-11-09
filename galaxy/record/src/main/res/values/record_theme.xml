@@ -2,19 +2,19 @@
 <resources>
     <!-- 沿项目 Flyme 设置页色阶（与 AutoService service_theme 逐值同源）；独立 App 自带一套，不依赖 CarPlay 宿主。 -->
     <color name="record_background">#F6F8FC</color>
-    <color name="record_background_alt">#EAF0F6</color>
-    <color name="record_navigation">#EBF1F8</color>
-    <color name="record_navigation_alt">#DDE6F1</color>
+    <color name="record_background_alt">#F6F8FC</color>
+    <color name="record_navigation">#E7EEF6</color>
+    <color name="record_navigation_alt">#E7EEF6</color>
     <color name="record_surface">#FFFFFF</color>
     <color name="record_control">#E5EBF2</color>
-    <color name="record_border">#E0E7F0</color>
+    <color name="record_border">#D5DFEB</color>
     <color name="record_divider">#D5DFEB</color>
-    <color name="record_text">#E5000000</color>
-    <color name="record_muted">#99000000</color>
+    <color name="record_text">#222935</color>
+    <color name="record_muted">#626E7C</color>
     <color name="record_disabled">#66000000</color>
     <color name="record_accent">#1368FB</color>
-    <color name="record_accent_soft">#EAF2FF</color>
-    <color name="record_selected">#141368FB</color>
+    <color name="record_accent_soft">#E6EFFF</color>
+    <color name="record_selected">#E6EFFF</color>
     <color name="record_ripple">#201368FB</color>
     <color name="record_connected">#247744</color>
     <color name="record_warning">#A65C00</color>

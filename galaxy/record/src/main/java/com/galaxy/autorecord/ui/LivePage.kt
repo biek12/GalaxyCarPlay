@@ -31,10 +31,9 @@ import com.galaxy.autorecord.core.VehicleValueStatus
 internal class LivePage(private val host: RecordActivity, recordUi: RecordUi) : RecordPage(host, recordUi) {
     override val title: String = "实时画面"
 
+    private lateinit var panel: RecordPlayerPanel
     private lateinit var gridHost: FrameLayout
     private lateinit var segmentChips: LinearLayout
-    private lateinit var dataHost: LinearLayout
-    private lateinit var toggleChip: TextView
     private lateinit var noticeView: TextView
     private lateinit var primaryAction: Button
     private lateinit var lockAction: Button
@@ -42,20 +41,17 @@ internal class LivePage(private val host: RecordActivity, recordUi: RecordUi) : 
     private lateinit var windowBadge: TextView
     private lateinit var permissionBar: LinearLayout
 
+    private var flatPreview=host.settings.flatView
     private var singleDirection: String? = null
-    private var expanded = false
     private var noticeText: String = ""
+    private var vehicleNotice: String? = null
 
     private val cellImages = mutableMapOf<String, ImageView>()
     private val cellPreviews = mutableMapOf<String, CameraPreviewView>()
     private val cellStates = mutableMapOf<String, TextView>()
     private val cellMissing = mutableMapOf<String, TextView>()
     private val cellTags = mutableMapOf<String, TextView>()
-    private val dataValues = mutableMapOf<String, TextView>()
-    private var dataShape = ""
 
-    /** 折叠态固定 4 项（v1.1 RV-04）：车速、挡位、转向灯、巡航。 */
-    private val collapsedKeys = listOf(VehicleKey.SPEED, VehicleKey.GEAR, VehicleKey.CRUISE_STATE)
 
     private fun hasCameraPermission(): Boolean =
         host.cameraAccessReady
@@ -63,40 +59,17 @@ internal class LivePage(private val host: RecordActivity, recordUi: RecordUi) : 
     override fun build(): View = ui.pageScroll { column ->
         permissionBar = ui.row().apply { visibility = View.GONE }
         column.addView(permissionBar, LinearLayout.LayoutParams(-1, -2))
-
         segmentChips = ui.row()
         column.addView(segmentChips, LinearLayout.LayoutParams(-1, -2))
         renderSegmentChips()
-
-        gridHost = FrameLayout(ui.context)
-        column.addView(gridHost, LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(8) })
+        panel = RecordPlayerPanel(ui)
+        gridHost = panel.picture
+        column.addView(panel, LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(8) })
         renderGrid()
-
-        noticeView = ui.note("").apply {
-            visibility = View.GONE
-            setTextColor(ui.warning)
-            setPadding(0, ui.dp(8), 0, 0)
-        }
+        renderData()
+        noticeView = ui.note("").apply { visibility = View.GONE; setTextColor(ui.warning) }
         column.addView(noticeView, LinearLayout.LayoutParams(-1, -2))
-
-        column.addView(ui.sectionTitle("车辆数据"), LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(16) })
-        column.addView(buildDataCard(), LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(8) })
-
         column.addView(buildActions(), LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(16) })
-        column.addView(
-            ui.note(
-                if (com.galaxy.autorecord.BuildConfig.EMULATOR_CAMERA) "模拟器测试画面来自电脑摄像头，仅一路，不代表车辆方位。"
-                else "权限由 AutoService 准备并经本应用复核后，再开启相机与车辆订阅；画面在本应用直接采集。",
-            ),
-            LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(10) },
-        )
-        column.addView(
-            ui.note(
-                if (com.galaxy.autorecord.BuildConfig.EMULATOR_CAMERA) "测试输入不对应车辆方位，其余三个方向未配置。"
-                else "方位：${host.cameraLayout.summary()}。请在「设置 › 诊断」核对画面后确认。",
-            ),
-            LinearLayout.LayoutParams(-1, -2),
-        )
     }
 
     // ---- 四宫格 / 单路 ----
@@ -105,8 +78,8 @@ internal class LivePage(private val host: RecordActivity, recordUi: RecordUi) : 
         segmentChips.removeAllViews()
         val options = listOf<String?>(null) + SegmentLayout.DIRECTIONS
         options.forEach { direction ->
-            val label = direction?.let { directionLabel(it) } ?: "四路"
-            val chip = ui.chip(label, singleDirection == direction) {
+            val label = direction?.let { directionLabel(it).take(1) } ?: "全部"
+            val chip = ui.tab(label, singleDirection == direction) {
                 singleDirection = direction
                 renderSegmentChips()
                 renderGrid()
@@ -133,18 +106,7 @@ internal class LivePage(private val host: RecordActivity, recordUi: RecordUi) : 
         }
     }
 
-    private fun quadGrid(): View {
-        val grid = ui.column()
-        SegmentLayout.DIRECTIONS.chunked(2).forEachIndexed { index, pair ->
-            val row = ui.row()
-            pair.forEachIndexed { position, dir ->
-                if (position > 0) row.addView(View(ui.context), LinearLayout.LayoutParams(ui.dp(12), 1))
-                row.addView(cell(dir, big = false), LinearLayout.LayoutParams(0, -2, 1f))
-            }
-            grid.addView(row, LinearLayout.LayoutParams(-1, -2).apply { if (index > 0) topMargin = ui.dp(12) })
-        }
-        return grid
-    }
+    private fun quadGrid(): View = RecordPlayerPanel.grid(ui, SegmentLayout.DIRECTIONS, false) { cell(it, big = false) }
 
     /**
      * 单格：16:9 + 真实画面（有帧时）+ 左上方向/cameraId 标签 + 居中状态（无帧时）。
@@ -154,8 +116,8 @@ internal class LivePage(private val host: RecordActivity, recordUi: RecordUi) : 
         val status = host.cameraSource.statuses()[direction]
         val state = status?.state ?: CameraState.STOPPED
         val cameraId = host.cameraLayout.cameraIdOf(direction)
-        val frame = Aspect16x9(ui.context).apply {
-            background = ui.rounded(ui.control, 4).apply { setStroke(ui.dp(1).coerceAtLeast(1), ui.border) }
+        val frame = CameraAspectFrame(ui.context).apply {
+            setBackgroundColor(android.graphics.Color.BLACK)
             clipToOutline = true
             isClickable = !big
             if (!big) setOnClickListener {
@@ -186,7 +148,7 @@ internal class LivePage(private val host: RecordActivity, recordUi: RecordUi) : 
         })
         cellStates[direction] = stateView
 
-        val tagText = if (cameraId != null) "${directionLabel(direction)} · cam$cameraId" else directionLabel(direction)
+        val tagText = directionLabel(direction)
         frame.addView(
             ui.text(tagText, RecordRole.OVERLAY).apply {
                 cellTags[direction] = this
@@ -223,7 +185,7 @@ internal class LivePage(private val host: RecordActivity, recordUi: RecordUi) : 
         cellMissing[direction]?.apply {
             visibility = if (state in setOf(CameraState.ACTIVE, CameraState.WAITING_FIRST_FRAME, CameraState.STOPPED, CameraState.DISABLED)) View.GONE else View.VISIBLE
         }
-        cellTags[direction]?.text = host.cameraSource.cameraId(direction)?.let { "${directionLabel(direction)} · cam$it" } ?: directionLabel(direction)
+        cellTags[direction]?.text = directionLabel(direction)
         val stateView = cellStates[direction] ?: return
         if (cellPreviews.containsKey(direction)) {
             stateView.visibility = if (state == CameraState.ACTIVE) View.GONE else View.VISIBLE
@@ -324,95 +286,37 @@ internal class LivePage(private val host: RecordActivity, recordUi: RecordUi) : 
 
     // ---- 数据条 ----
 
-    private fun buildDataCard(): View {
-        val card = ui.card()
-        val body = ui.column().apply { setPadding(ui.dp(16), ui.dp(10), ui.dp(16), ui.dp(12)) }
-        card.addView(body, LinearLayout.LayoutParams(-1, -2))
-        dataHost = ui.column()
-        body.addView(dataHost, LinearLayout.LayoutParams(-1, -2))
-
-        val footer = ui.row()
-        footer.addView(
-            ui.text("未知显示「—」，来源断开显示「数据不可用」", RecordRole.DESCRIPTION),
-            LinearLayout.LayoutParams(0, -2, 1f),
-        )
-        toggleChip = ui.chip(if (expanded) "折叠" else "展开", false) {
-            expanded = !expanded
-            renderData()
-        }
-        footer.addView(toggleChip, LinearLayout.LayoutParams(-2, ui.dp(44)))
-        body.addView(footer, LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(6) })
-        // 控件都就位后再渲染数据：renderData 会回写 toggleChip 文案
-        renderData()
-        return card
-    }
-
     private fun renderData() {
-        if (!::dataHost.isInitialized) return
-        val shape = "$expanded:${host.vehicle.connected}:${host.vehicle.reason}"
-        val keys = if (expanded) VehicleKey.minimal else collapsedKeys
-        if (shape == dataShape && dataValues.isNotEmpty()) {
-            keys.forEach { key -> dataValues[key.displayLabel()]?.let { view ->
-                val value = valueOf(key); if (view.text.toString() != value) view.text = value
-            } }
-            if (!expanded) dataValues["转向灯"]?.let { view ->
-                val value = turnLightValue(); if (view.text.toString() != value) view.text = value
+        if (!::panel.isInitialized) return
+        val values = host.vehicle.values.filterValues { it.status == VehicleValueStatus.LIVE }
+            .mapKeys { it.key.key }.mapValues { it.value.value }
+        panel.bind(values, System.currentTimeMillis())
+        if (::noticeView.isInitialized) {
+            if (!host.vehicle.connected) {
+                vehicleNotice = host.vehicle.reason
+                showNotice(host.vehicle.reason)
+            } else if (vehicleNotice != null) {
+                if (noticeText == vehicleNotice) showNotice("")
+                vehicleNotice = null
             }
-            return
         }
-        dataShape = shape
-        dataValues.clear()
-        dataHost.removeAllViews()
-        if (::toggleChip.isInitialized) toggleChip.text = if (expanded) "折叠" else "展开"
-        val row = WrapRow(ui.context, 0, ui.dp(6))
-        keys.forEach { key -> row.addView(dataItem(key.displayLabel(), valueOf(key)), LinearLayout.LayoutParams(-2, -2)) }
-        if (!expanded) {
-            row.addView(dataItem("转向灯", turnLightValue()), LinearLayout.LayoutParams(-2, -2))
-        }
-        dataHost.addView(row, LinearLayout.LayoutParams(-1, -2))
-        if (!host.vehicle.connected) {
-            dataHost.addView(
-                ui.text(host.vehicle.reason, RecordRole.DESCRIPTION),
-                LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(6) },
-            )
-        }
-        if (expanded) {
-            dataHost.addView(
-                ui.text("扩展记录项在「设置 › 车辆数据与事件」里按用途开启；最小集固定记录。", RecordRole.DESCRIPTION),
-                LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(8) },
-            )
-        }
-    }
-
-    private fun dataItem(label: String, value: String): View {
-        val item = ui.column().apply { setPadding(0, ui.dp(2), ui.dp(18), ui.dp(2)) }
-        item.addView(ui.text(label, RecordRole.DESCRIPTION), LinearLayout.LayoutParams(-2, -2))
-        item.addView(ui.text(value, RecordRole.VALUE).also { dataValues[label] = it }, LinearLayout.LayoutParams(-2, -2))
-        return item
-    }
-
-    private fun valueOf(key: VehicleKey): String {
-        val value = host.vehicle.value(key)
-        return when (value.status) {
-            VehicleValueStatus.LIVE, VehicleValueStatus.STALE -> value.value
-            VehicleValueStatus.UNKNOWN, VehicleValueStatus.UNAVAILABLE -> "—"
-        }
-    }
-
-    private fun turnLightValue(): String {
-        val left = host.vehicle.value(VehicleKey.LEFT_TURN)
-        val right = host.vehicle.value(VehicleKey.RIGHT_TURN)
-        return com.galaxy.autorecord.core.TurnIndicatorState.display(left, right)
     }
 
     // ---- 操作区 ----
 
     private fun buildActions(): View {
         val column = ui.column()
+        val viewMode=ui.chip(if(flatPreview)"广角平面 · 切鱼眼"else"鱼眼 · 切广角平面",flatPreview){}
+        viewMode.setOnClickListener{
+            if(host.setFlatPreview(!flatPreview,singleDirection?.let{listOf(it)}?:SegmentLayout.DIRECTIONS)){
+                flatPreview=!flatPreview;viewMode.text=if(flatPreview)"广角平面 · 切鱼眼"else"鱼眼 · 切广角平面";ui.styleTab(viewMode,flatPreview)
+            }
+        }
+        column.addView(viewMode,LinearLayout.LayoutParams(-2,ui.dp(44)))
         val row = ui.row()
         primaryAction = ui.primaryButton("开始录制") { onPrimaryAction() }
         lockAction = ui.secondaryButton("锁定最近片段") { showNotice(host.lockRecent()) }
-        row.addView(primaryAction, LinearLayout.LayoutParams(0, ui.dp(72), 1f))
+        row.addView(primaryAction, LinearLayout.LayoutParams(0, ui.dp(48), 1f))
         row.addView(lockAction, LinearLayout.LayoutParams(-2, ui.dp(48)).apply { marginStart = ui.dp(12) })
         column.addView(row, LinearLayout.LayoutParams(-1, -2))
         return column

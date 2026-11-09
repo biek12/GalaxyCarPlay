@@ -1,0 +1,130 @@
+{
+  "version": "0.468.0",
+  "icons": [
+    {
+      "name": "live",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/video.svg",
+      "sourceSha256": "1b8fa7df8d5021d963a8ce39c4ebcd368df02d1e9d777fc302138c020b09bd22"
+    },
+    {
+      "name": "library",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/gallery-vertical-end.svg",
+      "sourceSha256": "647c2445ab091ce3ec655b3dfc4e142bb614b4c7139e535246d387534a820083"
+    },
+    {
+      "name": "settings",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/settings-2.svg",
+      "sourceSha256": "1ec1cc186ecdbd74e9b82033a08dbc9f2f0e406f4b6ac2f082ac5e52cfa0f411"
+    },
+    {
+      "name": "back",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/chevron-left.svg",
+      "sourceSha256": "a185985349089649d06747570c72f47fe1f5eb293a9a0f11278f6442b0b9d25c"
+    },
+    {
+      "name": "chevron",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/chevron-right.svg",
+      "sourceSha256": "fea488a3b60fd7738bbbf8ca98826ef5c0381347c5fd1048d45ee70a75a51cfe"
+    },
+    {
+      "name": "expand",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/chevron-down.svg",
+      "sourceSha256": "04458777b8a99214cd167dc9a8c8a1e35dcc9373b7577f74d5b5da6418ffcf67"
+    },
+    {
+      "name": "collapse",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/chevron-up.svg",
+      "sourceSha256": "b730622d8603e0de7e305f7d45c80e1223ec54f903dd772d3a8c2a2a0eec4943"
+    },
+    {
+      "name": "storage",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/hard-drive.svg",
+      "sourceSha256": "7ae374a543a2a9be86b258c9204075d2741187971416daead4e09f8f5359447e"
+    },
+    {
+      "name": "encode",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/film.svg",
+      "sourceSha256": "5585d9f2fa09cda3f686a2119b9f49e0e0b7e1c79131a9a2f781a7b26e5e5b22"
+    },
+    {
+      "name": "record",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/circle-dot.svg",
+      "sourceSha256": "ac31cd2d67bd10c9c43cfd345745fc62136d1c8185a1a9c18c99476557850b02"
+    },
+    {
+      "name": "vehicle",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/car-front.svg",
+      "sourceSha256": "a65030e7b10c22e62cd13f4d800156a2aa36e9eca2c1139860059ecd0b0d6379"
+    },
+    {
+      "name": "playback",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/panels-top-left.svg",
+      "sourceSha256": "ab429e5bbb29ab86bdb3085c2d02594418258bbadc113ee515d6310b8e51d40d"
+    },
+    {
+      "name": "diagnose",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/activity.svg",
+      "sourceSha256": "df8e413c714521cc3d424bd7af3c1644d63409f7e0a7dec75ff0fa48aa6daedb"
+    },
+    {
+      "name": "about",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/info.svg",
+      "sourceSha256": "8b0a0b5641a875a2e0d8c04080c55cf6c1808c1f76477acb89958e8da00ba5a1"
+    },
+    {
+      "name": "refresh",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/refresh-cw.svg",
+      "sourceSha256": "d63b359b0fe05e03cff8aaa7acf82f9569733e83f7fb4742d583a086972c4bb0"
+    },
+    {
+      "name": "play",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/play.svg",
+      "sourceSha256": "f0cab5b458fdf5e5d5d1a8aeb3d368ccab337cc578b1f8081807b8e39f68f1a1"
+    },
+    {
+      "name": "pause",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/pause.svg",
+      "sourceSha256": "7babb01e85dae42b66c9b1e399cd1c50380d3d9a586ff025685bcc45e726fea9"
+    },
+    {
+      "name": "previous",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/skip-back.svg",
+      "sourceSha256": "a0545b6bdd41a987cc174cc8675e56fbe67e757c1a1de9221c0b20bffa1250f8"
+    },
+    {
+      "name": "next",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/skip-forward.svg",
+      "sourceSha256": "912bd268a4e17527e35f199b5aee2aa00ab20c3cf014f1bc0c0b46ed991032e4"
+    },
+    {
+      "name": "filter",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/filter.svg",
+      "sourceSha256": "410d8d56318144ecfc1c842db0e768f9060cd866e7fa10619bba2ebb64684211"
+    },
+    {
+      "name": "sliders",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/sliders-horizontal.svg",
+      "sourceSha256": "995507595c7c24deffef382bacc452a24b40a2efc4aa54908563a0f09b6a75aa"
+    },
+    {
+      "name": "more",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/ellipsis.svg",
+      "sourceSha256": "c223eec545dc86e0de4c672e621550b391198ca97b8eabbe043613c3332d48b1"
+    },
+    {
+      "name": "lock",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/lock-keyhole.svg",
+      "sourceSha256": "d2c052ce26b89b063a4b1ecaa98198803b7d881cb0d176cb33c067e5140b2dd0"
+    },
+    {
+      "name": "event_previous",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/chevron-left.svg",
+      "sourceSha256": "a185985349089649d06747570c72f47fe1f5eb293a9a0f11278f6442b0b9d25c"
+    },
+    {
+      "name": "event_next",
+      "source": "https://cdn.jsdelivr.net/npm/lucide-static@0.468.0/icons/chevron-right.svg",
+      "sourceSha256": "fea488a3b60fd7738bbbf8ca98826ef5c0381347c5fd1048d45ee70a75a51cfe"
+    }
+  ]
+}

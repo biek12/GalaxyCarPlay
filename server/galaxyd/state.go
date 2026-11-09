@@ -40,6 +40,7 @@ type Job struct {
 	Result    json.RawMessage `json:"result,omitempty"`
 }
 type Relay struct {
+	web        *webService
 	mu         sync.Mutex
 	devices    map[string]*Device
 	path       string
@@ -80,6 +81,18 @@ func openRelay(path string) (*Relay, error) {
 		if d.Jobs == nil {
 			d.Jobs = map[string]*Job{}
 		}
+	}
+	w, err := openWeb(path + ".web")
+	if err != nil {
+		return nil, err
+	}
+	r.web = w
+	w.enrollmentAuth = func(value string) bool { return value != "" && equal(value, r.enrollment) }
+	w.deviceAuth = func(id, credential string) bool {
+		r.mu.Lock()
+		defer r.mu.Unlock()
+		d := r.devices[id]
+		return d != nil && equal(d.Secret, credential)
 	}
 	return r, nil
 }

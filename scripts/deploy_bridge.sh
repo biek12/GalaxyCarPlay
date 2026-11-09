@@ -16,8 +16,8 @@ mkdir -p /opt/galaxyplay-bridge /var/lib/galaxyplay-bridge
 if [ ! -s /var/lib/galaxyplay-bridge/enrollment ]; then umask 077; openssl rand -hex 32 > /var/lib/galaxyplay-bridge/enrollment; fi
 chown -R galaxybridge:galaxybridge /var/lib/galaxyplay-bridge
 chmod 700 /var/lib/galaxyplay-bridge'
-scp -q -o BatchMode=yes -i "$KEY" "$ROOT/.work/galaxyd" "$TARGET:/opt/galaxyplay-bridge/galaxyd.next"
-scp -q -o BatchMode=yes -i "$KEY" galaxyd.service "$TARGET:/opt/galaxyplay-bridge/galaxyd.service"
+scp -O -q -o BatchMode=yes -i "$KEY" "$ROOT/.work/galaxyd" "$TARGET:/opt/galaxyplay-bridge/galaxyd.next"
+scp -O -q -o BatchMode=yes -i "$KEY" galaxyd.service "$TARGET:/opt/galaxyplay-bridge/galaxyd.service"
 "${SSH[@]}" "$TARGET" 'set -eu
 if [ -f /opt/galaxyplay-bridge/galaxyd ]; then cp -p /opt/galaxyplay-bridge/galaxyd /opt/galaxyplay-bridge/galaxyd.previous; fi
 mv /opt/galaxyplay-bridge/galaxyd.next /opt/galaxyplay-bridge/galaxyd

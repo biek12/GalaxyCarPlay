@@ -80,9 +80,33 @@ class Car:
         return dict(package=package, installed_sha256=digest, verified=True)
 
 
+
+def resolve_session(explicit=None, directory=None):
+    """Prefer the latest local pairing for the same device; never rotate server tokens or replay a command."""
+    if explicit is not None:
+        return Path(explicit)
+    configured = os.environ.get('GALAXY_REMOTE_SESSION')
+    if configured:
+        return Path(configured)
+    root = Path(directory) if directory else Path(__file__).resolve().parents[1] / '.local'
+    canonical = root / 'remote-session.json'
+    candidates = []
+    for path in [canonical, *root.glob('remote-session-*.json')]:
+        try:
+            value = json.loads(path.read_text())
+            if value.get('token') and value.get('device') and float(value.get('until', 0)) > time.time():
+                candidates.append((path.stat().st_mtime_ns, path, value))
+        except (OSError, ValueError, TypeError):
+            continue
+    identities = {(v.get('origin'), v['device']) for _, _, v in candidates}
+    if len(identities) > 1:
+        raise ValueError('multiple_remote_devices_specify_session')
+    return max(candidates, key=lambda item: item[0])[1] if candidates else canonical
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--session', type=Path, default=Path('.local/remote-session.json'))
+    parser.add_argument('--session', type=Path)
     sub = parser.add_subparsers(dest='action', required=True)
     pair = sub.add_parser('pair')
     pair.add_argument('--origin', default='https://bridge.example.invalid/galaxy')
@@ -95,6 +119,7 @@ def main():
     install.add_argument('--package', choices=['com.ecarx.autoservice', 'com.ecarx.carplay',
                                               'com.galaxy.autocluster', 'com.ecarx.autoservice.test', 'com.galaxy.autorecord'], required=True)
     args = parser.parse_args()
+    args.session = resolve_session(args.session) if args.action != 'pair' else (args.session or Path(os.environ.get('GALAXY_REMOTE_SESSION', '.local/remote-session.json')))
     if args.action == 'pair':
         code = args.code_file.read_text().strip() if args.code_file else getpass.getpass('车机验证码：')
         session = request(args.origin, '/bridge/pair', {'code': code})

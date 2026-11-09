@@ -27,6 +27,16 @@ internal class VehicleInventory {
         return rows.values.firstOrNull { it.optInt("propertyId") == propertyId }?.toString().orEmpty()
     }
     @Synchronized fun validCount() = valid
+    /** 只读已订阅缓存的接线元数据，不额外采集，也不输出原始车辆载荷。 */
+    @Synchronized fun diagnostics(): JSONArray = JSONArray().apply {
+        rows.values.forEach { row ->
+            put(JSONObject().apply {
+                for (key in listOf("propertyId", "areaId", "responseAreaId")) put(key, row.optInt(key, -1))
+                for (key in listOf("name", "origin", "type", "status", "error")) put(key, row.optString(key))
+                put("firmwareMapped", row.optBoolean("firmwareMapped"))
+            })
+        }
+    }
     @Synchronized fun clear() { rows.clear(); valid = 0; session = "" }
     @Synchronized fun page(offset: Int, limit: Int, catalog: Boolean): Bundle {
         require(offset >= 0 && limit in 1..32)

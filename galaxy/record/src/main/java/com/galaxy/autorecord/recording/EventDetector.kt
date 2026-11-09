@@ -214,7 +214,7 @@ class EventDetector(val rules: Rules) {
         fun parsePercent(raw: String?): Float? {
             if (raw.isNullOrBlank()) return null
             val cleaned = raw.trim().removeSuffix("%").trim()
-            return cleaned.toFloatOrNull()
+            return cleaned.toFloatOrNull()?.takeIf { it.isFinite() && it in 0f..100f }
         }
 
         /** 解析布尔状态（on/off/1/0/true/false…）；无法判定返回 null（不误报）。 */
@@ -222,7 +222,7 @@ class EventDetector(val rules: Rules) {
             if (raw.isNullOrBlank()) return null
             return when (raw.trim().lowercase()) {
                 "1", "on", "true", "active", "enabled", "open", "yes" -> true
-                "0", "off", "false", "inactive", "disabled", "close", "closed", "no", "none" -> false
+                "0", "off", "standby", "false", "inactive", "disabled", "close", "closed", "no", "none" -> false
                 else -> {
                     val number = raw.trim().toFloatOrNull()
                     when {

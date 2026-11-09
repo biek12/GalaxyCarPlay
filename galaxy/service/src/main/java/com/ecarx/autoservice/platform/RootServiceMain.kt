@@ -46,6 +46,8 @@ object RootServiceMain {
         if (android.os.Looper.getMainLooper() == null) android.os.Looper.prepareMainLooper()
         val specs = VehicleCatalog.forModel(args[4])
         val source = EcarxVehicleSource()
+        val sentinelHolder=lazy { com.ecarx.autoservice.sentinel.RootSentinelPort() }
+        val sentinel by sentinelHolder
         val instance = java.util.UUID.randomUUID().toString()
         val lastRequest = AtomicLong(SystemClock.elapsedRealtime())
         val peers = ConcurrentHashMap.newKeySet<LocalSocket>()
@@ -53,6 +55,7 @@ object RootServiceMain {
         val watchdog = Executors.newSingleThreadScheduledExecutor()
         fun release() {
             peers.forEach { runCatching { it.close() } }; RootHabSession.close()
+            // helper退出不修改整车状态；用户关闭由已登记的哨兵控制请求明确完成。
             runCatching { server.close() }
         }
         watchdog.scheduleWithFixedDelay({
@@ -85,8 +88,9 @@ object RootServiceMain {
                                 com.ecarx.autoservice.ServiceTrace.event("root_exit_requested")
                                 output.writeInt(0); output.flush(); release(); Process.killProcess(Process.myPid()); return@execute
                             }
+                            if(operation==10){sentinel.stream(output);return@execute}
                             if (operation == 6) { RootHabSession.run(client, input, output, apk); return@execute }
-                            val request = if (operation == 1 || operation in 3..5 || operation == 7) RootWire.read(input, 16384) else JSONObject()
+                            val request = if (operation == 1 || operation in 3..5 || operation == 7 || operation == 9) RootWire.read(input, 16384) else JSONObject()
                             val result = try {
                                 when (operation) {
                                     0 -> JSONObject().put("state", "root_ready").put("uid", Process.myUid())
@@ -109,6 +113,7 @@ object RootServiceMain {
                                     4 -> QnxReceiverDeployer.deploy(request)
                                     5 -> QnxReceiverDeployer.stop(request)
                                     7 -> AdbKeyAuthorization.authorize(request.getString("publicKey"), request.optBoolean("forceReload"))
+                                    9 -> sentinel.control(request.getString("action"),request.optLong("powerSequence"),request.optLong("requestAtNanos"))
                                     8 -> synchronized(source) { source.close(); JSONObject().put("state", "vehicle_stopped") }
                                     else -> error("unknown_operation")
                                 }
@@ -125,6 +130,6 @@ object RootServiceMain {
                     finally { peers.remove(peer); lastRequest.set(SystemClock.elapsedRealtime()) }
                 } } catch (_: RejectedExecutionException) { peers.remove(peer); peer.close() }
             }
-        } finally { release(); watchdog.shutdownNow(); pool.shutdownNow(); source.close(); certificate.fill(0) }
+        } finally { release(); watchdog.shutdownNow(); pool.shutdownNow(); source.close(); if(sentinelHolder.isInitialized())sentinel.close(); certificate.fill(0) }
     }
 }

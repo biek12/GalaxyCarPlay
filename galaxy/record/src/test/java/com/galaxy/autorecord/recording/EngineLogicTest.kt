@@ -159,6 +159,24 @@ class RotationJanitorTest {
     }
 
     @Test
+    fun `缓存目录仍按实际写入账本腾空间且重新读取锁定标记`() {
+        val base=Files.createTempDirectory("janitor-ledger").toFile()
+        val old=writeSegment(base,"20261104-100000-001",1_000_000L,100)
+        val protected=writeSegment(base,"20261104-100100-002",2_000_000L,100)
+        val first=RotationJanitor.makeRoom(SegmentLayout.segmentsRoot(base),SegmentLayout.indexDir(base),
+            1_000_000,1_000_000,0,1,true,true)
+        assertEquals(first.catalog.sumOf{it.bytes},first.usedBytes)
+        SegmentMarks(SegmentLayout.indexDir(base)).setLocked(listOf(protected.name),true)
+        val result=RotationJanitor.makeRoom(SegmentLayout.segmentsRoot(base),SegmentLayout.indexDir(base),
+            10_000,1_000_000,0,1,true,true,catalog=first.catalog,usedBytesOverride=10_000)
+        assertEquals(listOf(old.name),result.deleted)
+        assertTrue(protected.exists())
+        assertEquals(10_000-result.freedBytes,result.usedBytes)
+        assertEquals(listOf(protected.name),result.catalog.map{it.id})
+        base.deleteRecursively()
+    }
+
+    @Test
     fun `空间充足时不删除任何段`() {
         val base = Files.createTempDirectory("janitor").toFile()
         writeSegment(base, "20261104-100000-001", 1_000_000L, 100)

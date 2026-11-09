@@ -61,9 +61,9 @@ class RecordAccessAndVehicleTest {
     @Test fun `最大记录集仍满足订阅上限且未知属性不猜映射`() {
         val all=VehicleKey.entries.flatMap(RecordVehicleAdapter::keys).distinct()
         assertTrue(all.size <= com.galaxy.auto.contract.AutoContract.MAX_FEED_KEYS)
-        assertTrue(RecordVehicleAdapter.keys(VehicleKey.AUTO_HOLD).isEmpty())
-        assertTrue(RecordVehicleAdapter.keys(VehicleKey.ODOMETER).isEmpty())
-        assertEquals(listOf("property.10042"),RecordVehicleAdapter.keys(VehicleKey.REAR_FOG))
+        assertEquals(listOf("autoHold"),RecordVehicleAdapter.keys(VehicleKey.AUTO_HOLD))
+        assertEquals(listOf("odometer"),RecordVehicleAdapter.keys(VehicleKey.ODOMETER))
+        assertEquals(listOf("rearFog"),RecordVehicleAdapter.keys(VehicleKey.REAR_FOG))
     }
     @Test fun `小卷自动配额不能超过一半也不能无声放大到一GB`() {
         assertEquals(256L*1024*1024,RecordSettings().effectiveQuotaBytes(512L*1024*1024))

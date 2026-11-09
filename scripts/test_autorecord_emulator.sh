@@ -61,8 +61,12 @@ grep -q 'INSTRUMENTATION_RESULT: result=PASS' "$RUNTIME/codec-result.txt" || { c
 "$ADB" -s "$SERIAL" shell am instrument -w -e action ui \
     com.galaxy.autorecord.test/com.galaxy.autorecord.RecordOfflineInstrumentation > "$RUNTIME/ui-result.txt"
 grep -q 'INSTRUMENTATION_RESULT: result=PASS' "$RUNTIME/ui-result.txt" || { cat "$RUNTIME/ui-result.txt"; exit 1; }
+"$ADB" -s "$SERIAL" shell am instrument -w -e action export \
+    -e codecName "${GALAXY_TEST_CODEC_NAME:-OMX.google.h264.encoder}" \
+    com.galaxy.autorecord.test/com.galaxy.autorecord.RecordOfflineInstrumentation > "$RUNTIME/export-result.txt"
+grep -q 'INSTRUMENTATION_RESULT: result=PASS' "$RUNTIME/export-result.txt" || { cat "$RUNTIME/export-result.txt"; exit 1; }
 for page in live settings storage codec library; do
     "$ADB" -s "$SERIAL" exec-out run-as com.galaxy.autorecord cat "cache/ui-probe/$page.png" > "$RUNTIME/$page.png"
 done
-cat "$RUNTIME/codec-result.txt" "$RUNTIME/ui-result.txt"
+cat "$RUNTIME/codec-result.txt" "$RUNTIME/ui-result.txt" "$RUNTIME/export-result.txt"
 echo "隔离目标 ${SERIAL}；未绑定车辆 AutoService。画面质量限制单列于 cameraScene，日志与布局图：${RUNTIME}"

@@ -6,6 +6,9 @@ package com.galaxy.autorecord.recording
  */
 object EngineDiagnostics {
 
+    @Volatile var pipeline:String="not-started"
+        internal set
+
     /** 最近一段的真实收尾结果。 */
     data class LastSegment(
         val index: Int,
@@ -42,6 +45,7 @@ object EngineDiagnostics {
         internal set
 
     internal fun reset() {
+        pipeline="starting"
         lastSegment = null
         lastError = null
         lastRotationNote = null

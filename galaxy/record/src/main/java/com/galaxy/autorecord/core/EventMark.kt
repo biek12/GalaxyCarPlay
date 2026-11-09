@@ -18,6 +18,10 @@ enum class EventKind(val label: String, val key: String) {
     ADAS_OFF("横向辅助退出", "adas_off"),
     CRUISE_ON("巡航启用", "cruise_on"),
     CRUISE_OFF("巡航退出", "cruise_off"),
+    TURN("转向", "turn"),
+    LIGHT("灯光", "light"),
+    VEHICLE_STATE("车辆数据", "vehicle_state"),
+    SENTINEL("哨兵事件","sentinel"),
     ;
 
     companion object {
@@ -37,13 +41,15 @@ data class EventMark(
     val endMs: Long,
     val peak: Float? = null,
     val ruleVersion: String = "",
+    /** 回看从本段原始样本派生的变化明细；普通变化不改变录像锁定策略。 */
+    val changes: Map<String, String> = emptyMap(),
 ) {
     val isDiscrete: Boolean get() = endMs <= startMs
     val durationMs: Long get() = (endMs - startMs).coerceAtLeast(0L)
 
     fun timeLabel(): String {
         val totalSeconds = startMs / 1000
-        return String.format(java.util.Locale.US, "%02d:%02d", totalSeconds / 60, totalSeconds % 60)
+        return String.format(java.util.Locale.US, "%02d:%02d.%03d", totalSeconds / 60, totalSeconds % 60, startMs % 1000)
     }
 }
 
@@ -58,7 +64,7 @@ object EventReader {
 
     fun read(segmentDir: File): List<EventMark> {
         val file = File(segmentDir, SegmentLayout.FILE_EVENTS)
-        if (!file.exists()) return emptyList()
+        if (!file.exists()) return sentinelEvents(segmentDir)
         val text = runCatching { file.readText() }.getOrElse {
             Log.w(TAG, "读取 events.json 失败", it)
             throw IllegalStateException("事件文件不可读")
@@ -84,13 +90,22 @@ object EventReader {
                         ),
                     )
                 }
-            }.sortedBy { it.startMs }
+            }.plus(sentinelEvents(segmentDir)).sortedBy { it.startMs }
         }.getOrElse {
             Log.w(TAG, "events.json 解析失败", it)
             throw IllegalStateException("事件数据损坏")
         }
     }
 
+    fun sentinelEvents(segmentDir:File):List<EventMark>{
+        val file=File(segmentDir,"sentinel-events.jsonl")
+        if(!file.exists())return emptyList()
+        return file.useLines{lines->lines.filter{it.isNotBlank()}.map{line->
+            val event=JSONObject(line)
+            EventMark(EventKind.SENTINEL,event.getLong("startMs"),event.getLong("endMs"),
+                ruleVersion=event.getString("ruleVersion"),changes=if(event.optBoolean("beforeCapture"))mapOf("说明" to "录像始于触发之后，无事前画面")else emptyMap())
+        }.toList()}
+    }
     /** 事件摘要用的顺序：先按时间正序，界面自己决定倒序展示。 */
     fun summarize(events: List<EventMark>, limit: Int = 10): List<EventMark> =
         events.sortedByDescending { it.startMs }.take(limit)

@@ -11,7 +11,7 @@ import shlex
 import subprocess
 import time
 
-from remote_car import Car
+from remote_car import Car, resolve_session
 
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = 'com.galaxy.autorecord'
@@ -33,6 +33,16 @@ class Field:
                           'if [ -n "$p" ]; then sha256sum "$p" | cut -d" " -f1; fi').strip()
 
     def deploy(self, apk, transport='artifact'):
+        if apk.resolve() == (ROOT / 'galaxy/record/build/outputs/apk/field/record-field.apk').resolve():
+            # 现场曾把早于图标修改的Field包当“最新”安装；默认产物过期就明确停止。
+            # 这里只检查APK输入，不因测试/文档更新要求重构建；显式历史包路径可用于授权回退。
+            inputs = [ROOT / name / 'build.gradle.kts' for name in ('galaxy/record', 'galaxy/client', 'galaxy/contracts')]
+            for module in ('record', 'client', 'contracts'):
+                inputs.extend(path for path in (ROOT / 'galaxy' / module / 'src/main').rglob('*') if path.is_file())
+            newer = next((path for path in inputs if path.exists() and path.stat().st_mtime > apk.stat().st_mtime), None)
+            if newer is not None:
+                raise RuntimeError('Field APK早于源码输入 ' + str(newer.relative_to(ROOT)) +
+                                   '；请先运行 scripts/deploy_autorecord_field.sh build')
         payload = apk.read_bytes()
         digest = hashlib.sha256(payload).hexdigest()
         if transport == 'artifact':
@@ -104,6 +114,37 @@ class Field:
                           '(grep -E "^Pss:|^Rss:" /proc/$p/smaps_rollup || echo PSS_UNAVAILABLE); '
                           'dumpsys media.camera | sed \'/== Camera service events log/,$d\' | '
                           'grep -E "Client|PID|Package|com.galaxy.autorecord" || true')
+
+    def signals(self, seconds, out):
+        """轮询服务缓存供人工操作对照；远程取样频率不代表车端250ms推送频率。"""
+        if not 1 <= seconds <= 60:
+            raise ValueError('车辆缓存采样窗口须为1–60秒')
+        deadline = time.monotonic() + seconds
+        seen = {}
+        samples = 0
+        with out.open('w') as output:
+            while time.monotonic() < deadline:
+                raw = self.shell('dumpsys activity service com.ecarx.autoservice/.AutoService --record-fields')
+                line = next((line.split('RECORD_FIELDS=', 1)[1] for line in raw.splitlines()
+                             if 'RECORD_FIELDS=' in line), None)
+                if line is None:
+                    raise RuntimeError('AutoService 缓存诊断不可用')
+                snapshot = json.loads(line)
+                output.write(json.dumps(snapshot, ensure_ascii=False) + '\n')
+                output.flush()
+                samples += 1
+                changed = {}
+                for key, field in snapshot['fields'].items():
+                    value = (field['status'], field['value'])
+                    if seen.get(key) != value:
+                        changed[key] = value
+                        seen[key] = value
+                if changed:
+                    print(json.dumps(dict(sample=samples, changed=changed), ensure_ascii=False), flush=True)
+                remaining = deadline - time.monotonic()
+                if remaining > 0:
+                    time.sleep(min(1, remaining))
+        return dict(samples=samples, path=str(out.resolve()))
 
     def presentation(self):
         """只读本应用 SurfaceView 呈现时刻；生产回调不能代替这一统计。"""
@@ -177,8 +218,8 @@ class Field:
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--session', type=Path, default=ROOT / '.local/workbuddy-remote-handoff/remote-session.json')
-    parser.add_argument('action', choices=['deploy', 'start', 'ui', 'screenshot', 'sample', 'present', 'benchmark', 'tap', 'back', 'home'])
+    parser.add_argument('--session', type=Path)
+    parser.add_argument('action', choices=['deploy', 'start', 'ui', 'screenshot', 'sample', 'signals', 'present', 'benchmark', 'tap', 'back', 'home'])
     parser.add_argument('--apk', type=Path, default=ROOT / 'galaxy/record/build/outputs/apk/field/record-field.apk')
     parser.add_argument('--transport', choices=['artifact', 'shell'], default='artifact', help='常规安装使用修复后的中继产物通道；shell 仅显式诊断')
     parser.add_argument('--out', type=Path)
@@ -186,7 +227,7 @@ def main():
     parser.add_argument('--y', type=int)
     parser.add_argument('--seconds', type=int, default=10)
     args = parser.parse_args()
-    field = Field(args.session)
+    field = Field(resolve_session(args.session))
     if args.action == 'deploy':
         field.deploy(args.apk, args.transport)
         return
@@ -208,6 +249,10 @@ def main():
         print(str(args.out.resolve()))
     elif args.action == 'sample':
         print(field.sample())
+    elif args.action == 'signals':
+        if not args.out:
+            parser.error('signals 需要 --out（本地私有路径）')
+        print(json.dumps(field.signals(args.seconds, args.out), ensure_ascii=False))
     elif args.action in ('present', 'benchmark'):
         result = field.presentation() if args.action == 'present' else field.benchmark(args.seconds)
         output = json.dumps(result, ensure_ascii=False, indent=2)

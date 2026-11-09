@@ -33,3 +33,6 @@ __pycache__/
 *.apk
 *.aab
 *.log
+
+# Go 构建产物
+server/galaxyd/galaxyd

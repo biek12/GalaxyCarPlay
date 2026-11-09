@@ -11,7 +11,7 @@
 set -euo pipefail
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 ACTION=${1:-all}
-SESSION=${GALAXY_REMOTE_SESSION:-$ROOT/.local/workbuddy-remote-handoff/remote-session.json}
+SESSION=$(PYTHONPATH="$ROOT/scripts" python3 -c 'from remote_car import resolve_session; print(resolve_session())')
 APK="$ROOT/galaxy/record/build/outputs/apk/field/record-field.apk"
 PACKAGE=com.galaxy.autorecord
 ACTIVITY="$PACKAGE/.ui.RecordActivity"
@@ -21,10 +21,13 @@ LOG_DIR="$CACHE/logs"
 mkdir -p "$LOG_DIR"
 
 build() {
+    [ -s "$CACHE/android-prefs/.android/debug.keystore" ] || {
+        echo '缺少原工程调试签名，拒绝构建或自动生成新签名' >&2; exit 2;
+    }
     echo "==> 构建 field 包（R8 精简，调试签名）"
     ANDROID_HOME="$CACHE/android-sdk" \
     ANDROID_SDK_ROOT="$CACHE/android-sdk" \
-    ANDROID_PREFS_ROOT="$CACHE/android-user-home" \
+    ANDROID_PREFS_ROOT="$CACHE/android-prefs" \
     GRADLE_USER_HOME="$CACHE/gradle-home" \
         "$ROOT/gradlew" --offline --no-daemon --console=plain \
         -Pandroid.builder.sdkDownload=false \

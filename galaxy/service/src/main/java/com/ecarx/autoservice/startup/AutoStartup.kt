@@ -26,5 +26,8 @@ internal object AutoStartup {
         jobs.schedule(JobInfo.Builder(8157, ComponentName(context, AutoRecoveryJob::class.java))
             .setPersisted(true).setPeriodic(15 * 60000L).build())
     }
-    fun cancel(context: Context) { context.getSystemService(JobScheduler::class.java).cancel(8157) }
+    fun cancel(context: Context) {
+        com.galaxy.auto.client.recovery.ProcessRecovery.release(context,false)
+        context.getSystemService(JobScheduler::class.java).cancel(8157)
+    }
 }

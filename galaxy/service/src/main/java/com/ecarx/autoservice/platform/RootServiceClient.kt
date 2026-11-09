@@ -43,13 +43,13 @@ internal object RootServiceClient {
     }
     fun request(context: Context, operation: Int, payload: JSONObject, timeout: Int = 35000, work: ControlWork? = null): JSONObject {
         check(operation != 7 || ServiceFeatures.read(context).adb) { "adb_disabled" }
-        val socket = connect(context, timeout)
+        val socket = connectOwned(context, timeout, operation==9&&payload.optString("action")=="disarm")
         val owned = java.io.Closeable { socket.close() }
         work?.own(owned)
         try { return socket.use {
             DataOutputStream(socket.outputStream).apply {
                 writeInt(operation)
-                if (operation in 3..5 || operation == 7) {
+                if (operation in 3..5 || operation == 7 || operation == 9) {
                     val bytes = payload.toString().toByteArray(Charsets.UTF_8); require(bytes.size <= 16384)
                     writeInt(bytes.size); write(bytes)
                 }

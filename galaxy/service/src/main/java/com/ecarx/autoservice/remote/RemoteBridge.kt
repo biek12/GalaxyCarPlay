@@ -39,13 +39,17 @@ internal class RemoteBridge(context: Context,private val report: (String)->Unit)
                 if(!job.has("id"))continue
                 check(settings.enabled&&!closed)
                 val record=JSONObject().put("id",job.getString("id"));save(record)
-                val result=runCatching{execute(job)}.getOrElse{JSONObject().put("error",it.javaClass.simpleName)}
+                val result=runCatching{execute(job)}.getOrElse{
+                    com.galaxy.auto.client.diagnostics.DiagnosticEvents.error("remote_execute",it,
+                        mapOf("transport" to job.optString("transport"),"timeoutMs" to job.optInt("timeoutMillis")))
+                    JSONObject().put("error",it.javaClass.simpleName)
+                }
                 record.put("result",result);save(record)
                 http.json("/bridge/result?device=${settings.id}",record);pending.delete()
             }catch(error: Exception){
                 if(!closed){
                     com.ecarx.autoservice.ServiceTrace.event("remote_connection",error)
-                    report("reconnecting");try{Thread.sleep(delay)}catch(_: InterruptedException){};delay=minOf(30000,delay*2)
+                    report(RemoteConnectionStatus.failure(error));try{Thread.sleep(delay)}catch(_: InterruptedException){};delay=minOf(30000,delay*2)
                 }
             }
         }

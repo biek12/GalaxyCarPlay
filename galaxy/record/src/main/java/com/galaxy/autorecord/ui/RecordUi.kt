@@ -30,7 +30,7 @@ import kotlin.math.roundToInt
  * AutoRecord 的 Flyme 色阶与原生控件口径（docs/AutoRecord-FlymeAuto样式基线-20261103.md）。
  *
  * 纪律：
- * - 只用 `res/values{,-night}/record_theme.xml` 已有的语义色，不新增第二套调色板；
+ * - 按审定稿统一 `res/values{,-night}/record_theme.xml` 语义色；
  * - 只用原生 View + GradientDrawable/RippleDrawable/StateListDrawable，不引入 Compose/Material/动画库；
  * - 只绘制静态背景，不加 elevation、阴影、模糊；颜色在构造时取定，日夜切换由 Activity 重建完成。
  */
@@ -60,7 +60,7 @@ internal class RecordUi(val context: Context) {
 
     fun dp(value: Int): Int = (value * context.resources.displayMetrics.density + .5f).toInt()
 
-    /** 文字角色：字号/行高/字重与项目 L7Typography 一致；行高随系统字体缩放。 */
+    /** 文字角色：字号/行高/字重以已审定 AutoRecord 原型为准；行高随系统字体缩放。 */
     fun text(value: String, role: RecordRole): TextView = TextView(context).apply {
         text = value
         textSize = role.size.toFloat()
@@ -87,7 +87,7 @@ internal class RecordUi(val context: Context) {
     /** 卡片：4dp 圆角 + 1dp 描边（不加重阴影/模糊）。 */
     fun card(): LinearLayout = LinearLayout(context).apply {
         orientation = LinearLayout.VERTICAL
-        background = rounded(surface, 4).apply { setStroke(dp(1).coerceAtLeast(1), border) }
+        background = rounded(surface, 5)
         clipToOutline = true
     }
 
@@ -136,10 +136,10 @@ internal class RecordUi(val context: Context) {
     }
 
     fun primaryButton(label: String, onClick: () -> Unit): Button =
-        button(label, primary = true, height = 72, size = 20f, onClick = onClick)
+        button(label, primary = true, height = 48, size = 14f, onClick = onClick)
 
     fun secondaryButton(label: String, onClick: () -> Unit): Button =
-        button(label, primary = false, height = 48, size = 16f, onClick = onClick)
+        button(label, primary = false, height = 48, size = 14f, onClick = onClick)
 
     private fun button(label: String, primary: Boolean, height: Int, size: Float, onClick: () -> Unit): Button =
         Button(context).apply {
@@ -170,11 +170,11 @@ internal class RecordUi(val context: Context) {
             setOnClickListener { onClick() }
         }
 
-    /** 筛选 chip：未选中 control 底，选中 accent 底 + primaryText。 */
+    /** 筛选 chip：未选中 control 底，选中 selected 底 + accent。 */
     fun chip(label: String, isSelected: Boolean, onClick: () -> Unit): TextView =
         TextView(context).apply {
             text = label
-            textSize = 18f
+            textSize = 14f
             includeFontPadding = false
             gravity = Gravity.CENTER
             isSingleLine = true
@@ -182,10 +182,10 @@ internal class RecordUi(val context: Context) {
             minimumWidth = 0
             minimumHeight = dp(44)
             setPadding(dp(16), 0, dp(16), 0)
-            setTextColor(if (isSelected) primaryText else textColor)
+            setTextColor(if (isSelected) accent else textColor)
             background = RippleDrawable(
                 ColorStateList.valueOf(rippleColor),
-                rounded(if (isSelected) accent else control, 4),
+                rounded(if (isSelected) selectedColor else control, 4),
                 null,
             )
             isClickable = true
@@ -193,10 +193,32 @@ internal class RecordUi(val context: Context) {
             setOnClickListener { onClick() }
         }
 
+    fun tab(label: String, selected: Boolean = false, onClick: () -> Unit): TextView =
+        chip(label, selected, onClick).apply {
+            setPadding(dp(12), 0, dp(12), 0)
+            styleTab(this, selected)
+        }
+
+    fun styleTab(view: TextView, selected: Boolean) {
+        view.setTextColor(if (selected) accent else muted)
+        view.background = RippleDrawable(ColorStateList.valueOf(rippleColor),
+            rounded(if (selected) selectedColor else android.graphics.Color.TRANSPARENT, 4), null)
+    }
+
+    fun transport(kind: String, label: String, onClick: () -> Unit): TextView =
+        tab("", false, onClick).apply {
+            gravity = Gravity.CENTER
+            setPadding(dp(12), 0, dp(12), 0)
+            contentDescription = label
+            setCompoundDrawables(glyphDrawable(kind, textColor).apply {
+                setBounds(0, 0, dp(22), dp(22))
+            }, null, null, null)
+        }
+
     /** 标题栏徽标：accentSoft 底 + 语义色文字（日夜各自成立，不覆盖画面）。 */
     fun badge(label: String, color: Int): TextView = TextView(context).apply {
         text = label
-        textSize = 13f
+        textSize = 11f
         includeFontPadding = false
         gravity = Gravity.CENTER
         isSingleLine = true
@@ -205,12 +227,12 @@ internal class RecordUi(val context: Context) {
         background = rounded(accentSoft, 4)
     }
 
-    /** 自绘图标的 drawable 形式（导航项切换选中色时复用同一套坐标）。 */
-    fun glyphDrawable(kind: String, color: Int): Drawable = RecordGlyph(kind, color)
+    /** 固定版本图标资源，导航仅切换 tint。 */
+    fun glyphDrawable(kind: String, color: Int): Drawable = RecordIcons.drawable(context, kind, color)
 
-    /** 自绘图标（24px 画布、1.7 描边）；控件尺寸由调用方 LayoutParams 决定，inset 收窄绘制面积。 */
+    /** 现成资源图标；只按控件尺寸缩放，不自行描绘路径。 */
     fun glyph(kind: String, color: Int, inset: Int = 0): ImageView = ImageView(context).apply {
-        setImageDrawable(RecordGlyph(kind, color))
+        setImageDrawable(RecordIcons.drawable(context, kind, color))
         setPadding(dp(inset), dp(inset), dp(inset), dp(inset))
         importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
     }
@@ -218,16 +240,16 @@ internal class RecordUi(val context: Context) {
     /** 64dp 命中区、32dp 可见图标的图标按钮（返回等）。 */
     fun iconButton(kind: String, description: String, color: Int, onClick: () -> Unit): View =
         android.widget.FrameLayout(context).apply {
-            minimumWidth = dp(64)
-            minimumHeight = dp(64)
-            setPadding(dp(16), dp(16), dp(16), dp(16))
+            minimumWidth = dp(48)
+            minimumHeight = dp(48)
+            setPadding(dp(12), dp(12), dp(12), dp(12))
             background = RippleDrawable(ColorStateList.valueOf(rippleColor), rounded(0), null)
             contentDescription = description
             isClickable = true
             isFocusable = true
             addView(
-                glyph(kind, color, 4),
-                android.widget.FrameLayout.LayoutParams(dp(32), dp(32), Gravity.CENTER),
+                glyph(kind, color, 0),
+                android.widget.FrameLayout.LayoutParams(dp(22), dp(22), Gravity.CENTER),
             )
             setOnClickListener { onClick() }
         }
@@ -267,130 +289,13 @@ internal class RecordUi(val context: Context) {
 
 /** 文字角色（字号/行高/字重）。 */
 internal enum class RecordRole(val size: Int, val lineHeight: Int, val medium: Boolean = false, val muted: Boolean = false) {
-    PAGE_TITLE(24, 32, medium = true),
-    SECTION_TITLE(18, 26, medium = true, muted = true),
-    LABEL(20, 28),
-    VALUE(18, 26, muted = true),
-    DESCRIPTION(16, 24, muted = true),
-    FEEDBACK(16, 24, muted = true),
-    NAV(19, 0, medium = true),
-    BADGE(16, 0),
-    OVERLAY(18, 0, medium = true),
-}
-
-/**
- * 自绘图标。坐标固定在 24px 画布内，1.7px 描边、圆头圆角，按控件尺寸等比缩放；
- * 不复制 OEM 素材、截图图标或第三方图标库。
- */
-private class RecordGlyph(private val kind: String, private var color: Int) : Drawable() {
-    private val pen = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        style = Paint.Style.STROKE
-        strokeWidth = 1.7f
-        strokeCap = Paint.Cap.ROUND
-        strokeJoin = Paint.Join.ROUND
-    }
-    private val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply { style = Paint.Style.FILL }
-
-    override fun draw(canvas: Canvas) {
-        canvas.save()
-        canvas.translate(bounds.left.toFloat(), bounds.top.toFloat())
-        canvas.scale(bounds.width() / 24f, bounds.height() / 24f)
-        pen.color = color
-        fill.color = color
-        when (kind) {
-            // 实时画面：2×2 四宫格。
-            "live" -> {
-                canvas.drawRoundRect(RectF(2f, 2f, 11f, 11f), 2f, 2f, pen)
-                canvas.drawRoundRect(RectF(13f, 2f, 22f, 11f), 2f, 2f, pen)
-                canvas.drawRoundRect(RectF(2f, 13f, 11f, 22f), 2f, 2f, pen)
-                canvas.drawRoundRect(RectF(13f, 13f, 22f, 22f), 2f, 2f, pen)
-            }
-            // 录像库：片库外框 + 播放标记。
-            "library" -> {
-                canvas.drawRoundRect(RectF(2f, 4f, 22f, 20f), 2f, 2f, pen)
-                canvas.drawPath(Path().apply {
-                    moveTo(10f, 9f); lineTo(16f, 12f); lineTo(10f, 15f); close()
-                }, pen)
-            }
-            // 设置：三条滑杆。
-            "settings" -> {
-                canvas.drawLine(3f, 7f, 21f, 7f, pen)
-                canvas.drawLine(3f, 12f, 21f, 12f, pen)
-                canvas.drawLine(3f, 17f, 21f, 17f, pen)
-                canvas.drawCircle(9f, 7f, 2f, fill)
-                canvas.drawCircle(15f, 12f, 2f, fill)
-                canvas.drawCircle(7f, 17f, 2f, fill)
-            }
-            "back" -> canvas.drawPath(Path().apply { moveTo(15f, 5f); lineTo(8f, 12f); lineTo(15f, 19f) }, pen)
-            "chevron" -> canvas.drawPath(Path().apply { moveTo(9f, 5f); lineTo(16f, 12f); lineTo(9f, 19f) }, pen)
-            "expand" -> canvas.drawPath(Path().apply { moveTo(5f, 9f); lineTo(12f, 16f); lineTo(19f, 9f) }, pen)
-            "collapse" -> canvas.drawPath(Path().apply { moveTo(5f, 15f); lineTo(12f, 8f); lineTo(19f, 15f) }, pen)
-            // 存储：介质/硬盘。
-            "storage" -> {
-                canvas.drawRoundRect(RectF(2f, 5f, 22f, 19f), 2f, 2f, pen)
-                canvas.drawLine(2f, 14f, 22f, 14f, pen)
-                canvas.drawCircle(18f, 16.5f, 1f, fill)
-                canvas.drawCircle(14.5f, 16.5f, 1f, fill)
-            }
-            // 编码：芯片。
-            "encode" -> {
-                canvas.drawRoundRect(RectF(6f, 6f, 18f, 18f), 2f, 2f, pen)
-                canvas.drawRect(9.5f, 9.5f, 14.5f, 14.5f, pen)
-                canvas.drawLine(12f, 2f, 12f, 6f, pen)
-                canvas.drawLine(12f, 18f, 12f, 22f, pen)
-                canvas.drawLine(2f, 12f, 6f, 12f, pen)
-                canvas.drawLine(18f, 12f, 22f, 12f, pen)
-            }
-            // 录制：摄像机。
-            "record" -> {
-                canvas.drawRoundRect(RectF(2f, 7f, 16f, 18f), 2f, 2f, pen)
-                canvas.drawPath(Path().apply {
-                    moveTo(16f, 12f); lineTo(22f, 8.5f); lineTo(22f, 16.5f); close()
-                }, pen)
-                canvas.drawCircle(9f, 12.5f, 2.2f, pen)
-            }
-            // 车辆：车身。
-            "vehicle" -> {
-                canvas.drawPath(Path().apply {
-                    moveTo(3f, 15f); lineTo(5.5f, 8f); lineTo(18.5f, 8f); lineTo(21f, 15f)
-                }, pen)
-                canvas.drawRoundRect(RectF(2f, 13f, 22f, 19f), 2f, 2f, pen)
-                canvas.drawLine(5f, 19f, 5f, 22f, pen)
-                canvas.drawLine(19f, 19f, 19f, 22f, pen)
-            }
-            // 回放：画面 + 播放键。
-            "playback" -> {
-                canvas.drawRoundRect(RectF(2f, 4f, 22f, 20f), 2f, 2f, pen)
-                canvas.drawPath(Path().apply {
-                    moveTo(10f, 9f); lineTo(16f, 12f); lineTo(10f, 15f); close()
-                }, pen)
-            }
-            // 诊断：脉搏。
-            "diagnose" -> canvas.drawPath(Path().apply {
-                moveTo(2f, 12f); lineTo(7f, 12f); lineTo(10f, 5f); lineTo(14f, 19f); lineTo(17f, 12f); lineTo(22f, 12f)
-            }, pen)
-            // 关于：信息圈。
-            "about" -> {
-                canvas.drawCircle(12f, 12f, 9f, pen)
-                canvas.drawCircle(12f, 8f, 1f, fill)
-                canvas.drawLine(12f, 11f, 12f, 16.5f, pen)
-            }
-            // 重新探测：环形箭头。
-            "refresh" -> {
-                canvas.drawArc(RectF(4f, 4f, 20f, 20f), -50f, 280f, false, pen)
-                canvas.drawPath(Path().apply {
-                    moveTo(20.5f, 3.5f); lineTo(20.5f, 8.5f); lineTo(15.5f, 8.5f)
-                }, pen)
-            }
-            else -> {
-                canvas.drawCircle(12f, 12f, 9f, pen)
-                canvas.drawCircle(12f, 12f, 1f, fill)
-            }
-        }
-        canvas.restore()
-    }
-
-    override fun setAlpha(alpha: Int) { pen.alpha = alpha; fill.alpha = alpha }
-    override fun setColorFilter(filter: ColorFilter?) { pen.colorFilter = filter; fill.colorFilter = filter }
-    @Deprecated("Drawable") override fun getOpacity(): Int = PixelFormat.TRANSLUCENT
+    PAGE_TITLE(21, 29, medium = true),
+    SECTION_TITLE(14, 22, medium = true, muted = true),
+    LABEL(16, 24),
+    VALUE(14, 22, muted = true),
+    DESCRIPTION(12, 18, muted = true),
+    FEEDBACK(12, 18, muted = true),
+    NAV(14, 0, medium = true),
+    BADGE(11, 0),
+    OVERLAY(12, 0, medium = true),
 }

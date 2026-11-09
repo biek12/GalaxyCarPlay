@@ -25,6 +25,9 @@ internal class SettingsIndexPage(private val host: RecordActivity, recordUi: Rec
                 LinearLayout.LayoutParams(-1, -2),
             )
         }
+        val account=SettingRow(ui,"车辆与账号","共用绑定码、扫码添加与永久绑定管理")
+        account.clickableRow("车辆与账号") { host.startActivity(android.content.Intent(host,com.galaxy.auto.client.vehicle.VehicleAccountActivity::class.java)) }
+        column.addView(ui.card().apply{addView(account)},LinearLayout.LayoutParams(-1,-2).apply{bottomMargin=ui.dp(16)})
         val card = ui.card()
         column.addView(card, LinearLayout.LayoutParams(-1, -2))
         SubPage.entries.forEachIndexed { index, page ->

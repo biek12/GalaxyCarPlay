@@ -166,7 +166,7 @@ object SegmentScanner {
         return ScanResult(entries.sortedByDescending { it.startedAtMillis }, rootExists = true)
     }
 
-    private fun readSegment(dir: File): SegmentEntry? {
+    internal fun readSegment(dir: File): SegmentEntry? {
         val files = dir.listFiles() ?: return null
         val byName = files.associateBy { it.name }
 
@@ -181,7 +181,8 @@ object SegmentScanner {
         // 终态清单下残留的 `.writing` 是失败路证据（保留可查），不是"仍在写入"；
         // 只有清单未落终态（缺失或仍 writing）时 .writing 才表示写入中/崩溃残留。
         val manifestTerminal = manifest != null && manifest.state != SegmentManifest.STATE_WRITING
-        val activeWriting = writing && !manifestTerminal
+        // 下一段已提前建清单但尚无视频文件时仍在写入流程，不能当作异常可删片段。
+        val activeWriting = manifest?.state == SegmentManifest.STATE_WRITING || (writing && !manifestTerminal)
 
         val completeness = when {
             manifestBroken -> SegmentCompleteness.CORRUPT
@@ -216,10 +217,14 @@ object SegmentScanner {
             dir = dir,
             startedAtMillis = manifest?.startedAtWallMillis ?: parseDirStamp(dir.name) ?: dir.lastModified(),
             durationMillis = manifest?.durationMillis ?: 0L,
-            bytes = files.filter { it.isFile }.sumOf { it.length() },
+            // 一次NIO属性读取同时取得类型/长度，避免FUSE上isFile+length双倍往返。
+            bytes = files.sumOf { file -> runCatching {
+                val attributes=java.nio.file.Files.readAttributes(file.toPath(),java.nio.file.attribute.BasicFileAttributes::class.java)
+                if(attributes.isRegularFile)attributes.size()else 0L
+            }.getOrDefault(0L) },
             completeness = completeness,
             missingDirections = missing,
-            eventCount = manifest?.events?.count ?: 0,
+            eventCount = (manifest?.events?.count ?: 0)+runCatching{EventReader.sentinelEvents(dir).size}.getOrDefault(0),
             hasVehicleData = manifest?.vehicle != null,
             encoderSummary = firstChannel?.let { "${it.encoderName}（${implLabel(it.implementation)}）" } ?: "",
             resolutionSummary = firstChannel?.let { "${it.width}×${it.height} @${it.fps}fps" } ?: "",
@@ -259,13 +264,21 @@ class SegmentMarks(private val indexDir: File) {
     fun played(): Set<String> = readSet(PLAYED_FILE)
 
     /** 返回写入后的集合；失败返回 null（调用方必须报错，不能假装已锁）。 */
-    fun setLocked(ids: Collection<String>, locked: Boolean): Set<String>? {
+    fun setLocked(ids: Collection<String>, locked: Boolean): Set<String>? = synchronized(SegmentAccess.gate) {
+        if (ids.any { SegmentAccess.deletingId(it) }) return@synchronized null
         val next = locks().toMutableSet()
         if (locked) next += ids else next -= ids.toSet()
-        return if (writeSet(LOCK_FILE, next)) next else null
+        if (writeSet(LOCK_FILE, next)) next else null
     }
 
-    fun markPlayed(id: String): Boolean = writeSet(PLAYED_FILE, played() + id)
+    fun forget(ids: Collection<String>): Boolean = synchronized(SegmentAccess.gate) {
+        val removed=ids.toSet()
+        writeSet(LOCK_FILE,locks()-removed) && writeSet(PLAYED_FILE,played()-removed)
+    }
+
+    fun markPlayed(id: String): Boolean = synchronized(SegmentAccess.gate) {
+        !SegmentAccess.deletingId(id) && writeSet(PLAYED_FILE, played() + id)
+    }
 
     private fun readSet(name: String): Set<String> {
         val file = File(indexDir, name)

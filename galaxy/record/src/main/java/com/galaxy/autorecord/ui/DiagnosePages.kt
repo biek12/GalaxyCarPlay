@@ -512,7 +512,8 @@ internal class AboutPage(private val host: RecordActivity, recordUi: RecordUi) :
         column.addView(ui.sectionTitle("开源与参考"), LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(20) })
         column.addView(
             ui.text(
-                "界面与组件为按项目 FlymeAuto 样式基线自绘，不复制 OEM 素材与第三方图标。" +
+                "界面沿用项目 FlymeAuto 样式；普通图标采用 Lucide 0.468.0（ISC）；车辆图标含 MDI 7.4.47（Apache-2.0）与 ISO7000-2956 现有矢量（CC0），" +
+                    "原始来源清单与许可随应用保存在 assets/licenses。踏板素材：Press Brake Pedal — Mateusz Skrzyniecki；Pedal — LAFS，来自 Noun Project（CC BY 3.0，https://creativecommons.org/licenses/by/3.0/）；仅显示时染色缩放。方向盘、巡航、后雾灯、自动驻车和P图形来自Volvo Cars公开图标目录。" +
                     "EVCam 仅作摄像头接入链的研究参考（GPL-3.0），未迁入任何代码。",
                 RecordRole.DESCRIPTION,
             ),

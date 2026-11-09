@@ -26,7 +26,7 @@ class RecordSettingsTest {
         assertEquals(false, s.audio)
         assertEquals(false, s.autoOnBoot)
         assertEquals(true, s.background)
-        assertEquals(250, s.vehicleIntervalMs)
+        assertEquals(100, s.vehicleIntervalMs)
         assertEquals(5, s.brakeEnter)
         assertEquals(3, s.brakeExit)
         assertEquals(1f, s.playbackSpeed, 0f)

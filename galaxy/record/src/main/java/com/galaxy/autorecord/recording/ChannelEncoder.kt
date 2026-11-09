@@ -9,8 +9,6 @@ import android.util.Log
 import com.galaxy.autorecord.core.EncoderInfo
 import com.galaxy.autorecord.storage.ChannelWriteResult
 import java.io.File
-import java.util.concurrent.LinkedBlockingQueue
-import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 
 /**
@@ -26,7 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean
  * **不是**"收到帧的时刻"、更不是"帧序号×固定时长"。写盘前平移为段相对时间轴（0 = 段锚点），
  * 段锚点前的在途帧如实丢弃并计数。
  *
- * 收尾顺序（技术口径 §3，不可交换）：signalEndOfInputStream → drain 到 EOS 并写完剩余帧 →
+ * 收尾顺序（技术口径 §3，不可交换）：输入缓冲 EOS → drain 到 EOS 并写完剩余帧 →
  * muxer.stop()（生成 moov）→ release。用户主动停止同样走完，不得跳过 stop 丢掉 moov。
  */
 class ChannelEncoder private constructor(
@@ -53,13 +51,14 @@ class ChannelEncoder private constructor(
     private var lastPtsUs = -1L
     private var droppedPreAnchor = 0L
     private var droppedBackpressure = 0L
-    private var eosSeen = false
+    @Volatile private var eosSeen = false
     private var streamError: String? = null
     /** muxer.stop() 是否成功（决定文件是否可提交；失败保留 .writing 证据，不伪造 complete）。 */
     private var muxerStopped = false
     private val stopRequested = AtomicBoolean(false)
-    private val doneSignal = LinkedBlockingQueue<Boolean>(1)
-    private var drainThread: Thread? = null
+    private val drainOwner = EncoderDrainOwner("record-drain-$direction", drain = { drainLoop(it) }, release = { releaseOnDrainThread() })
+    val terminated: Boolean get() = drainOwner.completed
+    @Volatile private var finishTimedOut = false
     /** 输入侧互斥：queueYuv 与 EOS 入队都占输入缓冲，MediaCodec 不允许并发调用。 */
     private val inputLock = Any()
 
@@ -70,30 +69,37 @@ class ChannelEncoder private constructor(
             setInteger(MediaFormat.KEY_FRAME_RATE, fps)
             setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, gopSeconds)
         }
-        codec = MediaCodec.createByCodecName(encoderName)
-        codec.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
-        codec.start()
+        var candidate: MediaCodec? = null
+        codec = try {
+            MediaCodec.createByCodecName(encoderName).also {
+                candidate = it
+                it.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
+                it.start()
+            }
+        } catch (error: Throwable) {
+            runCatching { candidate?.release() }
+            runCatching { muxer.release() }
+            throw error
+        }
     }
 
     /**
      * 送入一帧 YUV（相机 ImageReader 回调线程调用）。
      * 按 stride 拷贝三平面到编码器输入；PTS 用帧自带时间戳（绝对域，drain 侧统一平移段相对）。
+     * Image由RecordingFrameReader持有并在本方法返回后归还，本类不关闭借用的图像。
      */
     fun queueYuv(image: Image, frameTimestampNs: Long) {
         if (stopRequested.get() || eosSeen) {
-            image.close()
             return
         }
         val relUs = frameTimestampNs / 1000 - ptsOffsetUs
         if (relUs < 0) {
             // 段锚点前的在途帧：如实丢弃，不写入、不伪造时间
             droppedPreAnchor++
-            image.close()
             return
         }
         synchronized(inputLock) {
             if (stopRequested.get() || eosSeen) {
-                image.close()
                 return
             }
             val inIndex = try {
@@ -102,12 +108,10 @@ class ChannelEncoder private constructor(
                 // 输入侧单帧异常＝丢帧；收尾竞态（stopRequested）静默丢弃，不毒化整路收尾
                 droppedBackpressure++
                 if (!stopRequested.get()) Log.w(TAG, "编码输入异常 $direction：${error.javaClass.simpleName}")
-                image.close()
                 return
             }
             if (inIndex < 0) {
                 droppedBackpressure++ // 编码跟不上：丢帧并计数，不排队堆积
-                image.close()
                 return
             }
             try {
@@ -119,26 +123,18 @@ class ChannelEncoder private constructor(
                     codec.queueInputBuffer(inIndex, 0, width * height * 3 / 2, frameTimestampNs / 1000, 0)
                 }
             } catch (error: Exception) {
-                // 输入侧异常只丢当前帧（如实计数），绝不把整路已写盘内容判失败；
-                // 段收尾竞态（编码器已被 drain 线程释放）属预期噪声，静默丢弃。
+                // 输入异常如实计数；native 释放持有同一把输入锁，不会关闭仍在复制的目标缓冲。
                 droppedBackpressure++
                 if (!stopRequested.get()) {
                     Log.w(TAG, "编码送帧异常 $direction：${error.javaClass.simpleName}（丢 1 帧）")
                 }
                 runCatching { codec.queueInputBuffer(inIndex, 0, 0, 0L, 0) }
-            } finally {
-                image.close()
             }
         }
     }
 
     /** 启动 drain 线程（每编码器一条，随 finish() 退出；不创建无界线程）。 */
-    fun startDrain() {
-        drainThread = Thread({ drainLoop() }, "record-drain-$direction").apply {
-            priority = Thread.NORM_PRIORITY - 1
-            start()
-        }
-    }
+    fun startDrain() = drainOwner.start()
 
     /**
      * 收尾一路：EOS → drain → muxer.stop → release。阻塞至 drain 结束。
@@ -149,32 +145,13 @@ class ChannelEncoder private constructor(
      */
     fun finish(): ChannelWriteResult? {
         stopRequested.set(true)
-        synchronized(inputLock) {
-            try {
-                val inIndex = codec.dequeueInputBuffer(500_000)
-                if (inIndex >= 0) {
-                    codec.queueInputBuffer(inIndex, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
-                } else if (streamError == null) {
-                    streamError = "EOS 入队超时（编码器无空闲输入缓冲）"
-                }
-            } catch (error: Exception) {
-                if (streamError == null) streamError = "EOS 入队异常：${error.javaClass.simpleName}"
-            }
+        if (!drainOwner.finish()) {
+            finishTimedOut = true
+            Log.e(TAG, "收尾等待超时 $direction，等待原 drain 线程释放，保留 writing")
+            return null
         }
-        // drain 线程收到 EOS 后走完 stop/release 并投递 doneSignal
-        val finished = try {
-            doneSignal.poll(FINISH_TIMEOUT_MS, TimeUnit.MILLISECONDS) == true
-        } catch (e: InterruptedException) {
-            false
-        }
-        if (!finished) {
-            Log.w(TAG, "收尾超时 $direction，强制释放")
-            forceRelease()
-        }
-        drainThread?.let { runCatching { it.join(2000) } }
-        drainThread = null
 
-        if (!muxerStopped || frameCount <= 0L) {
+        if (finishTimedOut || !eosSeen || !muxerStopped || frameCount <= 0L) {
             Log.w(
                 TAG,
                 "通道未完成收尾 $direction（frames=$frameCount muxer=$muxerStarted stopped=$muxerStopped " +
@@ -206,10 +183,22 @@ class ChannelEncoder private constructor(
         )
     }
 
-    private fun drainLoop() {
+    private fun drainLoop(owner: EncoderDrainOwner) {
         val info = MediaCodec.BufferInfo()
+        var eosQueued = false
         try {
             while (!eosSeen) {
+                if (owner.expired) {
+                    streamError = "EOS/drain 收尾超时"
+                    break
+                }
+                if (owner.stopping && !eosQueued) synchronized(inputLock) {
+                    val input = codec.dequeueInputBuffer(DRAIN_TIMEOUT_US)
+                    if (input >= 0) {
+                        codec.queueInputBuffer(input, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+                        eosQueued = true
+                    }
+                }
                 val outIndex = codec.dequeueOutputBuffer(info, DRAIN_TIMEOUT_US)
                 when {
                     outIndex == MediaCodec.INFO_TRY_AGAIN_LATER -> Unit
@@ -224,7 +213,9 @@ class ChannelEncoder private constructor(
                     outIndex >= 0 -> {
                         val buffer = codec.getOutputBuffer(outIndex)
                         try {
-                            if (buffer != null && info.size > 0 && muxerStarted) {
+                            // SPS/PPS 等配置放在 track format，不能计为画面或触发“已录制”。
+                            if (buffer != null && info.size > 0 && muxerStarted &&
+                                info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG == 0) {
                                 val relUs = info.presentationTimeUs - ptsOffsetUs
                                 if (relUs < 0) {
                                     droppedPreAnchor++
@@ -255,36 +246,28 @@ class ChannelEncoder private constructor(
         } catch (error: Exception) {
             streamError = "编码/封装异常：${error.javaClass.simpleName}"
             Log.w(TAG, "drain 异常 $direction", error)
-        } finally {
-            runCatching {
-                if (muxerStarted) {
-                    muxer.stop()
-                    muxerStopped = true
-                }
-            }.onFailure { if (streamError == null) streamError = "muxer.stop 失败：${it.javaClass.simpleName}" }
-            runCatching { muxer.release() }
-            // 释放编码器与输入侧同锁：避免 queueYuv 迟到回调撞上已释放的 codec（IllegalStateException 竞态）
-            synchronized(inputLock) {
-                runCatching { codec.stop() }
-                runCatching { codec.release() }
-            }
-            doneSignal.offer(true)
         }
     }
 
-    private fun forceRelease() {
+    /** 唯一 native 释放路径。先封闭输入，再等正在复制的输入归还，避免目标缓冲同样被释放。 */
+    private fun releaseOnDrainThread() {
+        stopRequested.set(true)
+        runCatching {
+            if (muxerStarted) {
+                muxer.stop()
+                muxerStopped = true
+            }
+        }.onFailure { if (streamError == null) streamError = "muxer.stop 失败：${it.javaClass.simpleName}" }
+        runCatching { muxer.release() }
         synchronized(inputLock) {
             runCatching { codec.stop() }
             runCatching { codec.release() }
         }
-        runCatching { muxer.release() }
-        if (streamError == null) streamError = "收尾超时"
     }
 
     companion object {
         private const val TAG = "AutoRecordEngine"
         private const val DRAIN_TIMEOUT_US = 10_000L
-        private const val FINISH_TIMEOUT_MS = 8_000L
 
         /**
          * 创建单路编码器。失败抛 [EncoderCreateException]（带方向与原因），
@@ -329,13 +312,21 @@ class ChannelEncoder private constructor(
             }
         }
 
-        /** YUV_420_888 → 编码器输入平面（按 rowStride/pixelStride 逐行拷贝）。 */
+        private class RowScratch {
+            var source = ByteArray(0)
+            var target = ByteArray(0)
+        }
+        private val rowScratch = object : ThreadLocal<RowScratch>() {
+            override fun initialValue() = RowScratch()
+        }
+
+        /** YUV 平面逐行批量进出直接内存；交错色度只在可复用堆数组内拆分。 */
         internal fun copyPlanes(src: Image, dst: Image) {
             for (planeIndex in 0 until minOf(src.planes.size, dst.planes.size)) {
                 val srcPlane = src.planes[planeIndex]
                 val dstPlane = dst.planes[planeIndex]
-                val srcBuffer = srcPlane.buffer
-                val dstBuffer = dstPlane.buffer
+                val srcBuffer = srcPlane.buffer.duplicate()
+                val dstBuffer = dstPlane.buffer.duplicate()
                 val rowStride = srcPlane.rowStride
                 val pixelStride = srcPlane.pixelStride
                 val dstRowStride = dstPlane.rowStride
@@ -352,15 +343,27 @@ class ChannelEncoder private constructor(
                     for (row in 0 until height) {
                         val srcPos = row * rowStride
                         val dstPos = row * dstRowStride
+                        srcBuffer.limit(srcBuffer.capacity())
                         srcBuffer.position(srcPos)
                         dstBuffer.position(dstPos)
                         if (pixelStride == 1 && dstPixelStride == 1) {
                             srcBuffer.limit(srcPos + rowBytes)
                             dstBuffer.put(srcBuffer)
                         } else {
-                            for (col in 0 until width) {
-                                dstBuffer.put(dstPos + col * dstPixelStride, srcBuffer.get(srcPos + col * pixelStride))
+                            val scratch = rowScratch.get()!!
+                            val targetBytes = (width - 1) * dstPixelStride + 1
+                            if (scratch.source.size < rowBytes) scratch.source = ByteArray(rowBytes)
+                            if (scratch.target.size < targetBytes) scratch.target = ByteArray(targetBytes)
+                            srcBuffer.get(scratch.source, 0, rowBytes)
+                            // U/V 可能共享交错目标内存，保留另一分量，不能用零填充覆盖。
+                            if (dstPixelStride != 1) {
+                                dstBuffer.get(scratch.target, 0, targetBytes)
+                                dstBuffer.position(dstPos)
                             }
+                            for (col in 0 until width) {
+                                scratch.target[col * dstPixelStride] = scratch.source[col * pixelStride]
+                            }
+                            dstBuffer.put(scratch.target, 0, targetBytes)
                         }
                     }
                 }

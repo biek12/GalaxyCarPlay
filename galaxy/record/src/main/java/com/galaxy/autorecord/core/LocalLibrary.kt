@@ -34,11 +34,13 @@ data class LibraryState(
         range: LibraryDateRange = LibraryDateRange.ALL,
         period: LibraryPeriod = LibraryPeriod.ALL,
         nowMillis: Long = System.currentTimeMillis(),
+        window: LibraryTimeWindow? = null,
     ): List<SegmentEntry> {
         val todayStart = startOfDay(nowMillis)
         val dayMillis = 24L * 60 * 60 * 1000
         return segments.asSequence()
             .filter { filter.matches(it) }
+            .filter { window?.matches(it) != false }
             .filter { entry ->
                 when (range) {
                     LibraryDateRange.ALL -> true

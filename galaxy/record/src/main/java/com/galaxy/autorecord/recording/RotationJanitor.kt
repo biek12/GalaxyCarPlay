@@ -25,6 +25,8 @@ object RotationJanitor {
         val blockedReason: String?,
         val protectedLocked: Int,
         val protectedEvent: Int,
+        val usedBytes: Long = 0,
+        val catalog: List<SegmentEntry> = emptyList(),
     )
 
     /**
@@ -45,29 +47,33 @@ object RotationJanitor {
         rotate: Boolean,
         eventProtect: Boolean,
         maxDelete: Int = 8,
+        inUse:Set<String> = emptySet(),
+        catalog:List<SegmentEntry>? = null,
+        usedBytesOverride:Long? = null,
     ): Result {
-        val scan = SegmentScanner.scan(segmentsRoot)
-        var used = scan.segments.sumOf { it.bytes }
+        val scan = if(catalog==null)SegmentScanner.scan(segmentsRoot)else com.galaxy.autorecord.core.ScanResult(catalog)
+        check(scan.error==null){"storage_catalog_scan_failed"}
+        var used = usedBytesOverride?:scan.segments.sumOf { it.bytes }
         var free = freeBytes
         val deleted = mutableListOf<String>()
 
         fun shortOfSpace(): Boolean =
             used + incomingBytes > quotaBytes || free - minFreeBytes < incomingBytes
 
-        if (!shortOfSpace()) return Result(emptyList(), 0L, null, 0, 0)
+        if (!shortOfSpace()) return Result(emptyList(), 0L, null, 0, 0, used,scan.segments)
 
         if (!rotate) {
             return Result(
                 emptyList(), 0L,
                 "循环覆盖已关闭：空间不足（需 ${incomingBytes / MB} MB），请删除片段或改配额",
-                0, 0,
+                0, 0, used, scan.segments,
             )
         }
 
         val marks = SegmentMarks(indexDir)
         val locks = runCatching { marks.locks() }.getOrDefault(emptySet())
         val candidates = scan.segments
-            .filter { it.completeness != SegmentCompleteness.WRITING }
+            .filter { it.completeness != SegmentCompleteness.WRITING && it.id !in inUse }
             .filter { it.id !in locks }
             .filter { !(eventProtect && it.isEventBearing) }
             .sortedBy { it.startedAtMillis }
@@ -85,14 +91,14 @@ object RotationJanitor {
             }
         }
 
-        if (!shortOfSpace()) return Result(deleted, freedOf(deleted, scan.segments), null, protectedLocked, protectedEvent)
+        if (!shortOfSpace()) return Result(deleted, freedOf(deleted, scan.segments), null, protectedLocked, protectedEvent, used, scan.segments.filter{it.id !in deleted})
 
         val reason = if (candidates.isEmpty() || deleted.size >= candidates.size) {
             "受保护片段占满配额（锁定 $protectedLocked 段 / 事件 $protectedEvent 段）：请管理锁定片段、关闭事件保护或改配额"
         } else {
             "空间不足：已删 ${deleted.size} 段仍不够写下一段（需 ${incomingBytes / MB} MB）"
         }
-        return Result(deleted, freedOf(deleted, scan.segments), reason, protectedLocked, protectedEvent)
+        return Result(deleted, freedOf(deleted, scan.segments), reason, protectedLocked, protectedEvent, used, scan.segments.filter{it.id !in deleted})
     }
 
     private fun freedOf(deleted: List<String>, entries: List<SegmentEntry>): Long =
@@ -104,7 +110,9 @@ object RotationJanitor {
         // 防御：只允许删除 segments 根下的段目录
         if (!dir.isDirectory) return false
         if (dir.name != entry.id) return false
-        return runCatching { dir.deleteRecursively() }.getOrDefault(false) && !dir.exists()
+        return com.galaxy.autorecord.core.SegmentAccess.delete(dir) {
+            runCatching { dir.deleteRecursively() }.getOrDefault(false) && !dir.exists()
+        }
     }
 
     private const val MB = 1024L * 1024L

@@ -67,18 +67,49 @@ class ExportTask(
             execute()
         } catch (error: Exception) {
             Log.w(TAG, "导出失败", error)
-            ExportResult(false, "导出失败：${error.javaClass.simpleName}（源段保持不动）")
+            ExportResult(false, if (cancelled) "已取消导出（源段保持不动）"
+                else "导出失败：${error.javaClass.simpleName}（源段保持不动）")
         }
         doneSignal.offer(result)
     }
 
     /** 同步执行入口（测试用）；生产用线程跑 [run] 后取 [await]。 */
     fun execute(): ExportResult {
-        val dirs = request.segmentDirs.filter { it.isDirectory }
+        val leases = mutableListOf<java.io.Closeable>()
+        // 同步调用者也必须收到失败回执；异常不能绕过半成品清理或逃出工作线程。
+        val result = try {
+            request.segmentDirs.forEach { leases += com.galaxy.autorecord.core.SegmentAccess.hold(it) }
+            executeExport()
+        } catch (error: Exception) {
+            Log.w(TAG, "导出失败", error)
+            ExportResult(false, if (cancelled) "已取消导出（源段保持不动）"
+                else "导出失败：${error.javaClass.simpleName}（源段保持不动）")
+        } finally { leases.asReversed().forEach { it.close() } }
+        if (!result.success) {
+            runCatching {
+                android.provider.DocumentsContract.deleteDocument(context.contentResolver, request.outputUri)
+            }
+        }
+        return result
+    }
+
+    private fun executeExport(): ExportResult {
+        val dirs = request.segmentDirs
         if (dirs.isEmpty()) return ExportResult(false, "没有可导出的片段")
+        if (cancelled) return ExportResult(false, "已取消导出（源段保持不动）")
+        if (dirs.any { !it.isDirectory }) return ExportResult(false, "源片段已不可用，请刷新录像库")
+        if (!request.grid && request.direction !in SegmentLayout.DIRECTIONS) {
+            return ExportResult(false, "无效的导出方向")
+        }
         val directions = if (request.grid) SegmentLayout.DIRECTIONS else listOf(request.direction)
         val manifests = dirs.map { ExportPlanner.readManifest(it) }
+        if (manifests.any { it == null || it.state == SegmentManifest.STATE_WRITING }) {
+            return ExportResult(false, "源片段清单损坏或仍在写入，无法导出")
+        }
         val plan = ExportPlanner.plan(manifests, directions)
+        if (plan.spans.any { it.durationUs <= 0 }) {
+            return ExportResult(false, "所选片段没有可导出的视频样本")
+        }
         val json = ExportPlanner.exportJson(plan, directions, request.grid, request.overlay)
 
         val pfd = openOutput() ?: return ExportResult(false, "目标不可写：无法创建导出文件", json)
@@ -93,11 +124,6 @@ class ExportTask(
         }
         if (result.success) {
             writeExportJson(json)
-        } else {
-            // 取消/失败：清理半截输出（源段不动），保留导出设置由界面维持
-            runCatching {
-                android.provider.DocumentsContract.deleteDocument(context.contentResolver, request.outputUri)
-            }
         }
         return result.copy(exportJson = json)
     }
@@ -117,6 +143,7 @@ class ExportTask(
             muxer = MediaMuxer(fd, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
             var trackIndex = -1
             var wrote = 0L
+            var lastFormat: MediaFormat? = null
             dirs.forEachIndexed { index, dir ->
                 if (cancelled) return ExportResult(false, "已取消导出（源段保持不动）")
                 val file = SegmentLayout.videoFile(dir, direction)
@@ -137,9 +164,13 @@ class ExportTask(
                     } else if (!sameCodec(format, lastFormat)) {
                         return ExportResult(false, "相邻段编码参数不同（分辨率/编码变化），无法无损合并，请按段分别导出")
                     }
-                    val buffer = java.nio.ByteBuffer.allocate(1 shl 20)
+                    var buffer = java.nio.ByteBuffer.allocate(1 shl 20)
                     val info = MediaCodec.BufferInfo()
                     while (!cancelled) {
+                        val sampleSize = extractor.sampleSize
+                        if (sampleSize < 0) break
+                        check(sampleSize <= 32L * 1024 * 1024) { "video_sample_too_large" }
+                        if (sampleSize > buffer.capacity()) buffer = java.nio.ByteBuffer.allocate(sampleSize.toInt())
                         buffer.clear()
                         val size = extractor.readSampleData(buffer, 0)
                         if (size < 0) break
@@ -158,6 +189,7 @@ class ExportTask(
                 onProgress("已合并 ${index + 1}/${dirs.size} 段")
             }
             if (cancelled) return ExportResult(false, "已取消导出（源段保持不动）")
+            check(wrote > 0) { "empty_export" }
             muxer.stop()
             return ExportResult(true, "导出完成：单路 $direction，${dirs.size} 段合并，$wrote 个样本（PTS 已重排）")
         } finally {
@@ -165,13 +197,16 @@ class ExportTask(
         }
     }
 
-    private var lastFormat: MediaFormat? = null
-
-    private fun sameCodec(a: MediaFormat, b: MediaFormat?): Boolean {
+    internal fun sameCodec(a: MediaFormat, b: MediaFormat?): Boolean {
         if (b == null) return true
         return a.getString(MediaFormat.KEY_MIME) == b.getString(MediaFormat.KEY_MIME) &&
             a.getInteger(MediaFormat.KEY_WIDTH) == b.getInteger(MediaFormat.KEY_WIDTH) &&
-            a.getInteger(MediaFormat.KEY_HEIGHT) == b.getInteger(MediaFormat.KEY_HEIGHT)
+            a.getInteger(MediaFormat.KEY_HEIGHT) == b.getInteger(MediaFormat.KEY_HEIGHT) &&
+            (0..2).all { index ->
+                val first = a.getByteBuffer("csd-$index")?.duplicate()?.apply { rewind() }
+                val second = b.getByteBuffer("csd-$index")?.duplicate()?.apply { rewind() }
+                first == second
+            }
     }
 
     // ---- 合成（四宫格 / 叠加数据条）----
@@ -190,6 +225,7 @@ class ExportTask(
 
         var muxer: MediaMuxer? = null
         var encoder: MediaCodec? = null
+        var composed: Bitmap? = null
         try {
             encoder = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC)
             val format = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, outWidth, outHeight).apply {
@@ -201,27 +237,30 @@ class ExportTask(
             encoder.configure(format, null, null, MediaCodec.CONFIGURE_FLAG_ENCODE)
             encoder.start()
             muxer = MediaMuxer(fd, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4)
-            val pump = EncoderPump(encoder, muxer)
+            val pump = EncoderPump(encoder, muxer) { cancelled }
 
-            val composed = Bitmap.createBitmap(outWidth, outHeight, Bitmap.Config.ARGB_8888)
-            val canvas = Canvas(composed)
+            val bitmap = Bitmap.createBitmap(outWidth, outHeight, Bitmap.Config.ARGB_8888)
+            composed = bitmap
+            val canvas = Canvas(bitmap)
 
             dirs.forEachIndexed { segmentIndex, dir ->
                 if (cancelled) return ExportResult(false, "已取消导出（源段保持不动）")
                 val manifest = manifests[segmentIndex]
                 val span = plan.spans[segmentIndex]
                 val samples = runCatching { VehicleHistory.read(dir) }.getOrDefault(emptyList())
-                val readers = directions.map { d ->
-                    val file = SegmentLayout.videoFile(dir, d)
-                    if (file.isFile && file.length() > 0 &&
-                        manifest?.channels?.any { it.direction == d && it.status == SegmentManifest.CHANNEL_COMPLETE } == true
-                    ) {
-                        FrameReader(file)
-                    } else null
-                }
+                // 逐个创建并立即登记所有权，后一路初始化失败也会释放前面已开的解码器。
+                val readers = mutableListOf<FrameReader?>()
                 try {
+                    directions.forEach { direction ->
+                        val file = SegmentLayout.videoFile(dir, direction)
+                        val complete = manifest?.channels?.any {
+                            it.direction == direction && it.status == SegmentManifest.CHANNEL_COMPLETE
+                        } == true
+                        if (complete) check(file.isFile && file.length() > 0) { "source_video_missing" }
+                        readers += if (complete) FrameReader(file) else null
+                    }
                     var tUs = 0L
-                    while (tUs <= span.durationUs + frameUs / 2) {
+                    while (tUs <= span.durationUs) {
                         if (cancelled) return ExportResult(false, "已取消导出（源段保持不动）")
                         canvas.drawColor(Color.rgb(16, 18, 22))
                         readers.forEachIndexed { i, reader ->
@@ -232,7 +271,7 @@ class ExportTask(
                             drawDataBar(canvas, samples, tUs / 1000, outWidth, outHeight)
                         }
                         val outPts = plan.toExportPts(segmentIndex, tUs)
-                        pump.feed(composed, outWidth, outHeight, outPts)
+                        pump.feed(bitmap, outWidth, outHeight, outPts)
                         tUs += frameUs
                     }
                     onProgress("已合成 ${segmentIndex + 1}/${dirs.size} 段")
@@ -245,98 +284,89 @@ class ExportTask(
             pump.finish()
             return ExportResult(true, "导出完成：${if (request.grid) "四宫格" else "单路叠加"}，${dirs.size} 段，PTS 已重排")
         } finally {
+            composed?.recycle()
             runCatching { encoder?.stop() }
             runCatching { encoder?.release() }
             runCatching { muxer?.release() }
         }
     }
 
-    /**
-     * 编码输出泵：喂帧 + 排出输出；muxer 在收到 INFO_OUTPUT_FORMAT_CHANGED 后启动，
-     * 启动前的输出帧先缓存（通常 0–1 帧），保证不丢帧。
-     */
-    private class EncoderPump(private val encoder: MediaCodec, private val muxer: MediaMuxer) {
+    /** 缓冲区输入泵：不丢输入帧，EOS 排出后才结束封装；所有等待均可取消且有界。 */
+    private class EncoderPump(
+        private val encoder: MediaCodec,
+        private val muxer: MediaMuxer,
+        private val cancelled: () -> Boolean,
+    ) {
         private val info = MediaCodec.BufferInfo()
         private var started = false
         private var trackIndex = -1
-        private val pending = ArrayDeque<Pair<java.nio.ByteBuffer, MediaCodec.BufferInfo>>()
+        private var samples = 0L
+        private var outputEnded = false
+
+        private fun checkWaiting(deadline: Long) {
+            check(!cancelled()) { "export_cancelled" }
+            check(android.os.SystemClock.elapsedRealtime() < deadline) { "export_codec_timeout" }
+        }
+
+        private fun acquireInput(): Int {
+            val deadline = android.os.SystemClock.elapsedRealtime() + 10_000
+            while (true) {
+                checkWaiting(deadline)
+                val index = encoder.dequeueInputBuffer(10_000)
+                if (index >= 0) return index
+                drain(0)
+            }
+        }
 
         fun feed(bitmap: Bitmap, width: Int, height: Int, ptsUs: Long) {
-            val inIndex = encoder.dequeueInputBuffer(100_000)
-            if (inIndex >= 0) {
-                val image = encoder.getInputImage(inIndex)
-                if (image != null) {
-                    rgbToYuv(bitmap, width, height, image)
-                    encoder.queueInputBuffer(inIndex, 0, width * height * 3 / 2, ptsUs, 0)
-                } else {
-                    encoder.queueInputBuffer(inIndex, 0, 0, ptsUs, 0)
-                }
-            }
-            drain(0L)
+            val index = acquireInput()
+            val image = checkNotNull(encoder.getInputImage(index)) { "encoder_yuv_image_missing" }
+            rgbToYuv(bitmap, width, height, image)
+            encoder.queueInputBuffer(index, 0, width * height * 3 / 2, ptsUs, 0)
+            drain(0)
         }
 
         fun finish() {
-            encoder.signalEndOfInputStream()
-            var eos = false
-            while (!eos) {
-                val outIndex = encoder.dequeueOutputBuffer(info, 10_000)
-                when {
-                    outIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> ensureStarted()
-                    outIndex >= 0 -> {
-                        val eosFlag = writeAndRelease(outIndex)
-                        if (eosFlag) eos = true
-                    }
-                }
+            // 本编码器接收 ByteBuffer/Image，Surface 专用 signalEndOfInputStream 会直接抛异常。
+            val index = acquireInput()
+            encoder.queueInputBuffer(index, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+            val deadline = android.os.SystemClock.elapsedRealtime() + 10_000
+            while (!outputEnded) {
+                checkWaiting(deadline)
+                drain(10_000)
             }
+            check(started && samples > 0) { "empty_export" }
             muxer.stop()
         }
 
         private fun drain(timeoutUs: Long) {
-            while (true) {
-                val outIndex = encoder.dequeueOutputBuffer(info, timeoutUs)
-                when {
-                    outIndex == MediaCodec.INFO_TRY_AGAIN_LATER -> return
-                    outIndex == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> ensureStarted()
-                    outIndex >= 0 -> writeAndRelease(outIndex)
-                }
-                if (outIndex == MediaCodec.INFO_TRY_AGAIN_LATER) return
-            }
-        }
-
-        private fun ensureStarted() {
-            if (started) return
-            trackIndex = muxer.addTrack(encoder.outputFormat)
-            muxer.start()
-            started = true
-            while (pending.isNotEmpty()) {
-                val (buffer, pendingInfo) = pending.removeFirst()
-                muxer.writeSampleData(trackIndex, buffer, pendingInfo)
-            }
-        }
-
-        private fun writeAndRelease(outIndex: Int): Boolean {
-            val eos = info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0
-            val buffer = encoder.getOutputBuffer(outIndex)
-            try {
-                if (buffer != null && info.size > 0) {
-                    buffer.position(info.offset)
-                    buffer.limit(info.offset + info.size)
-                    val copy = java.nio.ByteBuffer.allocate(info.size)
-                    copy.put(buffer)
-                    copy.flip()
-                    val copiedInfo = MediaCodec.BufferInfo().apply {
-                        set(0, info.size, info.presentationTimeUs, info.flags)
+            while (!outputEnded) {
+                when (val index = encoder.dequeueOutputBuffer(info, timeoutUs)) {
+                    MediaCodec.INFO_TRY_AGAIN_LATER -> return
+                    MediaCodec.INFO_OUTPUT_FORMAT_CHANGED -> {
+                        check(!started) { "encoder_format_changed_twice" }
+                        trackIndex = muxer.addTrack(encoder.outputFormat)
+                        muxer.start()
+                        started = true
                     }
-                    if (started) {
-                        muxer.writeSampleData(trackIndex, copy, copiedInfo)
-                    } else {
-                        pending.addLast(copy to copiedInfo)
+                    else -> if (index >= 0) {
+                        try {
+                            val config = info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG != 0
+                            if (!config && info.size > 0) {
+                                check(started) { "encoder_format_missing" }
+                                val buffer = checkNotNull(encoder.getOutputBuffer(index))
+                                buffer.position(info.offset)
+                                buffer.limit(info.offset + info.size)
+                                muxer.writeSampleData(trackIndex, buffer, info)
+                                samples++
+                            }
+                            outputEnded = info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0
+                        } finally {
+                            encoder.releaseOutputBuffer(index, false)
+                        }
                     }
                 }
-            } finally {
-                encoder.releaseOutputBuffer(outIndex, false)
             }
-            return eos
         }
     }
 
@@ -401,7 +431,7 @@ class ExportTask(
     // ---- 输出与映射表 ----
 
     private fun openOutput(): ParcelFileDescriptor? =
-        runCatching { context.contentResolver.openFileDescriptor(request.outputUri, "w") }.getOrNull()
+        runCatching { context.contentResolver.openFileDescriptor(request.outputUri, "rwt") }.getOrNull()
 
     private fun writeExportJson(json: ByteArray) {
         val name = runCatching {
@@ -410,12 +440,13 @@ class ExportTask(
                 if (index >= 0 && cursor.moveToFirst()) cursor.getString(index) else null
             }
         }.getOrNull() ?: "export"
-        val base = name.removeSuffix(".mp4")
-        // 应用内导出记录（审计留档，必写）
-        runCatching {
-            val dir = File(context.filesDir, "exports").apply { mkdirs() }
-            File(dir, "$base.export.json").writeBytes(json)
-        }
+        val base = name.removeSuffix(".mp4").replace(Regex("[^\\p{L}\\p{N}._-]"), "_").take(80).ifBlank { "export" }
+        // 映射记录是导出结果的一部分；失败不能声称已有留档。
+        val dir = File(context.filesDir, "exports")
+        check(dir.isDirectory || dir.mkdirs()) { "export_record_directory_failed" }
+        check(com.galaxy.autorecord.core.AtomicFiles.writeAtomically(
+            File(dir, "$base.export.json"), json, true,
+        )) { "export_record_write_failed" }
         // 尽力写到输出同目录（失败不阻塞导出结果，映射表仍有应用内留档）
         runCatching {
             val docId = android.provider.DocumentsContract.getDocumentId(request.outputUri)
@@ -435,99 +466,79 @@ class ExportTask(
         }.onFailure { Log.i(TAG, "export.json 旁路写入未成功，已保留应用内导出记录") }
     }
 
-    /** 单帧读取器：解码到内存帧，按目标时间返回"最近的已解码帧"（不补帧、不拉伸时间）。 */
+    /** 每路最多保留当前与下一张帧；目标时间之前保持缺路占位，绝不提前显示未来帧。 */
     private class FrameReader(file: File) {
-        private val extractor = MediaExtractor().apply { setDataSource(file.absolutePath) }
-        private val trackIndex = (0 until extractor.trackCount).first {
-            extractor.getTrackFormat(it).getString(MediaFormat.KEY_MIME)?.startsWith("video/") == true
-        }
-        private val format = extractor.getTrackFormat(trackIndex)
-        private val codec = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!).apply {
-            configure(format, null, null, 0)
-            start()
-        }
+        private val extractor = MediaExtractor()
+        private var decoder: MediaCodec? = null
+        private val codec: MediaCodec get() = checkNotNull(decoder)
         private val info = MediaCodec.BufferInfo()
         private var inputDone = false
-        private var current: Bitmap? = null
-        private var currentPtsUs = Long.MIN_VALUE
-        private var nextPtsUs = Long.MAX_VALUE
-        private var nextFrame: Bitmap? = null
+        private var outputDone = false
+        private val frames = TimedFrames<Bitmap> { it.recycle() }
 
         init {
-            extractor.selectTrack(trackIndex)
+            try {
+                extractor.setDataSource(file.absolutePath)
+                val trackIndex = (0 until extractor.trackCount).first {
+                    extractor.getTrackFormat(it).getString(MediaFormat.KEY_MIME)?.startsWith("video/") == true
+                }
+                extractor.selectTrack(trackIndex)
+                val format = extractor.getTrackFormat(trackIndex)
+                // 显式请求可读取的 YUV 输出；没有 Image 时明确失败，不导出伪造的缺路画面。
+                format.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatYUV420Flexible)
+                decoder = MediaCodec.createDecoderByType(format.getString(MediaFormat.KEY_MIME)!!)
+                codec.configure(format, null, null, 0)
+                codec.start()
+            } catch (error: Exception) {
+                close()
+                throw error
+            }
         }
 
-        /** 返回 pts ≤ targetUs 的最近帧；未解出更晚帧前保持推进。 */
         fun frameAt(targetUs: Long): Bitmap? {
-            advanceUntil(targetUs)
-            return current
-        }
-
-        private fun advanceUntil(targetUs: Long) {
-            // 已有下一帧且仍晚于目标：current 即答案
-            if (nextPtsUs != Long.MAX_VALUE && nextPtsUs > targetUs && current != null) return
-            var guard = 0
-            while (guard++ < 400) {
-                // 喂输入
+            frames.advance(targetUs)
+            if (frames.hasFuture || outputDone) return frames.current
+            val deadline = android.os.SystemClock.elapsedRealtime() + 10_000
+            while (!outputDone) {
+                check(android.os.SystemClock.elapsedRealtime() < deadline) { "export_decoder_timeout" }
                 if (!inputDone) {
-                    val inIndex = codec.dequeueInputBuffer(0)
-                    if (inIndex >= 0) {
-                        val buffer = codec.getInputBuffer(inIndex)
-                        if (buffer != null) {
-                            val size = extractor.readSampleData(buffer, 0)
-                            if (size < 0) {
-                                codec.queueInputBuffer(inIndex, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
-                                inputDone = true
-                            } else {
-                                codec.queueInputBuffer(inIndex, 0, size, extractor.sampleTime, 0)
-                                extractor.advance()
-                            }
+                    val index = codec.dequeueInputBuffer(0)
+                    if (index >= 0) {
+                        val buffer = checkNotNull(codec.getInputBuffer(index))
+                        val size = extractor.readSampleData(buffer, 0)
+                        if (size < 0) {
+                            codec.queueInputBuffer(index, 0, 0, 0L, MediaCodec.BUFFER_FLAG_END_OF_STREAM)
+                            inputDone = true
+                        } else {
+                            codec.queueInputBuffer(index, 0, size, extractor.sampleTime, 0)
+                            extractor.advance()
                         }
                     }
                 }
-                // 取输出
-                val outIndex = codec.dequeueOutputBuffer(info, 5_000)
-                if (outIndex >= 0) {
-                    val bitmap = decodeBitmap(outIndex)
-                    val pts = info.presentationTimeUs
-                    val eos = info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0
-                    if (bitmap != null) {
-                        current?.recycle()
-                        current = bitmap
-                        currentPtsUs = pts
+                val index = codec.dequeueOutputBuffer(info, 5_000)
+                if (index >= 0) {
+                    try {
+                        if (info.size > 0 && info.flags and MediaCodec.BUFFER_FLAG_CODEC_CONFIG == 0) {
+                            val image = checkNotNull(codec.getOutputImage(index)) { "decoder_yuv_image_missing" }
+                            val bitmap = Bitmap.createBitmap(yuvToArgb(image), image.cropRect.width(), image.cropRect.height(), Bitmap.Config.ARGB_8888)
+                            frames.offer(info.presentationTimeUs, bitmap, targetUs)
+                        }
+                        outputDone = info.flags and MediaCodec.BUFFER_FLAG_END_OF_STREAM != 0
+                    } finally {
+                        codec.releaseOutputBuffer(index, false)
                     }
-                    if (eos && bitmap == null) {
-                        nextPtsUs = Long.MAX_VALUE
-                        return
-                    }
-                    if (pts > targetUs) {
-                        nextPtsUs = pts
-                        return // current 已是 ≤ target 的最近帧
-                    }
-                } else if (outIndex == MediaCodec.INFO_TRY_AGAIN_LATER && inputDone) {
-                    return // 等不来更多帧：保持当前
+                    if (frames.hasFuture) break
                 }
             }
-        }
-
-        private fun decodeBitmap(outIndex: Int): Bitmap? {
-            val image = codec.getOutputImage(outIndex) ?: run {
-                codec.releaseOutputBuffer(outIndex, false)
-                return null
-            }
-            val w = image.width
-            val h = image.height
-            val argb = yuvToArgb(image)
-            codec.releaseOutputBuffer(outIndex, false)
-            return Bitmap.createBitmap(argb, w, h, Bitmap.Config.ARGB_8888)
+            return frames.current
         }
 
         fun close() {
-            runCatching { codec.stop() }
-            runCatching { codec.release() }
+            runCatching { decoder?.stop() }
+            runCatching { decoder?.release() }
+            decoder = null
             runCatching { extractor.release() }
-            current?.recycle()
-            nextFrame?.recycle()
+            frames.close()
         }
     }
 
@@ -537,8 +548,9 @@ class ExportTask(
 
         /** YUV_420_888 → ARGB（全幅）。 */
         fun yuvToArgb(image: Image): IntArray {
-            val w = image.width
-            val h = image.height
+            val crop = image.cropRect
+            val w = crop.width()
+            val h = crop.height()
             val planes = image.planes
             val yBuffer = planes[0].buffer
             val uBuffer = planes[1].buffer
@@ -552,11 +564,12 @@ class ExportTask(
             val out = IntArray(w * h)
             for (row in 0 until h) {
                 for (col in 0 until w) {
-                    val yIndex = row * yRowStride + col * yPixelStride
+                    val yIndex = yBuffer.position() + (row + crop.top) * yRowStride + (col + crop.left) * yPixelStride
                     val y = (yBuffer.get(yIndex).toInt() and 0xFF) - 16
-                    val uvIndex = (row shr 1) * uRowStride + (col shr 1) * uPixelStride
-                    val u = (uBuffer.get(uvIndex).toInt() and 0xFF) - 128
-                    val v = (vBuffer.get(uvIndex).toInt() and 0xFF) - 128
+                    val uvRow = (row + crop.top) shr 1
+                    val uvCol = (col + crop.left) shr 1
+                    val u = (uBuffer.get(uBuffer.position() + uvRow * uRowStride + uvCol * uPixelStride).toInt() and 0xFF) - 128
+                    val v = (vBuffer.get(vBuffer.position() + uvRow * vRowStride + uvCol * vPixelStride).toInt() and 0xFF) - 128
                     val yy = if (y < 0) 0 else y
                     val r = (298 * yy + 409 * v + 128) shr 8
                     val g = (298 * yy - 100 * u - 208 * v + 128) shr 8
@@ -590,12 +603,12 @@ class ExportTask(
                     val g = (c shr 8) and 0xFF
                     val b = c and 0xFF
                     val y = ((66 * r + 129 * g + 25 * b + 128) shr 8) + 16
-                    yBuffer.put(row * yRowStride + col * yPixelStride, y.toByte())
+                    yBuffer.put(yBuffer.position() + row * yRowStride + col * yPixelStride, y.toByte())
                     if (row % 2 == 0 && col % 2 == 0) {
                         val u = ((-38 * r - 74 * g + 112 * b + 128) shr 8) + 128
                         val v = ((112 * r - 94 * g - 18 * b + 128) shr 8) + 128
-                        uBuffer.put((row shr 1) * uRowStride + (col shr 1) * uPixelStride, u.toByte())
-                        vBuffer.put((row shr 1) * vRowStride + (col shr 1) * vPixelStride, v.toByte())
+                        uBuffer.put(uBuffer.position() + (row shr 1) * uRowStride + (col shr 1) * uPixelStride, u.toByte())
+                        vBuffer.put(vBuffer.position() + (row shr 1) * vRowStride + (col shr 1) * vPixelStride, v.toByte())
                     }
                 }
             }

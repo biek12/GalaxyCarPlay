@@ -20,6 +20,7 @@ class AutoClient(context: Context, private val role: String,
     private val onVehicleFeed: (Bundle) -> Unit = {},
     private val onReady: () -> Unit = {},
     private val replayVehicleFeedOnConnect: Boolean = true,
+    private val vehicleFeedOnWorker: Boolean = false,
 ) : Closeable {
     private val app = context.applicationContext
     private val main = Handler(Looper.getMainLooper())
@@ -76,7 +77,7 @@ class AutoClient(context: Context, private val role: String,
                         onState(state)
                     }
                 } }
-                override fun onVehicleFeed(values: Bundle) { main.post {
+                override fun onVehicleFeed(values: Bundle) { (if (vehicleFeedOnWorker) io else main).post {
                     if (!closed && generation == ticket) {
                         values.classLoader = javaClass.classLoader
                         this@AutoClient.onVehicleFeed(values)
@@ -102,7 +103,10 @@ class AutoClient(context: Context, private val role: String,
                     if (role == AutoContract.PREVIEW) next.setPreviewSurface(lease, previewSurface)
                     flushLatest()
                     main.post { if (!closed && generation == ticket) onReady() }
-                } catch (error: Exception) { state("connect:${error.javaClass.simpleName}") }
+                } catch (error: Exception) {
+                    com.galaxy.auto.client.diagnostics.DiagnosticEvents.error("binder_connect",error,mapOf("caller" to app.packageName,"method" to "attach"))
+                    state("connect:${error.javaClass.simpleName}")
+                }
             }
         }
         override fun onServiceDisconnected(name: ComponentName) { lost("service_disconnected") }
@@ -118,7 +122,10 @@ class AutoClient(context: Context, private val role: String,
             app.startForegroundService(intent)
             bound = app.bindService(intent, connection, Context.BIND_AUTO_CREATE)
             if (!bound) { state("service_unavailable"); rebind() }
-        } catch (error: Exception) { state("bind:${error.javaClass.simpleName}"); rebind() }
+        } catch (error: Exception) {
+            com.galaxy.auto.client.diagnostics.DiagnosticEvents.error("binder_bind",error,mapOf("caller" to app.packageName,"method" to "bindService"))
+            state("bind:${error.javaClass.simpleName}"); rebind()
+        }
     }
     fun setActive(value: Boolean) { active = value; io.post { call { it.setActive(owner, value) } } }
     fun publishMedia(value: Bundle) {
@@ -186,8 +193,37 @@ class AutoClient(context: Context, private val role: String,
                     override fun onResult(value: Bundle) = deliver(value)
                 })
             } catch (error: Exception) {
+                com.galaxy.auto.client.diagnostics.DiagnosticEvents.error("client_permission",error,mapOf("caller" to app.packageName,"method" to "requestClientPermissions","count" to permissions.size))
                 deliver(Bundle().apply { putBoolean("granted", false); putString("error", error.javaClass.simpleName) })
             }
+        }
+    }
+    fun reportSentinelIdle(powerSequence:Long){io.post{call{it.reportSentinelIdle(owner,powerSequence)}}}
+    fun configureSentinel(enabled:Boolean,result:(Bundle)->Unit){
+        val ticket=generation
+        io.post{
+            fun deliver(value:Bundle){main.post{if(!closed&&generation==ticket)result(value)}}
+            try{checkNotNull(api){"service_unavailable"}.configureSentinel(owner,enabled,object:IAutoResult.Stub(){override fun onResult(value:Bundle)=deliver(value)})}
+            catch(e:Exception){deliver(Bundle().apply{putBoolean("accepted",false);putString("error",e.javaClass.simpleName)})}
+        }
+    }
+    fun vehicleWebUpload(clipId: String, direction: String, file: java.io.File, result: (Bundle) -> Unit) {
+        val ticket=generation
+        io.post {
+            fun deliver(value:Bundle){main.post{if(!closed&&generation==ticket)result(value)}}
+            try { ParcelFileDescriptor.open(file,ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
+                checkNotNull(api).vehicleWebUpload(owner,clipId,direction,fd,file.length(),object:IAutoResult.Stub(){override fun onResult(value:Bundle)=deliver(value)})
+            } }catch(error:Exception){deliver(Bundle().apply{putString("error","媒体传输失败")})}
+        }
+    }
+    fun vehicleWebRequest(action: String, payload: Bundle = Bundle(), result: (Bundle) -> Unit) {
+        val ticket = generation
+        io.post {
+            fun deliver(value: Bundle) { main.post { if (!closed && generation == ticket) result(value) } }
+            try {
+                checkNotNull(api) { "service_unavailable" }.vehicleWebRequest(owner, action, payload,
+                    object: IAutoResult.Stub() { override fun onResult(value: Bundle) = deliver(value) })
+            } catch (error: Exception) { deliver(Bundle().apply { putString("error",error.message ?: "service_unavailable") }) }
         }
     }
     fun vehiclePage(offset: Int, catalog: Boolean = false, result: (Bundle) -> Unit) {
@@ -231,7 +267,7 @@ class AutoClient(context: Context, private val role: String,
     fun setVehicleScan(enabled: Boolean) { io.post { call { it.setVehicleScan(enabled) } } }
     private fun call(block: (IAutoService) -> Unit) {
         val remote = api ?: return
-        if (!closed) try { block(remote) } catch (error: Exception) { state("ipc:${error.javaClass.simpleName}") }
+        if (!closed) try { block(remote) } catch (error: Exception) { com.galaxy.auto.client.diagnostics.DiagnosticEvents.error("binder_call",error,mapOf("caller" to app.packageName)); state("ipc:${error.javaClass.simpleName}") }
     }
     private fun state(value: String) { main.post { if (!closed) onState(value) } }
     private fun lost(reason: String) {

@@ -33,21 +33,26 @@ class VehicleScriber(
         private set
 
     /** 采样一次（由引擎按 intervalMs 节拍调用）。 */
-    fun sample(nowMonoNanos: Long) {
-        val snapshot = runCatching { feed.snapshot() }.getOrNull() ?: return
+    fun sample(nowMonoNanos: Long, recorded: com.galaxy.autorecord.core.VehicleSnapshot? = null) {
+        val snapshot = recorded ?: runCatching { feed.snapshot() }.getOrNull() ?: return
         val tMs = (nowMonoNanos - segmentStartMonoNanos) / 1_000_000L
         if (tMs < 0) return
         val values = linkedMapOf<String, String>()
+        val sampled = JSONObject()
+        val quality = JSONObject()
         for (vk in keys) {
             val value = snapshot.values[vk] ?: continue
+            quality.put(vk.key, value.status.name)
+            if (value.sampledAtMillis > 0) sampled.put(vk.key, value.sampledAtMillis - segmentStartMonoNanos / 1_000_000)
             if (value.status == VehicleValueStatus.UNKNOWN || value.status == VehicleValueStatus.UNAVAILABLE) continue
             if (value.value.isBlank() || value.value == "—") continue
             values[vk.key] = value.value
         }
-        if (values.isEmpty()) return // 无有效样本不写空行：避免计数虚高
+        if (values.isEmpty() && recorded == null) return
         val line = JSONObject().apply {
             put("t", tMs)
             put("v", JSONObject().apply { values.forEach { (k, v) -> put(k, v) } })
+            put("a", sampled); put("q", quality); put("intervalMs", snapshot.intervalMs)
         }.toString()
         synchronized(this) {
             writer.write(line)

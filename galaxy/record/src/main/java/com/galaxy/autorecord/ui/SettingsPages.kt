@@ -88,6 +88,7 @@ internal class RecordingSettingsPage(host: RecordActivity, recordUi: RecordUi) :
     override val title: String = "录制与后台"
 
     private val autoBoot = switchRow("开机自动录制", "开机后自动开始录制；默认关，需你显式开启")
+    private val recover = switchRow("崩溃后自动恢复", "恢复崩溃前正在进行的录制；主动停止后不恢复")
     private val autoLaunch = switchRow("App 启动后自动录制", "打开 AutoRecord 即开始录制；默认关")
     private val protectDeleting = switchRow("录制中防止误删", "录制中的片段不参与删除与覆盖")
     private val background = switchRow("后台继续录制", "回到桌面后继续录制")
@@ -105,7 +106,7 @@ internal class RecordingSettingsPage(host: RecordActivity, recordUi: RecordUi) :
                 onDataChanged()
             }
         }
-        addRow(card, autoBoot, 0, 3)
+        addRow(card, autoBoot, 0, 4)
         autoLaunch.apply {
             setCheckedSilently(host.settings.autoOnLaunch)
             onToggle = { checked ->
@@ -113,7 +114,7 @@ internal class RecordingSettingsPage(host: RecordActivity, recordUi: RecordUi) :
                 onDataChanged()
             }
         }
-        addRow(card, autoLaunch, 1, 3)
+        addRow(card, autoLaunch, 1, 4)
         protectDeleting.apply {
             setCheckedSilently(host.settings.protectDeleting)
             onToggle = { checked ->
@@ -121,7 +122,12 @@ internal class RecordingSettingsPage(host: RecordActivity, recordUi: RecordUi) :
                 onDataChanged()
             }
         }
-        addRow(card, protectDeleting, 2, 3)
+        addRow(card, protectDeleting, 2, 4)
+        recover.apply {
+            setCheckedSilently(host.settings.recoverAfterCrash)
+            onToggle={checked->host.updateSettings{it.copy(recoverAfterCrash=checked)};onDataChanged()}
+        }
+        addRow(card,recover,3,4)
 
         column.addView(ui.sectionTitle("后台与息屏"), LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(20) })
         card = ui.card()
@@ -142,6 +148,17 @@ internal class RecordingSettingsPage(host: RecordActivity, recordUi: RecordUi) :
             }
         }
         addRow(card, screenOff, 1, 2)
+
+        column.addView(ui.sectionTitle("转向与驻车"),LinearLayout.LayoutParams(-1,-2).apply { topMargin=ui.dp(20) })
+        val assistCard=ui.card();column.addView(assistCard,LinearLayout.LayoutParams(-1,-2).apply{topMargin=ui.dp(8)})
+        val turn=SwitchSettingRow(ui,"转向辅助","左/右转向仅显示同侧平面实时镜头；后台生效，双闪不显示")
+        turn.setCheckedSilently(host.settings.turnAssist)
+        turn.onToggle={checked->host.enableTurnAssist(checked){turn.setCheckedSilently(it)}}
+        addRow(assistCard,turn,0,2)
+        val sentry=SwitchSettingRow(ui,"哨兵模式","锁车后持续监控至手动关闭；电量低于20%退出。休眠恢复由原车电源链路提供")
+        sentry.setCheckedSilently(host.settings.sentinelEnabled)
+        sentry.onToggle={checked->host.enableSentinel(checked){sentry.setCheckedSilently(it)}}
+        addRow(assistCard,sentry,1,2)
 
         column.addView(ui.sectionTitle("关闭联动"), LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(20) })
         val linkCard = ui.card()
@@ -177,10 +194,10 @@ internal class VehicleSettingsPage(host: RecordActivity, recordUi: RecordUi) : S
         column.addView(
             choiceRow(
                 title = "订阅间隔",
-                description = "250ms 为事件优先档，事件更细但开销更高",
+                description = "100ms 为精细记录档；实际周期受 AutoService 版本与采集耗时限制",
                 currentLabel = "${host.settings.vehicleIntervalMs} ms",
                 options = RecordSettings.VEHICLE_INTERVAL_OPTIONS.map {
-                    ChoiceOption(it.toString(), "$it ms", reason = if (it == 250) "事件优先：更细精度、更高开销" else "")
+                    ChoiceOption(it.toString(), "$it ms", reason = if (it == 100) "精细记录：需新版 AutoService，待实车开销对比" else "")
                 },
                 currentId = host.settings.vehicleIntervalMs.toString(),
             ) { picked ->

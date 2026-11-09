@@ -1,24 +1,24 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <!-- 夜间保留文字层级、降低大面积背景亮度；与日间同一套语义名。 -->
-    <color name="record_background">#28313C</color>
-    <color name="record_background_alt">#222A34</color>
-    <color name="record_navigation">#1E2732</color>
-    <color name="record_navigation_alt">#161F29</color>
-    <color name="record_surface">#303A47</color>
-    <color name="record_control">#15191F</color>
-    <color name="record_border">#3B4756</color>
-    <color name="record_divider">#344151</color>
-    <color name="record_text">#E5FFFFFF</color>
-    <color name="record_muted">#99FFFFFF</color>
+    <color name="record_background">#252D38</color>
+    <color name="record_background_alt">#252D38</color>
+    <color name="record_navigation">#19232F</color>
+    <color name="record_navigation_alt">#19232F</color>
+    <color name="record_surface">#303B48</color>
+    <color name="record_control">#202A36</color>
+    <color name="record_border">#414E5D</color>
+    <color name="record_divider">#414E5D</color>
+    <color name="record_text">#EDF1F6</color>
+    <color name="record_muted">#A5AFBD</color>
     <color name="record_disabled">#66FFFFFF</color>
-    <color name="record_accent">#0088FF</color>
-    <color name="record_accent_soft">#263F60</color>
-    <color name="record_selected">#240088FF</color>
+    <color name="record_accent">#1198FF</color>
+    <color name="record_accent_soft">#15334C</color>
+    <color name="record_selected">#15334C</color>
     <color name="record_ripple">#330088FF</color>
-    <color name="record_connected">#7BD89B</color>
-    <color name="record_warning">#FFB34D</color>
-    <color name="record_danger">#FF747A</color>
+    <color name="record_connected">#5BD379</color>
+    <color name="record_warning">#EFB95A</color>
+    <color name="record_danger">#EE7A7B</color>
     <color name="record_primary_text">#FFFFFF</color>
     <color name="record_track">#596676</color>
     <color name="record_overlay_scrim">#99000000</color>
