@@ -15,6 +15,15 @@ import com.shilapi.xcertplay.host.R
 
 /** Keeps an explicitly started connection alive when another car app is in the foreground. */
 class DiPlaySessionService : Service() {
+    override fun dump(fd: java.io.FileDescriptor, writer: java.io.PrintWriter, args: Array<out String>) {
+        if("--media-state" in args)writer.println("MEDIA_STATE="+(HostProductBindings.mediaDiagnostics?.invoke()?:"{}"))
+        if ("--navigation-state" in args) {
+            writer.println("NAVIGATION_STATE=" + (HostProductBindings.navigationDiagnostics?.invoke() ?: "{}"))
+        }
+        if ("--audio-input-state" in args) {
+            writer.println("AUDIO_INPUT_STATE=" + (HostProductBindings.audioDiagnostics?.invoke() ?: "{}"))
+        }
+    }
     override fun onBind(intent: Intent?): IBinder? = null
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         if (intent?.action == ACTION_STOP) {

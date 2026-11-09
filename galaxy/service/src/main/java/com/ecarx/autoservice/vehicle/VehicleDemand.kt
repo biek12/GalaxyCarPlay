@@ -57,6 +57,12 @@ internal class VehicleDemand {
 
     fun markRead(keys: Collection<String>, now: Long) { keys.forEach { readAt[it] = now } }
 
+    /** 按最近一个键的到期时刻唤醒，100ms与250ms混用时不会把250ms量化成300ms。 */
+    fun nextDelayMillis(now: Long): Long? = intervals.minOfOrNull { (key, interval) ->
+        val last = readAt[key]
+        if (last == null || now < last) 0L else (last + interval - now).coerceAtLeast(0)
+    }
+
     /** 暂停/停服时清空，恢复后重新订阅的第一拍必须立即补读。 */
     fun reset() { readAt.clear() }
 

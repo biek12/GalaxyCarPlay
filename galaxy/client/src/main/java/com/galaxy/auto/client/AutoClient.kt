@@ -18,6 +18,9 @@ class AutoClient(context: Context, private val role: String,
     private val onCommand: (Int) -> Unit = {},
     private val onConfiguredSurface: (Surface?, Long) -> Unit = { _, _ -> },
     private val onVehicleFeed: (Bundle) -> Unit = {},
+    private val onReady: () -> Unit = {},
+    private val replayVehicleFeedOnConnect: Boolean = true,
+    private val vehicleFeedOnWorker: Boolean = false,
 ) : Closeable {
     private val app = context.applicationContext
     private val main = Handler(Looper.getMainLooper())
@@ -26,6 +29,7 @@ class AutoClient(context: Context, private val role: String,
     @Volatile private var owner: IBinder = Binder()
     @Volatile private var closed = false
     @Volatile private var api: IAutoService? = null
+    private val connectionLock = Any()
     private var bound = false
     @Volatile private var generation = 0
     private var retries = 0
@@ -47,6 +51,7 @@ class AutoClient(context: Context, private val role: String,
     private val flush = Runnable { flushLatest() }
     private val connection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName, binder: IBinder) {
+            if (closed) return
             val ticket = ++generation
             val lease = Binder().also { owner = it }
             retries = 0
@@ -72,7 +77,7 @@ class AutoClient(context: Context, private val role: String,
                         onState(state)
                     }
                 } }
-                override fun onVehicleFeed(values: Bundle) { main.post {
+                override fun onVehicleFeed(values: Bundle) { (if (vehicleFeedOnWorker) io else main).post {
                     if (!closed && generation == ticket) {
                         values.classLoader = javaClass.classLoader
                         this@AutoClient.onVehicleFeed(values)
@@ -82,19 +87,26 @@ class AutoClient(context: Context, private val role: String,
             io.post {
                 try {
                     check(next.protocolVersion == AutoContract.VERSION) { "protocol_version_mismatch" }
-                    if (closed || generation != ticket) return@post
-                    api = next
+                    synchronized(connectionLock) {
+                        if (closed || generation != ticket) return@post
+                        api = next
+                    }
                     next.attach(lease, role, callback)
+                    if (closed || generation != ticket) return@post
                     next.setActive(lease, active)
                     // 与attach/setActive同一批补发，重连后订阅语义不依赖调用方再次触发。
-                    if (feedKeys.isNotEmpty()) next.setVehicleFeed(lease, feedKeys.toTypedArray(), feedInterval)
+                    if (replayVehicleFeedOnConnect && feedKeys.isNotEmpty()) next.setVehicleFeed(lease, feedKeys.toTypedArray(), feedInterval)
                     media.compareAndSet(null, lastMedia)
                     navigation.compareAndSet(null, lastNavigation)
                     art.compareAndSet(null, lastArtwork)
                     scene.compareAndSet(null, lastScene)
                     if (role == AutoContract.PREVIEW) next.setPreviewSurface(lease, previewSurface)
                     flushLatest()
-                } catch (error: Exception) { state("connect:${error.javaClass.simpleName}") }
+                    main.post { if (!closed && generation == ticket) onReady() }
+                } catch (error: Exception) {
+                    com.galaxy.auto.client.diagnostics.DiagnosticEvents.error("binder_connect",error,mapOf("caller" to app.packageName,"method" to "attach"))
+                    state("connect:${error.javaClass.simpleName}")
+                }
             }
         }
         override fun onServiceDisconnected(name: ComponentName) { lost("service_disconnected") }
@@ -110,7 +122,10 @@ class AutoClient(context: Context, private val role: String,
             app.startForegroundService(intent)
             bound = app.bindService(intent, connection, Context.BIND_AUTO_CREATE)
             if (!bound) { state("service_unavailable"); rebind() }
-        } catch (error: Exception) { state("bind:${error.javaClass.simpleName}"); rebind() }
+        } catch (error: Exception) {
+            com.galaxy.auto.client.diagnostics.DiagnosticEvents.error("binder_bind",error,mapOf("caller" to app.packageName,"method" to "bindService"))
+            state("bind:${error.javaClass.simpleName}"); rebind()
+        }
     }
     fun setActive(value: Boolean) { active = value; io.post { call { it.setActive(owner, value) } } }
     fun publishMedia(value: Bundle) {
@@ -166,6 +181,51 @@ class AutoClient(context: Context, private val role: String,
             override fun onResult(value: Bundle) { main.post { if (!closed && generation == ticket) result(value) } }
         }) } }
     }
+    /** 权限回调与租约代次绑定。旧服务不支持追加接口时明确失败，不越过授权屏障。 */
+    fun requestClientPermissions(permissions: List<String>, result: (Bundle) -> Unit) {
+        require(permissions.isNotEmpty() && permissions.size <= 8)
+        val ticket = generation
+        io.post {
+            fun deliver(value: Bundle) { main.post { if (!closed && generation == ticket) result(value) } }
+            try {
+                val remote = api ?: error("service_unavailable")
+                remote.requestClientPermissions(owner, permissions.toTypedArray(), object : IAutoResult.Stub() {
+                    override fun onResult(value: Bundle) = deliver(value)
+                })
+            } catch (error: Exception) {
+                com.galaxy.auto.client.diagnostics.DiagnosticEvents.error("client_permission",error,mapOf("caller" to app.packageName,"method" to "requestClientPermissions","count" to permissions.size))
+                deliver(Bundle().apply { putBoolean("granted", false); putString("error", error.javaClass.simpleName) })
+            }
+        }
+    }
+    fun reportSentinelIdle(powerSequence:Long){io.post{call{it.reportSentinelIdle(owner,powerSequence)}}}
+    fun configureSentinel(enabled:Boolean,result:(Bundle)->Unit){
+        val ticket=generation
+        io.post{
+            fun deliver(value:Bundle){main.post{if(!closed&&generation==ticket)result(value)}}
+            try{checkNotNull(api){"service_unavailable"}.configureSentinel(owner,enabled,object:IAutoResult.Stub(){override fun onResult(value:Bundle)=deliver(value)})}
+            catch(e:Exception){deliver(Bundle().apply{putBoolean("accepted",false);putString("error",e.javaClass.simpleName)})}
+        }
+    }
+    fun vehicleWebUpload(clipId: String, direction: String, file: java.io.File, result: (Bundle) -> Unit) {
+        val ticket=generation
+        io.post {
+            fun deliver(value:Bundle){main.post{if(!closed&&generation==ticket)result(value)}}
+            try { ParcelFileDescriptor.open(file,ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
+                checkNotNull(api).vehicleWebUpload(owner,clipId,direction,fd,file.length(),object:IAutoResult.Stub(){override fun onResult(value:Bundle)=deliver(value)})
+            } }catch(error:Exception){deliver(Bundle().apply{putString("error","媒体传输失败")})}
+        }
+    }
+    fun vehicleWebRequest(action: String, payload: Bundle = Bundle(), result: (Bundle) -> Unit) {
+        val ticket = generation
+        io.post {
+            fun deliver(value: Bundle) { main.post { if (!closed && generation == ticket) result(value) } }
+            try {
+                checkNotNull(api) { "service_unavailable" }.vehicleWebRequest(owner, action, payload,
+                    object: IAutoResult.Stub() { override fun onResult(value: Bundle) = deliver(value) })
+            } catch (error: Exception) { deliver(Bundle().apply { putString("error",error.message ?: "service_unavailable") }) }
+        }
+    }
     fun vehiclePage(offset: Int, catalog: Boolean = false, result: (Bundle) -> Unit) {
         io.post { call { remote ->
             val page = if (catalog) remote.getVehicleCatalog(offset, 32) else remote.getVehicleProperties(offset, 32)
@@ -207,11 +267,12 @@ class AutoClient(context: Context, private val role: String,
     fun setVehicleScan(enabled: Boolean) { io.post { call { it.setVehicleScan(enabled) } } }
     private fun call(block: (IAutoService) -> Unit) {
         val remote = api ?: return
-        if (!closed) try { block(remote) } catch (error: Exception) { state("ipc:${error.javaClass.simpleName}") }
+        if (!closed) try { block(remote) } catch (error: Exception) { com.galaxy.auto.client.diagnostics.DiagnosticEvents.error("binder_call",error,mapOf("caller" to app.packageName)); state("ipc:${error.javaClass.simpleName}") }
     }
     private fun state(value: String) { main.post { if (!closed) onState(value) } }
     private fun lost(reason: String) {
-        ++generation; api = null
+        if (closed) return
+        synchronized(connectionLock) { ++generation; api = null }
         onSurface(null); borrowed?.release(); borrowed = null
         onConfiguredSurface(null, 0)
         onState(reason)
@@ -226,12 +287,15 @@ class AutoClient(context: Context, private val role: String,
     }
     override fun close() {
         check(Looper.myLooper() == Looper.getMainLooper())
-        if (closed) return
-        closed = true; ++generation
+        val closing = synchronized(connectionLock) {
+            if (closed) return
+            closed = true
+            (api to owner).also { api = null }
+        }
+        ++generation
         main.removeCallbacks(retry)
         onSurface(null); borrowed?.release(); borrowed = null
         onConfiguredSurface(null, 0)
-        val previous = api; api = null
         if (bound) { app.unbindService(connection); bound = false }
         // 已排队的Surface任务必须运行其closed分支，才能释放独立引用。
         // 其他IPC任务由call/flushLatest的closed检查失效，清理任务随后串行退出。
@@ -241,7 +305,7 @@ class AutoClient(context: Context, private val role: String,
         lastMedia = null; lastNavigation = null; lastArtwork = null
         // close是终态：订阅键一并清空，避免残留意图在下一代连接里复活。
         feedKeys = emptyList(); feedInterval = AutoContract.DEFAULT_FEED_INTERVAL_MS
-        io.post { runCatching { previous?.detach(owner) }; previewSurface?.release(); previewSurface = null; thread.quitSafely() }
+        io.post { runCatching { closing.first?.detach(closing.second) }; previewSurface?.release(); previewSurface = null; thread.quitSafely() }
     }
     private fun duplicateSurface(value: Surface): Surface {
         val parcel = Parcel.obtain()

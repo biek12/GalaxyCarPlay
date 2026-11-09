@@ -21,9 +21,21 @@ class ProjectionSmokeInstrumentation : Instrumentation() {
     private data class Frame(val points: List<Int>)
     private fun reader()=ImageReader.newInstance(1920,532,PixelFormat.RGBA_8888,3,
         HardwareBuffer.USAGE_CPU_READ_OFTEN or HardwareBuffer.USAGE_GPU_COLOR_OUTPUT)
-    override fun onCreate(arguments: Bundle?){super.onCreate(arguments);start()}
+    private var action: String? = null
+    override fun onCreate(arguments: Bundle?){action = arguments?.getString("action");super.onCreate(arguments);start()}
     override fun onStart(){
         val result=Bundle()
+        if (action == "adb-identity") {
+            try {
+                com.ecarx.autoservice.platform.AdbIdentityProbe.run(this, result)
+                result.putString("status", "PASS")
+            } catch (error: Throwable) {
+                result.putString("status", "FAIL")
+                result.putString("failure", error.stackTraceToString())
+            }
+            finish(if (result.getString("status") == "PASS") 0 else -1, result)
+            return
+        }
         val thread=HandlerThread("projection-smoke-read").apply { start() }
         val handler=Handler(thread.looper)
         var composition: GalaxyGlComposition?=null

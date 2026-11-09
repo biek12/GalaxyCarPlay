@@ -5,7 +5,12 @@ import com.shilapi.xcertplay.iap2.wire.Iap2ParameterList
 import com.shilapi.xcertplay.iap2.wire.Iap2ProtocolException
 
 /** 手机原始引导语义；厂商枚举和目标距离单位在各自适配层核对。 */
-data class CarPlayNavigationSnapshot(val active: Boolean = false, val road: String? = null)
+data class CarPlayNavigationSnapshot(
+    val active: Boolean = false, val road: String? = null,
+    val maneuverType: Int? = null, val drivingSide: Int? = null,
+    val distanceToNextMeters: Int? = null, val remainingMeters: Long? = null,
+    val remainingSeconds: Long? = null, val arrivalEpochSeconds: Long? = null,
+)
 
 /** 复用既有 iAP2 解析与过期规则，仅提取 Apple 字段，不调用任何车辆输出。 */
 class CarPlayNavigationInput(private val report: (String) -> Unit = {},
@@ -32,9 +37,11 @@ class CarPlayNavigationInput(private val report: (String) -> Unit = {},
         val now = nanoTime()
         if (lastFields != fields || now - lastReport >= 5_000_000_000L) {
             lastFields = fields; lastReport = now
-            runCatching { report("NavigationInput: active=${fields[0]} roadPresent=${fields[1]} remainingTimePresent=${fields[2]} remainingDistancePresent=${fields[3]} arrivalPresent=${fields[4]} frames=$frames mapping=UNCONFIRMED") }
+            runCatching { report("NavigationInput: active=${fields[0]} roadPresent=${fields[1]} remainingTimePresent=${fields[2]} remainingDistancePresent=${fields[3]} arrivalPresent=${fields[4]} frames=$frames") }
         }
-        return road?.let { CarPlayNavigationSnapshot(true, it.takeIf(String::isNotBlank)) } ?: CarPlayNavigationSnapshot()
+        return road?.let { CarPlayNavigationSnapshot(true, it.takeIf(String::isNotBlank),
+            value?.type, value?.drivingSide, value?.distanceMeters, value?.remainingMeters,
+            value?.remainingSeconds, value?.arrivalEpochSeconds) } ?: CarPlayNavigationSnapshot()
     }
     @Synchronized fun clear() { route.clear(); snapshot() }
 

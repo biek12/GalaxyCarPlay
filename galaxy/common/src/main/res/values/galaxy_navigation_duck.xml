@@ -1,0 +1,4 @@
+<resources>
+    <string name="galaxy_navigation_ducks_media">Lower music during navigation prompts</string>
+    <string name="galaxy_navigation_ducks_media_note">Use the level requested by iPhone and smoothly restore music afterward. Applies on the next connection.</string>
+</resources>

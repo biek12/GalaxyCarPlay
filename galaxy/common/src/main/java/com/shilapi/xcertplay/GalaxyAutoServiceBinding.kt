@@ -15,12 +15,28 @@ import java.util.concurrent.atomic.AtomicReference
 
 /** CarPlay是地图/媒体生产者；没有HAB设备、QNX或最终合成画布。 */
 internal class GalaxyAutoServiceBinding(context: Context, surface: (Surface?) -> Unit,
-    report: (String) -> Unit, command: (Int) -> Unit) : AutoCloseable {
+    report: (String) -> Unit, command: (Int) -> Unit,
+    mapSizeChanged: (com.galaxy.auto.contract.MapStreamSize) -> Unit = {}) : AutoCloseable {
     private val thread = HandlerThread("CarPlay-platform-art").apply { start() }
     private val worker = Handler(thread.looper)
     private val pending = AtomicReference<Bitmap?>()
     private var lastArt: Bitmap? = null
+    private var lastNavigation=Bundle()
+    private var laneAngles=""
+    private var laneRecommended=""
+    fun lanes(values: List<com.shilapi.xcertplay.iap2.message.LaneGuidanceLane>){
+        laneAngles=values.take(8).joinToString(","){it.angle.toString()}
+        laneRecommended=values.take(8).joinToString(","){if(it.recommended)"1"else"0"}
+        publishNavigation()
+    }
+    private fun publishNavigation(){client.publishNavigation(Bundle(lastNavigation).apply{
+        putString("laneAngles",laneAngles);putString("laneRecommended",laneRecommended)
+    })}
     private val client = AutoClient(context, AutoContract.MAP, onSurface = surface,
+        onSnapshot = { snapshot ->
+            GalaxyClusterMusicBinding.projectionDemand(this, snapshot.getBoolean("projectionRequested"))
+            snapshot.getBundle("mapStreamSize")?.let { mapSizeChanged(com.galaxy.auto.contract.MapStreamSize.from(it)) }
+        },
         onState = { report("AutoService: $it") }, onCommand = { value ->
             val index = when (value) { 0 -> CarPlayMediaButton.PLAY_PAUSE; 1 -> CarPlayMediaButton.PREVIOUS; else -> CarPlayMediaButton.NEXT }
             command(index)
@@ -58,15 +74,20 @@ internal class GalaxyAutoServiceBinding(context: Context, surface: (Surface?) ->
     }
     init { client.connect() }
     fun active(active: Boolean) = client.setActive(active)
-    fun guidance(value: ClusterTurnGuidance?) = client.publishNavigation(Bundle().apply {
+    fun guidance(value: ClusterTurnGuidance?) {
+        if(value==null){laneAngles="";laneRecommended=""}
+        lastNavigation=Bundle().apply {
         value ?: return@apply
         putString("road", value.road); putString("distance", "${value.distanceMeters} m"); putInt("maneuver", value.icon)
         putInt("roundaboutExit",value.roundaboutExit)
         value.remainingMeters?.let { putString("remainingDistance",if(it<1000)"$it m"else String.format(Locale.ROOT,"%.1f km",it/1000.0)) }
         value.remainingSeconds?.let { putString("remaining", "${it / 60} 分钟") }
         value.arrivalEpochSeconds?.let { putString("arrival", SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(it * 1000))) }
-    })
+        }
+        publishNavigation()
+    }
     override fun close() {
+        GalaxyClusterMusicBinding.projectionDemand(this, false)
         stopMusic(); client.close()
         worker.removeCallbacksAndMessages(null)
         pending.getAndSet(null)?.recycle()

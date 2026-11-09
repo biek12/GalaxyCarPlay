@@ -16,7 +16,8 @@ import java.lang.reflect.Method
  * 这是把 172 次/s 的常驻读取降到订阅规模的关键，而不是把全量读取换个地方跑。
  */
 internal class EcarxVehicleSource : Closeable {
-    private data class Property(val id: Int, val area: Int, val name: String, val origin: String, val access: Int, val type: String, val mapped: Boolean = true)
+    private data class Property(val id: Int, val area: Int, val name: String, val origin: String, val access: Int, val type: String, val mapped: Boolean = true, val backend: String = "car_signal", val encodedSteering: Boolean = false)
+    private val vhal = VhalNumericSource()
     private var subscription: AutoCloseable? = null
     private var binder: IBinder? = null
     private var proxy: Any? = null
@@ -28,7 +29,7 @@ internal class EcarxVehicleSource : Closeable {
     private var discovery = "not_connected"
     private var lastModel = ""
     private var specs = emptyList<SignalSpec>()
-    private data class Sample(val value: Any?, val status: String, val error: String, val responseArea: Int, val receivedAt: Long, val epoch: Long, val sequence: Long)
+    private data class Sample(val value: Any?, val status: String, val error: String, val responseArea: Int, val receivedAt: Long, val epoch: Long, val sequence: Long, val sourceTimestamp: Long? = null)
     private val sampleSequence = java.util.concurrent.atomic.AtomicLong()
     private fun record(key: Pair<Int, Int>, sample: Sample) {
         dirty.merge(key, sample) { old, next -> if (old.sequence > next.sequence) old else next }
@@ -54,7 +55,7 @@ internal class EcarxVehicleSource : Closeable {
     private var propertiesByKey = emptyMap<Pair<Int, Int>, Property>()
     private val keyEvents=java.util.ArrayDeque<JSONObject>()
     private var keySequence=0L
-    private var semanticProperties = emptyMap<Int, Property>()
+    private var semanticProperties = emptyMap<String, Property>()
     private val methods = java.util.concurrent.ConcurrentHashMap<Pair<Class<*>, String>, Method>()
     private val knownAreaNormalization = (0x21708998..0x217089A9).toSet() + setOf(0x21607A66, 0x21607A67)
     // 原厂CarSignalManager用area1读全局信号；CarPropertyUtils保留HAL的area0包装。
@@ -100,6 +101,7 @@ internal class EcarxVehicleSource : Closeable {
         fun symbol(name: String) = name.replace("_", "").lowercase(java.util.Locale.ROOT)
         val declaredByName = properties.values.associateBy { symbol(it.name) }
         specs.forEach {
+            if (it.backend == "vhal") return@forEach
             val declared = declaredByName[symbol(it.name)]
             if (declared != null) {
                 properties[declared.id to it.area] = declared.copy(area = it.area)
@@ -123,11 +125,19 @@ internal class EcarxVehicleSource : Closeable {
         val mappingType = Class.forName("com.ecarx.car.hal.HalPropertyIdTransformation", true, mappingLoader)
         val mapping = mappingType.getDeclaredField("mHaltoMgrPropIdMap").apply { isAccessible = true }.get(null)
         val halId = mapping.javaClass.getDeclaredMethod("getHalPropId", Int::class.javaPrimitiveType).apply { isAccessible = true }
-        inventory = properties.values.map { it.copy(mapped = (halId.invoke(mapping, it.id) as Int) != -1) }; cursor = 0
+        inventory = properties.values.map { it.copy(mapped = (halId.invoke(mapping, it.id) as Int) != -1) } +
+            specs.filter { it.backend == "vhal" }.distinctBy { it.propertyId to it.area }.map {
+                Property(it.propertyId, it.area, it.name, "vhal_config", -1, "number", backend="vhal",
+                    encodedSteering=it.payload=="fs12-steering-angle")
+            }
+        cursor = 0
         propertiesByKey = inventory.associateBy { it.id to it.area }
         semanticProperties = specs.mapNotNull { spec ->
+            if (spec.backend == "vhal") return@mapNotNull inventory.firstOrNull {
+                it.id == spec.propertyId && it.area == spec.area && it.backend == "vhal"
+            }?.let { spec.key to it }
             val resolvedId = declaredByName[symbol(spec.name)]?.id ?: spec.propertyId
-            inventory.firstOrNull { it.id == resolvedId && (it.access == -1 || it.access and 1 != 0) }?.let { spec.propertyId to it }
+            inventory.firstOrNull { it.id == resolvedId && (it.access == -1 || it.access and 1 != 0) }?.let { spec.key to it }
         }.toMap()
         val ticket = epoch
         // 原厂读取依赖信号注册后刷新缓存：先建Manager与回调，注册集合由[applyFilter]按订阅增删。
@@ -217,7 +227,8 @@ internal class EcarxVehicleSource : Closeable {
         val out = HashSet<Int>(wanted.size + 1)
         for (spec in specs) {
             if (spec.key !in wanted) continue
-            val property = semanticProperties[spec.propertyId] ?: continue
+            val property = semanticProperties[spec.key] ?: continue
+            if (property.backend == "vhal") continue
             if (property.mapped && (property.access == -1 || property.access and 1 != 0)) out += property.id
         }
         // 方控按键事件：别名目录里没有它，但菜单/方控整条链路都依赖它，必须常驻。
@@ -229,6 +240,15 @@ internal class EcarxVehicleSource : Closeable {
     private fun readProperty(property: Property, now: Long) {
         val key = property.id to property.area
         val ticket = epoch
+        if (property.backend == "vhal") {
+            // 原厂配置的工程范围不用于筛掉尚未解码的15位角度；编码域由目录转换器核验。
+            val result = vhal.read(property.id, property.area, applyEngineeringBounds = !property.encodedSteering)
+            if (ticket != epoch) return
+            val sample = Sample(result.value, result.status, result.error, property.area, now, ticket,
+                sampleSequence.incrementAndGet(), result.sourceTimestamp)
+            samples[key] = sample; record(key, sample)
+            return
+        }
         // 读取前的既有样本。补读是唯一能刷新“值没变所以没有事件”的属性的途径，
         // 因此只有**本次读取期间**到达的新事件才优先于补读结果；读取前就存在的旧样本必须被覆盖，
         // 否则补读永远写不回去，receivedAt 停在第一次事件的时刻，消费者按 maxAgeMillis 一律判过期。
@@ -273,10 +293,11 @@ internal class EcarxVehicleSource : Closeable {
         val state = sample?.status ?: "UNAVAILABLE"
         val normalized = VehicleCatalog.convert(spec, value)
         val status = if (state == "VALID" && normalized == null) "UNAVAILABLE" else state
-        val property = semanticProperties[spec.propertyId]
+        val property = semanticProperties[spec.key]
         return JSONObject().apply {
             put("key", spec.key); put("value", normalized ?: JSONObject.NULL); put("unit", spec.unit)
             put("property", property?.id ?: spec.propertyId); put("receivedAt", sample?.receivedAt ?: now); put("epoch", epoch); put("status", status)
+            sample?.sourceTimestamp?.let { put("sourceTimestamp", it) }
         }
     }
 
@@ -300,11 +321,11 @@ internal class EcarxVehicleSource : Closeable {
             if (due.isNotEmpty()) {
                 due.forEach { key ->
                     val spec = specs.firstOrNull { it.key == key } ?: return@forEach
-                    semanticProperties[spec.propertyId]?.let { readProperty(it, now) }
+                    semanticProperties[spec.key]?.let { readProperty(it, now) }
                 }
                 due.forEach { key ->
                     val spec = specs.firstOrNull { it.key == key } ?: return@forEach
-                    val property = semanticProperties[spec.propertyId] ?: return@forEach
+                    val property = semanticProperties[spec.key] ?: return@forEach
                     val sample = samples[property.id to property.area]?.takeIf { it.epoch == epoch } ?: return@forEach
                     raw.put(JSONObject().apply {
                         put("propertyId", property.id); put("areaId", property.area); put("responseAreaId", sample.responseArea)
@@ -319,7 +340,7 @@ internal class EcarxVehicleSource : Closeable {
             }
             specs.forEach { spec ->
                 if (spec.key !in wanted) return@forEach
-                val property = semanticProperties[spec.propertyId]
+                val property = semanticProperties[spec.key]
                 aliases.put(aliasJson(spec, property?.let { samples[it.id to it.area]?.takeIf { s -> s.epoch == epoch } }, now))
             }
         } catch (failure: Exception) {
@@ -382,6 +403,7 @@ internal class EcarxVehicleSource : Closeable {
         else -> "unsupported:${value.javaClass.name}"
     }
     override fun close() {
+        vhal.close()
         ++epoch;synchronized(keyEvents){keyEvents.clear();keySequence=0}; samples.clear(); dirty.clear(); propertiesByKey = emptyMap(); semanticProperties = emptyMap()
         runCatching { subscription?.close() }; subscription = null
         binder = null; proxy = null; reader = null; inventory = emptyList(); cursor = 0

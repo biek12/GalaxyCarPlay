@@ -2,6 +2,8 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android" xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <!-- 原厂仪表封面由AutoService的自有Root通道复制到NFS；不在CarPlay建立ADB/Root。 -->
+    <uses-permission android:name="com.ecarx.autoservice.permission.ADMIN" />
     <!-- 只在用户确认安装更新时申请此来源的系统安装授权。 -->
     <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
     <!-- VPN 控制候选权限需由系统授予；声明不能替代 ACTIVATE_VPN 的 AppOps 授权。 -->
@@ -27,6 +29,7 @@
         <package android:name="com.flyme.auto.music" />
         <package android:name="com.flyme.auto.mediacontrol" />
         <package android:name="com.geely.dimservice" />
+        <package android:name="com.autolink.diminteraction" />
         <package android:name="com.huawei.dmsdpdevice" />
         <package android:name="com.huawei.nearby" />
         <package android:name="com.lge.car" />

@@ -9,6 +9,17 @@ import org.robolectric.annotation.Config
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk=[30],manifest=Config.NONE)
 class ProjectionConfigurationTest {
+    @Test fun mapRequestFollowsComponentDimensionsAndPositionDoesNotChangeRequest(){
+        val viewport=MapViewport(475f,64f,1390f,448f)
+        val size=MapStreamSize.forViewport(viewport)
+        assertEquals(MapStreamSize(1392,448),size)
+        assertEquals(size,MapStreamSize.forViewport(viewport.copy(x=10f,y=10f)))
+        val resized=MapStreamSize.forViewport(MapViewport(0f,0f,800f,400f))
+        assertEquals(MapStreamSize(800,400),resized)
+        val fit=MapViewport(0f,0f,800f,400f).fitted(resized.width,resized.height)
+        assertEquals(800f,fit.width,.01f);assertEquals(400f,fit.height,.01f)
+        assertEquals(size,MapStreamSize.from(size.bundle()))
+    }
     @Test fun fractionalThirtyFrameScheduleDoesNotAccumulateThirtyThreeMillisecondDrift(){
         val clock=FramePacer(30)
         clock.started(1)

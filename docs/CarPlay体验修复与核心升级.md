@@ -1,5 +1,28 @@
 # CarPlay体验修复与核心升级
 
+2026-11-03后续：用户要求实际整改并核验原车DIM完整视频路线；导航字段、封面HTTP/就绪重发、PCM duck与上行诊断的实施见[本轮记录](ECARX对照与L6定向整改-20261103.md)。下方“本轮只追加事实”属于较早排障阶段，不代表后续仍未修改代码；第三方通话根因仍未确认。
+
+## 2026-11-03 通话上行故障的新复现条件
+
+**用户指定L6实测反馈**：第三方应用通话已经进行时重新连接CarPlay，双方均可听见；先连接CarPlay、随后拨打或接听时，对方听不到用户，用户仍可听到对方。用户随后明确微信通话、抖音通话均有问题，发送语音消息也间歇有声/无声；进一步确认普通电话不受上述顺序影响，均有声音。不能把第三方应用的两种连接顺序外推为每个App都已单独对照。安装版本摘要及两种顺序对应日志尚未绑定。
+
+这说明已有通话重连场景下双向语音链路能够工作；排查重点转向已连接会话进入通话时的启动顺序与状态切换。它尚不能单独排除输入源选择、系统录音静音/竞争、处理链或上行协议状态差异，也不构成早前修复已通过实车验收的证据。
+
+**正常对照**：普通电话作为用户已验证正常的场景保留。优先比较其与第三方通话/语音消息的原始输入请求、流类型、格式、启动时机及平台路由；通用的播放/录音并发本身不足以解释故障为何只出现在第三方应用。`L7FactoryAudioProfile.kt:16`虽把facetime及带输入的default/compatibility映射到平台telephony，但`MicrophoneStart.kt:50`仍按原始audioType区分是否定时启动；平台用途相同不等于整个启动过程相同。实际微信/抖音流类型须从本次运行证据取得，不能按App名称推断。
+
+本轮本地源码核对（不是运行轨迹）：
+
+- `shared/src/main/java/com/shilapi/xcertplay/airplay/CarPlayMediaEngine.kt:225`：首个下行包先调用`onAudioStarted`，随后触发麦克风启动。`MicrophoneStart.kt:50`还允许非telephony输入流在无下行时定时启动，因此应用通话不能全部按普通电话触发路径概括。
+- `shared/src/main/java/com/shilapi/xcertplay/media/AndroidMediaSink.kt:1970`、`:2019`：播放端启动独立线程，在该线程创建音轨并申请焦点（`:2032`、`:2034`）；调用方不等待这些步骤完成。？
+- `shared/src/main/java/com/shilapi/xcertplay/media/MicrophoneUplink.kt:168`：录音先`startRecording()`再通知`onCaptureStarted()`；`AndroidMediaSink.kt:630`将该通知接到通信焦点所有者登记。两端没有建立“电话播放焦点就绪后开始录音”的先后保证。
+- `shared/src/main/java/com/shilapi/xcertplay/media/AndroidMediaSink.kt:656`：通信模式在首次输入启动时设置，重叠流按所有者集合保留；仅有这些代码不能证明系统之后没有切换实际模式。
+
+**当前结论**：存在可核验的并发启动顺序，是否造成本车故障仍待对照运行证据，不将其写成已确认根因。后续将两种顺序分别绑定实际audioType、输入源、通信模式、PHONE焦点、录音实际路由/系统静音状态、采样电平与上行发送计数；统计不保存原始语音、密钥或完整协议载荷。重连仅是诊断对照，不作为产品修复。
+
+**语音消息补充核验**：排查须包含无下行的纯输入场景，不能把“等待电话播放轨道就绪”直接作为全部上行的修复条件。`CarPlayMediaEngine.kt:256`为非telephony输入提供SETUP后500ms的无下行启动；`:690`依据audioType及input/dataPort判断输入请求。`MicrophoneInputPolicy.kt:5`中speechrecognition不请求通信模式，而`MicrophoneUplink.kt:99`在Geely检测成立时可选VOICE_COMMUNICATION输入源（实际仍可能优先选固件源）。这是需与运行日志核对的策略差异，不代表已确定微信或抖音语音消息实际使用speechrecognition，也不证明输入源与通信模式必须一一对应。500ms启动、模式/焦点切换、前一轮录音释放及新一轮路由均纳入对照。
+
+本轮只追加事实与源码定位，未更改音频行为、构建、连接车机或安装；文档验证为本地源码行号及差异空白检查。
+
 ## 顺序与证据边界
 
 按用户要求，先将既有AutoService/Cluster工作区提交为 `3cc69f0`，再修复CarPlay体验；修复独立提交后才开始核心迁移。不推远端、不连接车机、不安装、不跑Lint。`.local`研究/设备材料不入库。

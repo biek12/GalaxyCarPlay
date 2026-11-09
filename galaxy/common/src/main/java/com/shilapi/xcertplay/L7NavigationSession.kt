@@ -7,7 +7,7 @@ import java.lang.reflect.InvocationTargetException
 import java.util.concurrent.Executor
 import java.util.concurrent.atomic.AtomicBoolean
 
-/** 已确认的启停与路名接口按变化发布；不猜测距离、ETA 或图标编号，不抢原车导航焦点。 */
+/** 已核验的导航字段合并发布；枚举和单位由车型Port转换，不抢原车导航焦点。 */
 internal class L7NavigationSession(
     private val port: L7NavigationPort,
     private val current: () -> Boolean,
@@ -32,6 +32,8 @@ internal class L7NavigationSession(
     private var failures = 0
     private var reportedAvailability: Boolean? = null
     private var pendingRoad: String? = null
+    private var pendingGuidance: CarPlayNavigationSnapshot? = null
+    private var publishedGuidance: CarPlayNavigationSnapshot? = null
 
     fun update(value: CarPlayNavigationSnapshot) {
         if (closed || !current()) return
@@ -48,6 +50,8 @@ internal class L7NavigationSession(
             if (closed || !current()) return@enqueue
             publishedRoad = null
             pendingRoad = null
+            publishedGuidance = null
+            pendingGuidance = null
             failures = 0
             publish()
         }
@@ -67,6 +71,7 @@ internal class L7NavigationSession(
             return
         }
         val road = value.road.orEmpty().take(256)
+        if (pendingGuidance != value) { pendingGuidance = value; failures = 0 }
         if (pendingRoad != road) { pendingRoad = road; failures = 0 }
         if (failures >= 3) return
         if (!started) {
@@ -77,6 +82,10 @@ internal class L7NavigationSession(
         if (closed || !current()) return
         if (publishedRoad != road) {
             if (call("road") { port.road(road) }) { publishedRoad = road; failures = 0 }
+            else failures++
+        }
+        if (!closed && current() && publishedRoad == road && publishedGuidance != value) {
+            if (call("guidance") { port.guidance(value) }) { publishedGuidance = value; failures = 0 }
             else failures++
         }
     }
@@ -93,13 +102,14 @@ internal class L7NavigationSession(
             event("stage=serviceReady result=${if (available) "BINDER_ALIVE" else "WAITING_BINDER"} display=NOT_VERIFIED")
         }
         if (!available) {
-            if (connectionToken != null) publishedRoad = null
+            if (connectionToken != null) { publishedRoad = null; publishedGuidance = null }
             connectionToken = null
             return false
         }
         if (connectionToken != token) {
             val result = if (connectionToken == null) "CONNECTED" else "REPLACED"
             publishedRoad = null
+            publishedGuidance = null
             if (active) started = false
             failures = 0
             event("stage=serviceConnection result=$result replayLatest=$active display=NOT_VERIFIED")
@@ -110,6 +120,7 @@ internal class L7NavigationSession(
     private fun stop() {
         if (call("stop") { port.stop() }) started = false else failures++
         publishedRoad = null
+        publishedGuidance = null
     }
     private fun call(stage: String, action: () -> Unit): Boolean = try {
         operations.run(stage, action)

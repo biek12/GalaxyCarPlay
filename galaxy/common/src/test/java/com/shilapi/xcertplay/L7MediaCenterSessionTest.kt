@@ -93,6 +93,19 @@ class L7MediaCenterSessionTest {
         assertEquals(4, port.lyricUpdates.size)
     }
 
+    @Test fun asynchronousOutputReadinessRepublishesPausedTrackWithoutProgressAndIgnoresLateCallback() {
+        connect()
+        session.update(playing().copy(playing = false)); worker.drain()
+        val count = port.updates.size
+        session.refreshOutput(); worker.drain()
+        assertEquals(count + 1, port.updates.size)
+        assertFalse(port.updates.last().playing)
+        session.close(); worker.drain()
+        val ended = port.updates.size
+        session.refreshOutput(); worker.drain()
+        assertEquals(ended, port.updates.size)
+    }
+
     @Test fun lyricsFollowTrackAndRegistrationWithoutRepublishingCoverForEachLine() {
         connect()
         val track = playing()

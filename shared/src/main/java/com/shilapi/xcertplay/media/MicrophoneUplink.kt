@@ -54,7 +54,10 @@ internal class MicrophoneUplink(
     private val audioManager: AudioManager? = null,
 ) : Closeable {
     private val running = AtomicBoolean(false)
+    @Volatile private var lastDiagnostic = "Microphone: not started"
+    internal fun diagnosticSnapshot(): String = lastDiagnostic
     private val stats = MicrophoneCaptureStats(config, report = { message ->
+        lastDiagnostic = message
         Log.i(TAG, message)
         onDiagnostic(message)
     })
@@ -311,6 +314,7 @@ internal class MicrophoneUplink(
                 stats.reading()
                 val count = recorder.read(readBuffer, 0, readBuffer.size, AudioRecord.READ_BLOCKING)
                 stats.read(count)
+                if (count > 0) stats.rawLevel(readBuffer, count)
                 if (count > 0) clock?.read(recorder, count / 2)
                 if (count < 0) {
                     if (running.get()) {
@@ -450,10 +454,13 @@ internal class MicrophoneUplink(
      * Other apps' recordings carry no package name for a normal app, only their source.
      */
     private fun silenceDetail(manager: AudioManager, ownSession: Int): String {
-        val others = manager.activeRecordingConfigurations
+        val configurations = manager.activeRecordingConfigurations
+        val own = configurations.firstOrNull { it.clientAudioSessionId == ownSession }
+        val silenced = if (android.os.Build.VERSION.SDK_INT >= 29) own?.isClientSilenced?.toString() ?: "unknown" else "unsupported"
+        val others = configurations
             .filter { it.clientAudioSessionId != ownSession }
             .map { MicrophoneCaptureStats.sourceName(it.clientAudioSource) }
-        return "audioMode=${manager.mode} otherRecordings=" +
+        return "audioMode=${manager.mode} micMuted=${manager.isMicrophoneMute} clientSilenced=$silenced otherRecordings=" +
             if (others.isEmpty()) "none" else others.take(MAX_LISTED_RECORDINGS).joinToString(",", "[", "]")
     }
 

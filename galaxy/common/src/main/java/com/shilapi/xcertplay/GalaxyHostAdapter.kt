@@ -18,6 +18,26 @@ import kotlin.math.roundToInt
 /** 唯一公开安装入口供Application调用，不向mobile暴露内部宿主接口。 */
 object GalaxyHostAdapter {
     fun install() {
+        HostProductBindings.mediaDiagnostics=GalaxyMediaKeys::diagnostics
+        HostProductBindings.audioDiagnostics = {
+            val snapshot = CarPlayBackgroundSession.snapshot()
+            org.json.JSONObject().apply {
+                put("schema", 1); put("connected", snapshot != null)
+                snapshot?.let { put("input", org.json.JSONObject(it.sink.audioInputDiagnostics())) }
+            }.toString()
+        }
+        HostProductBindings.navigationDiagnostics = {
+            val snapshot = CarPlayBackgroundSession.snapshot()
+            org.json.JSONObject().apply {
+                put("schema", 1)
+                put("connected", snapshot != null)
+                put("androidDisplays", org.json.JSONArray(GalaxyMediaKeys.displayDiagnostics()))
+                snapshot?.let {
+                    put("request", org.json.JSONObject(it.controller.displayDiagnostics()))
+                    put("outputs", org.json.JSONObject(it.sink.videoOutputDiagnostics()))
+                }
+            }.toString()
+        }
         // Application显式安装即选择本产品；核心无注册时仍用上游默认，不再叠加隐式资源门控。
         HostProductBindings.factory = { activity, actions -> GalaxyProductHostAdapter(activity, actions) }
     }
@@ -35,19 +55,41 @@ private class GalaxyProductHostAdapter(
     private var platformSurface: ((android.view.Surface?) -> Unit)? = null
     private var platformSession: CarPlayController? = null
     private var platformActive = false
+    private val mapPreferences = activity.getSharedPreferences("cluster-map-stream", 0)
+    private var mapSize = runCatching { com.galaxy.auto.contract.MapStreamSize(
+        mapPreferences.getInt("width", com.galaxy.auto.contract.AutoContract.WIDTH),
+        mapPreferences.getInt("height", com.galaxy.auto.contract.AutoContract.MAP_HEIGHT))
+    }.getOrDefault(com.galaxy.auto.contract.MapStreamSize.DEFAULT)
+    private var configuredMapSize = mapSize
+    private var sessionMapSize = mapSize
+    private var mapController: CarPlayController? = null
+    private var laneListener: ((List<com.shilapi.xcertplay.iap2.message.LaneGuidanceLane>)->Unit)? = null
+    private var laneController: CarPlayController? = null
+    private fun mapSizeChanged(next: com.galaxy.auto.contract.MapStreamSize) {
+        if (next != mapSize) {
+            mapSize = next
+            mapPreferences.edit().putInt("width", next.width).putInt("height", next.height).apply()
+        }
+        if (mapSize != sessionMapSize && actions.currentController()?.hasActiveSession() == true)
+            actions.clusterDisplayChanged()
+    }
     private fun platformCluster() = GalaxyVehicleAudioProfiles.model(activity) != GalaxyVehicleAudioProfiles.Model.CUSTOM
-    override fun clusterDisplayConfiguration() = if (platformCluster()) AirPlayDisplayConfig(
-        widthPixels = com.galaxy.auto.contract.AutoContract.WIDTH,
-        heightPixels = com.galaxy.auto.contract.AutoContract.MAP_HEIGHT,
+    override fun clusterDisplayConfiguration(): AirPlayDisplayConfig? {
+        if (!platformCluster()) return null
+        configuredMapSize = mapSize
+        return AirPlayDisplayConfig(
+        widthPixels = mapSize.width,
+        heightPixels = mapSize.height,
         fps = 30, primaryInputDevice = 0, features = 0,
         initialUrl = com.shilapi.xcertplay.airplay.CarPlayClusterDisplay.MAP_URL,
-        safeArea = com.shilapi.xcertplay.airplay.AirPlayInsets(top = 80, bottom = 90, left = 650, right = 550),
-        safeAreaDrawOutside = true) else null
+        safeArea = com.shilapi.xcertplay.airplay.AirPlayInsets(),
+        safeAreaDrawOutside = true)
+    }
     override fun keepsClusterOutputWhileMapIdle() = platformCluster()
     override fun ensureClusterOutput(surfaceChanged: (android.view.Surface?) -> Unit): Boolean {
         if (!platformCluster()) return false
         platformSurface = surfaceChanged
-        if (platform == null) platform = GalaxyAutoServiceBinding(activity, surfaceChanged, actions.report) { index ->
+        if (platform == null) platform = GalaxyAutoServiceBinding(activity, surfaceChanged, actions.report, command = { index ->
             val current = actions.currentController()
             if (current != null && current.hasActiveSession()) {
                 val key = when (index) {
@@ -58,7 +100,7 @@ private class GalaxyProductHostAdapter(
                 GalaxyMediaKeys.onHardwareKey(current, KeyEvent(KeyEvent.ACTION_DOWN, key))
                 GalaxyMediaKeys.onHardwareKey(current, KeyEvent(KeyEvent.ACTION_UP, key))
             }
-        }.also { it.active(platformActive) }
+        }, mapSizeChanged = ::mapSizeChanged).also { it.active(platformActive) }
         return true
     }
     override fun closeClusterOutput() { platform?.close(); platform = null }
@@ -98,6 +140,7 @@ private class GalaxyProductHostAdapter(
             assistantChannel = template.choice(AudioOutputRole.ASSISTANT),
             callProcessingEnabled = GalaxyPreferencePolicy.loadCallProcessingEnabled(activity),
             localMediaAudioEnabled = GalaxyMusicPlayback.localEnabled(activity),
+            navigationDucksMedia = GalaxyPreferencePolicy.loadNavigationDucksMedia(activity),
         )
     }
 
@@ -121,6 +164,9 @@ private class GalaxyProductHostAdapter(
         GalaxyMediaKeys.onHardwareKey(controller, event)
 
     override fun bindMedia(sink: AndroidMediaSink, controller: CarPlayController) {
+        laneController=controller
+        laneListener={ values->main.post{if(actions.currentController()===controller)platform?.lanes(values)} }
+        com.shilapi.xcertplay.glance.CarPlayGlance.laneListener=laneListener
         main.post {
             if (actions.currentController() !== controller) return@post
             platformSession = controller
@@ -149,6 +195,8 @@ private class GalaxyProductHostAdapter(
             platformSession = controller
             platformActive = active
             platform?.active(active)
+            if(!active)platform?.lanes(emptyList())
+            if (active) mapSizeChanged(mapSize)
         }
         GalaxyMediaKeys.onSessionStateChanged(controller, active)
         if (active) {
@@ -160,6 +208,10 @@ private class GalaxyProductHostAdapter(
     }
 
     override fun sessionStored(controller: CarPlayController) {
+        if (mapController !== controller) {
+            mapController = controller
+            sessionMapSize = configuredMapSize
+        }
         CarPlayBackgroundSession.setConfiguration(controller, GalaxyProfiles(activity).refresh())
         // 媒体命令要经 CarPlayBackgroundSession 的蓝牙等待闸门，因此在 store 之后再确认一次挂接；
         // 与 bindMedia 的同控制器重复调用是空操作。
@@ -167,6 +219,8 @@ private class GalaxyProductHostAdapter(
     }
 
     override fun detachMedia(controller: CarPlayController?) {
+        if((controller==null||laneController===controller)&&com.shilapi.xcertplay.glance.CarPlayGlance.laneListener===laneListener)
+            com.shilapi.xcertplay.glance.CarPlayGlance.laneListener=null
         main.post {
             if (controller != null && platformSession !== controller) return@post
             platformSession = null

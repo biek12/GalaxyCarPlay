@@ -38,13 +38,13 @@ internal object BuiltinThemes {
         node("navigation","navigation",695f,105f,570f,225f,mapOf("navigationLayout" to "guidance","showArrival" to "false","fontSize" to "29","lineHeight" to "1.4","align" to "left","arrowSize" to "65")),
         node("trip","navigation",700f,355f,535f,92f,mapOf("navigationLayout" to "trip","fontSize" to "27")),
         CompositeComponents.pages("information",SceneRect(1248f,72f,600f,426f)),
-        node("fuel-range","fuel-range",1000f,460f,225f,56f).copy(name="燃油续航 · 原车位置样式待标定",visible=false),
-        node("ev-range","ev-range",730f,460f,225f,56f).copy(name="纯电续航 · 原车位置样式待标定",visible=false),
+        node("fuel-range","fuel-range",1509f,460f,130f,48f,mapOf("rangeStyle" to "l6","fontSize" to "26","unitSize" to "22","trackHeight" to "10","accent" to "#009DFF","trackColor" to "#353839")).copy(name="燃油量与续航"),
+        node("ev-range","ev-range",1265f,460f,130f,48f,mapOf("rangeStyle" to "l6","fontSize" to "26","unitSize" to "22","trackHeight" to "10","accent" to "#2BB45E","trackColor" to "#353839")).copy(name="电量与纯电续航"),
     )
     fun packages(): List<ThemePackage> = listOf(
         Triple("builtin-reference","星枢 · GT与多行歌词",reference),
         Triple("builtin-gt","GT · 旅行仪表",gt),Triple("builtin-simple","简境 · Simple Drive",simple),Triple("builtin-neon","霓序 · Neon Stack",neon),
         Triple("builtin-tires","GT · 四轮胎压",gt.filterNot { it.id=="rpm" }+node("tires","tires",1445f,75f,430f,360f)),
         Triple("builtin-pedals","GT · 踏板与方向盘",gt.filterNot { it.id=="rpm" }+node("pedals","pedals",1445f,95f,430f,330f))
-    ).map { (id,name,nodes) -> SceneXml.write(ThemeMetadata(id,name,1),ThemeScene(SceneDocument(nodes),SceneStyles())) }
+    ).map { (id,name,nodes) -> SceneXml.write(ThemeMetadata(id,name,if(id=="builtin-reference")2 else 1),ThemeScene(SceneDocument(nodes),SceneStyles())) }
 }

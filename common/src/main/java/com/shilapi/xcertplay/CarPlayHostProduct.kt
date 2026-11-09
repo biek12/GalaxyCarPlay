@@ -20,6 +20,8 @@ internal data class HostProductActions(
     val releaseTouches: () -> Unit,
     val currentController: () -> CarPlayController?,
     val report: (String) -> Unit,
+    /** 产品的视频请求几何已变化；由宿主沿现有生命周期重新协商。 */
+    val clusterDisplayChanged: () -> Unit = {},
 )
 
 /** 每次建立Sink时固定的音频参数，未注入时完全沿用官方宿主参数。 */
@@ -32,6 +34,7 @@ internal data class HostAudioConfiguration(
     val assistantChannel: Int,
     val callProcessingEnabled: Boolean,
     val localMediaAudioEnabled: Boolean,
+    val navigationDucksMedia: Boolean = false,
 )
 
 /** 替换连接控件，不修改视频布局；所有回调跟随Activity持有的这一份绑定。 */
@@ -90,5 +93,9 @@ internal interface CarPlayHostProduct {
 
 /** Application显式注册；普通源码/测试宿主没有产品实现时仍执行官方默认行为。 */
 internal object HostProductBindings {
+    /** 可选产品脱敏媒体诊断，仅通过本应用dumpsys显式读取，不写常驻日志。 */
+    @Volatile var mediaDiagnostics: (() -> String)? = null
+    @Volatile var navigationDiagnostics: (() -> String)? = null
+    @Volatile var audioDiagnostics: (() -> String)? = null
     @Volatile var factory: ((ComponentActivity, HostProductActions) -> CarPlayHostProduct?)? = null
 }

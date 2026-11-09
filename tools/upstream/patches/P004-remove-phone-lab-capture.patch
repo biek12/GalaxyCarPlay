@@ -36,7 +36,27 @@
  
      /** Nonblocking identity for wheel controls: only an unclosed phone with an accepted primary stream. */
      fun activeAirPlaySessionToken(): Any? {
-@@ -701,13 +716,27 @@
+@@ -642,6 +657,19 @@
+     /** Immutable stream geometry retained when a new host adopts this background controller. */
+     fun configuredClusterSize(): Pair<Int, Int>? = airPlayConfig.cluster?.let { it.widthPixels to it.heightPixels }
+ 
++    /** 两路握手几何与手机上下文分别报告；不含手机/车辆标识或原始协议载荷。 */
++    fun displayDiagnostics(): Map<String, Any?> {
++        fun geometry(display: com.shilapi.xcertplay.airplay.AirPlayDisplayConfig) = mapOf(
++            "width" to display.widthPixels, "height" to display.heightPixels,
++        )
++        return linkedMapOf(
++            "main" to geometry(airPlayConfig.main),
++            "cluster" to airPlayConfig.cluster?.let(::geometry),
++            "active" to (!closed && activeSession?.isClosed == false),
++            "session" to activeSession?.displayDiagnostics(),
++        )
++    }
++
+     /** A visible physical map and its session/stream generation; null for a paused/virtual/turn-card route. */
+     fun dashboardMapRoute(): Any? {
+         val session = activeSession ?: return null
+@@ -701,13 +729,27 @@
          }
      }
  
@@ -69,7 +89,7 @@
              false
          }
      }
-@@ -870,10 +899,14 @@
+@@ -870,10 +912,14 @@
      // HUD (SOME/IP) and cluster (AMap broadcast) keep separate state so one failing cannot stall the other.
      private fun onRouteFrame(frame: com.shilapi.xcertplay.iap2.wire.Iap2Frame) {
          BydNavigationOutputs.onFrame(frame)
@@ -86,7 +106,7 @@
          }?.let { (update, playingChanged) ->
              nowPlayingListener?.invoke(update)
              if (playingChanged) playbackListener?.invoke(update.playing)
-@@ -2262,38 +2295,7 @@
+@@ -2262,38 +2308,7 @@
              )
              onStatus(CarPlayStatus.ConnectingControl)
              val carKitClient = LockdownCarKitClient(mux)
@@ -126,7 +146,7 @@
              val carkit = try {
                  carKitClient.open(pairRecord, config.label)
              } catch (error: Throwable) {
-@@ -2536,7 +2538,8 @@
+@@ -2536,7 +2551,8 @@
          }
          val manager: WirelessHotspotManager = when (hotspotMode) {
              WirelessHotspotMode.WIFI_P2P -> WifiP2pGroupManager(appContext, ::debugLog,

@@ -265,6 +265,7 @@ internal class GalaxyHabComposition(
     }
     fun sendSurfaces() { graphics?.sendSurfaces() }
     fun configureScene(role: String, scene: SceneConfiguration) { graphics?.configure(role, scene) }
+    fun setMapStreamSize(size: com.galaxy.auto.contract.MapStreamSize) { graphics?.setMapStreamSize(size) }
     fun clearScene(role: String) { graphics?.clearScene(role) }
     fun setPreviewSurface(surface: Surface?) { graphics?.setPreviewSurface(surface) }
     fun setPolicy(policy: ProjectionPolicy) { graphics?.setPolicy(policy) }

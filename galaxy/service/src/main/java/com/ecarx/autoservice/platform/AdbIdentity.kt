@@ -5,18 +5,15 @@ import android.util.AtomicFile
 import com.flyfishxu.kadb.cert.KadbCert
 import com.flyfishxu.kadb.cert.KadbCertPolicy
 import com.flyfishxu.kadb.cert.KadbPrivateKeyStore
-import org.bouncycastle.jce.provider.BouncyCastleProvider
 import java.io.File
-import java.security.Security
 
 /** 只读写本应用自行生成的ADB身份，不导入其他App、车辆或仓库里的认证材料。 */
 internal object AdbIdentity {
     private var configured = false
     @Synchronized fun configure(context: Context) {
         if (configured) return
-        if (Security.getProvider("BC")?.javaClass != BouncyCastleProvider::class.java) {
-            Security.removeProvider("BC"); Security.insertProviderAt(BouncyCastleProvider(), 1)
-        }
+        // KADB 2.1.1 CertUtils 的证书转换自带局部 Provider，RSA 解析由构建期窄补丁显式指定。
+        // 保留系统 BC：移除/替换进程 Provider 会与 Conscrypt 首次 TLS/BKS 初始化竞争。
         val directory = File(context.noBackupFilesDir, "adb").apply { check(isDirectory || mkdirs()) }
         val file = AtomicFile(File(directory, "client.pem"))
         val store = object : KadbPrivateKeyStore {

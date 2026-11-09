@@ -28,8 +28,9 @@ rootProject.name = "GalaxyPlay"
 include(":common", ":mobile", ":shared")
 // mobile仅为Gradle逻辑名，应用目录只有galaxy/mobile，不再保留根mobile壳。
 project(":mobile").projectDir = file("galaxy/mobile")
-include(":auto-contracts", ":auto-client", ":service", ":cluster")
+include(":auto-contracts", ":auto-client", ":service", ":cluster", ":record")
 project(":auto-contracts").projectDir = file("galaxy/contracts")
 project(":auto-client").projectDir = file("galaxy/client")
 project(":service").projectDir = file("galaxy/service")
 project(":cluster").projectDir = file("galaxy/cluster")
+project(":record").projectDir = file("galaxy/record")

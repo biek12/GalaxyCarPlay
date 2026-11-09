@@ -1,0 +1,4 @@
+<resources>
+    <string name="galaxy_navigation_ducks_media">导航播报压低音乐</string>
+    <string name="galaxy_navigation_ducks_media_note">按 iPhone 要求的音量压低音乐，播报结束后平滑恢复。下次连接生效。</string>
+</resources>

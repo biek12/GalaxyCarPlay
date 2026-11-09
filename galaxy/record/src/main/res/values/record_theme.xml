@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 沿项目 Flyme 设置页色阶（与 AutoService service_theme 逐值同源）；独立 App 自带一套，不依赖 CarPlay 宿主。 -->
+    <color name="record_background">#F6F8FC</color>
+    <color name="record_background_alt">#F6F8FC</color>
+    <color name="record_navigation">#E7EEF6</color>
+    <color name="record_navigation_alt">#E7EEF6</color>
+    <color name="record_surface">#FFFFFF</color>
+    <color name="record_control">#E5EBF2</color>
+    <color name="record_border">#D5DFEB</color>
+    <color name="record_divider">#D5DFEB</color>
+    <color name="record_text">#222935</color>
+    <color name="record_muted">#626E7C</color>
+    <color name="record_disabled">#66000000</color>
+    <color name="record_accent">#1368FB</color>
+    <color name="record_accent_soft">#E6EFFF</color>
+    <color name="record_selected">#E6EFFF</color>
+    <color name="record_ripple">#201368FB</color>
+    <color name="record_connected">#247744</color>
+    <color name="record_warning">#A65C00</color>
+    <color name="record_danger">#C83D43</color>
+    <color name="record_primary_text">#FFFFFF</color>
+    <color name="record_track">#C3CDD9</color>
+    <!-- 视频格叠加层：压在不可控亮度的画面上，日夜同值。 -->
+    <color name="record_overlay_scrim">#99000000</color>
+    <color name="record_overlay_text">#FFFFFF</color>
+    <style name="RecordTheme" parent="android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:fontFamily">sans</item>
+        <item name="android:colorAccent">@color/record_accent</item>
+        <item name="android:windowLightStatusBar">true</item>
+        <item name="android:statusBarColor">@color/record_background</item>
+        <item name="android:navigationBarColor">@color/record_background</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowBackground">@color/record_background</item>
+    </style>
+</resources>

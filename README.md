@@ -1,5 +1,25 @@
 # GalaxyPlay
 
+2026-11-05：[AutoRecord平面画面与哨兵开发](docs/AutoRecord/平面回放与哨兵开发-20261105.md)：实时/历史共用GPU映射、转向窗仅平面、专用哨兵电源/VSTD接入与20%退出策略；299项离线回归和3项隔离模拟器探针通过，已构建同签名候选，物理标定与锁车深睡/原厂相机共存待指定L6实车验收，未安装车辆。
+
+2026-11-04：[AutoRecord现场复测](docs/AutoRecord/现场复测与协同-20261104.md)：用户恢复连接并确认驻车上电，中继429修复已部署、原签名/数据迁移完成，四路PRIVATE→SurfaceView呈现约25fps，数据改为250ms与即时刷新，88项回归通过。按[协作规范](docs/AutoRecord/Codex与WorkBuddy协作规范-20261104.md)，WorkBuddy在GalaxyPlay项目用Hy3实现独立暂存的存储候选，Codex负责调试/审查/集成；完整录像仍未接入。
+
+2026-11-04：[AutoRecord六项离线整改](docs/AutoRecord/离线修复与回归-20261104.md)：按用户后续要求停止车辆连接，修复中继429/包白名单、缺路角标、统一左侧菜单与280dpi、车辆订阅及串行授权；增加车型/模拟器适配器，修正存储原子写入、配额、编码预检和15fps预设持久化。离线回归及模拟器独立编码/封装/解码通过，最终包和服务端改动尚未部署实车/公网。
+
+2026-11-04：[AutoRecord安装测试与修复](docs/AutoRecord/安装测试与修复-20261104.md)：接手 work buddy 初版并安装，四路真实预览已取得；发现并修复预检跨线程更新 UI 崩溃、缺路角标不刷新及方向标定无法修改等问题。74 项测试及 Debug/Field 构建通过；远程通道随后停止领取作业，修复版安装及真机复测待恢复，不能视为整体验收通过。
+
+2026-11-03：[AutoRecord界面与功能全量落地](docs/AutoRecord/开发接入设计-20261103.md)：P1–P14 全部实现（三Tab内容优先、任务导向筛选、事件轨道回放、片段面板与导出弹层、设置全量、诊断、引导），新增core数据层；`./scripts/build_autorecord.sh`实测54项单测通过、assembleDebug成功。摄像头/车辆/引擎/解码/导出仍为未接入实现，替换点收敛在接口边界；未连车、未安装。
+
+2026-11-03：[AutoRecord功能与UI评审修订](docs/AutoRecord/评审与优化-20261103.md)：核对需求与页面规格，采纳10条修订——补取证主链路（一键锁定2段+事件保护+导出并入P4）、量化保留窗口（32GB≈4.3小时）、录制启动改两阶段预检、补存储收敛决策树；UI 侧实时页改内容优先、数据条折1行、筛选任务化、增设画质预设、撤销长按改操作条并加行驶中只读。规格升 v1.1（新增§14关键流程），需求稿升 v0.2（R13）。
+
+2026-11-03：[AutoRecord子工程整理](docs/AutoRecord/README.md)：七份AutoRecord文档归集到`docs/AutoRecord/`并新增入口台账（文档索引、页面/代码映射、B0–B5进度、红线、待确认项）；`:record`模块已落地core与P1/P2/P5/P6/P7页面，`./scripts/build_autorecord.sh`实测15项单测通过、assembleDebug成功；摄像头契约与录制引擎未开始，未安装、未连车。
+
+2026-11-03：[AutoRecord四向记录仪需求与交接](docs/AutoRecord/需求与DeepSeek交接-20261103.md)：按三张截图整理四路录制、录像库、历史车辆数据同步回放与事件时间轴；摄像头及车辆实时数据统一来自AutoService。已核对EVCam固定源码与本地契约缺口，仅规划、未开发；另附[DeepSeek任务书](docs/AutoRecord/DeepSeek任务书.md)。同日按用户确认补[逐页功能与设置规格](docs/AutoRecord/页面功能与设置规格-20261103.md)（UI 继续继承 FlymeAuto，设置含存储位置/编码格式/硬软编码）、[样式基线](docs/AutoRecord/FlymeAuto样式基线-20261103.md)与[编码与存储技术口径](docs/AutoRecord/编码与存储技术口径-20261103.md)。
+
+2026-11-03：[Kanzi音乐卡片现场调试](docs/CarPlay原厂Kanzi音乐卡片原型-20261103.md#追加2026-11-03现场连接与加载调试)：指定L6已连接、原始手机歌词/状态文件与双LOAD候选依赖解析已核验，CarPlay同包更新。原厂HMI未替换，实际挂接/恢复待单独授权及驻车试验。
+
+2026-11-03：[ECARX对照与L6定向整改](docs/ECARX对照与L6定向整改-20261103.md)：补L6 DIM箭头/距离/剩余时间、原车媒体回环HTTP封面与异步重发、手机dB驱动的PCM音乐压低；普通电话正常，第三方通话上行和完整视频DIM替代路线仍未确认修复。未安装或实车验收。
+
 2026-10-31：[车辆数据经AutoService订阅（轮速接入）](docs/AutoService车速订阅-20261031.md)：契约升v3，新增按需车辆信号订阅（`setVehicleFeed`/`onVehicleFeed`）；CarPlay 只订阅 `displaySpeed`/`gear` 生成 iAP2 `$PASCD`，不再反射厂商SDK、不需要ADB/Root；位置仍走本机provider。离线回归与三APK编译见记录；L6行驶车速、`km/h`单位、有无GPS及iPhone侧是否采用仍需实车验证。
 
 2026-10-31：[DiPlay v0.2.22三方迁移](docs/DiPlay-v0.2.22核心迁移.md)：保留Galaxy车型、微信电话通道、原车媒体、HAB和独立应用适配，整合官方固定发布核心。冲突处理、发布SHA、回归及APK见记录；智能显示缩放回退和原厂DIM歌词消费仍待实车定位。

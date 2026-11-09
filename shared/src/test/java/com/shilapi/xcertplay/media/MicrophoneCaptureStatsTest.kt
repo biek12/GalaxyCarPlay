@@ -11,6 +11,17 @@ class MicrophoneCaptureStatsTest {
     private val config = MicrophoneConfig("telephony", 48_000, 1, 100, 20,
         InetAddress.getByName("198.51.100.20"), 54321, ByteArray(32) { 0x7f }, AudioCodecKind.OPUS)
 
+    @Test fun distinguishesRawCaptureFromProcessingSilenceWithoutRetainingPcm() {
+        val reports = mutableListOf<String>()
+        val stats = MicrophoneCaptureStats(config, reports::add)
+        stats.rawLevel(byteArrayOf(0, 0xc0.toByte()), 2)
+        stats.level(ByteArray(2))
+        stats.flush(ended = true)
+        assertTrue(reports.last().contains("rawPeakDbfs=-6 peakDbfs=silent"))
+        stats.flush(ended = true)
+        assertTrue(reports.last().contains("rawPeakDbfs=silent peakDbfs=silent"))
+    }
+
     @Test fun aggregatesFiveSecondWindowsAndKeepsFinalPartialWindow() {
         var now = 0L
         val reports = mutableListOf<String>()

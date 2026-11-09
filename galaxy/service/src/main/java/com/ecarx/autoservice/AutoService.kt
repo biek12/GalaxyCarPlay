@@ -22,6 +22,7 @@ class AutoService : Service() {
     private val shell = SerialWorker("AutoService-shell")
     private val shellBusy = java.util.concurrent.atomic.AtomicBoolean()
     private lateinit var shellAccess: com.ecarx.autoservice.platform.PlatformAccess
+    private var sentinel:com.ecarx.autoservice.sentinel.SentinelCoordinator?=null
     private lateinit var collector: VehicleCollector
     private val inventory = VehicleInventory()
     private var discovery = "not_connected"
@@ -39,6 +40,23 @@ class AutoService : Service() {
     private val scenes = mutableMapOf<String, SceneConfiguration>()
     private var previewTarget: Surface? = null
     private var projectionPolicy = ProjectionPolicy()
+    private var mapStreamSize = MapStreamSize.DEFAULT
+    private val settleMapSize = Runnable {
+        if (!closed) {
+            val viewport = ((if(previewTarget!=null)scenes[AutoContract.PREVIEW]else null)
+                ?: scenes[AutoContract.THEME])?.map
+            val next = MapStreamSize.forViewport(viewport)
+            if (next != mapStreamSize) {
+                mapStreamSize = next
+                composition?.setMapStreamSize(next)
+                publish()
+            }
+        }
+    }
+    private fun scheduleMapSize() {
+        main.removeCallbacks(settleMapSize)
+        main.postDelayed(settleMapSize, 750)
+    }
     private var media = Bundle()
     private var navigation = Bundle()
     /** 订阅驱动采集的最新快照（只含订阅键），feed推送与拉取接口同源。 */
@@ -52,6 +70,23 @@ class AutoService : Service() {
     private val inputEpoch=java.util.UUID.randomUUID().toString()
     private var menuSequence=0L
     private var menuReceivedAt=0L
+    private var remote: com.ecarx.autoservice.remote.RemoteBridge? = null
+    private var webVehicle: com.ecarx.autoservice.web.VehicleWebBridge? = null
+    private var remoteGeneration=0L
+    private var remoteState="disabled"
+    @Synchronized private fun updateRemote(){
+        val webEnabled=!closed&&!paused
+        if(!webEnabled){webVehicle?.close();webVehicle=null}
+        else if(webVehicle==null){webVehicle=com.ecarx.autoservice.web.VehicleWebBridge(this).also{it.start()}}
+        val enabled=!closed&&!paused&&com.ecarx.autoservice.remote.RemoteSettings(this).enabled
+        if(!enabled){if(remote!=null)++remoteGeneration;remote?.close();remote=null;remoteState="disabled"}
+        else if(remote==null){
+            val ticket=++remoteGeneration
+            remote=com.ecarx.autoservice.remote.RemoteBridge(this){ value->main.post {
+                if(!closed&&remoteGeneration==ticket&&remote!=null&&remoteState!=value){remoteState=value;publish()}
+            }}.also{it.start()}
+        }
+    }
     private var artworkVersion = 0L
     private var artworkGeneration = 0L
     private val notify = Runnable {
@@ -70,7 +105,13 @@ class AutoService : Service() {
         }
         return uid
     }
-    private fun enqueue(block: () -> Unit) { main.post { if (!closed) runCatching(block).onFailure { state("request:${it.javaClass.simpleName}") } } }
+    private fun enqueue(block: () -> Unit) {
+        val source=packageManager.getPackagesForUid(Binder.getCallingUid()).orEmpty().filter{it in setOf("com.ecarx.autoservice","com.ecarx.carplay","com.galaxy.autorecord","com.galaxy.autocluster")}.joinToString(",")
+        main.post { if (!closed) runCatching(block).onFailure {
+            com.galaxy.auto.client.diagnostics.DiagnosticEvents.error("binder_request",it,mapOf("caller" to source))
+            ServiceTrace.event("binder_request",it);state("request:${it.javaClass.simpleName}")
+        } }
+    }
     private val binder = object : IAutoService.Stub() {
         override fun getProtocolVersion(): Int { uid(); return AutoContract.VERSION }
         override fun getSnapshot(): Bundle { uid(); return synchronized(snapshotLock) { Bundle(latest) } }
@@ -194,6 +235,7 @@ class AutoService : Service() {
                 val existing=composition
                 ensureComposition(includePreview=lease.role==AutoContract.PREVIEW)
                 if(existing!=null)composition?.configureScene(lease.role,safe)
+                scheduleMapSize()
             }
         }
         override fun setPreviewSurface(owner: IBinder, surface: Surface?) {
@@ -206,7 +248,8 @@ class AutoService : Service() {
                     ensureComposition(includePreview=surface!=null)
                     composition?.setPreviewSurface(surface)
                     previewTarget=surface
-                    if(surface==null){scenes.remove(AutoContract.PREVIEW);composition?.clearScene(AutoContract.PREVIEW)}
+                    if(surface==null){scenes.remove(AutoContract.PREVIEW);composition?.clearScene(AutoContract.PREVIEW);scheduleMapSize()}
+                    else scheduleMapSize()
                     old?.release()
                     updateProjection()
                 }catch(error: Exception){surface?.release();state("preview:${error.javaClass.simpleName}")}
@@ -248,7 +291,94 @@ class AutoService : Service() {
                 if (accepted.isEmpty()) Bundle() else VehicleFeed.select(signals, accepted)
             }.getOrElse { Bundle() }
         }
+        override fun requestClientPermissions(owner: IBinder, permissions: Array<String>?, result: IAutoResult) {
+            val calling = uid()
+            val requested = permissions.orEmpty().distinct()
+            val policy = com.ecarx.autoservice.platform.ClientPermissionPolicy
+            check(policy.allowed(packageManager.getPackagesForUid(calling).orEmpty().toList(), requested)) { "permission_request_rejected" }
+            val target = policy.RECORD_PACKAGE
+            // Android 每用户 UID 命名空间为 100000；不反射隐藏的 UserHandle.getIdentifier。
+            val user = calling / 100000
+            enqueue {
+                val lease = clients.require(owner, calling)
+                shell.post {
+                    val response = Bundle()
+                    try {
+                        check(!closed && !paused && AutoStartup.enabled(this@AutoService)) { "platform_stopped" }
+                        fun granted(permission:String):Boolean = if(permission==policy.OVERLAY)
+                            getSystemService(android.app.AppOpsManager::class.java).unsafeCheckOpNoThrow("android:system_alert_window",calling,target)==android.app.AppOpsManager.MODE_ALLOWED
+                            else checkPermission(permission,-1,calling)==PackageManager.PERMISSION_GRANTED
+                        val missing = requested.filter { !granted(it) }
+                        if (missing.isNotEmpty()) {
+                            check(ServiceFeatures.read(this@AutoService).root) { "root_disabled" }
+                            shellAccess.ensureRoot()
+                            missing.forEach { permission ->
+                                val command=if(permission==policy.OVERLAY)"cmd appops set --user $user $target SYSTEM_ALERT_WINDOW allow" else "pm grant --user $user $target $permission"
+                                val value = shellAccess.executeShell(command, 10000, "ROOT")
+                                check(value.optInt("exitCode", -1) == 0 && !value.optBoolean("timedOut") && !value.has("error")) { "permission_grant_failed" }
+                            }
+                        }
+                        check(requested.all { granted(it) }) { "permission_readback_failed" }
+                        response.putBoolean("granted", true)
+                    } catch (error: Exception) {
+                        ServiceTrace.event("client_permission_failed", error)
+                        response.putBoolean("granted", false); response.putString("error", error.message ?: error.javaClass.simpleName)
+                    }
+                    main.post { if (!closed && clients.all().any { it === lease }) callbacks.post { runCatching { result.onResult(response) } } }
+                }
+            }
+        }
         /** 全目录诊断扫描只允许本包触发，避免外部应用把车机读取放大。 */
+        override fun reportSentinelIdle(owner:IBinder,powerSequence:Long){
+            val calling=uid()
+            check("com.galaxy.autorecord" in packageManager.getPackagesForUid(calling).orEmpty())
+            enqueue{clients.require(owner,calling);sentinel?.idle(powerSequence)}
+        }
+        override fun configureSentinel(owner:IBinder,enabled:Boolean,result:IAutoResult){
+            val calling=uid()
+            check("com.galaxy.autorecord" in packageManager.getPackagesForUid(calling).orEmpty()){"sentinel_client_rejected"}
+            enqueue{
+                clients.require(owner,calling)
+                val response=Bundle()
+                runCatching{
+                    check(!enabled||!paused&&features.root&&features.vehicle&&AutoStartup.enabled(this@AutoService)){"platform_disabled"}
+                    checkNotNull(sentinel).configure(enabled)
+                    response.putBoolean("accepted",true)
+                }.onFailure{response.putBoolean("accepted",false);response.putString("error",it.message)}
+                callbacks.post{runCatching{result.onResult(response)}}
+            }
+        }
+        override fun vehicleWebUpload(owner:IBinder,clipId:String,direction:String,file:ParcelFileDescriptor,length:Long,result:IAutoResult) {
+            val calling=uid()
+            check("com.galaxy.autorecord" in packageManager.getPackagesForUid(calling).orEmpty())
+            require(clipId.matches(Regex("[A-Za-z0-9_-]{1,128}"))&&direction in listOf("front","rear","left","right","index","open-front","open-rear","open-left","open-right"))
+            require(length in 12..268435456)
+            val copy=ParcelFileDescriptor.dup(file.fileDescriptor)
+            enqueue {
+                try{
+                    val lease=clients.require(owner,calling)
+                    checkNotNull(webVehicle).upload(clipId,direction,copy,length){response->main.post{
+                        if(!closed&&clients.all().any{it===lease})callbacks.post{runCatching{result.onResult(response)}}
+                    }}
+                }catch(error:Exception){copy.close();callbacks.post{runCatching{result.onResult(Bundle().apply{putString("error","媒体上传不可用")})}}}
+            }
+        }
+        override fun vehicleWebRequest(owner: IBinder, action: String, payload: Bundle, result: IAutoResult) {
+            val calling=uid()
+            val packages=packageManager.getPackagesForUid(calling).orEmpty()
+            check(calling==Process.myUid() || "com.galaxy.autorecord" in packages) { "web_client_rejected" }
+            check(action in setOf("state","enable","code","confirm","unbind","disable","record-publish","record-poll","record-result","record-telemetry","record-signals","record-live-status"))
+            if(action.startsWith("record-"))check("com.galaxy.autorecord" in packages)
+            require((payload.getString("json")?.length ?: 0) <= 384*1024)
+            enqueue {
+                val lease=clients.require(owner,calling)
+                val bridge=webVehicle
+                if(bridge==null)callbacks.post{result.onResult(Bundle().apply{putString("error","AutoService 自动运行已关闭")})}
+                else bridge.request(action,payload) { response -> main.post {
+                    if(!closed&&clients.all().any{it===lease}){publish();callbacks.post{runCatching{result.onResult(response)}}}
+                } }
+            }
+        }
         override fun setVehicleScan(enabled: Boolean) {
             check(uid() == Process.myUid()) { "local_only" }
             collector.setScan(enabled)
@@ -257,9 +387,12 @@ class AutoService : Service() {
     override fun onCreate() {
         super.onCreate()
         ServiceTrace.configure(java.io.File(filesDir, "diagnostics/app.log"))
+        com.ecarx.autoservice.diagnostics.DiagnosticUploader.kick(this)
         ServiceTrace.event("service_created")
         val prefs=getSharedPreferences("platform",0)
         features = ServiceFeatures.read(this)
+        sentinel=com.ecarx.autoservice.sentinel.SentinelCoordinator(this,{shellAccess.ensureRoot()},
+            {main.post{if(!closed)publish()}},{main.post{if(!closed)applyDemand()}})
         prefs.edit().putString("vehicleMode", if (features.root) "root" else "app").apply()
         val max=prefs.getInt("projectionFps",30).coerceIn(1,60)
         projectionPolicy=ProjectionPolicy(prefs.getString("projectionMode","content-aware")!!,max,prefs.getInt("animationFps",30).coerceIn(1,max))
@@ -277,6 +410,7 @@ class AutoService : Service() {
         startPlatformForeground()
         if (!paused) { platform = newPlatform(); platform.start(); if (features.vehicle) collector.start(); AutoStartup.schedule(this) }
         else status = "stopped"
+        updateRemote()
         publish()
     }
     private fun newPlatform(): PlatformCoordinator {
@@ -299,11 +433,24 @@ class AutoService : Service() {
             .setContentTitle("AutoService").setContentText("车辆数据与仪表投射").setContentIntent(intent).build())
     }
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if(!com.galaxy.auto.client.recovery.ProcessRecovery.accepts(this,intent))return if(AutoStartup.enabled(this))START_STICKY else START_NOT_STICKY
+        if(intent?.action=="remote-authorize"){
+            ++remoteGeneration
+            webVehicle?.close();webVehicle=null
+        remote?.close();remote=null
+            com.ecarx.autoservice.remote.RemoteSettings(this).authorize(intent.getIntExtra("hours",12))
+        }
+        if(intent?.action=="remote-disable"){
+            ++remoteGeneration
+            remote?.revoke();com.ecarx.autoservice.remote.RemoteSettings(this).disable();remote=null
+        }
         if (intent?.action == "stop" || (intent?.action != "start" && !AutoStartup.enabled(this))) {
+            sentinel?.preparePlatformStop()
             AutoStartup.setEnabled(this, false)
             features = ServiceFeatures.read(this)
             runCatching { stopService(Intent().setComponent(ComponentName(AutoContract.CLUSTER_PACKAGE, "com.galaxy.autocluster.ClusterRenderService"))) }
             paused = true; ++platformGeneration
+            updateRemote()
             projectionRequested = false; platformReady = false; rootReady = false; preparing = false
             composition?.close(); composition = null; surfaces.clear()
             clients.all().forEach { lease -> callbacks.post { runCatching { lease.callback.onProjectionState(lease.role, "surface_closed") } } }
@@ -350,6 +497,8 @@ class AutoService : Service() {
                 "com.galaxy.autocluster.ClusterRenderService")))
         }.onFailure { state("cluster:${it.javaClass.simpleName}") }
         publish()
+        if(AutoStartup.enabled(this))com.galaxy.auto.client.recovery.ProcessRecovery.arm(this,
+            Intent(this,AutoService::class.java).setAction("recovery"),intent?.hasExtra(com.galaxy.auto.client.recovery.ProcessRecovery.EXTRA_GENERATION)==true)
         return START_STICKY
     }
     /** 主线程应用用户选择。连接配置换代，投屏和车辆各自释放；外部客户端不能覆盖这些总开关。 */
@@ -357,6 +506,7 @@ class AutoService : Service() {
         val next = ServiceFeatures.read(this)
         val previous = features
         if (next == previous) return
+        if((previous.root&&!next.root)||(previous.vehicle&&!next.vehicle))sentinel?.preparePlatformStop()
         features = next
         val connectionsChanged = previous.adb != next.adb || previous.root != next.root
         if (connectionsChanged) {
@@ -395,6 +545,7 @@ class AutoService : Service() {
             }
         }, connectionChanged = { ready -> platformReady = ready; if (ready) preparing = false; publish() })
         composition?.setPolicy(projectionPolicy)
+        composition?.setMapStreamSize(mapStreamSize)
         scenes.forEach { (role,scene) -> composition?.configureScene(role,scene) }
         composition?.setPreviewSurface(previewTarget)
     }
@@ -417,6 +568,7 @@ class AutoService : Service() {
         // 租约消失必须立刻收缩采集集合，否则退订后还会继续读车机。
         applyDemand()
         scenes.remove(old.role)
+        scheduleMapSize()
         if(old.role==AutoContract.THEME||old.role==AutoContract.PREVIEW)composition?.clearScene(old.role)
         if(old.role==AutoContract.PREVIEW){previewTarget?.release();previewTarget=null;composition?.setPreviewSurface(null)}
         if (old.role == AutoContract.MAP) { media = Bundle(); navigation = Bundle(); ++artworkGeneration
@@ -452,6 +604,7 @@ class AutoService : Service() {
         if (closed || paused || !features.vehicle) return
         // 缓存对外供给：拉取接口与订阅补发都用这一份，保证推/拉同源。
         signals = values
+        sentinel?.accept(values)
         val targets = clients.all().filter { it.feed.isNotEmpty() }
         if (targets.isEmpty()) return
         // 一轮只自增一次：同一轮的多个租约拿到同一个序号，跨租约可直接对齐节拍。
@@ -472,7 +625,7 @@ class AutoService : Service() {
         // 别名要翻译成基础键才能读到车机；租约自己的feed仍保留别名，用于裁剪下发。
         collector.setDemand(VehicleDemand.merge(clients.all().map { lease ->
             lease.feed.mapTo(HashSet()) { VehicleCatalog.baseKey(it) } to lease.feedIntervalMillis
-        }))
+        } + listOf(sentinel?.demands.orEmpty().keys to 500)))
     }
     /** 订阅/改订阅当下的即时补发：此时还没有整轮节拍，序号单独分配。 */
     private fun publishFeedTo(lease: ClientRegistry.Lease, values: Bundle, at: Long) {
@@ -486,11 +639,16 @@ class AutoService : Service() {
         callbacks.post { runCatching { lease.callback.onVehicleFeed(out) } }
     }
     private fun publish() {
+        sentinel?.platform(!closed&&!paused&&features.root&&features.vehicle&&AutoStartup.enabled(this))
+        updateRemote()
         val snapshot = Bundle().apply {
             putString("vehicleDiscovery", discovery); putInt("vehiclePropertyCount", discoveredCount); putInt("vehicleSampledCount", inventory.count()); putInt("vehicleValidCount", inventory.validCount())
+            putBundle("sentinel",sentinel?.snapshot())
+            putInt("sentinelVersion",1)
             putInt("version", AutoContract.VERSION); putLong("sequence", ++sequence); putLong("receivedAt", SystemClock.elapsedRealtime())
             putBoolean("rootReady", rootReady); putBoolean("qnxReady", platformReady)
             putBoolean("automatic", AutoStartup.enabled(this@AutoService))
+            putBoolean("vehicleWebEnabled",!paused&&getSharedPreferences("vehicle-web",0).getBoolean("enabled",false))
             putBundle("features", features.bundle())
             putBoolean("projectionRequested", projectionRequested)
             putString("foundation", foundationEvidence())
@@ -498,8 +656,11 @@ class AutoService : Service() {
             // v4：快照不再携带全量车辆键（原来每次投递83个子Bundle×每客户端）。
             // 只发键名清单，客户端据此把主题/自身需求裁剪成订阅；值走feed或getVehicleValues。
             putStringArray("vehicleKeys", vehicleKeys()); putBoolean("vehicleScanning", collector.scanning())
+            putInt("minVehicleFeedIntervalMs", AutoContract.MIN_FEED_INTERVAL_MS)
             putString("inputEpoch",inputEpoch);putLong("menuSequence",menuSequence);putLong("menuReceivedAt",menuReceivedAt)
             putBundle("projectionPolicy",projectionPolicy.bundle())
+            putString("remoteState",remoteState)
+            putBundle("mapStreamSize", mapStreamSize.bundle())
             putString("vehicleMode", getSharedPreferences("platform", 0).getString("vehicleMode", "app"))
             putString("model", modelPrefs())
             putLong("artworkVersion", artworkVersion)
@@ -514,6 +675,19 @@ class AutoService : Service() {
             return
         }
         val snapshot = synchronized(snapshotLock) { Bundle(latest) }
+        if ("--record-properties" in args) {
+            writer.println("RECORD_PROPERTIES=" + inventory.diagnostics())
+            return
+        }
+        if ("--record-fields" in args) {
+            // 只读当前订阅缓存，不扫描、不额外读车辆属性；用于逐项核对录制端数据接线。
+            val withVehicle = Bundle(snapshot).apply { putBundle("vehicle", Bundle(signals)) }
+            val keys = VehicleCatalog.forModel(snapshot.getString("model") ?: "L6").map { it.key } +
+                VehicleCatalog.LEGACY_ALIASES.keys
+            writer.println("RECORD_FIELDS=" + ClusterFieldDiagnostics.collect(withVehicle,
+                android.os.SystemClock.elapsedRealtime(), keys))
+            return
+        }
         if ("--cluster-fields" in args) {
             // v4快照不含车辆值：诊断用当前订阅快照补上，保持同一份数据口径。
             val withVehicle = Bundle(snapshot).apply { putBundle("vehicle", Bundle(signals)) }
@@ -533,6 +707,8 @@ class AutoService : Service() {
         writer.println("vehicleStats=" + collector.stats())
         writer.println("hab=" + (composition?.metrics() ?: "inactive"))
         writer.println("automatic=" + AutoStartup.enabled(this))
+        val diagnosticPrefs=getSharedPreferences("diagnostics",0)
+        writer.println("diagnosticLastUpload="+diagnosticPrefs.getLong("lastUploadAt",0)+" error="+diagnosticPrefs.getString("lastUploadError","")+" pending="+java.io.File(noBackupFilesDir,"diagnostic-inbox").listFiles().orEmpty().size)
         writer.println("features=$features")
         writer.println("adbIdentityConfigured=" + java.io.File(noBackupFilesDir, "adb/client.pem").exists())
         writer.println("qnxCredentialsConfigured=" + java.io.File(noBackupFilesDir, "qnx-login.json").exists())
@@ -544,6 +720,11 @@ class AutoService : Service() {
         else -> "{}"
     }
     override fun onDestroy() {
+        sentinel?.close();sentinel=null
+        webVehicle?.close();webVehicle=null
+        remote?.close();remote=null
+        main.removeCallbacks(settleMapSize)
+        com.galaxy.auto.client.recovery.ProcessRecovery.release(this,AutoStartup.enabled(this))
         closed = true; ++platformGeneration
         composition?.close(); composition = null
         if (::platform.isInitialized) platform.close()

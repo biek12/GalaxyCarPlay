@@ -17,6 +17,7 @@ internal object ServiceTrace {
         }
     }
     @Synchronized fun event(stage: String, error: Throwable? = null) {
+        if (error != null) com.galaxy.auto.client.diagnostics.DiagnosticEvents.error(stage,error)
         val now = SystemClock.elapsedRealtime()
         val key = stage + error?.javaClass?.name.orEmpty()
         if (now - (recent[key] ?: -30000) < 30000) return

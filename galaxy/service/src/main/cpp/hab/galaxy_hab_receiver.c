@@ -185,7 +185,9 @@ int galaxy_hab_receiver_frame_strided(struct galaxy_hab_receiver *r,
     sequence = get32(input + 0x0c);
     hash = get32(input + 0x2c);
     if (index >= r->layout.count) return -EPROTO;
-    result = galaxy_hab_encode_frame(canonical, &r->layout, r->export_id, sequence, index, hash);
+    result = r->owned_consumption
+        ? galaxy_hab_encode_owned_frame(canonical, &r->layout, r->export_id, sequence, index, hash)
+        : galaxy_hab_encode_frame(canonical, &r->layout, r->export_id, sequence, index, hash);
     if (result) return result;
     if (!equal_bytes(input, canonical, sizeof(input))) return -EPROTO;
     stream = &r->layout.streams[index];

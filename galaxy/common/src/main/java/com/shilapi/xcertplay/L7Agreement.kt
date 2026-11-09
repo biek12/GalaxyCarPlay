@@ -8,7 +8,11 @@ import java.security.MessageDigest
 
 /** 同意只对当前正文有效，独立于应用版本；不记录设备或手机标识。 */
 internal object L7Agreement {
-    const val VERSION = "2026-10-29"
+    const val VERSION = "2026-11-02"
+    private val PREVIOUS_LYRICS_DIGESTS = setOf(
+        "3330629b495de73eb3dd39440c5f2572d9b60eee5da6c04eda512a4a19c459f5",
+        "43f4c1bfd8b4e4fefde8869eb4ab1acc4f95558a891d6f3f76b0ec90229d4b74",
+    )
     private const val PREFERENCES = "l7_agreement"
     private var cachedDocument: String? = null
     private var cachedDigest: String? = null
@@ -30,7 +34,14 @@ internal object L7Agreement {
     private fun preferences(context: Context) = context.getSharedPreferences(PREFERENCES, Context.MODE_PRIVATE)
 
     fun accepted(context: Context): Boolean = !revoked && runCatching {
-        preferences(context).getString("accepted_digest", null) == digest(context)
+        val prefs = preferences(context)
+        val accepted = prefs.getString("accepted_digest", null)
+        val current = digest(context)
+        if (accepted == current) true
+        else if (accepted in PREVIOUS_LYRICS_DIGESTS) {
+            // 用户已要求自有聚合源及歌词缓存；仅迁移已接受的旧正文，不开启未接受或撤销状态。
+            prefs.edit().putString("accepted_digest", current).putString("accepted_version", VERSION).commit()
+        } else false
     }.getOrDefault(false)
 
     fun canUse(context: Context): Boolean =

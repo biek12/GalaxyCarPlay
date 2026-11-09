@@ -160,6 +160,16 @@ internal class L7MediaCenterSession(
         }
     }
 
+    /** 异步封面/原车焦点就绪后由原有串行worker重发，暂停曲目不依赖进度变化触发。 */
+    fun refreshOutput() = enqueue {
+        if (registered) {
+            published = null
+            publishedArtwork = null
+            updateAttempts = 0
+            publishLatest()
+        }
+    }
+
     private fun publishLatest(explicitPlay: Boolean = false) {
         if (closed || !current() || !registered) return
         val next = snapshot

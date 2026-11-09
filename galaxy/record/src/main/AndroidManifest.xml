@@ -1,0 +1,38 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- 录制与写盘由本 App 自己的前台服务承担。 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_CAMERA" />
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+
+    <!--
+      CAMERA 在 Android 上是 dangerous（运行时）权限：必须声明 + 运行时申请。
+      若目标固件把它做成预授予，checkSelfPermission 直接返回 GRANTED，无需弹窗。
+      用户决策（2026-11-03）：若 CAMERA 无需 Service 代办授权，就不绕 Service 转发画面，直接采集；
+      AutoService 只在「代为授权」与「能力扫描」上提供帮助。
+    -->
+    <uses-permission android:name="android.permission.CAMERA" />
+    <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
+    <uses-feature android:name="android.hardware.camera" android:required="false" />
+
+    <!-- AutoService 的客户端权限（签名级）：仅在需要它代为授权或做能力扫描时使用。 -->
+    <uses-permission android:name="com.ecarx.autoservice.permission.CLIENT" />
+    <queries><package android:name="com.ecarx.autoservice" /></queries>
+    <application android:name=".core.RecordApplication" android:label="AutoRecord" android:allowBackup="false" android:theme="@style/RecordTheme">
+        <activity android:name=".runtime.SentinelActivity" android:exported="false" android:excludeFromRecents="true" android:launchMode="singleTask" />
+        <activity android:name=".runtime.RecordResumeActivity" android:exported="false" android:excludeFromRecents="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar" android:launchMode="singleTask" />
+        <service android:name=".web.RecordWebService" android:exported="true" android:permission="com.ecarx.autoservice.permission.CLIENT" android:foregroundServiceType="camera|dataSync" />
+        <service android:name=".runtime.RecordSessionService" android:exported="false" android:foregroundServiceType="camera" />
+        <receiver android:name=".runtime.RecordBootReceiver" android:exported="false"><intent-filter>
+            <action android:name="android.intent.action.BOOT_COMPLETED" /><action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+        </intent-filter></receiver>
+        <activity android:name=".ui.RecordActivity" android:exported="true" android:launchMode="singleTask" android:configChanges="orientation|screenSize|uiMode">
+            <intent-filter><action android:name="android.intent.action.MAIN" /><category android:name="android.intent.category.LAUNCHER" /></intent-filter>
+        </activity>
+    </application>
+</manifest>

@@ -1,0 +1,6 @@
+<resources>
+    <color name="vehicle_account_bg">#10151D</color><color name="vehicle_account_surface">#1B2430</color>
+    <color name="vehicle_account_text">#EDF2F8</color><color name="vehicle_account_muted">#9BAABC</color>
+    <color name="vehicle_account_soft">#263343</color><color name="vehicle_account_accent">#5E9AFF</color>
+    <color name="vehicle_account_success">#53C69C</color>
+</resources>

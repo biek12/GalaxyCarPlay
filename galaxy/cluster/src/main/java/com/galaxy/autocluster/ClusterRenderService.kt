@@ -32,13 +32,14 @@ class ClusterRenderService : Service() {
             stopSelf();return START_NOT_STICKY
         }
         output?.setActive(true)
-        if(!requested||intent?.action in setOf("apply","reload")||intent?.hasExtra("panel")==true){
+        if(!requested||intent?.action in setOf("apply","reload","sync-energy")||intent?.hasExtra("panel")==true){
             requested=true
             output?.loadTheme {
                 // 保留早期面板入口；首次采用GT，已有活动快照优先。
                 val legacy=intent?.getStringExtra("panel")?:getSharedPreferences("theme",0).getString("panel","MUSIC")
                 val explicit=if(intent?.hasExtra("panel")==true)when(legacy){"TIRES"->"builtin-tires";"PEDALS"->"builtin-pedals";else->"builtin-gt"}else null
-                if(explicit!=null)store.apply(explicit,1)else store.active()?:store.apply("builtin-gt",1)
+                if(intent?.action=="sync-energy")store.syncEnergy()?:store.apply("builtin-gt",1)
+                else if(explicit!=null)store.apply(explicit,1)else store.active()?:store.apply("builtin-gt",1)
             }
         }
         return START_STICKY

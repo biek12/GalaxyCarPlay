@@ -21,7 +21,8 @@ object AutoContract {
     /** v3按需车辆信号订阅：键名与AutoService车型目录的语义别名一致。 */
     const val SIGNAL_DISPLAY_SPEED = "displaySpeed"
     const val SIGNAL_GEAR = "gear"
-    const val MAX_FEED_KEYS = 32
+    /** 最小集与全部扩展集目前合计超过32；有界放宽到64，仍拒绝超量请求。 */
+    const val MAX_FEED_KEYS = 64
     private val FEED_KEY = Regex("[A-Za-z0-9][A-Za-z0-9._-]{0,63}")
     fun roleValid(role: String) = role in setOf(MAP, THEME, OBSERVER, PREVIEW)
     fun producesOutput(role: String) = role == MAP || role == THEME
@@ -33,7 +34,7 @@ object AutoContract {
      * v4订阅节拍。间隔是“最小推送间隔”，同时决定采集端该键的读取周期：
      * 没有人订阅的键不读取，所以这个值直接决定CPU成本，不能给成0或负数。
      */
-    const val MIN_FEED_INTERVAL_MS = 250
+    const val MIN_FEED_INTERVAL_MS = 100
     const val MAX_FEED_INTERVAL_MS = 10_000
     const val DEFAULT_FEED_INTERVAL_MS = 250
     fun feedIntervalValid(value: Int) = value in MIN_FEED_INTERVAL_MS..MAX_FEED_INTERVAL_MS
@@ -54,5 +55,10 @@ object AutoContract {
         for (key in listOf("road", "instruction", "distance", "arrival", "remaining", "remainingDistance")) copyText(source, this, key)
         putInt("maneuver", source.getInt("maneuver", -1))
         putInt("roundaboutExit",source.getInt("roundaboutExit",-1).coerceIn(-1,99))
+        val angles=source.getString("laneAngles").orEmpty().split(',').mapNotNull{it.toIntOrNull()}.take(8)
+        val recommended=source.getString("laneRecommended").orEmpty().split(',').mapNotNull{it.toIntOrNull()}.take(8)
+        if(angles.isNotEmpty()&&angles.size==recommended.size&&angles.all{it in -180..180}&&recommended.all{it in 0..1}){
+            putString("laneAngles",angles.joinToString(","));putString("laneRecommended",recommended.joinToString(","))
+        }
     }
 }

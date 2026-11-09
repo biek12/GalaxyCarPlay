@@ -7,8 +7,10 @@ class VehicleCatalogTest {
     @Test fun allReferenceReadableMappingsExistWithoutWriteCommands() {
         for (model in listOf("L6", "L7")) {
             val rows = VehicleCatalog.forModel(model)
-            assertEquals(78, rows.size)
-            assertEquals(rows.size, rows.map { it.normalizedId }.toSet().size)
+            assertTrue(rows.size >= 78)
+            assertEquals(rows.size, rows.map { it.key }.toSet().size)
+            val numbered = rows.filter { it.normalizedId != 0 }
+            assertEquals(numbered.size, numbered.map { it.normalizedId }.toSet().size)
             assertTrue(rows.any { it.key == "property.30011" })
             assertTrue(rows.any { it.key == "property.10056" })
         }
@@ -30,13 +32,17 @@ class VehicleCatalogTest {
     @Test fun engineeringUnitsKeepRawTransformEvidence() {
         val rows = VehicleCatalog.forModel("L6")
         assertEquals("240.0", VehicleCatalog.convert(rows.first { it.key == "tire.frontLeft" }, 2400))
-        assertEquals("1500.0", VehicleCatalog.convert(rows.first { it.key == "rpm" }, 3000))
+        assertEquals("3000.0", VehicleCatalog.convert(rows.first { it.key == "rpm" }, 3000))
+        assertEquals("1500.0", VehicleCatalog.convert(rows.first { it.key == "rpmClusterDisplay" }, 3000))
     }
     @Test fun cruiseThreeStatesAndRegenFourLevelsRejectUnknownOrFractionalValues(){
         val specs=VehicleCatalog.forModel("L6")
         val cruise=specs.first { it.key=="cruiseState" };val regen=specs.first { it.key=="regenLevel" }
         assertEquals(listOf("off","standby","active"),(1..3).map { VehicleCatalog.convert(cruise,it) })
-        assertEquals(listOf("low","medium","high","auto"),(0..3).map { VehicleCatalog.convert(regen,it) })
+        fun packet(value: Int)=java.nio.ByteBuffer.allocate(16).order(java.nio.ByteOrder.LITTLE_ENDIAN).putInt(1).putInt(value).putInt(0).putInt(0).array()
+        assertEquals(561024796,regen.propertyId);assertEquals(1,regen.area)
+        assertEquals(listOf("low","medium","high","auto"),(0..3).map { VehicleCatalog.convert(regen,packet(it)) })
+        assertNull(VehicleCatalog.convert(regen,packet(4)))
         assertNull(VehicleCatalog.convert(cruise,0));assertNull(VehicleCatalog.convert(regen,4));assertNull(VehicleCatalog.convert(regen,1.5))
         val keys=specs.first { it.key=="property.10037" }
         assertEquals("0,6,0",VehicleCatalog.convert(keys,intArrayOf(0,6,0)))

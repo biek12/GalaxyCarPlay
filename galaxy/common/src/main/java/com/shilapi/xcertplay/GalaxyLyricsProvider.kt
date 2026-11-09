@@ -22,7 +22,7 @@ import java.util.concurrent.Future
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicReference
 
-/** Track fields sent to LRCLIB. Album, duration, package/device identifiers are deliberately excluded. */
+/** 歌词查询只发送曲名和艺人；不发送专辑、时长、手机或车辆标识。 */
 internal data class GalaxyLyricQuery(val title: String, val artist: String)
 
 /** Parses synchronized LRC and plain text without retaining service JSON or writing lyrics to disk. */
@@ -77,9 +77,9 @@ internal object GalaxyLrcParser {
     }
 }
 
-/** LRCLIB `/api/search` lookup, with exact track/artist matching and cancellable socket ownership. */
+/** 自有歌词聚合服务；严格匹配曲名/艺人，取消请求时同时关闭连接。 */
 internal class GalaxyLyricsHttpClient(
-    private val open: (URL) -> HttpURLConnection = { it.openConnection() as HttpURLConnection },
+    private val open: (URL) -> HttpURLConnection = GalaxyLyricsNetwork::open,
     private val userAgent: String = "GalaxyPlay/0.1.0-dev (CarPlay lyric display)",
 ) {
     @Volatile private var retryAfterElapsedMillis = 0L
@@ -90,7 +90,7 @@ internal class GalaxyLyricsHttpClient(
         if (title.isEmpty() || artist.isEmpty() || title.length > 300 || artist.length > 300) return null
         val encodedTitle = URLEncoder.encode(title, Charsets.UTF_8.name())
         val encodedArtist = URLEncoder.encode(artist, Charsets.UTF_8.name())
-        return URL("https://lrclib.net/api/search?track_name=$encodedTitle&artist_name=$encodedArtist")
+        return URL("https://bridge.example.invalid/galaxy/lyrics/search?track_name=$encodedTitle&artist_name=$encodedArtist")
     }
 
     fun lookup(query: GalaxyLyricQuery, token: Cancellation): List<ClusterLyricLine>? {
@@ -107,6 +107,7 @@ internal class GalaxyLyricsHttpClient(
             connection.setRequestProperty("User-Agent", userAgent)
             token.check()
             val status = connection.responseCode
+            L7DebugLog.record("Lyrics: stage=http status=$status")
             if (status == 429 || status == HttpURLConnection.HTTP_UNAVAILABLE) {
                 retryAfterElapsedMillis = SystemClock.elapsedRealtime() + retryDelayMillis(connection.getHeaderField("Retry-After"))
                 return null
@@ -119,9 +120,12 @@ internal class GalaxyLyricsHttpClient(
             val records = JSONArray(body.toString(Charsets.UTF_8))
             val matches = (0 until minOf(records.length(), MAX_SEARCH_RESULTS)).mapNotNull { records.optJSONObject(it) }
                 .filter { matches(query.title, it.optString("trackName")) && matchesArtist(query.artist, it.optString("artistName")) }
+            L7DebugLog.record("Lyrics: stage=match candidates=${records.length()} matches=${matches.size}")
             val selected = matches.firstOrNull { it.optString("syncedLyrics").isNotBlank() && it.optString("syncedLyrics") != "null" }
                 ?: matches.firstOrNull() ?: return emptyList()
-            return GalaxyLrcParser.fromResponse(selected)
+            return GalaxyLrcParser.fromResponse(selected).also { lines ->
+                L7DebugLog.record("Lyrics: stage=parse lines=${lines.size} timed=${lines.count { it.timeMillis != null }}")
+            }
         } finally {
             token.detach(connection)
             connection.disconnect()
@@ -185,7 +189,7 @@ internal class GalaxyLyricsHttpClient(
 
     private companion object {
         const val CONNECT_TIMEOUT_MILLIS = 4_000
-        const val READ_TIMEOUT_MILLIS = 5_000
+        const val READ_TIMEOUT_MILLIS = 20_000
         const val MAX_RESPONSE_BYTES = 1_048_576
         const val MAX_SEARCH_RESULTS = 20
         const val MAX_RETRY_DELAY_MILLIS = 3_600_000L
@@ -215,7 +219,11 @@ internal class GalaxyLyricsLookup(
         }
         val (ticket, token) = request
         val job = worker.submit {
-            val lines = runCatching { client.lookup(query, token) }.getOrNull()
+            val lines = runCatching { client.lookup(query, token) }.onFailure { error ->
+                // 不记录异常消息/查询URL，只留类型、原因类型及源码栈。
+                L7DebugLog.record("Lyrics: stage=lookup exceptionType=${error.javaClass.simpleName} causeType=${error.cause?.javaClass?.simpleName ?: "none"} " +
+                    error.stackTrace.take(10).joinToString(" | "))
+            }.getOrNull()
             if (token.isCancelled()) return@submit
             main.execute {
                 synchronized(lock) {

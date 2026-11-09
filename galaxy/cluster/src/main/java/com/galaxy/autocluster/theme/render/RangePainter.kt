@@ -4,7 +4,7 @@ import android.graphics.Canvas
 import android.graphics.Paint
 import com.galaxy.autocluster.theme.*
 
-/** 续航km和剩余百分比分开绑定；这是可编辑条状组件，非尚未采集的原厂视觉认证。 */
+/** 续航与百分比分开绑定；L6样式按1920×532原车截图标定，不复用截图中的历史值。 */
 internal class RangePainter(private val tools: DrawTools) {
     private val symbols=PrimitivePainter(tools,MediaPainter(tools))
     fun draw(canvas: Canvas,item: SceneRenderNode,data: SceneData,motion: SceneMotion){
@@ -12,6 +12,17 @@ internal class RangePainter(private val tools: DrawTools) {
         val w=item.node.rect.width;val h=item.node.rect.height;val size=p.number("fontSize")
         val distance=data.number(p.string("source"),motion.now)?.takeIf { it>=0 }
         val level=data.number(p.string("levelSource"),motion.now)?.takeIf { it in 0f..100f }
+        if(p.string("rangeStyle")=="l6"){
+            val unitSize=p.number("unitSize")
+            tools.text.textSize=unitSize
+            val unitWidth=tools.text.measureText("km")
+            tools.label(canvas,"km",w,size,unitSize,p.color("muted"),align=Paint.Align.RIGHT)
+            tools.label(canvas,tools.format(distance),w-unitWidth-6,size,size,p.color("foreground"),w-unitWidth-6,Paint.Align.RIGHT)
+            val top=h-minOf(p.number("trackHeight"),h*.4f)
+            canvas.drawRect(0f,top,w,h,tools.fill(p.color("trackColor")))
+            if(level!=null)canvas.drawRect(0f,top,w*level/100,h,tools.fill(p.color("accent")))
+            return
+        }
         symbols.symbol(canvas,p.string("rangeIcon"),0f,0f,size,p.color("muted"))
         tools.label(canvas,p.string("label"),size+8,size,size,p.color("muted"),w*.4f,Paint.Align.LEFT)
         tools.label(canvas,"${tools.format(distance)} km",w,size,size,p.color("foreground"),w*.6f,Paint.Align.RIGHT)

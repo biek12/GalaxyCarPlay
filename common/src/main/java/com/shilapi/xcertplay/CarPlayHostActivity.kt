@@ -164,6 +164,7 @@ open class CarPlayHostActivity : ComponentActivity() {
             releaseTouches = { controller?.sendTouch(emptyList()) },
             currentController = { controller },
             report = ::appendLog,
+            clusterDisplayChanged = { restartCarPlay("Cluster map dimensions changed") },
         ))
     }
     private var productChrome: HostChromeBinding? = null
@@ -5386,6 +5387,7 @@ open class CarPlayHostActivity : ComponentActivity() {
             callProcessingEnabled = audio?.callProcessingEnabled ?: true,
             localMediaAudioEnabled = audio?.localMediaAudioEnabled ?: true,
             navigationPromptAudioFocus = AirPlayPersistence.loadNavigationPromptAudioFocus(this),
+            navigationDucksMedia = audio?.navigationDucksMedia ?: false,
         )
     }
 
@@ -6586,7 +6588,9 @@ open class CarPlayHostActivity : ComponentActivity() {
 
     private fun attachSurface(surface: Surface) {
         sink?.setSurface(SCREEN_TYPE_MAIN, surface)
-        if (AirPlayPersistence.loadClusterMapEnabled(this)) {
+        // 产品自有111输出不依赖旧版仪表开关。把111也绑到主Surface会让两个解码器
+        // 争用中控窗口，表现为中控地图变成仪表尺寸；等待独立Surface期间保持111未绑定。
+        if (product?.clusterDisplayConfiguration() != null || AirPlayPersistence.loadClusterMapEnabled(this)) {
             if (clusterOutputReady()) clusterSurface?.let { sink?.setSurface(SCREEN_TYPE_ALT, it) }
         } else {
             sink?.setSurface(SCREEN_TYPE_ALT, surface)

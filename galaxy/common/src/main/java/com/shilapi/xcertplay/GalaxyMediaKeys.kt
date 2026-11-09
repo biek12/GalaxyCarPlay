@@ -14,10 +14,61 @@ import com.shilapi.xcertplay.steering.GalaxySteeringMediaWindow
 
 /** 唯一产品媒体绑定；焦点归Sink，媒体注册/封面/回调随真实手机会话代次释放。 */
 internal object GalaxyMediaKeys {
+    /** 仅显式诊断读取Android显示目录；不创建窗口、不选屏，不把Android ID解释为QNX ID。 */
+    @Synchronized fun displayDiagnostics(): List<Map<String, Any?>> {
+        val app = context ?: return emptyList()
+        return runCatching {
+            app.getSystemService(android.hardware.display.DisplayManager::class.java).displays.take(12).map { display ->
+                mapOf("id" to display.displayId, "width" to display.mode.physicalWidth,
+                    "height" to display.mode.physicalHeight, "flags" to display.flags,
+                    "presentation" to (display.flags and android.view.Display.FLAG_PRESENTATION != 0),
+                    "private" to (display.flags and android.view.Display.FLAG_PRIVATE != 0))
+            }
+        }.getOrElse { emptyList() }
+    }
+    private val metadataIdentity = GalaxyNowPlayingIdentity()
+    private val metadataGuard = Any()
+    private var metadataOwner: Any? = null
+    private var metadataRaw = CarPlayNowPlaying()
+    private var metadataResolved = CarPlayNowPlaying()
+    private var metadataEvents = 0L
+    private var phoneLyricSentence = ""
+    /** 接收线程只做纯元数据归一化；保留短暂的正常歌名，SDK/界面仍在主线程读取最新值。 */
+    private fun normalize(owner: Any?,info: CarPlayNowPlaying): CarPlayNowPlaying = synchronized(metadataGuard) {
+        if(metadataOwner!==owner){metadataOwner=owner;metadataIdentity.reset();metadataRaw=CarPlayNowPlaying();metadataResolved=metadataRaw;phoneLyricSentence=""}
+        if(metadataRaw!=info){
+            metadataRaw=info;metadataResolved=metadataIdentity.resolve(info)
+            phoneLyricSentence = if (metadataIdentity.lyricTitleMode) info.title?.trim().orEmpty().take(500) else ""
+            if (phoneLyricSentence == "${metadataResolved.title} - ${metadataResolved.artist}") phoneLyricSentence = ""
+        }
+        metadataResolved
+    }
+    private fun normalizedSnapshot(next: CarPlayController, owner: Any?): CarPlayNowPlaying =
+        synchronized(metadataGuard) {
+            // 快照读取也在同一锁内，避免接收线程已处理新曲后，主线程再归一化旧快照。
+            normalize(owner, next.nowPlayingSnapshot())
+        }
+    @Synchronized fun diagnostics(): String {
+        fun value(info: CarPlayNowPlaying)=org.json.JSONObject().apply{
+            put("title",info.title?.take(240));put("artist",info.artist?.take(240));put("album",info.album?.take(240))
+            put("source",info.sourceApp?.take(120));put("artworkId",info.artworkTransferId)
+            put("duration",info.durationMillis);put("elapsed",info.elapsedMillis);put("playing",info.playing)
+        }
+        val state=ClusterMusicState.diagnosticSnapshot()
+        return org.json.JSONObject().apply{
+            put("raw",value(controller?.nowPlayingSnapshot()?:CarPlayNowPlaying()))
+            put("canonical",value(synchronized(metadataGuard){metadataResolved}));put("oem",value(mediaInfo));put("lyrics",state.lyrics.size);put("resolved",state.lyricsResolved)
+            put("clusterInfo",value(state.info))
+            put("lookup",org.json.JSONObject(GalaxyClusterMusicBinding.diagnostics()))
+            put("oemDim",org.json.JSONObject(GalaxyL6DimMediaPort.diagnostic))
+            put("phoneLyricPresent",synchronized(metadataGuard){phoneLyricSentence.isNotBlank()});put("oemLyricSource","iphone");put("timed",state.lyrics.count{it.timeMillis!=null});put("artwork",state.artwork!=null)
+            synchronized(metadataGuard){put("metadataEvents",metadataEvents);put("lyricTitleMode",metadataIdentity.lyricTitleMode)}
+        }.toString()
+    }
     private val handler = Handler(Looper.getMainLooper())
-    private var controller: CarPlayController? = null
+    @Volatile private var controller: CarPlayController? = null
     private var context: Context? = null
-    private var attachment = 0L
+    @Volatile private var attachment = 0L
     private var owner: Any? = null
     private var onPlaybackStarted: () -> Unit = {}
     private var assistantActive: () -> Boolean = { false }
@@ -30,11 +81,6 @@ internal object GalaxyMediaKeys {
     private var steeringWheel: L7SteeringWheel? = null
     private var commandGate = L7MediaCommandGate()
     private var mediaInfo = CarPlayNowPlaying()
-    private var stopLyrics: (() -> Unit)? = null
-    private var lyricTick: Runnable? = null
-    private var lyricState = ClusterMusicState.Snapshot()
-    private var lyricContentState: List<ClusterLyricLine>? = null
-    private var lyricContent = ""
 
     @Synchronized fun attach(context: Context, next: CarPlayController, onPlaybackStarted: () -> Unit,
                              assistantActive: () -> Boolean = { false }) {
@@ -53,7 +99,15 @@ internal object GalaxyMediaKeys {
         this.onPlaybackStarted = onPlaybackStarted
         this.assistantActive = assistantActive
         val ticket = attachment
-        next.nowPlayingListener = { _ -> deliver(next, ticket) { refresh(next) } }
+        next.nowPlayingListener = { info ->
+            val expectedOwner=next.activeMediaSessionOwner()
+            synchronized(metadataGuard){
+                if(controller===next&&attachment==ticket&&next.activeMediaSessionOwner()===expectedOwner){
+                    normalize(expectedOwner,info);metadataEvents++
+                }
+            }
+            deliver(next,ticket){refresh(next)}
+        }
         next.playbackListener = { _ -> deliver(next, ticket) { refresh(next) } }
         next.navigationFrameListener = { frame ->
             val expectedOwner = next.activeMediaSessionOwner()
@@ -100,18 +154,21 @@ internal object GalaxyMediaKeys {
             if (currentOwner != null) openSession(app, next, currentOwner)
         }
         if (currentOwner == null) {
-            mediaInfo = CarPlayNowPlaying()
+            mediaInfo = normalize(null,CarPlayNowPlaying())
             GalaxyClusterMusicBinding.update(next, mediaInfo)
             return
         }
-        // 回调可来自任意链路线程，交付时读最新快照，不把排队旧增量倒灌。
-        val update = next.nowPlayingSnapshot()
-        mediaInfo = update
+        // 身份已按接收顺序观察；交付仍取最新快照，不回放旧进度或旧播放状态。
+        val (update, raw) = synchronized(metadataGuard) { normalizedSnapshot(next, currentOwner) to metadataRaw }
+        // 原版GalaxyPlay原车通道直接透传iPhone NowPlaying（含title当前歌词）；
+        // 固定歌曲身份只供自定义仪表查词，不得反向替换原车媒体字段。
+        mediaInfo = raw
         GalaxyClusterMusicBinding.update(next, update)
-        bridge?.onNowPlayingChanged(update)
+        bridge?.onNowPlayingChanged(raw)
         if (update.playbackKnown) L7SteeringDiagnostics.store.state("phonePlayback", "playing=${update.playing}")
-        if (update == CarPlayNowPlaying()) covers?.reset()
-        covers?.select(update.artworkTransferId) ?: mediaCenter?.update(update, null)
+        if (raw == CarPlayNowPlaying()) covers?.reset()
+        covers?.select(raw.artworkTransferId) ?: mediaCenter?.update(raw, null)
+        publishPhoneLyrics(next, update, raw)
     }
 
     private fun openSession(app: Context, next: CarPlayController, expectedOwner: Any) {
@@ -134,10 +191,10 @@ internal object GalaxyMediaKeys {
                 synchronized(this) { controller === next && owner === expectedOwner && next.requestSiri() }
             }.also { it.start() }
         }
-        val retained = next.nowPlayingSnapshot()
-        mediaInfo = retained
+        val (retained, raw) = synchronized(metadataGuard) { normalizedSnapshot(next, expectedOwner) to metadataRaw }
+        mediaInfo = raw
         GalaxyClusterMusicBinding.update(next, retained)
-        bridge?.onNowPlayingChanged(retained)
+        bridge?.onNowPlayingChanged(mediaInfo)
         next.matchingArtworkSnapshot(retained.artworkTransferId)?.let {
             bridge?.onArtworkChanged(it.id, it.bytes)
             covers?.submit(it.id, it.bytes)
@@ -173,23 +230,17 @@ internal object GalaxyMediaKeys {
                 mediaCenter?.update(mediaInfo, coverOwner.selectedUri(mediaInfo.artworkTransferId))
         } }
         covers = coverOwner
+        val eas = L7ReflectiveMediaCenter(app, next.localMediaAudioEnabled)
+        val mediaPort = if (GalaxyVehicleAudioProfiles.model(app) == GalaxyVehicleAudioProfiles.Model.L6)
+            GalaxyL6DimMediaPort(app, eas) { handler.post { synchronized(this) {
+                if (current()) mediaCenter?.refreshOutput()
+            } } } else eas
+        val (canonical, raw) = synchronized(metadataGuard) { normalizedSnapshot(next, expectedOwner) to metadataRaw }
         mediaCenter = L7MediaCenterSession(
-            L7ReflectiveMediaCenter(app, next.localMediaAudioEnabled), app.packageName,
+            mediaPort, app.packageName,
             ::current, dispatch, traceSend = traced, localPlayback = next.localMediaAudioEnabled,
-        ).also { it.start(); it.update(next.nowPlayingSnapshot(), null) }
-        handler.post { synchronized(this) {
-            if (!current()) return@synchronized
-            stopLyrics = ClusterMusicState.observe { state -> synchronized(this) {
-                if (current()) { lyricState = state; publishOemLyrics() }
-            } }
-            lyricTick = object : Runnable {
-                override fun run() = synchronized(this@GalaxyMediaKeys) {
-                    if (!current() || lyricTick !== this) return@synchronized
-                    publishOemLyrics()
-                    handler.postDelayed(this, 250L)
-                }
-            }.also { handler.post(it) }
-        } }
+        ).also { it.start(); it.update(raw, null) }
+        publishPhoneLyrics(next, canonical, raw)
     }
 
     private fun startNavigation(app: Context, next: CarPlayController, expectedOwner: Any) {
@@ -209,24 +260,15 @@ internal object GalaxyMediaKeys {
         }.also { handler.post(it) }
     }
 
-    private fun publishOemLyrics() {
-        val state = lyricState
-        if (ClusterMusicState.trackChanged(mediaInfo, state.info)) return
-        // 完整LRC仅在歌词集合改变时编码；时钟推进只计算当前句。
-        if (lyricContentState !== state.lyrics) {
-            lyricContentState = state.lyrics
-            lyricContent = GalaxyOemLyrics.from(state, SystemClock.elapsedRealtime()).content
+    private fun publishPhoneLyrics(next: CarPlayController, info: CarPlayNowPlaying, oem: CarPlayNowPlaying) {
+        val sentence = synchronized(metadataGuard) {
+            if (!ClusterMusicState.trackChanged(info, metadataResolved)) phoneLyricSentence else ""
         }
-        mediaCenter?.updateLyrics(state.info, GalaxyOemLyrics(lyricContent,
-            state.lyricAt(SystemClock.elapsedRealtime())?.text.orEmpty().take(500)))
+        mediaCenter?.updateLyrics(oem, GalaxyOemLyrics(sentence = sentence))
+        GalaxyClusterMusicBinding.phoneLyrics(next, info, sentence)
     }
 
     private fun releaseSession() {
-        stopLyrics?.let { remove -> handler.post { remove() } }; stopLyrics = null
-        lyricTick?.let(handler::removeCallbacks); lyricTick = null
-        lyricState = ClusterMusicState.Snapshot()
-        lyricContentState = null
-        lyricContent = ""
         navigationTick?.let(handler::removeCallbacks)
         navigationTick = null
         navigation?.close(); navigation = null
@@ -249,6 +291,8 @@ internal object GalaxyMediaKeys {
         controller?.artworkListener = null
         controller?.navigationFrameListener = null
         releaseSession()
+        normalize(null,CarPlayNowPlaying())
+        metadataEvents=0
         GalaxyClusterMusicBinding.detach(controller)
         controller = null
         context = null

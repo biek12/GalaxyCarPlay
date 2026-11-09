@@ -1,0 +1,180 @@
+{
+  "version": "7.4.47",
+  "icons": [
+    {
+      "name": "live",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/view-grid-outline.svg",
+      "sourceSha256": "3a5e77a9aee74d1f454eade81f034b80b60b01ca4e1348007d6964c02968cdbf"
+    },
+    {
+      "name": "library",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/movie-open-outline.svg",
+      "sourceSha256": "aaf601618d5eb8c91ab8748cf02c513d11d63c3a0d749357366938f97ef3dcf5"
+    },
+    {
+      "name": "settings",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/tune.svg",
+      "sourceSha256": "4714f3881f57a861ede31ec83f2015e7423248a5cbcbc0953a6849bfd62a5681"
+    },
+    {
+      "name": "back",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/chevron-left.svg",
+      "sourceSha256": "63017df5d04537d76bd4f5b3147b25366abfc48ed3f6f498caae699f9179b61b"
+    },
+    {
+      "name": "chevron",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/chevron-right.svg",
+      "sourceSha256": "391f6b0267c48b1dbb4197cde4ab7637084a34eadb1746571809f743ef0903aa"
+    },
+    {
+      "name": "expand",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/chevron-down.svg",
+      "sourceSha256": "07debe65109ed17516b489d94e4568036ce12dee25de25308f88195c78fd0c8e"
+    },
+    {
+      "name": "collapse",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/chevron-up.svg",
+      "sourceSha256": "50961491909308e7cc46f01b5dca4bf82be902f9afe14768166c05212ab19f73"
+    },
+    {
+      "name": "storage",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/harddisk.svg",
+      "sourceSha256": "9b4f6b454ff7b666985aee7c0b3abb5cb8af7d71b959e566439c3976148c5b53"
+    },
+    {
+      "name": "encode",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/chip.svg",
+      "sourceSha256": "dd5f97e4ae48d1256419d2498ab45baa8f65f08bbe1080e36b7256fddaf8c4f9"
+    },
+    {
+      "name": "record",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/video-outline.svg",
+      "sourceSha256": "07559c68e97323f82eb572859173cf17e512a2e736cfddd8dd08c1fe611982ca"
+    },
+    {
+      "name": "vehicle",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/car-outline.svg",
+      "sourceSha256": "089372fc59a505bda1058b8ad5fe2a08cda2d9e504371935c805eb6447a04142"
+    },
+    {
+      "name": "playback",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/play-box-outline.svg",
+      "sourceSha256": "42240c0b7379b5719db2daec5f503a8d1a5cb829ba0897694bce3bcdf3231589"
+    },
+    {
+      "name": "diagnose",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/pulse.svg",
+      "sourceSha256": "4f50b8b78a131cb4b9fe4a95394b35d8165650ef214fd7de25625237c8365836"
+    },
+    {
+      "name": "about",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/information-outline.svg",
+      "sourceSha256": "95566a019ea1ec39e3095462fca13aae958ca0da682eeeb6a86d230a5fde040a"
+    },
+    {
+      "name": "refresh",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/refresh.svg",
+      "sourceSha256": "6d9544dbd768dcabe41bc1e58eee213e88461024d1f72496cf0a90dcb3e250b6"
+    },
+    {
+      "name": "play",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/play.svg",
+      "sourceSha256": "0688f0a9315f57f31445e3bc4d55604e0bd5243a85de3944a668079a3e58f8ee"
+    },
+    {
+      "name": "pause",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/pause.svg",
+      "sourceSha256": "50071f4e893478f289ea5714ccb8dda98220e9da3c88ddc1ffacb423185dea5d"
+    },
+    {
+      "name": "previous",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/skip-previous.svg",
+      "sourceSha256": "03246c8b3c6c5a74d4374a4166be6daa4e03aa0c13718701cf42698d6e50d479"
+    },
+    {
+      "name": "next",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/skip-next.svg",
+      "sourceSha256": "71c5ea03997287d39b8142249776d313693de834e57ec6798dcfd7e4774a0b61"
+    },
+    {
+      "name": "filter",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/filter-variant.svg",
+      "sourceSha256": "d537682b606bc36b978602f0a3fa57f5423e917a8ba50270776116a855ad44e3"
+    },
+    {
+      "name": "more",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/dots-horizontal.svg",
+      "sourceSha256": "a5f8e32fe0bac6af82ca4934b320341839db27c7bdb90ec54eed477657f87a7b"
+    },
+    {
+      "name": "lock",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/lock-outline.svg",
+      "sourceSha256": "83ac475fc851a7b7ac4c6c827b389051e26d48dfec0455ae7137fdf46386788a"
+    },
+    {
+      "name": "left_turn",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/arrow-left-bold.svg",
+      "sourceSha256": "9e91f3b0db425ee7df9333c2fdd806819cfd9275e199cf19354fbea66f02ce63"
+    },
+    {
+      "name": "right_turn",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/arrow-right-bold.svg",
+      "sourceSha256": "6d9ce0a1c197933da1eca234004c84721cff89392b5314518b46b1a81cd5eca7"
+    },
+    {
+      "name": "steering",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/steering.svg",
+      "sourceSha256": "8e6a3a07a933cbc8efb36d9c11f957fb70426fd3346dc293cbcd56a10373ed88"
+    },
+    {
+      "name": "cruise",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/car-cruise-control.svg",
+      "sourceSha256": "f8e4ebd98df6a37ef212022babee9b580165465fbdb07488106acf0dfe81d5e6"
+    },
+    {
+      "name": "low_beam",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/car-light-dimmed.svg",
+      "sourceSha256": "964d75d11cc6941cfea1ccef6d9b67335095161db2029538a9e8aedf1aec9910"
+    },
+    {
+      "name": "high_beam",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/car-light-high.svg",
+      "sourceSha256": "4993a6ac16fb9a2e83ad4e64d640cd8f786113b8745fb6596d77e57586bfd901"
+    },
+    {
+      "name": "position",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/car-parking-lights.svg",
+      "sourceSha256": "11e32bd067365566b1af36874405267f309c7d333a81452f3289fe346de4253b"
+    },
+    {
+      "name": "fog",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/car-light-fog.svg",
+      "sourceSha256": "666ff93b38e510d390c46bf46724169fbb86a05e55c4e88805c337f1bb5fdb25"
+    },
+    {
+      "name": "hold",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/car-brake-hold.svg",
+      "sourceSha256": "a84d37762301e14c7d4b1676426f00d7e2cf4a21853104ce3485c5230e0d40d6"
+    },
+    {
+      "name": "parking",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/car-brake-parking.svg",
+      "sourceSha256": "9b45f36550a7a2329cf398ebda7f5d95ad7ed845f884d7bcaf2d75db4e707c8c"
+    },
+    {
+      "name": "belt",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/seatbelt.svg",
+      "sourceSha256": "bb2cca2cf6b0728dd3d458781e97e4d5536952443758d3ffe724cce59ef85fbf"
+    },
+    {
+      "name": "brake",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/car-brake-alert.svg",
+      "sourceSha256": "9157c1ce83f18ef05b5ab15754163ad0c42b12ec2a02b2f91388f57d1e64d533"
+    },
+    {
+      "name": "accelerator",
+      "source": "https://cdn.jsdelivr.net/npm/@mdi/svg@7.4.47/svg/car-clutch.svg",
+      "sourceSha256": "c84132ce8093a74aaca708225082f058159ca621f0ce569c8bfa5b996e19c9a4"
+    }
+  ]
+}

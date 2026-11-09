@@ -33,4 +33,13 @@ interface IAutoService {
     Bundle getVehicleValues(in String[] keys);
     /** 显式全目录诊断扫描（默认关）；只允许本包调用，用于保留“读尽读”能力。 */
     void setVehicleScan(boolean enabled);
+    /** 追加式接口：只为调用者自身申请明确允许的权限，完成后回调实际授权结果。 */
+    void requestClientPermissions(IBinder owner, in String[] permissions, IAutoResult result);
+    /** 追加式哨兵专用入口，仅AutoRecord可用；不接受任意车辆属性或Shell。 */
+    void configureSentinel(IBinder owner, boolean enabled, IAutoResult result);
+    /** 仅在本App摄像头/编码器真实关闭后确认对应电源轮次已完成，不改变车辆属性。 */
+    void reportSentinelIdle(IBinder owner, long powerSequence);
+    /** 车辆账号公共入口；action白名单、仅本App与AutoRecord，绝不接受Shell/URL。 */
+    void vehicleWebRequest(IBinder owner, String action, in Bundle payload, IAutoResult result);
+    void vehicleWebUpload(IBinder owner, String clipId, String direction, in ParcelFileDescriptor file, long length, IAutoResult result);
 }

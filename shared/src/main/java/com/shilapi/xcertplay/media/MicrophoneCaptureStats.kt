@@ -31,6 +31,17 @@ internal class MicrophoneCaptureStats(
     private var lastSentNs: Long? = null
     private var sendGapMaxNs = 0L
     private var peakSample = 0
+    private var rawPeakSample = 0
+
+    /** 处理前只累计电平，区分HAL零采样与回声处理后静音；不保留录音内容。 */
+    fun rawLevel(pcm: ByteArray, length: Int) {
+        var index = 0
+        while (index + 1 < length) {
+            val value = (pcm[index].toInt() and 255) or (pcm[index + 1].toInt() shl 8)
+            rawPeakSample = maxOf(rawPeakSample, kotlin.math.abs(value))
+            index += 2
+        }
+    }
     private var routedDeviceType: Int? = null
 
     fun started(routeType: Int?) {
@@ -106,7 +117,7 @@ internal class MicrophoneCaptureStats(
             "captureBytes=$capturedBytes reads=$reads zeroReads=$zeroReads readErrors=$readErrors " +
             "readMaxMs=${readMaxNs / 1_000_000} encodedFrames=$encodedFrames " +
             "emptyEncodedFrames=$emptyEncodedFrames udpSent=$udpSent sendErrors=$sendErrors " +
-            "sendGapMaxMs=${sendGapMaxNs / 1_000_000} peakDbfs=${peakDbfs(peakSample)}$silenceDetail ended=$ended")
+            "sendGapMaxMs=${sendGapMaxNs / 1_000_000} rawPeakDbfs=${peakDbfs(rawPeakSample)} peakDbfs=${peakDbfs(peakSample)}$silenceDetail ended=$ended")
         windowStart = now
         capturedBytes = 0
         reads = 0
@@ -119,6 +130,7 @@ internal class MicrophoneCaptureStats(
         sendErrors = 0
         sendGapMaxNs = 0
         peakSample = 0
+        rawPeakSample = 0
     }
 
     private fun emit(message: String) { runCatching { report(message) } }
