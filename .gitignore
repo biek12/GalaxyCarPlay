@@ -36,3 +36,6 @@ __pycache__/
 
 # Go 构建产物
 server/galaxyd/galaxyd
+
+# Local evidence must never be committed
+/tools/evidence/
