@@ -39,3 +39,6 @@ server/galaxyd/galaxyd
 
 # Local evidence must never be committed
 /tools/evidence/
+
+# Local collaborator staging files
+/.workbuddy/
