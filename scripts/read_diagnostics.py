@@ -4,7 +4,7 @@ import argparse,json,urllib.request,urllib.parse,ssl,os,sys
 from remote_car import NoRedirect
 from pathlib import Path
 p=argparse.ArgumentParser(description=__doc__)
-p.add_argument('--origin',default='https://bridge.example.invalid/galaxy')
+p.add_argument('--origin',default=os.environ.get('GALAXY_ORIGIN', 'https://bridge.example.invalid/galaxy'))
 p.add_argument('--enrollment-file',type=Path,required=True)
 p.add_argument('--device-id-file',type=Path,required=True)
 p.add_argument('--app',default='')

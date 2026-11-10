@@ -16,10 +16,10 @@ import java.net.URL
 @Config(sdk = [29], manifest = Config.NONE)
 class GalaxyLyricsProviderTest {
     @Test fun querySendsOnlyEncodedTitleAndArtist() {
-        val url = GalaxyLyricsHttpClient().requestUrl(GalaxyLyricQuery("A song & title", "Artist / band"))!!
+        val url = GalaxyLyricsHttpClient(origin = "https://bridge.example.invalid/galaxy").requestUrl(GalaxyLyricQuery("A song & title", "Artist / band"))!!
         assertEquals("https", url.protocol)
         assertEquals("bridge.example.invalid", url.host)
-        assertEquals("/api/search", url.path)
+        assertEquals("/galaxy/lyrics/search", url.path)
         assertTrue(url.query.contains("track_name=A+song+%26+title"))
         assertTrue(url.query.contains("artist_name=Artist+%2F+band"))
         assertFalse(url.query.contains("album"))

@@ -27,10 +27,21 @@ val prepareQnxReceiver by tasks.registering(Exec::class) {
     outputs.dir(qnxAssets)
     commandLine("python3", rootProject.file("scripts/prepare_auto_qnx_asset.py"), "--output", qnxAssets.get().dir("qnx").asFile)
 }
+// Deployment endpoint stays outside version control; public builds use a reserved example host.
+val privateServer = java.util.Properties().apply {
+    rootProject.file(".private/server.properties").takeIf { it.isFile }?.inputStream()?.use { load(it) }
+}
+val bridgeOrigin = providers.environmentVariable("GALAXY_ORIGIN")
+    .orElse(privateServer.getProperty("bridge.origin", "https://bridge.example.invalid/galaxy")).get()
+require(bridgeOrigin.startsWith("https://") && !bridgeOrigin.contains('"') && !bridgeOrigin.contains('\\') && !bridgeOrigin.contains('\n') && !bridgeOrigin.contains('\r'))
+
 android {
+    buildFeatures { buildConfig = true }
     namespace = "com.ecarx.autoservice"
     compileSdk = 37
-    defaultConfig { applicationId = "com.ecarx.autoservice"; minSdk = 29; targetSdk = 37; versionCode = 1; versionName = "0.1.0"; testInstrumentationRunner = "com.ecarx.autoservice.projection.ProjectionSmokeInstrumentation" }
+    defaultConfig {
+        buildConfigField("String", "GALAXY_ORIGIN", "\"$bridgeOrigin\"")
+        applicationId = "com.ecarx.autoservice"; minSdk = 29; targetSdk = 37; versionCode = 1; versionName = "0.1.0"; testInstrumentationRunner = "com.ecarx.autoservice.projection.ProjectionSmokeInstrumentation" }
     packaging.jniLibs.useLegacyPackaging = true
     sourceSets.getByName("main").jniLibs.directories.add(habLibraries.get().asFile.path)
     sourceSets.getByName("main").assets.directories.add(qnxAssets.get().asFile.path)

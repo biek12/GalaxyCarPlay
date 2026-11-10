@@ -80,6 +80,7 @@ internal object GalaxyLrcParser {
 /** 自有歌词聚合服务；严格匹配曲名/艺人，取消请求时同时关闭连接。 */
 internal class GalaxyLyricsHttpClient(
     private val open: (URL) -> HttpURLConnection = GalaxyLyricsNetwork::open,
+    private val origin: String = com.shilapi.xcertplay.host.BuildConfig.GALAXY_ORIGIN,
     private val userAgent: String = "GalaxyPlay/0.1.0-dev (CarPlay lyric display)",
 ) {
     @Volatile private var retryAfterElapsedMillis = 0L
@@ -90,7 +91,7 @@ internal class GalaxyLyricsHttpClient(
         if (title.isEmpty() || artist.isEmpty() || title.length > 300 || artist.length > 300) return null
         val encodedTitle = URLEncoder.encode(title, Charsets.UTF_8.name())
         val encodedArtist = URLEncoder.encode(artist, Charsets.UTF_8.name())
-        return URL("https://bridge.example.invalid/galaxy/lyrics/search?track_name=$encodedTitle&artist_name=$encodedArtist")
+        return URL("${origin.trimEnd('/')}/lyrics/search?track_name=$encodedTitle&artist_name=$encodedArtist")
     }
 
     fun lookup(query: GalaxyLyricQuery, token: Cancellation): List<ClusterLyricLine>? {

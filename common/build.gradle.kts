@@ -23,13 +23,23 @@ val prepareGalaxyLicenses by tasks.registering(Sync::class) {
     from(rootProject.file("shared/src/main/assets/byd-hud-icons/LICENSE-BYDMate.txt")) { into("licenses") }
 }
 
+// Deployment endpoint stays outside version control; public builds use a reserved example host.
+val privateServer = java.util.Properties().apply {
+    rootProject.file(".private/server.properties").takeIf { it.isFile }?.inputStream()?.use { load(it) }
+}
+val bridgeOrigin = providers.environmentVariable("GALAXY_ORIGIN")
+    .orElse(privateServer.getProperty("bridge.origin", "https://bridge.example.invalid/galaxy")).get()
+require(bridgeOrigin.startsWith("https://") && !bridgeOrigin.contains('"') && !bridgeOrigin.contains('\\') && !bridgeOrigin.contains('\n') && !bridgeOrigin.contains('\r'))
+
 android {
+    buildFeatures { buildConfig = true }
     namespace = "com.shilapi.xcertplay.host"
     compileSdk {
         version = release(37)
     }
 
     defaultConfig {
+        buildConfigField("String", "GALAXY_ORIGIN", "\"$bridgeOrigin\"")
         // 核心宿主保留上游兼容范围；本产品APK最低系统由galaxy/mobile单独限定为29。
         minSdk = 24
     }

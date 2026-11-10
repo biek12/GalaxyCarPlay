@@ -17,7 +17,7 @@ from zoneinfo import ZoneInfo
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument('--origin', default='https://bridge.example.invalid/galaxy')
+    parser.add_argument('--origin', default=os.environ.get('GALAXY_ORIGIN', 'https://bridge.example.invalid/galaxy'))
     parser.add_argument('--title', default='不能说的秘密')
     parser.add_argument('--artist', default='周杰伦')
     parser.add_argument('--restart', action='store_true', help='显式重启自有galaxyd，不改原星枢服务')
@@ -52,7 +52,7 @@ def main():
         if second['cache'] != 'HIT' or second['content_sha256'] != first['content_sha256']:
             raise ValueError('memory cache did not preserve result')
         if args.restart:
-            target = os.environ.get('GALAXY_SERVER_SSH', 'root@192.0.2.100')
+            target = os.environ['GALAXY_SERVER_SSH']
             key = os.environ.get('GALAXY_SERVER_SSH_KEY', '/Users/anjon/.ssh/id_ed25520_1panel')
             subprocess.run(['ssh', '-o', 'BatchMode=yes', '-o', 'ConnectTimeout=8', '-i', key,
                             target, 'systemctl restart galaxyd.service'], check=True, timeout=20)

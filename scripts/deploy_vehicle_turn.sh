@@ -2,9 +2,9 @@
 # 用户自有服务器的独立TURN单元；只管理此单元及其3478、49160-49200端口。
 set -euo pipefail
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
-TARGET=${GALAXY_SERVER_SSH:-root@192.0.2.100}
+TARGET=${GALAXY_SERVER_SSH:?Set GALAXY_SERVER_SSH from private configuration}
 KEY=${GALAXY_SERVER_SSH_KEY:-/Users/anjon/.ssh/id_ed25520_1panel}
-ssh -o BatchMode=yes -o ConnectTimeout=8 -i "$KEY" "$TARGET" 'bash -s' <<'REMOTE'
+ssh -o BatchMode=yes -o ConnectTimeout=8 -i "$KEY" "$TARGET" 'bash -s' -- "${GALAXY_TURN_PUBLIC_IP:?}" "${GALAXY_TURN_RELAY_IP:?}" "${GALAXY_TURN_REALM:?}" <<'REMOTE'
 set -euo pipefail
 dnf -q -y install coturn
 id galaxybridge >/dev/null
@@ -17,9 +17,9 @@ umask 077
 cat > /etc/galaxyplay-turn/turnserver.conf <<CONFIG
 listening-port=3478
 listening-ip=0.0.0.0
-relay-ip=192.0.2.102
-external-ip=192.0.2.100/192.0.2.102
-realm=bridge.example.invalid
+relay-ip=$2
+external-ip=$1/$2
+realm=$3
 fingerprint
 use-auth-secret
 static-auth-secret=$(cat /var/lib/galaxyplay-bridge/turn-secret)

@@ -20,7 +20,7 @@ def main():
     parser.add_argument('--enrollment-file', type=Path, required=True)
     parser.add_argument('--hours', type=int, choices=[12, 24], default=12)
     parser.add_argument('--session', type=Path, default=Path('.local/remote-session.json'))
-    parser.add_argument('--origin', default='https://bridge.example.invalid/galaxy')
+    parser.add_argument('--origin', default=os.environ.get('GALAXY_ORIGIN', 'https://bridge.example.invalid/galaxy'))
     args = parser.parse_args()
     enrollment = args.enrollment_file.read_text().strip()
     if not re.fullmatch('[0-9a-f]{64}', enrollment):

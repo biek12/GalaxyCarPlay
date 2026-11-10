@@ -6,7 +6,7 @@ import java.security.SecureRandom
 /** 私有身份与授权窗口跨APK更新保存；不包含车辆/手机标识，不在日志中输出凭据。 */
 internal class RemoteSettings(context: Context) {
     private val prefs = context.getSharedPreferences("remote-access", 0)
-    val origin: String get() = prefs.getString("origin", "https://bridge.example.invalid/galaxy")!!
+    val origin: String get() = prefs.getString("origin", com.ecarx.autoservice.BuildConfig.GALAXY_ORIGIN)!!
     val until: Long get() = prefs.getLong("until", 0)
     val enabled: Boolean get() = until > System.currentTimeMillis() / 1000
     val id: String get() = identity("id")

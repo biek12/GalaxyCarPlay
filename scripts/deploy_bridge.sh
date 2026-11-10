@@ -2,7 +2,7 @@
 # 用户自有服务器；新增独立服务及/galaxy/反代，不替换原星枢认证/服务。
 set -euo pipefail
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
-TARGET=${GALAXY_SERVER_SSH:-root@192.0.2.100}
+TARGET=${GALAXY_SERVER_SSH:?Set GALAXY_SERVER_SSH from private configuration}
 KEY=${GALAXY_SERVER_SSH_KEY:-/Users/anjon/.ssh/id_ed25520_1panel}
 SSH=(ssh -o BatchMode=yes -o ConnectTimeout=8 -i "$KEY")
 ARCH=$("${SSH[@]}" "$TARGET" uname -m)
@@ -19,6 +19,13 @@ chmod 700 /var/lib/galaxyplay-bridge'
 scp -O -q -o BatchMode=yes -i "$KEY" "$ROOT/.work/galaxyd" "$TARGET:/opt/galaxyplay-bridge/galaxyd.next"
 scp -O -q -o BatchMode=yes -i "$KEY" galaxyd.service "$TARGET:/opt/galaxyplay-bridge/galaxyd.service"
 "${SSH[@]}" "$TARGET" 'set -eu
+# Preserve existing deployment-only environment before replacing the public unit.
+install -d -m 700 /etc/galaxyplay-bridge
+if [ ! -f /etc/galaxyplay-bridge/server.env ]; then
+    umask 077
+    sed -n -e "s/^Environment=GALAXY_WEB_ORIGIN=/GALAXY_WEB_ORIGIN=/p" -e "s/^Environment=GALAXY_TURN_URLS=/GALAXY_TURN_URLS=/p" /etc/systemd/system/galaxyd.service > /etc/galaxyplay-bridge/server.env
+    test -s /etc/galaxyplay-bridge/server.env
+fi
 if [ -f /opt/galaxyplay-bridge/galaxyd ]; then cp -p /opt/galaxyplay-bridge/galaxyd /opt/galaxyplay-bridge/galaxyd.previous; fi
 mv /opt/galaxyplay-bridge/galaxyd.next /opt/galaxyplay-bridge/galaxyd
 chmod 755 /opt/galaxyplay-bridge/galaxyd
@@ -27,11 +34,11 @@ systemctl daemon-reload
 systemctl enable galaxyd.service
 systemctl restart galaxyd.service
 systemctl is-active --quiet galaxyd.service'
-"${SSH[@]}" "$TARGET" python3 - <<'PY'
+"${SSH[@]}" "$TARGET" python3 - "${GALAXY_PROXY_CONFIG:?Set remote proxy config path}" <<'PY'
 from pathlib import Path
 from datetime import datetime,timezone
-import shutil,subprocess
-p=Path('/opt/1panel/www/conf.d/private-site.conf')
+import shutil,subprocess,sys
+p=Path(sys.argv[1])
 text=p.read_text()
 backup=None
 if 'location ^~ /galaxy/' not in text:
@@ -49,7 +56,7 @@ if result.returncode:
     raise SystemExit(result.returncode)
 subprocess.run(['docker','exec',proxies[0],'nginx','-s','reload'],check=True)
 PY
-curl --retry 4 --retry-all-errors --retry-delay 1 --fail --silent --show-error https://bridge.example.invalid/galaxy/bridge/health
+curl --retry 4 --retry-all-errors --retry-delay 1 --fail --silent --show-error "${GALAXY_ORIGIN:?Set GALAXY_ORIGIN}/bridge/health"
 echo
 mkdir -p "$ROOT/.local"
 (umask 077; "${SSH[@]}" "$TARGET" cat /var/lib/galaxyplay-bridge/enrollment > "$ROOT/.local/remote-enrollment")

@@ -3,15 +3,14 @@ Description=GalaxyPlay personal bridge and lyrics
 After=network-online.target
 
 [Service]
+EnvironmentFile=/etc/galaxyplay-bridge/server.env
 User=galaxybridge
 Group=galaxybridge
 ExecStart=/opt/galaxyplay-bridge/galaxyd
 Environment=GALAXY_STATE=/var/lib/galaxyplay-bridge/state.json
 Environment=GALAXY_ENROLLMENT_FILE=/var/lib/galaxyplay-bridge/enrollment
 Environment=GALAXY_LISTEN=127.0.0.1:8781
-Environment=GALAXY_WEB_ORIGIN=https://bridge.example.invalid
 Environment=GALAXY_TURN_SECRET_FILE=/var/lib/galaxyplay-bridge/turn-secret
-Environment=GALAXY_TURN_URLS=turn:192.0.2.100:3478?transport=udp,turn:192.0.2.100:3478?transport=tcp
 Environment=GALAXY_WEB_DIST=/opt/galaxyplay-bridge/web
 Restart=on-failure
 RestartSec=3

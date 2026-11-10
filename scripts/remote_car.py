@@ -109,7 +109,7 @@ def main():
     parser.add_argument('--session', type=Path)
     sub = parser.add_subparsers(dest='action', required=True)
     pair = sub.add_parser('pair')
-    pair.add_argument('--origin', default='https://bridge.example.invalid/galaxy')
+    pair.add_argument('--origin', default=os.environ.get('GALAXY_ORIGIN', 'https://bridge.example.invalid/galaxy'))
     pair.add_argument('--code-file', type=Path)
     shell = sub.add_parser('shell')
     shell.add_argument('command')
