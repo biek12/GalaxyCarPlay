@@ -1,3 +1,4 @@
+import java.util.Properties
 plugins {
     id("com.android.library")
     alias(libs.plugins.kotlin.compose)
@@ -24,7 +25,7 @@ val prepareGalaxyLicenses by tasks.registering(Sync::class) {
 }
 
 // Deployment endpoint stays outside version control; public builds use a reserved example host.
-val privateServer = java.util.Properties().apply {
+val privateServer = Properties().apply {
     rootProject.file(".private/server.properties").takeIf { it.isFile }?.inputStream()?.use { load(it) }
 }
 val bridgeOrigin = providers.environmentVariable("GALAXY_ORIGIN")

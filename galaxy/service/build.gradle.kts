@@ -1,3 +1,4 @@
+import java.util.Properties
 import com.android.build.api.instrumentation.AsmClassVisitorFactory
 import com.android.build.api.instrumentation.ClassContext
 import com.android.build.api.instrumentation.ClassData
@@ -28,7 +29,7 @@ val prepareQnxReceiver by tasks.registering(Exec::class) {
     commandLine("python3", rootProject.file("scripts/prepare_auto_qnx_asset.py"), "--output", qnxAssets.get().dir("qnx").asFile)
 }
 // Deployment endpoint stays outside version control; public builds use a reserved example host.
-val privateServer = java.util.Properties().apply {
+val privateServer = Properties().apply {
     rootProject.file(".private/server.properties").takeIf { it.isFile }?.inputStream()?.use { load(it) }
 }
 val bridgeOrigin = providers.environmentVariable("GALAXY_ORIGIN")
