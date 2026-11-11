@@ -4,6 +4,9 @@
 
 ## galaxy 代码整理与协作约束（2026-11-11 最新确认）
 
+- 用户再次纠正：本次是 Android 结构重构，普通界面必须 XML + View Binding，文案/尺寸/样式/主题/图形按 Android 资源管理；不能以补注释代替职责拆分。完整执行 [Android工程规范](docs/refactor/Android工程规范.md) 与 [重构总图](docs/refactor/重构总图-20261111.md)。
+- 用户随后补充：common已有UI组件应先复用，ui只补充封装；按 [Common组件复用映射](docs/refactor/Common组件复用映射-20261111.md)沿现有实现适配XML/资源、消除重复，不新建另一套组件或引入common↔ui循环依赖。
+- 已有代码先提交保存；以后每批代码在指定隔离 worktree 编译和标准用例通过、Git 提交后才交审。此条覆盖旧任务书“不跑 Gradle/禁止提交”的限制；Codex 定文件拆分、调用关系与用例，WorkBuddy DeepSeek flash 实施，Codex 待用户叫开始后审计集成，不后台续派。
 - 用户补充：所有代码必须注重格式化，允许使用自动格式化工具；统一缩进、空格、换行、括号及 import，工具配置与执行结果可复现。具体要求见 `galaxy/AGENTS.md`，按批覆盖，不把空白检查代替语言格式化。
 - `galaxy/` 全部自有模块遵守 [galaxy/AGENTS.md](galaxy/AGENTS.md)，新增模块同样适用。类、方法及职责块补全有效中文注释，先 import 再调用类型；单一职责、适度复用，禁止重复建设和过度抽象。
 - 编码前先核对已有跑通资料与现有实现。未探索的技术接入先提交具体探索申请，经用户同意后委派其他 Agent；Lead 不自行重跑探索，不让编码 Agent 猜协议或接口。
