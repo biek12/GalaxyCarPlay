@@ -1,0 +1,8 @@
+// 只追加审计测试源；生产源码/资源仍为6708121。
+gradle.beforeProject { project ->
+    if (project.path == ':auto-ui') project.pluginManager.withPlugin('com.android.library') {
+        project.extensions.getByName('androidComponents').finalizeDsl { android ->
+            android.sourceSets.getByName('test').kotlin.srcDir(new File(System.getenv('GALAXY_R1_AUDIT_REPRO'), 'ui'))
+        }
+    }
+}
