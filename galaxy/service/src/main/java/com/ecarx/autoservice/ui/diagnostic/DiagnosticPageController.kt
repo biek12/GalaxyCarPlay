@@ -16,6 +16,7 @@ import com.ecarx.autoservice.ui.ServicePageSession
 import java.io.File
 import java.util.concurrent.Executor
 import java.util.concurrent.ExecutorService
+import java.util.concurrent.RejectedExecutionException
 
 /**
  * 诊断页控制器：按钮动作、观察者、扫描状态、分页偏移与认证覆盖导入都在这里。
@@ -36,6 +37,9 @@ internal class DiagnosticPageController(
     private var scanning = false
     private var offset = 0
     private var destroyed = false
+
+    /** 同一时刻只允许一个日志读取在排队/执行；完成、失败或被拒绝都会复位。 */
+    private var logsPending = false
 
     init {
         bindActions()
@@ -66,7 +70,7 @@ internal class DiagnosticPageController(
     fun onDocumentPicked(requestCode: Int, resultCode: Int, data: Intent?) {
         if (requestCode != ServicePageCommands.AUTH_DOCUMENT_REQUEST || resultCode != Activity.RESULT_OK) return
         val uri = data?.data ?: return
-        io.execute {
+        submitIo {
             val stored =
                 runCatching {
                     val stream = activity.contentResolver.openInputStream(uri)
@@ -121,22 +125,60 @@ internal class DiagnosticPageController(
         )
     }
 
-    /** 读取有界日志尾部；工作线程读文件，主线程更新结果。 */
+    /**
+     * 读取日志尾部：同一请求未完成时重复点击直接忽略，避免无界排队。
+     *
+     * 工作线程读文件并做有界截断，主线程更新结果；读取异常给资源化失败反馈并允许重试。
+     */
     private fun readLogs() {
-        io.execute {
-            val text =
-                LOG_FILES.joinToString("\n\n") { name ->
-                    val file = File(activity.filesDir, "diagnostics/$name")
-                    val body =
-                        if (file.exists()) {
-                            file.readText().takeLast(LOG_TAIL_CHARS)
-                        } else {
-                            activity.getString(R.string.diagnostic_log_empty)
+        if (logsPending) return
+        logsPending = true
+        val accepted =
+            submitIo {
+                val text =
+                    runCatching {
+                        LOG_FILES.joinToString("\n\n") { name ->
+                            val file = File(activity.filesDir, "diagnostics/$name")
+                            val body =
+                                if (file.exists()) {
+                                    file.readText().takeLast(LOG_TAIL_CHARS)
+                                } else {
+                                    activity.getString(R.string.diagnostic_log_empty)
+                                }
+                            name + "\n" + body
                         }
-                    name + "\n" + body
+                    }.getOrElse {
+                        activity.getString(R.string.diagnostic_log_failed)
+                    }
+                activity.runOnUiThread {
+                    logsPending = false
+                    if (!destroyed) binding.diagnosticResult.text = text
                 }
-            activity.runOnUiThread { if (!destroyed) binding.diagnosticResult.text = text }
+            }
+        // 提交被拒绝时没有工作线程回调，必须在这里复位，否则本页日志读取永久卡住。
+        if (!accepted) logsPending = false
+    }
+
+    /**
+     * 统一的 IO 提交入口：捕获有界队列的拒绝，转为资源化提示。
+     *
+     * 不 CallerRuns（不把 I/O 转回主线程），不静默丢弃，也不把异常抛到主线程。
+     *
+     * @return true 表示已排队；false 表示被拒绝（调用方据此复位自身 pending 状态）。
+     */
+    private fun submitIo(block: () -> Unit): Boolean =
+        try {
+            io.execute(block)
+            true
+        } catch (_: RejectedExecutionException) {
+            showBusy()
+            false
         }
+
+    /** 队列已满或执行器已关闭时的统一提示。 */
+    private fun showBusy() {
+        if (destroyed) return
+        binding.diagnosticResult.setText(R.string.diagnostic_io_busy)
     }
 
     /** 执行一次 Shell；功能关闭或正文为空时不发送。 */

@@ -1,38 +1,57 @@
 <?xml version="1.0"?>
 <resources>
-    <!-- 文字角色与 GalaxyTypography.Role 一一对应；XML 声明的文字与代码创建共用同一组数值。 -->
+    <!-- 文字角色与 GalaxyTypography.Role 一一对应：字号/行高取同一份 dimens，XML 与代码共用。 -->
     <style name="GalaxyUi.TextAppearance" parent="">
         <item name="android:includeFontPadding">false</item>
     </style>
     <style name="GalaxyUi.TextAppearance.PageTitle">
-        <item name="android:textSize">24sp</item>
+        <item name="android:textSize">@dimen/galaxy_ui_text_size_page_title</item>
+        <item name="android:lineHeight">@dimen/galaxy_ui_line_height_page_title</item>
         <item name="android:textColor">@color/galaxy_ui_text</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
     <style name="GalaxyUi.TextAppearance.SectionTitle">
-        <item name="android:textSize">18sp</item>
+        <item name="android:textSize">@dimen/galaxy_ui_text_size_section_title</item>
+        <item name="android:lineHeight">@dimen/galaxy_ui_line_height_section_title</item>
         <item name="android:textColor">@color/galaxy_ui_muted</item>
         <item name="android:fontFamily">sans-serif-medium</item>
     </style>
     <style name="GalaxyUi.TextAppearance.Label">
-        <item name="android:textSize">20sp</item>
+        <item name="android:textSize">@dimen/galaxy_ui_text_size_label</item>
+        <item name="android:lineHeight">@dimen/galaxy_ui_line_height_label</item>
         <item name="android:textColor">@color/galaxy_ui_text</item>
         <item name="android:fontFamily">sans-serif</item>
     </style>
     <style name="GalaxyUi.TextAppearance.Value">
-        <item name="android:textSize">18sp</item>
+        <item name="android:textSize">@dimen/galaxy_ui_text_size_value</item>
+        <item name="android:lineHeight">@dimen/galaxy_ui_line_height_value</item>
         <item name="android:textColor">@color/galaxy_ui_muted</item>
         <item name="android:fontFamily">sans-serif</item>
     </style>
     <style name="GalaxyUi.TextAppearance.Description">
-        <item name="android:textSize">16sp</item>
+        <item name="android:textSize">@dimen/galaxy_ui_text_size_description</item>
+        <item name="android:lineHeight">@dimen/galaxy_ui_line_height_description</item>
         <item name="android:textColor">@color/galaxy_ui_muted</item>
         <item name="android:fontFamily">sans-serif</item>
     </style>
     <style name="GalaxyUi.TextAppearance.Feedback">
+        <item name="android:textSize">@dimen/galaxy_ui_text_size_feedback</item>
+        <item name="android:lineHeight">@dimen/galaxy_ui_line_height_feedback</item>
+        <item name="android:textColor">@color/galaxy_ui_muted</item>
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+    <!-- legacy 主/次文字：段落额外行距必须由 View style 表达，TextAppearance 不含段距。 -->
+    <style name="GalaxyUi.TextAppearance.LegacyPrimary">
+        <item name="android:textSize">20sp</item>
+        <item name="android:textColor">@color/galaxy_ui_text</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:lineSpacingExtra">@dimen/galaxy_ui_text_line_spacing_extra</item>
+    </style>
+    <style name="GalaxyUi.TextAppearance.LegacySecondary">
         <item name="android:textSize">16sp</item>
         <item name="android:textColor">@color/galaxy_ui_muted</item>
         <item name="android:fontFamily">sans-serif</item>
+        <item name="android:lineSpacingExtra">@dimen/galaxy_ui_text_line_spacing_extra</item>
     </style>
     <style name="GalaxyUi.TextAppearance.DialogTitle">
         <item name="android:textSize">26sp</item>
@@ -53,16 +72,19 @@
         <item name="android:textSize">20sp</item>
         <item name="android:textColor">@color/galaxy_ui_button_text</item>
         <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:includeFontPadding">false</item>
     </style>
     <style name="GalaxyUi.TextAppearance.ButtonCompact" parent="">
         <item name="android:textSize">13sp</item>
         <item name="android:textColor">@color/galaxy_ui_button_text</item>
         <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:includeFontPadding">false</item>
     </style>
     <style name="GalaxyUi.TextAppearance.TextButton" parent="">
         <item name="android:textSize">18sp</item>
         <item name="android:textColor">@color/galaxy_ui_action_text</item>
         <item name="android:fontFamily">sans-serif</item>
+        <item name="android:includeFontPadding">false</item>
     </style>
     <!-- 主/次按钮的静态部分；primary 变体由 GalaxyStyle.button 选择对应 drawable 与文字色。 -->
     <style name="GalaxyUi.Button" parent="">
@@ -126,5 +148,15 @@
         <item name="android:paddingEnd">@dimen/galaxy_ui_dialog_choice_padding_horizontal</item>
         <item name="android:paddingTop">@dimen/galaxy_ui_dialog_choice_padding_vertical</item>
         <item name="android:paddingBottom">@dimen/galaxy_ui_dialog_choice_padding_vertical</item>
+    </style>
+    <!-- 设置行静态属性：XML 与代码构造共用同一来源；80/96dp 仍由内容状态切换。 -->
+    <style name="GalaxyUi.SettingRow" parent="">
+        <item name="android:orientation">horizontal</item>
+        <item name="android:gravity">center_vertical</item>
+        <item name="android:minHeight">@dimen/galaxy_ui_row_min_height</item>
+        <item name="android:paddingStart">@dimen/galaxy_ui_row_padding_horizontal</item>
+        <item name="android:paddingEnd">@dimen/galaxy_ui_row_padding_horizontal</item>
+        <item name="android:paddingTop">@dimen/galaxy_ui_row_padding_vertical</item>
+        <item name="android:paddingBottom">@dimen/galaxy_ui_row_padding_vertical</item>
     </style>
 </resources>

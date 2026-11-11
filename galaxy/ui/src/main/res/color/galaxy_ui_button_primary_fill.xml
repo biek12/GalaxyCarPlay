@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 主按钮唯一 shape 的填充色：禁用取控件底色，其余状态取强调色。 -->
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_enabled="false" android:color="@color/galaxy_ui_control"/>
+    <item android:color="@color/galaxy_ui_accent"/>
+</selector>

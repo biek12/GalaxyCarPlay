@@ -1,5 +1,20 @@
 <?xml version="1.0"?>
 <resources>
+    <!-- 角色文字度量：字号与行高成对，XML 样式与代码创建共用同一份 sp 资源。 -->
+    <dimen name="galaxy_ui_text_size_page_title">24sp</dimen>
+    <dimen name="galaxy_ui_line_height_page_title">32sp</dimen>
+    <dimen name="galaxy_ui_text_size_section_title">18sp</dimen>
+    <dimen name="galaxy_ui_line_height_section_title">26sp</dimen>
+    <dimen name="galaxy_ui_text_size_label">20sp</dimen>
+    <dimen name="galaxy_ui_line_height_label">28sp</dimen>
+    <dimen name="galaxy_ui_text_size_value">18sp</dimen>
+    <dimen name="galaxy_ui_line_height_value">26sp</dimen>
+    <dimen name="galaxy_ui_text_size_description">16sp</dimen>
+    <dimen name="galaxy_ui_line_height_description">24sp</dimen>
+    <dimen name="galaxy_ui_text_size_feedback">16sp</dimen>
+    <dimen name="galaxy_ui_line_height_feedback">24sp</dimen>
+    <!-- legacy 文字重载的段落额外行距（原 dp(3)）。 -->
+    <dimen name="galaxy_ui_text_line_spacing_extra">3dp</dimen>
     <!-- 设置行：普通行 80dp，含说明/反馈 96dp；图标与操作槽尺寸与实际布局一致。 -->
     <dimen name="galaxy_ui_row_min_height">80dp</dimen>
     <dimen name="galaxy_ui_row_min_height_detail">96dp</dimen>

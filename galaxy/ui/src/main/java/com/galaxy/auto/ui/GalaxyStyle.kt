@@ -2,7 +2,6 @@ package com.galaxy.auto.ui
 
 import android.content.Context
 import android.content.res.ColorStateList
-import android.graphics.Typeface
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
 import android.view.Gravity
@@ -16,7 +15,8 @@ import android.widget.TextView
  * Flyme 静态样式：颜色、圆角、按压与禁用状态都来自 `color/` 与 `drawable/` 资源。
  *
  * 主题更新只重新解析资源并重绘已绑定控件，不重建视频 Surface 或连接会话。
- * 例外：[surface] 与 [rounded] 接受运行时颜色/半径，供宿主注入色板与自绘装饰使用。
+ * 例外：按钮的 [button] 保留真实动态 `radius` 参数（`GalaxyConfigurationTabs` 传 2dp，
+ * 其他调用方传 4dp），在资源形状基础上只把半径作用到本实例的内容层。
  *
  * 线程/所有者：主线程操作 View；绑定的 lambda 由 View 持有，随视图一起释放。
  */
@@ -58,9 +58,10 @@ object GalaxyStyle {
         }
 
     /**
-     * 主/次按钮样式。形状、文字色与禁用色全部取资源；`compact` 只切换字号与尺寸档。
+     * 主/次按钮样式。文字样式取 `GalaxyUi.TextAppearance.Button*`，形状/颜色取资源。
      *
-     * [radius] 与 [surface] 为兼容参数：形状统一由 drawable 提供（历史调用方只传 4dp）；
+     * [radius] 是既有公开动态接口：每次 bind 取独立背景副本，把半径作用到内容 GradientDrawable，
+     * 不污染其他按钮实例，也不退回固定 4dp。`compact` 只切换字号与尺寸档。
      * 非默认 [surface] 时对次按钮内容层做 tint，宿主色板仍可生效。
      */
     fun button(
@@ -73,12 +74,16 @@ object GalaxyStyle {
         decorate: ((Button) -> Unit)? = null,
     ) {
         view.isAllCaps = false
-        view.typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
         view.stateListAnimator = null
         view.backgroundTintList = null
         view.gravity = Gravity.CENTER
-        view.includeFontPadding = false
-        view.textSize = if (compact) 13f else 20f
+        view.setTextAppearance(
+            if (compact) {
+                R.style.GalaxyUi_TextAppearance_ButtonCompact
+            } else {
+                R.style.GalaxyUi_TextAppearance_Button
+            },
+        )
         view.minWidth = 0
         view.minimumWidth = 0
         view.minHeight =
@@ -95,10 +100,14 @@ object GalaxyStyle {
                     if (primary) R.color.galaxy_ui_button_primary_text else R.color.galaxy_ui_button_text,
                 ),
             )
-            view.background =
-                context.getDrawable(
-                    if (primary) R.drawable.galaxy_ui_button_primary else R.drawable.galaxy_ui_button_secondary,
-                )
+            // 独立副本：动态 radius 与 tint 只作用于本按钮实例。
+            val background =
+                context
+                    .getDrawable(
+                        if (primary) R.drawable.galaxy_ui_button_primary else R.drawable.galaxy_ui_button_secondary,
+                    )?.mutate()
+            view.background = background
+            applyRadius(view, radius)
             if (!primary) applySurfaceTint(view, surface)
             // 替换背景后再次设置内边距，防止系统 Button 的 inset 覆盖统一的图标/文字留白。
             val horizontal =
@@ -157,6 +166,12 @@ object GalaxyStyle {
             setColor(color)
             cornerRadius = radius * context.resources.displayMetrics.density
         }
+
+    /** 把调用方真实半径作用到当前背景的内容层；不是 GradientDrawable 时保持资源形状。 */
+    private fun applyRadius(view: Button, radius: Int) {
+        val content = (view.background as? RippleDrawable)?.getDrawable(0) as? GradientDrawable ?: return
+        content.cornerRadius = radius * view.resources.displayMetrics.density
+    }
 
     /** 宿主色板与公共默认不同时，仅对次按钮内容层染色；主按钮保持强调色。 */
     private fun applySurfaceTint(view: Button, surface: Int) {

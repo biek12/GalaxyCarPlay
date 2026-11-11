@@ -8,8 +8,10 @@ import com.ecarx.autoservice.databinding.ActivityDiagnosticBinding
 import com.ecarx.autoservice.ui.AutoClientPageSession
 import com.ecarx.autoservice.ui.ServicePageSession
 import com.ecarx.autoservice.ui.diagnostic.DiagnosticPageController
+import java.util.concurrent.ArrayBlockingQueue
 import java.util.concurrent.Executor
-import java.util.concurrent.Executors
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 /**
  * 偶尔使用的诊断入口：只 inflate 布局，把生命周期与文件选择结果转交控制器。
@@ -22,11 +24,22 @@ class DiagnosticActivity : Activity() {
     internal var sessionFactory: (Context, (Bundle) -> Unit, (String) -> Unit) -> ServicePageSession =
         { context, onSnapshot, onState -> AutoClientPageSession(context, onSnapshot, onState) }
 
-    /** 有界单线程：日志读取与认证导入；默认 daemon，destroy 时关闭。 */
+    /**
+     * 本页自有的有界 IO：1 线程 + 容量 2 的等待队列，满队列按 AbortPolicy 拒绝。
+     *
+     * 拒绝由控制器转成资源化提示，不 CallerRuns（不把 I/O 转回主线程）；
+     * 线程为 daemon，`destroy` 关闭。仅此页面使用，不抽公共调度框架。
+     */
     internal var ioExecutor: Executor =
-        Executors.newSingleThreadExecutor { task ->
-            Thread(task, "AutoService-import").apply { isDaemon = true }
-        }
+        ThreadPoolExecutor(
+            1,
+            1,
+            0L,
+            TimeUnit.MILLISECONDS,
+            ArrayBlockingQueue<Runnable>(2),
+            { task -> Thread(task, "AutoService-import").apply { isDaemon = true } },
+            ThreadPoolExecutor.AbortPolicy(),
+        )
 
     private lateinit var controller: DiagnosticPageController
 

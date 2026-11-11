@@ -105,4 +105,6 @@
     <string name="diagnostic_model_l7">&#x914D;&#x7F6E;&#x8F66;&#x578B; L7</string>
     <string name="diagnostic_auth_saved">&#x8BCA;&#x65AD;&#x8986;&#x76D6;&#x5DF2;&#x4FDD;&#x5B58;</string>
     <string name="diagnostic_auth_failed">&#x8BCA;&#x65AD;&#x8986;&#x76D6;&#x5931;&#x8D25;</string>
+    <string name="diagnostic_io_busy">&#x8BCA;&#x65AD;&#x4EFB;&#x52A1;&#x6B63;&#x5728;&#x5904;&#x7406;&#x4E2D;&#xFF0C;&#x8BF7;&#x7A0D;&#x540E;&#x91CD;&#x8BD5;</string>
+    <string name="diagnostic_log_failed">&#x8BFB;&#x53D6;&#x8FD0;&#x884C;&#x65E5;&#x5FD7;&#x5931;&#x8D25;&#xFF0C;&#x8BF7;&#x7A0D;&#x540E;&#x91CD;&#x8BD5;</string>
 </resources>

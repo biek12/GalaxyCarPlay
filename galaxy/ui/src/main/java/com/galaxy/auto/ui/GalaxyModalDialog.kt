@@ -85,6 +85,8 @@ internal class GalaxyModalDialog(
         binding = GalaxyUiDialogBinding.inflate(LayoutInflater.from(uiContext))
         val panel = binding.root
         panel.fixedHeight = content.fixedHeight
+        // 面板背景接回同一 palette 绑定：已打开弹窗在日夜切换后由 refreshPalette 重解析资源。
+        GalaxyStyle.bind(panel) { panel.background = uiContext.getDrawable(R.drawable.galaxy_ui_group) }
         bindHeader()
         bindBody()
         bindFooter()
@@ -129,6 +131,7 @@ internal class GalaxyModalDialog(
             }
         }
         binding.dialogTitle.text = content.title
+        GalaxyStyle.text(binding.dialogTitle, R.color.galaxy_ui_text)
         close =
             binding.dialogClose.apply {
                 isEnabled = canCancel
@@ -146,6 +149,7 @@ internal class GalaxyModalDialog(
                 text = message.toString()
                 visibility = View.VISIBLE
             }
+            GalaxyStyle.text(binding.dialogMessage, R.color.galaxy_ui_muted)
         }
         content.items?.let { items -> binding.dialogBody.addView(choiceList(items)) }
         content.view?.let { view ->

@@ -43,6 +43,15 @@ class GalaxySettingTextLayout
         private var firstHeight = 0
         private var textHeight = 0
 
+        init {
+            // 接回既有 palette 绑定：现有实例在日夜切换后由 GalaxyStyle.refresh 重解析颜色，不重建 View。
+            // 反馈色可由 setFeedback(error=...) 覆盖，覆盖后绑定即为该颜色，不在 refresh 中强行还原。
+            GalaxyStyle.text(label, R.color.galaxy_ui_text)
+            GalaxyStyle.text(value, R.color.galaxy_ui_muted)
+            GalaxyStyle.text(description, R.color.galaxy_ui_muted)
+            GalaxyStyle.text(feedback, R.color.galaxy_ui_muted)
+        }
+
         /**
          * 先按整条文字区宽度试排“标题 + 尾部短值”，短值不超过 45% 且两者能同行时才内联，
          * 否则逐行向下排列；结果只影响本次测量，不写回任何业务状态。

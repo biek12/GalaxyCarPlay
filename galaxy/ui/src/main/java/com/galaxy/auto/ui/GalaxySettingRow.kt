@@ -73,15 +73,7 @@ class GalaxySettingRow
                     } + leadingAccessoryWidth
 
         init {
-            orientation = HORIZONTAL
-            gravity = Gravity.CENTER_VERTICAL
-            minimumHeight = GalaxyViews.px(context, R.dimen.galaxy_ui_row_min_height)
-            setPadding(
-                GalaxyViews.px(context, R.dimen.galaxy_ui_row_padding_horizontal),
-                GalaxyViews.px(context, R.dimen.galaxy_ui_row_padding_vertical),
-                GalaxyViews.px(context, R.dimen.galaxy_ui_row_padding_horizontal),
-                GalaxyViews.px(context, R.dimen.galaxy_ui_row_padding_vertical),
-            )
+            applyRowStyle(attrs, defStyleAttr)
             val array = context.obtainStyledAttributes(attrs, R.styleable.GalaxySettingRow)
             try {
                 applyTitle(array.getString(R.styleable.GalaxySettingRow_galaxyTitle).orEmpty())
@@ -224,8 +216,47 @@ class GalaxySettingRow
             titleView.text = value
         }
 
+        /**
+         * 应用 `GalaxyUi.SettingRow` 静态样式：orientation/gravity/padding/minHeight 只有这一个来源。
+         *
+         * 显式属性优先，其次 defStyleAttr，最后 defStyleRes；XML 与代码构造走同一入口。
+         * 80/96dp 的运行时切换仍由内容状态决定，不属于静态样式。
+         */
+        private fun applyRowStyle(
+            attrs: AttributeSet?,
+            defStyleAttr: Int,
+        ) {
+            val styled =
+                context.obtainStyledAttributes(attrs, ROW_ATTRS, defStyleAttr, R.style.GalaxyUi_SettingRow)
+            try {
+                orientation = styled.getInt(0, HORIZONTAL)
+                gravity = styled.getInt(1, Gravity.CENTER_VERTICAL)
+                setPaddingRelative(
+                    styled.getDimensionPixelSize(2, 0),
+                    styled.getDimensionPixelSize(3, 0),
+                    styled.getDimensionPixelSize(4, 0),
+                    styled.getDimensionPixelSize(5, 0),
+                )
+                minimumHeight = styled.getDimensionPixelSize(6, 0)
+            } finally {
+                styled.recycle()
+            }
+        }
+
         private companion object {
             const val ACCESSORY_START = 0
             const val ACCESSORY_END = 1
+
+            /** 与 [applyRowStyle] 中下标一一对应的 View 属性集合。 */
+            val ROW_ATTRS =
+                intArrayOf(
+                    android.R.attr.orientation,
+                    android.R.attr.gravity,
+                    android.R.attr.paddingStart,
+                    android.R.attr.paddingTop,
+                    android.R.attr.paddingEnd,
+                    android.R.attr.paddingBottom,
+                    android.R.attr.minHeight,
+                )
         }
     }

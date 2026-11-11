@@ -1,12 +1,19 @@
 package com.galaxy.auto.ui
 
 import android.app.Activity
+import android.app.AlertDialog
+import android.graphics.drawable.GradientDrawable
+import android.graphics.drawable.RippleDrawable
+import android.os.Looper
 import android.view.View
+import android.widget.Button
 import android.widget.CheckedTextView
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.TextView
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
@@ -241,5 +248,95 @@ class GalaxyXmlComponentsTest {
         assertEquals(2, segment.childCount)
         segment.getChildAt(1).performClick()
         assertEquals(listOf(1), selected)
+    }
+
+    @Test
+    fun roleLineHeightMatchesBetweenXmlRowAndCodeRole() {
+        val owner = owner()
+        val row = GalaxySettingRow(owner, "标题", "说明")
+        val codeRole = GalaxyTypography.text(owner, "标题", GalaxyTypography.Role.LABEL)
+        assertEquals("XML 设置行与代码角色必须同一行高", codeRole.lineHeight, row.titleView.lineHeight)
+        assertEquals(
+            owner.resources.getDimensionPixelSize(R.dimen.galaxy_ui_line_height_label),
+            row.titleView.lineHeight,
+        )
+    }
+
+    @Test
+    fun existingRowRefreshesNightColorsOnSameInstance() {
+        RuntimeEnvironment.setQualifiers("+notnight")
+        val owner = owner()
+        val row = GalaxySettingRow(owner, "标题", "说明")
+        val title = row.titleView
+        val dayColor = title.currentTextColor
+        RuntimeEnvironment.setQualifiers("+night")
+        val nightColor = owner.getColor(R.color.galaxy_ui_text)
+        assertNotEquals("夹具必须真实切换资源色", dayColor, nightColor)
+        GalaxyStyle.refresh(row)
+        assertSame("刷新不得重建文字视图", title, row.titleView)
+        assertEquals("已有设置行必须按原刷新入口更新文字色", nightColor, title.currentTextColor)
+    }
+
+    @Test
+    fun buttonKeepsRequestedRadiusPerInstanceAndState() {
+        val owner = owner()
+        val density = owner.resources.displayMetrics.density
+        val twoDp = GalaxyViews.button(owner, "分类") {}
+        GalaxyStyle.button(twoDp, radius = 2)
+        val fourDp = GalaxyViews.button(owner, "操作") {}
+        val primary = GalaxyViews.button(owner, "应用", primary = true) {}
+
+        fun corner(button: Button) =
+            ((button.background as RippleDrawable).getDrawable(0) as GradientDrawable).cornerRadius
+
+        assertEquals("真实 2dp 调用方必须保留半径", 2f * density, corner(twoDp), 0.01f)
+        assertEquals(4f * density, corner(fourDp), 0.01f)
+        assertEquals("主按钮同样可调", 4f * density, corner(primary), 0.01f)
+        assertEquals("实例之间互不污染", 4f * density, corner(fourDp), 0.01f)
+
+        primary.isEnabled = false
+        assertEquals("禁用后仍是同一可调形状", 4f * density, corner(primary), 0.01f)
+        assertEquals("其他实例仍不受影响", 2f * density, corner(twoDp), 0.01f)
+    }
+
+    @Test
+    fun openDialogRefreshesNightColorsWithoutRebuilding() {
+        RuntimeEnvironment.setQualifiers("+notnight")
+        val owner = owner()
+        val draft = EditText(owner).apply { setText("草稿内容") }
+        val dialog =
+            GalaxyDialogs
+                .builder(owner)
+                .setTitle("选择背景")
+                .setMessage("主题和配置仍会保留")
+                .setView(draft)
+                .setSingleChoiceItems(arrayOf("保留原厂", "使用图片"), 1) { _, _ -> }
+                .setPositiveButton("应用", null)
+                .create()
+        dialog.show()
+        shadowOf(Looper.getMainLooper()).idle()
+
+        val title = dialog.findViewById<TextView>(R.id.dialog_title)
+        val message = dialog.findViewById<TextView>(R.id.dialog_message)
+        val panel = title?.parent?.parent as View
+        val dayPanel = (panel.background as GradientDrawable).color?.defaultColor
+
+        RuntimeEnvironment.setQualifiers("+night")
+        GalaxyDialogs.refresh(owner)
+        shadowOf(Looper.getMainLooper()).idle()
+
+        assertSame("面板实例不得重建", panel, title?.parent?.parent)
+        assertNotEquals(
+            "面板背景必须重解析夜间资源",
+            dayPanel,
+            (panel.background as GradientDrawable).color?.defaultColor,
+        )
+        assertEquals(owner.getColor(R.color.galaxy_ui_text), title?.currentTextColor)
+        assertEquals(owner.getColor(R.color.galaxy_ui_muted), message?.currentTextColor)
+        assertEquals("草稿内容", draft.text.toString())
+        assertEquals("已选项保持", 1, dialog.listView.checkedItemPosition)
+        assertTrue(dialog.getButton(AlertDialog.BUTTON_POSITIVE).isEnabled)
+        dialog.dismiss()
+        shadowOf(Looper.getMainLooper()).idle()
     }
 }

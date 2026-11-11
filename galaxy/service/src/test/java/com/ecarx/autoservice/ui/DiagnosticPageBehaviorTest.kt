@@ -92,6 +92,9 @@ class DiagnosticPageBehaviorTest {
         fun runAll() {
             while (tasks.isNotEmpty()) tasks.removeAt(0).run()
         }
+
+        /** 当前排队任务数；用于验证重复请求没有重复入队。 */
+        fun pending() = tasks.size
     }
 
     /** 记录是否被关闭的输入流，用于验证导入不泄漏文件句柄。 */
@@ -304,4 +307,43 @@ class DiagnosticPageBehaviorTest {
 
     /** 读取按钮文案。 */
     private fun buttonText(id: Int): String = activity.findViewById<TextView>(id).text.toString()
+
+    @Test
+    fun repeatedLogClicksQueueOnceAndCompletionAllowsRetry() {
+        val dir = File(activity.filesDir, "diagnostics").apply { mkdirs() }
+        File(dir, "app.log").writeText("合成日志 A")
+        activity.findViewById<View>(R.id.diagnostic_logs).performClick()
+        activity.findViewById<View>(R.id.diagnostic_logs).performClick()
+        assertEquals("重复点击不得重复排队", 1, io.pending())
+        io.runAll()
+        assertEquals(0, io.pending())
+        assertTrue(result().contains("合成日志 A"))
+
+        activity.findViewById<View>(R.id.diagnostic_logs).performClick()
+        assertEquals("完成后可以再次读取", 1, io.pending())
+        io.runAll()
+        assertTrue(result().contains("合成日志 A"))
+    }
+
+    @Test
+    fun logReadFailureShowsResourceFeedbackAndRetrySucceeds() {
+        val dir = File(activity.filesDir, "diagnostics").apply { mkdirs() }
+        // 用目录占位同名文件，让真实 readText 抛异常，验证反馈与重试复位。
+        File(dir, "app.log").apply {
+            delete()
+            mkdirs()
+        }
+        activity.findViewById<View>(R.id.diagnostic_logs).performClick()
+        io.runAll()
+        assertEquals(activity.getString(R.string.diagnostic_log_failed), result())
+
+        File(dir, "app.log").apply {
+            delete()
+            writeText("恢复日志")
+        }
+        activity.findViewById<View>(R.id.diagnostic_logs).performClick()
+        assertEquals("失败后必须允许重试", 1, io.pending())
+        io.runAll()
+        assertTrue(result().contains("恢复日志"))
+    }
 }
