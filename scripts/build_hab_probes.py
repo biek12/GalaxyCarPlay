@@ -16,7 +16,7 @@ from elf64 import ELF
 
 QNX_IMPORTS = {
     "libc.so.4": ["_init_libc", "__get_errno_ptr", "exit", "malloc", "free", "memset",
-                  "memcpy", "memcmp", "strcmp", "strlen", "read", "write", "open", "close", "signal", "msync"],
+                  "memcpy", "memcmp", "strcmp", "strlen", "read", "write", "open", "close", "signal", "msync", "fopen", "fread", "fwrite", "fclose", "rename", "unlink", "time"],
     "libuhab-qvmhost.so": ["habmm_socket_open", "habmm_socket_recv", "habmm_socket_send",
                             "habmm_socket_close", "habmm_import", "habmm_unimport"],
     "libpmem_client.so": ["pmem_init", "pmem_deinit", "pmem_map_handle", "pmem_unmap_handle"],
@@ -138,7 +138,7 @@ def main():
         reports.append(build_qnx_candidate(llvm, output, args.qnx_rootfs.resolve()))
     report = dict(artifacts=reports, qnx_sdk_build_complete=False,
                   target_executed=False, device_connected=False,
-                  source_sha256={str(p.relative_to(ROOT)): sha(p) for folder in (HAB, PROBES)
+                  source_sha256={str(p.relative_to(ROOT)): sha(p) for folder in (HAB, PROBES, ROOT / "galaxy/common/src/main/cpp/kanzi_background")
                                  for p in sorted(folder.rglob("*"))
                                  if p.is_file() and p.suffix in {".c", ".h", ".S"}},
                   compiler=subprocess.check_output([str(llvm / "clang"), "--version"], text=True).splitlines()[0])

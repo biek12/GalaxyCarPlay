@@ -75,13 +75,14 @@ class ClusterSecondRevisionTest {
         try { SceneValidator.validate(ThemeScene(SceneDocument(regions),SceneStyles()),emptySet());fail("不能无声裁掉第九个背景") } catch(expected: IllegalArgumentException){assertEquals("scene_backdrop_budget_exceeded",expected.message)}
         SceneValidator.validate(ThemeScene(SceneDocument(regions.take(8)),SceneStyles()),emptySet())
     }
-    @Test fun editableReferenceThemeRoundTripsWithNoCallOrDateAndPendingOemComponents(){
+    @Test fun editableReferenceThemeRoundTripsWithNoCallOrDateAndPreservesRangeVisibility(){
         val original=BuiltinThemes.packages().first {it.metadata.id=="builtin-reference"}
         val restored=SceneXml.read(ThemePackageCodec.read(ThemePackageCodec.bytes(original).inputStream()))
         val nodes=SceneTree.flatten(restored.document.nodes)
         assertTrue(nodes.none {it.type=="call"})
         assertTrue(nodes.filter {it.type=="clock"}.all {it.properties["dateFormat"]=="none"})
-        assertTrue(nodes.filter {it.type.endsWith("-range")}.all {!it.visible})
+        val sourceNodes=SceneTree.flatten(SceneXml.read(original).document.nodes).associateBy{it.id}
+        assertTrue(nodes.filter {it.type.endsWith("-range")}.all {it.visible==sourceNodes.getValue(it.id).visible})
         assertEquals(4,nodes.first {it.type=="pages"}.children.size)
         assertTrue(nodes.any {it.type=="lyrics"&&it.properties["lines"]=="4"})
         val editor=EditorSession(original,true);editor.choose("speed");editor.moveSelection(10f,0f)

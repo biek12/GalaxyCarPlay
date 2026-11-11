@@ -34,7 +34,7 @@ class AutoContractTest {
     }
     @Test fun serviceIdentityIsUserSelectedAndContractsRemainVersioned() {
         assertEquals("com.ecarx.autoservice", AutoContract.SERVICE_PACKAGE)
-        assertEquals(4, AutoContract.VERSION)
+        assertEquals(6, AutoContract.VERSION)
         assertFalse(AutoContract.roleValid("root-shell"))
     }
 

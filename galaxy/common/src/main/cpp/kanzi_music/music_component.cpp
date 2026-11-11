@@ -4,7 +4,7 @@
  */
 #include "music_frame.h"
 #ifndef GKM_STATE_PATH
-#define GKM_STATE_PATH "/otaupdate/galaxy-kanzi-field/galaxy-carplay-kanzi-music.bin"
+#define GKM_STATE_PATH "/otaupdate/autoservice-media/music.bin"
 #endif
 #ifndef GKM_PHASE_PATH
 #define GKM_PHASE_PATH "/tmp/galaxy-carplay-kanzi-status.log"
@@ -108,8 +108,20 @@ extern Ref create_empty(void *, View) asm(
     "_ZN5kanzi11EmptyNode2D6createEPNS_6DomainEN5boost17basic_string_viewIcSt11char_traitsIcEEE");
 extern Ref create_text(void *, View) asm(
     "_ZN5kanzi11TextBlock2D6createEPNS_6DomainEN5boost17basic_string_viewIcSt11char_traitsIcEEE");
+#ifdef G733_VIRTUAL_SCENE_API
+/* 与早上实车SceneApi相同的抽象子节点入口。Screen/状态容器不能按Node2D成员布局读取。 */
+static Ref get_child(void *node, size_t index) {
+    auto table = *static_cast<uintptr_t **>(node);
+    return reinterpret_cast<Ref (*)(void *, size_t)>(table[0x28 / sizeof(uintptr_t)])(node, index);
+}
+static size_t child_count(void *node) {
+    auto table = *static_cast<uintptr_t **>(node);
+    return reinterpret_cast<size_t (*)(void *)>(table[0x20 / sizeof(uintptr_t)])(node);
+}
+#else
 extern Ref get_child(void *, size_t) asm("_ZNK5kanzi6Node2D8getChildEm");
 extern "C" size_t child_count(void *) asm("_ZNK5kanzi6Node2D13getChildCountEv");
+#endif
 extern "C" bool
 is_named(void *, View) asm("_ZNK5kanzi4Node7isNamedEN5boost17basic_string_viewIcSt11char_traitsIcEEE");
 extern "C" void *get_parent(void *) asm("_ZNK5kanzi4Node9getParentEv");
@@ -131,6 +143,14 @@ struct Vec2 {
 extern "C" void set_vec2(void *, const void *,
                          Vec2) asm("_ZN5kanzi14PropertyObject11setPropertyINS_7Vector2EEEvRKNS_"
                                    "12PropertyTypeIT_vEENS5_6Traits13ParameterTypeE");
+struct Srt2D {
+    float scale_x, scale_y, rotation, x, y;
+};
+static_assert(sizeof(Srt2D) == 20, "G733 SRTValue2D layout");
+extern "C" void set_srt(void *, const void *, const Srt2D &) asm(
+    "_ZN5kanzi14PropertyObject11setPropertyINS_10SRTValue2DEEEvRKNS_12PropertyTypeIT_vEENS5_6Traits13ParameterTypeE");
+extern "C" void set_bool(void *, const void *, bool) asm(
+    "_ZN5kanzi14PropertyObject11setPropertyIbEEvRKNS_12PropertyTypeIT_vEENS4_6Traits13ParameterTypeE");
 extern "C" void
 set_font_size(void *,
               float) asm("_ZN5kanzi20TextBlockConceptImplINS_6Node2DENS_11TextBlock2DEE11setFontSizeEf");
@@ -149,11 +169,12 @@ extern "C" char perspective_prop[] asm("_ZN5kanzi6Node2D33PerspectiveTransformat
 extern "C" char horizontal_align_prop[] asm("_ZN5kanzi4Node27HorizontalAlignmentPropertyE");
 extern "C" char vertical_align_prop[] asm("_ZN5kanzi4Node25VerticalAlignmentPropertyE");
 extern "C" char clip_prop[] asm("_ZN5kanzi4Node20ClipChildrenPropertyE");
+extern "C" char opacity_prop[] asm("_ZN5kanzi4Node15OpacityPropertyE");
 static void *property(void *node) { return (char *)node + 8; }
 static View view(const char *s) { return {s, strlen(s)}; }
 static void *descriptor(const char *type) { void *p; memcpy(&p, type, sizeof(p)); return p; }
 /* 与本车isEffectivelyVisible内联属性解析一致：非类来源→继承来源→类来源→descriptor+0x20默认值。 */
-static float scalar(void *node, const char *type) {
+static const void *resolved_value(void *node, const char *type) {
     void *d = descriptor(type);
     void *value = nonclass_value(property(node), d);
     unsigned flags; memcpy(&flags, (char *)d + 0x18, sizeof(flags));
@@ -166,9 +187,14 @@ static float scalar(void *node, const char *type) {
     }
     if (!value) value = class_value(property(node), d);
     if (!value) value = (char *)d + 0x20;
-    float out; memcpy(&out, value, sizeof(out)); return out;
+    return value;
 }
-static void geometry_phase(const char *prefix, float value) {
+static float scalar(void *node, const char *type) {
+    float out;
+    memcpy(&out, resolved_value(node, type), sizeof(out));
+    return out;
+}
+static __attribute__((unused)) void geometry_phase(const char *prefix, float value) {
     char line[96]; unsigned n = 0;
     while (*prefix && n < 60) line[n++] = *prefix++;
     unsigned v = value >= 0 && value < 16384 ? (unsigned)(value * 10) : 999999;
@@ -183,18 +209,7 @@ static void clear_geometry(void *node) {
                           horizontal_align_prop, vertical_align_prop, clip_prop};
     for (const char *type : types) remove_local(property(node), descriptor(type));
 }
-struct FloatUndo { bool had_local; float value; };
-static FloatUndo override_height(void *node, float height) {
-    void *d = descriptor(height_prop);
-    FloatUndo saved{has_local(property(node), d), 0};
-    if (saved.had_local) saved.value = scalar(node, height_prop);
-    set_float(property(node), height_prop, height);
-    return saved;
-}
-static void restore_height(void *node, const FloatUndo &saved) {
-    if (saved.had_local) set_float(property(node), height_prop, saved.value);
-    else remove_local(property(node), descriptor(height_prop));
-}
+#include "node_replacement.h"
 
 /* 原厂TextBlock调用者在0x20e680..0x20e6b4构造32字节C++11 string后传不可见引用。
  * 这里只构造调用期间的只读字符串视图布局；setter经_M_replace复制文本，不取得输入所有权。
@@ -210,11 +225,18 @@ static void text(void *node, const char *s) {
     set_text(node, &value);
 }
 struct State {
-    Ref root, target, panel, labels[7], original[2];
+    Ref root, target, panel, labels[9];
+    MusicNodeReplacement replacement;
+    Ref cover, cover_texture, cover_placeholder, progress_track, progress_fill;
+    Ref progress_track_texture, progress_fill_texture;
+    uint64_t cover_revision, cover_track;
+    uint64_t scroll_ms, last_position;
+    float scroll_distance, scroll_offset;
+    uint16_t playback_flags;
+    char rendered_text[6][1025];
     uint64_t elapsed_ms, last_revision, last_epoch, last_expires;
     uint64_t pending_epoch, pending_revision, pending_expires;
     int64_t source_offset_ms;
-    FloatUndo target_height;
     uint8_t session[16];
     bool mounted, source_clock_ready;
 };
@@ -261,49 +283,69 @@ static bool decode_source(State *s, const uint8_t *bytes, size_t count, uint64_t
     return false;
 }
 
-/* 只遍历Node2D的强类型子集合；先匹配原厂Media_Text及两个已核验子节点，不匹配任意同名区域。 */
-static Ref find_text(const Ref &node, unsigned depth, unsigned *budget) {
+static bool music_visible(void *node) {
+    if (!effective_visible(node))
+        return false;
+    for (unsigned depth = 0; node && depth < 32; ++depth) {
+        if (!(scalar(node, opacity_prop) > 0.01f))
+            return false;
+        node = get_parent(node);
+    }
+    return !node;
+}
+
+/* Node2D集合中须只有一个实际可见且结构匹配的文字区。 */
+static Ref collect_text(const Ref &node, unsigned depth, unsigned *budget, unsigned *matches) {
     if (!node.object || !depth || !*budget)
         return {};
     --*budget;
     size_t n = child_count(node.object);
     if (n > 1024)
         return {};
-    if (is_named(node.object, view("Media_Text")) && n == 2 && effective_visible(node.object)) {
+    Ref result;
+    if (is_named(node.object, view("Media_Text")) && n == 2 && music_visible(node.object)) {
         Ref a = get_child(node.object, 0), b = get_child(node.object, 1);
         if ((is_named(a.object, view("Media_Title")) && is_named(b.object, view("Media_Artist"))) ||
             (is_named(b.object, view("Media_Title")) && is_named(a.object, view("Media_Artist"))))
-            return node;
+        {
+            ++*matches;
+            result = node;
+        }
     }
-    for (size_t i = 0; i < n; ++i) {
-        Ref child = get_child(node.object, i), match = find_text(child, depth - 1, budget);
+    for (size_t i = 0; i < n && *matches < 2 && *budget; ++i) {
+        Ref child = get_child(node.object, i), match = collect_text(child, depth - 1, budget, matches);
         if (match.object)
-            return match;
+            result = match;
     }
+    return result;
+}
+static Ref find_text(const Ref &node, unsigned depth, unsigned *budget) {
+    unsigned matches = 0;
+    Ref result = collect_text(node, depth, budget, &matches);
+    if (matches == 1 && *budget)
+        return result;
     return {};
 }
 static void restore(State *s) {
-    if (s->mounted && s->target.object) {
-        if (get_parent(s->panel.object) == s->target.object)
-            remove_child(s->target.object, child_index(s->target.object, s->panel.object));
-        for (unsigned i = 0; i < 2; ++i)
-            if (s->original[i].object && !get_parent(s->original[i].object)) {
-                size_t count = child_count(s->target.object);
-                insert_child(s->target.object, i < count ? i : count, s->original[i]);
-            }
-        restore_height(s->target.object, s->target_height);
-    }
+    if (!s->replacement.restore())
+        phase("restore_slot_changed");
     s->mounted = false;
     for (auto &label : s->labels)
         label = Ref{};
     s->panel = Ref{};
-    s->original[0] = Ref{};
-    s->original[1] = Ref{};
+    s->cover = s->cover_texture = s->cover_placeholder = Ref{};
+    s->progress_track = s->progress_fill = Ref{};
+    s->progress_track_texture = s->progress_fill_texture = Ref{};
+    s->cover_revision = s->cover_track = 0;
     s->target = Ref{};
     s->root = Ref{};
     // 保留发布代次高水位，旧会话的迟到文件不能重新挂接组件。
 }
+#include "compact_music_region.h"
 static bool mount(State *s, void *app, const Ref &root) {
+#ifndef GKM_LEGACY_TEXT_LAYOUT
+    return mount_compact(s, app, root);
+#else
     unsigned budget = 4096;
     Ref target = find_text(root, 32, &budget);
     if (!target.object)
@@ -315,14 +357,20 @@ static bool mount(State *s, void *app, const Ref &root) {
     Ref first = get_child(target.object, 0), second = get_child(target.object, 1);
     Ref title = is_named(first.object, view("Media_Title")) ? first : second;
     Ref artist = is_named(first.object, view("Media_Artist")) ? first : second;
+    Srt2D origin;
+    memcpy(&origin, resolved_value(title.object, render_transform_prop), sizeof(origin));
+    float available_height = scalar(target.object, actual_height_prop);
+    if (!(origin.y >= 0 && origin.y + 140.f <= available_height))
+        return false;
+    geometry_phase("panel_origin_y_x10=", origin.y);
     Ref panel = create_empty(get_domain(app), view("GalaxyMusicText"));
     if (!panel.object)
         return false;
     set_float(property(panel.object), width_prop, available_width);
     set_float(property(panel.object), height_prop, 140.f);
-    const Vec2 zero_margin{0, 0};
-    set_vec2(property(panel.object), vertical_prop, zero_margin);
-    set_vec2(property(panel.object), horizontal_prop, zero_margin);
+    set_bool(property(panel.object), clip_prop, true);
+    const Srt2D panel_transform{1, 1, 0, 0, origin.y};
+    set_srt(property(panel.object), render_transform_prop, panel_transform);
     const char *names[] = {"GalaxyTitle",     "GalaxyArtist",     "GalaxyLyricBefore", "GalaxyLyricCurrent",
                            "GalaxyLyricNext", "GalaxyLyricAfter", "GalaxyProgress"};
     const float sizes[] = {22, 16, 14, 22, 14, 12, 13};
@@ -335,11 +383,10 @@ static bool mount(State *s, void *app, const Ref &root) {
             return false;
         copy_values(property(label.object), property(i == 0 || i == 3 ? title.object : artist.object));
         clear_geometry(label.object);
-        const Vec2 vertical{tops[i], 0}, horizontal{0, 0};
         set_float(property(label.object), width_prop, available_width);
         set_float(property(label.object), height_prop, heights[i]);
-        set_vec2(property(label.object), vertical_prop, vertical);
-        set_vec2(property(label.object), horizontal_prop, horizontal);
+        const Srt2D row_transform{1, 1, 0, 0, tops[i]};
+        set_srt(property(label.object), render_transform_prop, row_transform);
         set_font_size(label.object, sizes[i]);
         text(label.object, "");
         add_child(panel.object, label);
@@ -350,15 +397,13 @@ static bool mount(State *s, void *app, const Ref &root) {
     s->root = root;
     s->target = target;
     s->panel = panel;
-    s->original[0] = first;
-    s->original[1] = second;
-    s->target_height = override_height(target.object, 140.f);
-    // 保留原Media_Text容器身份及外层状态机，只替换文字子节点；原节点强引用留待恢复。
-    remove_child(target.object, 1);
-    remove_child(target.object, 0);
-    add_child(target.object, panel);
+    if (!s->replacement.install(target, panel)) {
+        restore(s);
+        return false;
+    }
     s->mounted = true;
     return true;
+#endif
 }
 static void progress_text(char *out, uint64_t position, uint64_t duration, bool playing, unsigned flags) {
     // 不依赖stdio格式化/用户输入；时长已由wire限制为一周。
@@ -409,6 +454,9 @@ extern "C" __attribute__((visibility("default"))) void galaxy_music_on_update(vo
         phase("initialized");
     }
     State *s = state;
+#ifndef GKM_LEGACY_TEXT_LAYOUT
+    animate_compact(s, delta_ms);
+#endif
     s->elapsed_ms += delta_ms > 0 ? (uint64_t)(delta_ms < 1000 ? delta_ms : 1000) : 0;
     if (s->elapsed_ms < (s->mounted ? 200u : 1000u))
         return;
@@ -447,7 +495,8 @@ extern "C" __attribute__((visibility("default"))) void galaxy_music_on_update(vo
         return;
     }
     Ref root = get_root(app);
-    if (s->mounted && (s->root.object != root.object || !effective_visible(s->target.object)))
+    if (s->mounted && (s->root.object != root.object || !music_visible(s->target.object) ||
+                       !s->replacement.owns_slot()))
         restore(s);
     bool fresh = !s->mounted;
     if (fresh && !mount(s, app, root)) {
@@ -458,11 +507,27 @@ extern "C" __attribute__((visibility("default"))) void galaxy_music_on_update(vo
         phase("mounted");
     if (!fresh && !memcmp(frame.session, s->session, 16) && frame.revision <= s->last_revision)
         return;
-    for (unsigned i = 0; i < 6; ++i)
-        text(s->labels[i].object, frame.text[i]);
+    const bool current_changed = fresh || strcmp(s->rendered_text[3], frame.text[3]) ||
+        memcmp(s->session, frame.session, 16) || frame.position_ms + 200 < s->last_position ||
+        frame.position_ms > s->last_position + 1500;
+#ifdef GKM_LEGACY_TEXT_LAYOUT
+    (void)current_changed;
+#endif
+    for (unsigned i = 0; i < 6; ++i) {
+        if (fresh || strcmp(s->rendered_text[i], frame.text[i])) {
+            text(s->labels[i].object, frame.text[i]);
+            memcpy(s->rendered_text[i], frame.text[i], strlen(frame.text[i]) + 1);
+        }
+    }
     char progress[40];
     progress_text(progress, frame.position_ms, frame.duration_ms, (frame.flags & 2) != 0, frame.flags);
+#ifndef GKM_LEGACY_TEXT_LAYOUT
+    if (current_changed) prepare_compact_scroll(s);
+    s->last_position = frame.position_ms; s->playback_flags = frame.flags;
+    update_compact(s, app, frame, progress);
+#else
     text(s->labels[6].object, progress);
+#endif
     s->last_epoch = epoch;
     s->last_expires = frame.expires_ms;
     s->last_revision = frame.revision;

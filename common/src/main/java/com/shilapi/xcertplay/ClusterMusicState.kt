@@ -7,7 +7,7 @@ import android.os.SystemClock
 import com.shilapi.xcertplay.media.CarPlayNowPlaying
 
 /** One optional synchronized/plain lyric line. Null timestamp means an unsynchronized lyric. */
-internal data class ClusterLyricLine(val timeMillis: Long?, val text: String)
+internal typealias ClusterLyricLine = com.galaxy.auto.lyrics.ClusterLyricLine
 
 /** Main-thread display snapshot. Only product-decoded artwork is owned here; core-owned art is borrowed. */
 internal object ClusterMusicState {

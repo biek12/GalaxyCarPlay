@@ -9,5 +9,7 @@ settingsEvaluated { settings ->
         clear()
         maven { url = uri(googleUrl) }
         maven { url = uri(centralUrl) }
+        // 保留工程已声明的唯一JitPack依赖；镜像不托管该坐标。
+        maven { url = uri('https://jitpack.io'); content { includeModule('com.github.Flyfish233', 'spake2-java') } }
     }
 }

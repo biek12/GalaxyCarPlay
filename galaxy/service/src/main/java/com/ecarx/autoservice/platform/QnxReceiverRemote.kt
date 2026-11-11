@@ -25,8 +25,8 @@ internal class QnxReceiverRemote(
             "if kill -0 \"\$p\" 2>/dev/null; then a=\$(pidin -p \"\$p\" ar) || exit 22; " +
             "case \"\$a\" in *$directory/receiver*) owned=1;; esac; fi; fi; " +
             "if [ -f $directory/version ] && [ \"\$(cat $directory/version)\" = ${quote(sha)} ] && " +
-            "cksum $directory/receiver | grep '^$crc[[:space:]]*${binary.size}[[:space:]]' >/dev/null && " +
-            "cksum $directory/owner.key | grep '^$keyCrc[[:space:]]*32[[:space:]]' >/dev/null; then " +
+            "cksum $directory/receiver | grep '^[[:space:]]*$crc[[:space:]]*${binary.size}[[:space:]]' >/dev/null && " +
+            "cksum $directory/owner.key | grep '^[[:space:]]*$keyCrc[[:space:]]*32[[:space:]]' >/dev/null; then " +
             "if [ \"\$owned\" = 1 ] && grep RECEIVER_LISTEN_SESSION $directory/receiver.log >/dev/null; then " +
             "echo; echo AUTOSERVICE_RECEIVER_LISTENING; else echo; echo AUTOSERVICE_RECEIVER_INSTALLED; fi; " +
             "else echo; echo AUTOSERVICE_RECEIVER_NEEDS_INSTALL; fi"
@@ -54,7 +54,10 @@ internal class QnxReceiverRemote(
     override fun verify() {
         val path = "$directory/receiver" + if (installing) ".new" else ""
         val verified = execute("cksum $path")
-        check(Regex("(?m)^$crc[ \\t]+${binary.size}[ \\t]+").containsMatchIn(verified)) { "qnx_binary_checksum_mismatch" }
+        // 本车cksum将不足十位的CRC右对齐，行首可能有空格；比较实际数值列。
+        check(verified.lineSequence().map { it.trim().split(Regex("\\s+")) }.any {
+            it.size>=2 && it[0].toLongOrNull()==crc && it[1].toLongOrNull()==binary.size.toLong()
+        }) { "qnx_binary_checksum_mismatch" }
         check(execute("$path self-test").contains("SELFTEST_PASS")) { "qnx_self_test_failed" }
         check(Regex("QNX_DISPLAY_ID=2\\r?\\nWIDTH=1920\\r?\\nHEIGHT=532").containsMatchIn(execute("$path inventory"))) { "qnx_display_profile_mismatch" }
     }

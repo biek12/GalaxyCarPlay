@@ -9,8 +9,7 @@ internal object QnxReceiverDeployer {
     private const val DIRECTORY = "/var/data/autoservice-hab"
     private fun connection(request: JSONObject) = QnxTelnet("192.168.118.2").also {
         try {
-            val login = if (request.has("username") && request.has("password"))
-                QnxOemCredentials.Login(request.getString("username"), request.getString("password")) else QnxOemCredentials.load()
+            val login = QnxCredentials.login(request)
             it.login(login.username, login.password)
         }
         catch (error: Exception) { it.close(); throw error }

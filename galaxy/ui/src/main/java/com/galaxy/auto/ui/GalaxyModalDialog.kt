@@ -1,4 +1,4 @@
-package com.shilapi.xcertplay
+package com.galaxy.auto.ui
 
 import android.app.AlertDialog
 import android.content.Context
@@ -12,26 +12,26 @@ import android.view.View
 import android.view.ViewGroup
 import android.view.WindowManager
 import android.widget.*
-import com.shilapi.xcertplay.host.R
+
 
 /** 竖屏模态框：标题、可滚动内容与固定操作区；保留 AlertDialog 的确认/取消契约。 */
-internal class L7ModalDialog(private val owner: Context, private val content: L7Dialogs.Content) : AlertDialog(L7UiDensity.wrap(owner)) {
+internal class GalaxyModalDialog(private val owner: Context, private val content: GalaxyDialogs.Content) : AlertDialog(content.dialogContext ?: owner) {
     private val uiContext = context
-    private val returnFocus = L7DialogFocus(owner)
+    private val returnFocus = GalaxyDialogFocus(owner)
     private val actions = mutableMapOf<Int, Button>()
     private var choices: ListView? = null
     private var close: ImageButton? = null
     private var canCancel = content.cancelable
     fun refreshPalette(owner: Context) {
         if (owner !== this.owner || !isShowing) return
-        window?.decorView?.let(L7Ui::refresh)
+        window?.decorView?.let(GalaxyStyle::refresh)
         val list = choices
         val checked = list?.checkedItemPosition ?: -1
         (list?.adapter as? BaseAdapter)?.notifyDataSetChanged()
-        list?.divider = ColorDrawable(uiContext.getColor(R.color.product_ui_control))
+        list?.divider = ColorDrawable(uiContext.getColor(R.color.galaxy_ui_control))
         if (checked >= 0) list?.setItemChecked(checked, true)
     }
-    private fun dp(value: Int) = L7Components.dp(uiContext, value)
+    private fun dp(value: Int) = GalaxyViews.dp(uiContext, value)
 
     init {
         // 在调用者配置监听器前接入默认回调，不在 onCreate 覆盖输入清理和预听资源释放。
@@ -60,12 +60,12 @@ internal class L7ModalDialog(private val owner: Context, private val content: L7
         val panel = BoundedPanel(uiContext).apply {
             orientation = LinearLayout.VERTICAL
             setPadding(dp(24), dp(20), dp(24), dp(24))
-            L7MenuSurface.apply(this, radius = 4)
+            GalaxyStyle.surface(this, radius = 4)
         }
         panel.addView(header())
         val body = LinearLayout(uiContext).apply { orientation = LinearLayout.VERTICAL }
         content.message?.let {
-            body.addView(L7Components.text(uiContext, it.toString(), secondary = true).apply { textSize = 20f },
+            body.addView(GalaxyViews.text(uiContext, it.toString(), secondary = true).apply { textSize = 20f },
                 LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(16) })
         }
         content.items?.let { body.addView(choiceList(it)) }
@@ -87,7 +87,7 @@ internal class L7ModalDialog(private val owner: Context, private val content: L7
 
     override fun onStart() {
         super.onStart()
-        L7Dialogs.track(this)
+        GalaxyDialogs.track(this)
         window?.apply {
             setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
             val width = (uiContext.resources.displayMetrics.widthPixels * .88f).toInt().coerceAtMost(dp(720))
@@ -99,26 +99,26 @@ internal class L7ModalDialog(private val owner: Context, private val content: L7
     }
 
     override fun onStop() {
-        L7Dialogs.untrack(this)
+        GalaxyDialogs.untrack(this)
         super.onStop()
         returnFocus.restore()
     }
 
     private fun header() = LinearLayout(uiContext).apply {
         gravity = Gravity.CENTER_VERTICAL
-        L7Icons.dialog(uiContext, content.title.toString())?.let { icon ->
+        content.titleIcon?.invoke(content.title.toString())?.let { icon ->
             addView(ImageView(uiContext).apply {
                 setImageResource(icon)
-                L7Ui.bind(this) { imageTintList = ColorStateList.valueOf(uiContext.getColor(R.color.product_ui_text)) }
+                GalaxyStyle.bind(this) { imageTintList = ColorStateList.valueOf(uiContext.getColor(R.color.galaxy_ui_text)) }
                 importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
             }, LinearLayout.LayoutParams(dp(40), dp(40)).apply { marginEnd = dp(12) })
         }
-        addView(L7Components.text(uiContext, content.title.toString()).apply { textSize = 26f },
+        addView(GalaxyViews.text(uiContext, content.title.toString()).apply { textSize = 26f },
             LinearLayout.LayoutParams(0, -2, 1f))
         close = ImageButton(uiContext).apply {
-            setImageResource(R.drawable.ic_l7_close)
-            contentDescription = uiContext.getString(R.string.close)
-            L7Ui.bind(this) { imageTintList = ColorStateList.valueOf(uiContext.getColor(R.color.product_ui_muted)) }
+            setImageResource(R.drawable.galaxy_ui_close)
+            contentDescription = uiContext.getString(R.string.galaxy_ui_close)
+            GalaxyStyle.bind(this) { imageTintList = ColorStateList.valueOf(uiContext.getColor(R.color.galaxy_ui_muted)) }
             background = null
             setPadding(dp(16), dp(16), dp(16), dp(16))
             isEnabled = canCancel
@@ -131,7 +131,7 @@ internal class L7ModalDialog(private val owner: Context, private val content: L7
         val height = dp((72 * uiContext.resources.configuration.fontScale.coerceAtLeast(1f)).toInt())
         return ListView(uiContext).apply {
             choices = this
-            divider = ColorDrawable(uiContext.getColor(R.color.product_ui_control))
+            divider = ColorDrawable(uiContext.getColor(R.color.galaxy_ui_control))
             dividerHeight = dp(1)
             choiceMode = if (content.singleChoice) ListView.CHOICE_MODE_SINGLE else ListView.CHOICE_MODE_NONE
             adapter = object : BaseAdapter() {
@@ -150,11 +150,11 @@ internal class L7ModalDialog(private val owner: Context, private val content: L7
                         minHeight = height
                         layoutParams = AbsListView.LayoutParams(-1, height)
                         isEnabled = content.itemEnabled?.invoke(position) != false
-                        L7Ui.text(this, if (isEnabled) R.color.product_ui_text else R.color.product_ui_disabled)
+                        GalaxyStyle.text(this, if (isEnabled) R.color.galaxy_ui_text else R.color.galaxy_ui_disabled)
                         if (content.singleChoice) {
                             checkMarkDrawable = StateListDrawable().apply {
-                                addState(intArrayOf(android.R.attr.state_checked), uiContext.getDrawable(R.drawable.ic_l7_radio_on))
-                                addState(intArrayOf(), uiContext.getDrawable(R.drawable.ic_l7_radio_off))
+                                addState(intArrayOf(android.R.attr.state_checked), uiContext.getDrawable(R.drawable.galaxy_ui_radio_on))
+                                addState(intArrayOf(), uiContext.getDrawable(R.drawable.galaxy_ui_radio_off))
                             }
                             checkMarkDrawable?.alpha = if (isEnabled) 255 else 80
                         }
@@ -163,7 +163,7 @@ internal class L7ModalDialog(private val owner: Context, private val content: L7
             if (content.singleChoice && content.checked in items.indices) setItemChecked(content.checked, true)
             setOnItemClickListener { _, _, index, _ ->
                 if (content.itemEnabled?.invoke(index) == false) return@setOnItemClickListener
-                content.itemClick?.onClick(this@L7ModalDialog, index)
+                content.itemClick?.onClick(this@GalaxyModalDialog, index)
                 if (!content.singleChoice) dismiss()
             }
             layoutParams = LinearLayout.LayoutParams(-1, height * items.size + dp(items.size))
@@ -191,25 +191,25 @@ internal class L7ModalDialog(private val owner: Context, private val content: L7
         addView(row)
     }
 
-    private fun action(which: Int, value: L7Dialogs.Action) = L7Components.actionButton(
+    private fun action(which: Int, value: GalaxyDialogs.Action) = GalaxyViews.actionButton(
         uiContext, value.label.toString(), primary = which == BUTTON_POSITIVE
     ) {
         actions[which]?.isEnabled = false
         value.click?.onClick(this, which)
         dismiss()
-    }.also { actions[which] = it; L7Ui.button(it, primary = which == BUTTON_POSITIVE, radius = 4) }
+    }.also { actions[which] = it; GalaxyStyle.button(it, primary = which == BUTTON_POSITIVE, radius = 4, decorate = content.decorate) }
 
     private fun styleInputs(view: View) {
         if (view is EditText) {
             view.textSize = 18f
-            L7Ui.input(view)
+            GalaxyStyle.input(view)
         } else if (view is Button) {
             // 已由组件绑定的按钮保留主次样式，不能用正文颜色覆盖其状态与主题绑定。
-            if (view.getTag(R.id.l7_palette_binding) == null) L7Ui.button(view)
-        } else if (view is TextView && view.getTag(R.id.l7_palette_binding) == null) {
+            if (!GalaxyStyle.isBound(view)) GalaxyStyle.button(view)
+        } else if (view is TextView && !GalaxyStyle.isBound(view)) {
             view.textSize = 18f
-            L7Ui.text(view, if (view.currentTextColor == uiContext.getColor(R.color.product_ui_warning))
-                R.color.product_ui_warning else R.color.product_ui_muted)
+            GalaxyStyle.text(view, if (view.currentTextColor == uiContext.getColor(R.color.galaxy_ui_warning))
+                R.color.galaxy_ui_warning else R.color.galaxy_ui_muted)
         }
         if (view is ViewGroup) for (index in 0 until view.childCount) styleInputs(view.getChildAt(index))
     }

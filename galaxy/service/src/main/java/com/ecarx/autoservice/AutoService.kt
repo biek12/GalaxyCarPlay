@@ -87,6 +87,18 @@ class AutoService : Service() {
             }}.also{it.start()}
         }
     }
+    private var oemArtwork: OemArtworkWriter?=null
+    private val backgroundImages=SerialWorker("AutoService-background-images")
+    private var clusterImageGeneration=0L
+    private var clusterElementRevision=0L
+    private var clusterConfigurationStatus="ready"
+    private var clusterHook:ClusterHookController?=null
+    private var kanziMedia: KanziMediaPublisher?=null
+    private var carplayMedia=Bundle()
+    private var nativeMedia: Bundle?=null
+    private var nativeSource: com.ecarx.autoservice.media.NativeMediaSource?=null
+    private var nativeArtwork: android.graphics.Bitmap?=null
+    private var visualMedia = Bundle()
     private var artworkVersion = 0L
     private var artworkGeneration = 0L
     private val notify = Runnable {
@@ -112,63 +124,13 @@ class AutoService : Service() {
             ServiceTrace.event("binder_request",it);state("request:${it.javaClass.simpleName}")
         } }
     }
-    private val binder = object : IAutoService.Stub() {
-        override fun getProtocolVersion(): Int { uid(); return AutoContract.VERSION }
-        override fun getSnapshot(): Bundle { uid(); return synchronized(snapshotLock) { Bundle(latest) } }
-        override fun getVehicleCatalog(offset: Int, limit: Int): Bundle { uid(); return inventory.page(offset, limit, true) }
-        override fun getVehicleProperties(offset: Int, limit: Int): Bundle { uid(); return inventory.page(offset, limit, false) }
-        override fun getVehicleValue(propertyId: Int, areaId: Int, characterOffset: Int): Bundle {
-            uid(); return inventory.value(propertyId, areaId, characterOffset)
-        }
-        override fun attach(owner: IBinder, role: String, callback: IAutoCallback) {
-            val calling = uid()
-            require(AutoContract.roleValid(role))
-            val packages = packageManager.getPackagesForUid(calling).orEmpty()
-            if (role == AutoContract.MAP) check("com.ecarx.carplay" in packages)
-            if (role == AutoContract.THEME || role == AutoContract.PREVIEW) check(AutoContract.CLUSTER_PACKAGE in packages)
-            enqueue {
-                if(role==AutoContract.PREVIEW)clients.role(AutoContract.PREVIEW)?.let { old->this@AutoService.detach(old.owner) }
-                clients.attach(owner, calling, role, callback)
-                surfaces[role]?.let { (kind,surface) -> callbacks.post { runCatching { callback.onSurface(kind, surface) } } }
-                publish()
-            }
-        }
-        override fun detach(owner: IBinder) { val calling = uid(); enqueue { clients.require(owner, calling); this@AutoService.detach(owner) } }
-        override fun setActive(owner: IBinder, active: Boolean) {
-            val calling = uid(); enqueue {
-                val lease = clients.require(owner, calling)
-                lease.active = active
-                if (lease.role == AutoContract.THEME) getSharedPreferences("platform", 0).edit().putBoolean("themeEnabled", active).apply()
-                updateProjection(); publish()
-            }
-        }
-        override fun publishMedia(owner: IBinder, value: Bundle) {
-            val calling = uid(); val safe = AutoContract.sanitizeMedia(value)
-            enqueue {
-                check(clients.require(owner, calling).role == AutoContract.MAP)
-                if (media.getString("track") != safe.getString("track")) {
-                    ++artworkGeneration
-                    java.io.File(cacheDir, "artwork.png").delete()
-                    ++artworkVersion
-                }
-                media = safe.apply {
-                    val now = SystemClock.elapsedRealtime()
-                    putLong("receivedAt", getLong("sampledAt").takeIf { it in 1..now } ?: now)
-                }; publish()
-            }
-        }
-        override fun publishNavigation(owner: IBinder, value: Bundle) {
-            val calling = uid(); val safe = AutoContract.sanitizeNavigation(value)
-            enqueue { check(clients.require(owner, calling).role == AutoContract.MAP); navigation = safe; publish() }
-        }
-        override fun publishArtwork(owner: IBinder, fd: ParcelFileDescriptor) {
-            val calling = uid()
+    private fun receiveArtwork(owner: IBinder,calling: Int,fd: ParcelFileDescriptor,expectedTrack: String?) {
             val duplicate = try {
                 check(android.system.OsConstants.S_ISREG(android.system.Os.fstat(fd.fileDescriptor).st_mode)) { "artwork_requires_regular_file" }
                 ParcelFileDescriptor.dup(fd.fileDescriptor)
             } finally { fd.close() }
             main.post {
-                if (closed || runCatching { clients.require(owner, calling).role == AutoContract.MAP }.getOrDefault(false).not()) {
+                if (closed || (expectedTrack != null && expectedTrack != media.getString("track")) || runCatching { clients.require(owner, calling).role == AutoContract.MAP }.getOrDefault(false).not()) {
                     duplicate.close(); return@post
                 }
                 val ticket = artworkGeneration
@@ -189,7 +151,131 @@ class AutoService : Service() {
                     } catch (_: Exception) { runCatching { duplicate.close() } }
                 }
             }
+    }
+
+    private val binder = object : IAutoService.Stub() {
+        override fun getProtocolVersion(): Int { uid(); return AutoContract.VERSION }
+        override fun getSnapshot(): Bundle { uid(); return synchronized(snapshotLock) { Bundle(latest) } }
+        override fun getVehicleCatalog(offset: Int, limit: Int): Bundle { uid(); return inventory.page(offset, limit, true) }
+        override fun getVehicleProperties(offset: Int, limit: Int): Bundle { uid(); return inventory.page(offset, limit, false) }
+        override fun getVehicleValue(propertyId: Int, areaId: Int, characterOffset: Int): Bundle {
+            uid(); return inventory.value(propertyId, areaId, characterOffset)
         }
+        override fun attach(owner: IBinder, role: String, callback: IAutoCallback) {
+            val calling = uid()
+            require(AutoContract.roleValid(role))
+            val packages = packageManager.getPackagesForUid(calling).orEmpty()
+            if (role == AutoContract.MAP) check("com.ecarx.carplay" in packages)
+            if (role == AutoContract.THEME || role == AutoContract.PREVIEW || role == AutoContract.ELEMENTS || role == AutoContract.VISUAL_MUSIC) check(AutoContract.CLUSTER_PACKAGE in packages)
+            enqueue {
+                if(role==AutoContract.PREVIEW)clients.role(AutoContract.PREVIEW)?.let { old->this@AutoService.detach(old.owner) }
+                clients.attach(owner, calling, role, callback)
+                surfaces[role]?.let { (kind,surface) -> callbacks.post { runCatching { callback.onSurface(kind, surface) } } }
+                publish()
+            }
+        }
+        override fun detach(owner: IBinder) { val calling = uid(); enqueue { clients.require(owner, calling); this@AutoService.detach(owner) } }
+        override fun setActive(owner: IBinder, active: Boolean) {
+            val calling = uid(); enqueue {
+                val lease = clients.require(owner, calling)
+                lease.active = active
+                if (lease.role == AutoContract.THEME) getSharedPreferences("platform",0).edit().apply {
+                    putBoolean("themeEnabled",active);if(active)putBoolean("clusterElementsEnabled",false)
+                }.apply()
+                if(lease.role==AutoContract.ELEMENTS&&!active){++clusterImageGeneration;clusterConfigurationStatus="ready"}
+                if (lease.role == AutoContract.ELEMENTS) getSharedPreferences("platform",0).edit().apply {
+                    putBoolean("clusterElementsEnabled",active);if(active)putBoolean("themeEnabled",false)
+                }.apply()
+                updateProjection(); publish()
+            }
+        }
+        override fun configureClusterElements(owner: IBinder, configuration: Bundle) {
+            val calling = uid()
+            val safe = com.galaxy.auto.contract.ClusterDisplayConfiguration.from(configuration)
+            enqueue {
+                val lease = clients.require(owner, calling)
+                check(lease.role == AutoContract.ELEMENTS)
+                if(lease.elements==safe)return@enqueue
+                ++clusterImageGeneration
+                ++clusterElementRevision
+                clusterConfigurationStatus="ready"
+                lease.elements = safe
+                updateProjection(); publish()
+            }
+        }
+        override fun configureClusterImage(owner: IBinder, configuration: Bundle, image: ParcelFileDescriptor, result: IAutoResult) {
+            val calling=uid()
+            check(AutoContract.CLUSTER_PACKAGE in packageManager.getPackagesForUid(calling).orEmpty())
+            val safe=com.galaxy.auto.contract.ClusterDisplayConfiguration.from(configuration)
+            require(safe.background==com.galaxy.auto.contract.ClusterDisplayConfiguration.IMAGE_BACKGROUND)
+            val info=android.system.Os.fstat(image.fileDescriptor)
+            require(android.system.OsConstants.S_ISREG(info.st_mode)&&info.st_size in 1..16L*1024*1024){"background_requires_bounded_file"}
+            val duplicate=ParcelFileDescriptor.dup(image.fileDescriptor)
+            if(!main.post {
+                if(closed){duplicate.close();return@post}
+                val lease=runCatching{clients.require(owner,calling).also{check(it.role==AutoContract.ELEMENTS)}}.getOrNull()
+                if(lease==null){duplicate.close();return@post}
+                if(lease.elements==safe){
+                    duplicate.close()
+                    callbacks.post{runCatching{result.onResult(Bundle().apply{putBoolean("accepted",true)})}}
+                    return@post
+                }
+                val ticket=++clusterImageGeneration
+                clusterConfigurationStatus="pending";publish()
+                backgroundImages.post {
+                    val outcome=runCatching { ClusterBackgroundStore(this@AutoService).import(safe.image,duplicate) }
+                        .onFailure { ServiceTrace.event("cluster_background_import",it) }
+                    runCatching{duplicate.close()}
+                    main.post {
+                        val accepted=!closed && ticket==clusterImageGeneration && clients.role(AutoContract.ELEMENTS)===lease
+                        if(accepted){
+                            clusterConfigurationStatus=if(outcome.isSuccess)"ready" else "failed"
+                            if(outcome.isSuccess){++clusterElementRevision;lease.elements=safe}
+                            updateProjection()
+                            publish()
+                        }
+                        callbacks.post {runCatching{result.onResult(Bundle().apply{putBoolean("accepted",accepted&&outcome.isSuccess);if(outcome.isFailure)putString("error","background_import_failed")})}}
+                    }
+                }
+            })duplicate.close()
+        }
+        override fun publishMedia(owner: IBinder, value: Bundle) {
+            val calling = uid(); val safe = AutoContract.sanitizeMedia(value)
+            enqueue {
+                check(clients.require(owner, calling).role == AutoContract.MAP)
+                carplayMedia=safe
+                if(nativeMedia==null)selectMedia(safe)
+                publish()
+            }
+        }
+        override fun publishVisualMedia(owner: IBinder,value: Bundle) {
+            val calling=uid();val safe=AutoContract.sanitizeMedia(value)
+            enqueue {
+                check(clients.require(owner,calling).role==AutoContract.VISUAL_MUSIC)
+                if(safe.getString("track")==media.getString("track")) {visualMedia=safe;publish()}
+            }
+        }
+        override fun prepareOemArtwork(owner: IBinder,fd: ParcelFileDescriptor,result: IAutoResult) {
+            val calling=uid()
+            check("com.ecarx.carplay" in packageManager.getPackagesForUid(calling).orEmpty())
+            val duplicate=try {
+                check(android.system.OsConstants.S_ISREG(android.system.Os.fstat(fd.fileDescriptor).st_mode))
+                ParcelFileDescriptor.dup(fd.fileDescriptor)
+            }finally{fd.close()}
+            main.post {
+                if(closed||paused||!features.root||runCatching{clients.require(owner,calling)}.isFailure){
+                    duplicate.close();callbacks.post{runCatching{result.onResult(Bundle().apply{putString("error","artwork_unavailable")})}};return@post
+                }
+                val writer=oemArtwork?:OemArtworkWriter(this@AutoService).also{oemArtwork=it}
+                writer.write(duplicate){response->callbacks.post{runCatching{result.onResult(response)}}}
+            }
+        }
+        override fun publishTrackArtwork(owner: IBinder,track: String,fd: ParcelFileDescriptor) = receiveArtwork(owner,uid(),fd,track)
+        override fun publishNavigation(owner: IBinder, value: Bundle) {
+            val calling = uid(); val safe = AutoContract.sanitizeNavigation(value)
+            enqueue { check(clients.require(owner, calling).role == AutoContract.MAP); navigation = safe; publish() }
+        }
+        override fun publishArtwork(owner: IBinder,fd: ParcelFileDescriptor) = receiveArtwork(owner,uid(),fd,null)
         override fun executeShell(owner: IBinder, transport: String, command: String, timeoutMillis: Int, result: IAutoResult) {
             val calling = uid()
             check(checkPermission("com.ecarx.autoservice.permission.ADMIN", -1, calling) == PackageManager.PERMISSION_GRANTED)
@@ -236,6 +322,7 @@ class AutoService : Service() {
                 ensureComposition(includePreview=lease.role==AutoContract.PREVIEW)
                 if(existing!=null)composition?.configureScene(lease.role,safe)
                 scheduleMapSize()
+                publish()
             }
         }
         override fun setPreviewSurface(owner: IBinder, surface: Surface?) {
@@ -463,7 +550,9 @@ class AutoService : Service() {
             return START_NOT_STICKY
         }
         if (intent?.action == "theme-stop") {
-            getSharedPreferences("platform", 0).edit().putBoolean("themeEnabled", false).apply()
+            getSharedPreferences("platform",0).edit().putBoolean("themeEnabled",false).putBoolean("clusterElementsEnabled",false).apply()
+            clients.all().filter {it.role==AutoContract.THEME||it.role==AutoContract.ELEMENTS}.forEach{it.active=false}
+            updateProjection()
             runCatching { stopService(Intent().setComponent(ComponentName(AutoContract.CLUSTER_PACKAGE, "com.galaxy.autocluster.ClusterRenderService"))) }
         }
         if (intent?.action == "start") AutoStartup.setEnabled(this, true)
@@ -492,7 +581,8 @@ class AutoService : Service() {
             if (features.vehicle) { collector.start(); applyDemand() }
             projectionRequested = false; platformReady = false; updateProjection()
         }
-        if (features.projection && (intent?.action == "cluster" || getSharedPreferences("platform", 0).getBoolean("themeEnabled", false))) runCatching {
+        if ((features.projection && (intent?.action == "cluster" || getSharedPreferences("platform",0).getBoolean("themeEnabled",false))) ||
+            (features.root && getSharedPreferences("platform",0).getBoolean("clusterElementsEnabled",false))) runCatching {
             startForegroundService(Intent().setComponent(ComponentName(AutoContract.CLUSTER_PACKAGE,
                 "com.galaxy.autocluster.ClusterRenderService")))
         }.onFailure { state("cluster:${it.javaClass.simpleName}") }
@@ -551,7 +641,9 @@ class AutoService : Service() {
     }
     private fun updateProjection() {
         val map = clients.role(AutoContract.MAP)?.active == true
-        val active = !paused && features.projection && clients.all().any { AutoContract.producesOutput(it.role) && it.active }
+        // 原厂元素模式保留原厂窗口；不能让仍在线的CarPlay客户端再盖上一整层HAB画面。
+        val elements = clients.role(AutoContract.ELEMENTS)?.active == true
+        val active = !paused && !elements && features.projection && clients.all().any { AutoContract.producesOutput(it.role) && it.active }
         if (active) ensureComposition()
         composition?.setMapActive(map)
         if (active != projectionRequested) {
@@ -571,8 +663,11 @@ class AutoService : Service() {
         scheduleMapSize()
         if(old.role==AutoContract.THEME||old.role==AutoContract.PREVIEW)composition?.clearScene(old.role)
         if(old.role==AutoContract.PREVIEW){previewTarget?.release();previewTarget=null;composition?.setPreviewSurface(null)}
-        if (old.role == AutoContract.MAP) { media = Bundle(); navigation = Bundle(); ++artworkGeneration
-            java.io.File(cacheDir, "artwork.png").delete(); ++artworkVersion }
+        if (old.role == AutoContract.MAP) {
+            carplayMedia=Bundle();navigation=Bundle()
+            if(nativeMedia==null)selectMedia(Bundle())
+        }
+        if(old.role==AutoContract.VISUAL_MUSIC)visualMedia=Bundle()
         updateProjection()
         if (clients.all().none { AutoContract.producesOutput(it.role) } && previewTarget==null) {
             composition?.close(); composition = null; surfaces.clear()
@@ -638,7 +733,44 @@ class AutoService : Service() {
         out.putLong("at", at); out.putLong("sequence", round)
         callbacks.post { runCatching { lease.callback.onVehicleFeed(out) } }
     }
+    private fun selectMedia(value: Bundle) {
+        if(media.getString("track")!=value.getString("track")){
+            ++artworkGeneration;visualMedia=Bundle();java.io.File(cacheDir,"artwork.png").delete();++artworkVersion
+        }
+        val rawLines=value.getStringArrayList("lyrics").orEmpty()
+        if(rawLines.isNotEmpty()&&value.getLongArray("lyricTimes")?.size==rawLines.size)visualMedia=Bundle()
+        media=AutoContract.sanitizeMedia(value).apply{
+            val now=SystemClock.elapsedRealtime();putLong("receivedAt",getLong("sampledAt").takeIf{it in 1..now}?:now)
+        }
+    }
+    private fun nativeMusic(value: Bundle?,bitmap: android.graphics.Bitmap?) {
+        nativeMedia=value
+        val changed=media.getString("track")!=(value?:carplayMedia).getString("track")
+        selectMedia(value?:carplayMedia)
+        if(value!=null&&bitmap!=null&&(changed||nativeArtwork!==bitmap)) {
+            nativeArtwork=bitmap
+            val ticket=artworkGeneration
+            val width=bitmap.width;val height=bitmap.height
+            if(width>0&&height>0) {
+                val scale=minOf(1f,512f/maxOf(width,height))
+                val image=android.graphics.Bitmap.createScaledBitmap(bitmap,(width*scale).toInt().coerceAtLeast(1),(height*scale).toInt().coerceAtLeast(1),true)
+                val owned=if(image===bitmap)image.copy(android.graphics.Bitmap.Config.ARGB_8888,false)else image
+                artwork.post {
+                    try {
+                        val bytes=java.io.ByteArrayOutputStream().also{owned.compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)}.toByteArray()
+                        main.post {if(!closed&&ticket==artworkGeneration){
+                            val file=android.util.AtomicFile(java.io.File(cacheDir,"artwork.png"));val output=file.startWrite()
+                            try{output.write(bytes);file.finishWrite(output);++artworkVersion;publish()}catch(error:Exception){file.failWrite(output)}
+                        }}
+                    }finally{owned.recycle()}
+                }
+            }
+        }
+        publish()
+    }
     private fun publish() {
+        if(!closed&&nativeSource==null)nativeSource=com.ecarx.autoservice.media.NativeMediaSource(this,::nativeMusic)
+        nativeSource?.enabled(!closed&&!paused&&AutoStartup.enabled(this))
         sentinel?.platform(!closed&&!paused&&features.root&&features.vehicle&&AutoStartup.enabled(this))
         updateRemote()
         val snapshot = Bundle().apply {
@@ -651,8 +783,21 @@ class AutoService : Service() {
             putBoolean("vehicleWebEnabled",!paused&&getSharedPreferences("vehicle-web",0).getBoolean("enabled",false))
             putBundle("features", features.bundle())
             putBoolean("projectionRequested", projectionRequested)
+            // 不依赖features.projection；基础Root关闭/全局停止时停止可视需求。
+            val elements = clients.elementDemand().takeIf { !paused && features.root }
+            putBoolean("clusterElementsRequested", elements != null)
+            putLong("clusterElementRevision",clusterElementRevision)
+            putBoolean("clusterMusicRequested", elements?.music == true)
+            putBoolean("clusterLyricsRequested", !paused && (elements?.music == true || features.projection && projectionRequested && clients.role(AutoContract.THEME)?.active == true && scenes[AutoContract.THEME]?.lyrics == true))
+            elements?.let { putBundle("clusterElements", it.bundle()) }
             putString("foundation", foundationEvidence())
             putString("status", status); putBundle("media", Bundle(media)); putBundle("navigation", Bundle(navigation))
+            if(visualMedia.getString("track")!=null&&visualMedia.getString("track")==media.getString("track")) {
+                putBundle("visualMedia",Bundle(media).apply {
+                    putStringArrayList("lyrics",visualMedia.getStringArrayList("lyrics"))
+                    if(visualMedia.containsKey("lyricTimes"))putLongArray("lyricTimes",visualMedia.getLongArray("lyricTimes"))else remove("lyricTimes")
+                })
+            }
             // v4：快照不再携带全量车辆键（原来每次投递83个子Bundle×每客户端）。
             // 只发键名清单，客户端据此把主题/自身需求裁剪成订阅；值走feed或getVehicleValues。
             putStringArray("vehicleKeys", vehicleKeys()); putBoolean("vehicleScanning", collector.scanning())
@@ -663,9 +808,20 @@ class AutoService : Service() {
             putBundle("mapStreamSize", mapStreamSize.bundle())
             putString("vehicleMode", getSharedPreferences("platform", 0).getString("vehicleMode", "app"))
             putString("model", modelPrefs())
+            putBoolean("artworkReady",java.io.File(cacheDir,"artwork.png").isFile)
             putLong("artworkVersion", artworkVersion)
             putString("artworkUri", "content://com.ecarx.autoservice.artwork/current")
         }
+        val elementConfiguration=snapshot.getBundle("clusterElements")?.let{com.galaxy.auto.contract.ClusterDisplayConfiguration.from(it)}
+        val elementsWanted=snapshot.getBoolean("clusterElementsRequested")&&!closed
+        if(elementsWanted&&clusterHook==null)clusterHook=ClusterHookController(this,::publish)
+        clusterHook?.update(elementsWanted,rootReady,elementConfiguration)
+        snapshot.putBundle("clusterElementRuntime",clusterHook?.snapshot())
+        snapshot.putString("clusterConfigurationStatus",clusterConfigurationStatus)
+        snapshot.putString("clusterElementStatus",when(clusterConfigurationStatus){"pending"->"preparing";"failed"->"failed";else->clusterHook?.snapshot()?.getString("state")?:"idle"})
+        val musicWanted=elementsWanted && rootReady
+        if(musicWanted&&kanziMedia==null)kanziMedia=KanziMediaPublisher(this,published={generation,flags->clusterHook?.published(generation,flags)})
+        kanziMedia?.update(snapshot,musicWanted)
         synchronized(snapshotLock) { latest = snapshot; recipients = clients.all().map { it.callback } }
         callbacks.removeCallbacks(notify); if (recipients.isNotEmpty()) callbacks.post(notify)
     }
@@ -706,6 +862,8 @@ class AutoService : Service() {
             .entries.joinToString { "${it.key}@${it.value}ms" })
         writer.println("vehicleStats=" + collector.stats())
         writer.println("hab=" + (composition?.metrics() ?: "inactive"))
+        writer.println("clusterElementsRequested=${snapshot.getBoolean("clusterElementsRequested")} revision=${snapshot.getLong("clusterElementRevision")} configuration=${snapshot.getString("clusterConfigurationStatus")} state=${snapshot.getString("clusterElementStatus")}")
+        writer.println("clusterElementRuntime="+snapshot.getBundle("clusterElementRuntime"))
         writer.println("automatic=" + AutoStartup.enabled(this))
         val diagnosticPrefs=getSharedPreferences("diagnostics",0)
         writer.println("diagnosticLastUpload="+diagnosticPrefs.getLong("lastUploadAt",0)+" error="+diagnosticPrefs.getString("lastUploadError","")+" pending="+java.io.File(noBackupFilesDir,"diagnostic-inbox").listFiles().orEmpty().size)
@@ -733,6 +891,11 @@ class AutoService : Service() {
         previewTarget?.release();previewTarget=null;scenes.clear()
         collector.close()
         callbacks.close()
+        oemArtwork?.close();oemArtwork=null
+        nativeSource?.close();nativeSource=null
+        clusterHook?.close();clusterHook=null
+        backgroundImages.close()
+        kanziMedia?.close();kanziMedia=null
         artwork.close()
         super.onDestroy()
     }

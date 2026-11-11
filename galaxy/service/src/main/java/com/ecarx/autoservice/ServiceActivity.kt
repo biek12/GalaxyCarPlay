@@ -21,6 +21,8 @@ class ServiceActivity : Activity() {
     private lateinit var headline: TextView
     private lateinit var summary: TextView
     private lateinit var badge: TextView
+    private lateinit var wifiHelp: LinearLayout
+    private lateinit var wifiMessage: TextView
     private lateinit var automatic: FeatureRow
     private val rows = linkedMapOf<ServiceFeature, FeatureRow>()
     private val metrics = mutableListOf<TextView>()
@@ -79,6 +81,15 @@ class ServiceActivity : Activity() {
         }
         overview.addView(metricRow, LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(22) })
         content.addView(overview)
+        wifiHelp = com.galaxy.auto.ui.GalaxyViews.group(this)
+        wifiMessage = com.galaxy.auto.ui.GalaxyViews.text(this, "", com.galaxy.auto.ui.GalaxyTypography.Role.DESCRIPTION)
+        wifiHelp.addView(wifiMessage)
+        wifiHelp.addView(com.galaxy.auto.ui.GalaxyViews.button(this, "打开原生 Wi-Fi 设置") {
+            if (!com.ecarx.autoservice.settings.NativeWifiSettings.open(this)) {
+                Toast.makeText(this, "系统未提供可打开的 Wi-Fi 设置入口", Toast.LENGTH_LONG).show()
+            }
+        })
+        content.addView(wifiHelp, LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(16) })
 
         section(content, "后台运行")
         automatic = FeatureRow(ui, "自动运行", "开机启动，异常退出后自动恢复", "automatic") { enabled ->
@@ -181,6 +192,13 @@ class ServiceActivity : Activity() {
         val foundation = runCatching { JSONObject(snapshot.getString("foundation") ?: "{}") }.getOrElse { JSONObject() }
         val adbReady = features.adb && connected && foundation.optString("state") in setOf("verified", "adb_connected")
         val rootReady = features.root && connected && snapshot.getBoolean("rootReady")
+        val wifiEnabled = runCatching {
+            applicationContext.getSystemService(android.net.wifi.WifiManager::class.java)?.isWifiEnabled
+        }.getOrNull()
+        wifiHelp.visibility = if (enabled && connected && ((features.adb && !adbReady) || (features.root && !rootReady)))
+            android.view.View.VISIBLE else android.view.View.GONE
+        wifiMessage.text = if (wifiEnabled == false) "Wi-Fi 已关闭，可先打开 Wi-Fi，再等待本机连接恢复。"
+            else "本机连接尚未就绪，可检查 Wi-Fi；具体连接或认证原因见诊断。"
         val projectionReady = features.projection && connected && snapshot.getBoolean("qnxReady")
         headline.text = when { !enabled -> "后台已暂停"; !connected -> "等待后台连接"; else -> "后台运行中" }
         summary.text = when {

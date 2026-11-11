@@ -72,7 +72,7 @@ class HabNativeSourceTest(unittest.TestCase):
             NATIVE / "galaxy_hab_protocol.c", NATIVE / "galaxy_hab_owned.c", NATIVE / "galaxy_hab_hmac.c",
             NATIVE / "galaxy_hab_receiver.c", NATIVE / "galaxy_hab_qnx.c",
             TESTS / "test_qnx.c",
-        ], ["-I", str(TESTS / "qnx_stubs")])
+        ], ["-DMS_CACHE_ONLY=0x02000000", "-I", str(TESTS / "qnx_stubs")])
 
     def test_qnx_entry_point_compiles_with_test_interface(self):
         compiler = shlex.split(os.environ.get("CC", "cc"))
@@ -86,7 +86,7 @@ class HabNativeSourceTest(unittest.TestCase):
 
     def test_qnx_service_rearms_without_overlapping_owners_and_stops_on_repeated_failure(self):
         self.compile_and_run("qnx-service", [ROOT / "tools/hab/test_qnx_service.c"],
-                             ["-I", str(TESTS / "qnx_stubs")])
+                             ["-DMS_CACHE_ONLY=0x02000000", "-I", str(TESTS / "qnx_stubs")])
 
     def test_sender_open_frame_and_close(self):
         self.compile_and_run("sender", [

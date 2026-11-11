@@ -35,8 +35,10 @@ class AutoClient(context: Context, private val role: String,
     private var retries = 0
     @Volatile private var lastMedia: Bundle? = null
     @Volatile private var lastNavigation: Bundle? = null
-    @Volatile private var lastArtwork: ByteArray? = null
+    @Volatile private var lastArtwork: TrackArtwork? = null
     @Volatile private var lastScene: Bundle? = null
+    @Volatile private var lastElementPlan: Pair<Bundle,java.io.File?>? = null
+    @Volatile private var elementRevision=0L
     private var previewSurface: Surface? = null // io线程持有自己的引用
     private var borrowed: Surface? = null
     @Volatile private var active = false
@@ -45,7 +47,8 @@ class AutoClient(context: Context, private val role: String,
     @Volatile private var feedInterval: Int = AutoContract.DEFAULT_FEED_INTERVAL_MS
     private val media = AtomicReference<Bundle?>()
     private val navigation = AtomicReference<Bundle?>()
-    private val art = AtomicReference<ByteArray?>()
+    private data class TrackArtwork(val track: String,val bytes: ByteArray)
+    private val art = AtomicReference<TrackArtwork?>()
     private val scene = AtomicReference<Bundle?>()
     private val policy = AtomicReference<Bundle?>()
     private val flush = Runnable { flushLatest() }
@@ -93,6 +96,7 @@ class AutoClient(context: Context, private val role: String,
                     }
                     next.attach(lease, role, callback)
                     if (closed || generation != ticket) return@post
+                    lastElementPlan?.let { sendElements(next,lease,Bundle(it.first),it.second,elementRevision) }
                     next.setActive(lease, active)
                     // 与attach/setActive同一批补发，重连后订阅语义不依赖调用方再次触发。
                     if (replayVehicleFeedOnConnect && feedKeys.isNotEmpty()) next.setVehicleFeed(lease, feedKeys.toTypedArray(), feedInterval)
@@ -128,17 +132,40 @@ class AutoClient(context: Context, private val role: String,
         }
     }
     fun setActive(value: Boolean) { active = value; io.post { call { it.setActive(owner, value) } } }
+    /** 先提交方案再激活；服务重连按相同顺序重放，不创建遮罩Surface。 */
+    fun configureClusterElements(value: ClusterDisplayConfiguration, image: java.io.File? = null) {
+        require(role == AutoContract.ELEMENTS)
+        val configuration = value.bundle()
+        val revision=++elementRevision
+        lastElementPlan=configuration to image
+        io.post { if(revision==elementRevision)call { sendElements(it,owner,Bundle(configuration),image,revision) } }
+    }
+    private fun sendElements(remote: IAutoService,lease: IBinder,value: Bundle,image: java.io.File?,revision:Long) {
+        if(value.getString("background")!=ClusterDisplayConfiguration.IMAGE_BACKGROUND){remote.configureClusterElements(lease,value);return}
+        check(image?.isFile==true){"background_image_missing"}
+        val ticket=generation
+        ParcelFileDescriptor.open(image,ParcelFileDescriptor.MODE_READ_ONLY).use { fd->
+            remote.configureClusterImage(lease,value,fd,object:IAutoResult.Stub(){override fun onResult(result:Bundle){
+                main.post{if(!closed&&generation==ticket&&elementRevision==revision&&!result.getBoolean("accepted"))onState("background_import_failed")}
+            }})
+        }
+    }
     fun publishMedia(value: Bundle) {
         val next = AutoContract.sanitizeMedia(value)
         if (lastMedia?.getString("track") != next.getString("track")) { lastArtwork = null; art.set(null) }
         lastMedia = next; media.set(next); scheduleFlush()
     }
+    fun publishVisualMedia(value: Bundle) {
+        require(role==AutoContract.VISUAL_MUSIC)
+        val safe=AutoContract.sanitizeMedia(value)
+        io.post {call {it.publishVisualMedia(owner,safe)}}
+    }
     fun publishNavigation(value: Bundle) {
         lastNavigation = AutoContract.sanitizeNavigation(value); navigation.set(lastNavigation); scheduleFlush()
     }
-    fun publishArtwork(bytes: ByteArray) {
+    fun publishArtwork(bytes: ByteArray,track: String = lastMedia?.getString("track").orEmpty()) {
         require(bytes.size <= 2 * 1024 * 1024)
-        lastArtwork = bytes.copyOf(); art.set(lastArtwork); scheduleFlush()
+        lastArtwork = TrackArtwork(track,bytes.copyOf()); art.set(lastArtwork); scheduleFlush()
     }
     fun configureScene(value: SceneConfiguration) {
         require(role == AutoContract.THEME || role == AutoContract.PREVIEW)
@@ -165,14 +192,29 @@ class AutoClient(context: Context, private val role: String,
             policy.getAndSet(null)?.let { value -> remote.setProjectionPolicy(owner, value) }
             media.getAndSet(null)?.let { value -> remote.publishMedia(owner, value) }
             navigation.getAndSet(null)?.let { value -> remote.publishNavigation(owner, value) }
-            art.getAndSet(null)?.let { bytes ->
+            art.getAndSet(null)?.let { artwork ->
+                val bytes=artwork.bytes
                 // 普通只读FD没有pipe写满/读端不消费造成的永久等待，临时文件仅在本App缓存中。
                 val file = java.io.File.createTempFile("auto-art-", ".bin", app.cacheDir)
                 try {
                     file.writeBytes(bytes)
-                    ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fd -> remote.publishArtwork(owner, fd) }
+                    ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fd -> remote.publishTrackArtwork(owner,artwork.track,fd) }
                 } finally { file.delete() }
             }
+        }
+    }
+    fun prepareOemArtwork(bytes: ByteArray,result: (Bundle)->Unit) {
+        require(bytes.size<=2*1024*1024)
+        val ticket=generation
+        io.post {
+            val file=java.io.File.createTempFile("oem-artwork-",".bin",app.cacheDir)
+            try{
+                file.writeBytes(bytes)
+                val remote=api?:error("service_unavailable")
+                val callback=object:IAutoResult.Stub(){override fun onResult(value: Bundle){main.post{if(!closed&&generation==ticket)result(value)}}}
+                ParcelFileDescriptor.open(file,ParcelFileDescriptor.MODE_READ_ONLY).use{remote.prepareOemArtwork(owner,it,callback)}
+            }catch(error:Exception){main.post{if(!closed&&generation==ticket)result(Bundle().apply{putString("error",error.javaClass.simpleName)})}}
+            finally{file.delete()}
         }
     }
     fun executeShell(transport: String, command: String, timeoutMillis: Int = 10000, result: (Bundle) -> Unit) {
@@ -292,7 +334,7 @@ class AutoClient(context: Context, private val role: String,
             closed = true
             (api to owner).also { api = null }
         }
-        ++generation
+        ++generation; ++elementRevision; lastElementPlan=null
         main.removeCallbacks(retry)
         onSurface(null); borrowed?.release(); borrowed = null
         onConfiguredSurface(null, 0)

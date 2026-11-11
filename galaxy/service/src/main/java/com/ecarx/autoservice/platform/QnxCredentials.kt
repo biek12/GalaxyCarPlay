@@ -23,6 +23,12 @@ internal object QnxCredentials {
         finally { data.fill(0) }
     }
     fun loadOptional(context: Context): JSONObject = if (File(context.noBackupFilesDir, "qnx-login.json").exists()) load(context) else JSONObject()
+    /** HAB 与原厂元素共用同一份已配置认证；没有私有配置时才自动取得原厂来源。 */
+    fun login(request: JSONObject): QnxOemCredentials.Login {
+        if(!request.has("username") && !request.has("password"))return QnxOemCredentials.load()
+        require(request.has("username") && request.has("password")) { "qnx_credentials_incomplete" }
+        return QnxOemCredentials.Login(request.getString("username"),request.getString("password"))
+    }
     fun load(context: Context): JSONObject {
         val file = File(context.noBackupFilesDir, "qnx-login.json")
         check(file.exists() && file.length() in 3..2048) { "qnx_credentials_missing" }

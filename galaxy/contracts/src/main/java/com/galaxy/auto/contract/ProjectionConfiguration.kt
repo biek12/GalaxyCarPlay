@@ -28,11 +28,11 @@ data class MapViewport(val x: Float, val y: Float, val width: Float, val height:
 }
 
 /** token把场景配置与新主题Surface绑定；第一帧到达后才替换旧主题/几何。 */
-data class SceneConfiguration(val token: Long, val themeId: String, val map: MapViewport?,val appearance: MapAppearance=MapAppearance(),val backdrops: List<MapBackdrop> = emptyList()) {
+data class SceneConfiguration(val token: Long, val themeId: String, val map: MapViewport?,val appearance: MapAppearance=MapAppearance(),val backdrops: List<MapBackdrop> = emptyList(),val lyrics: Boolean=false) {
     init { require(backdrops.size<=8);require(token > 0 && themeId.matches(Regex("[a-zA-Z][a-zA-Z0-9-]{0,79}"))) { "scene_configuration_invalid" } }
     fun bundle() = Bundle().apply {
         putBundle("appearance",appearance.bundle());putParcelableArrayList("backdrops",ArrayList(backdrops.map { it.bundle() }))
-        putInt("schema",1); putLong("token",token); putString("themeId",themeId)
+        putBoolean("lyrics",lyrics);putInt("schema",1); putLong("token",token); putString("themeId",themeId)
         putFloatArray("map",map?.let { floatArrayOf(it.x,it.y,it.width,it.height) } ?: floatArrayOf())
     }
     companion object {
@@ -42,7 +42,7 @@ data class SceneConfiguration(val token: Long, val themeId: String, val map: Map
             require(map.size == 0 || map.size == 4)
             return SceneConfiguration(value.getLong("token"),value.getString("themeId") ?: "",if(map.isEmpty())null else MapViewport(map[0],map[1],map[2],map[3]),
                 value.getBundle("appearance")?.let(MapAppearance::from)?:MapAppearance(),
-                value.getParcelableArrayList<Bundle>("backdrops").orEmpty().map(MapBackdrop::from))
+                value.getParcelableArrayList<Bundle>("backdrops").orEmpty().map(MapBackdrop::from),value.getBoolean("lyrics"))
         }
     }
 }

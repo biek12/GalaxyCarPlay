@@ -34,3 +34,9 @@ project(":auto-client").projectDir = file("galaxy/client")
 project(":service").projectDir = file("galaxy/service")
 project(":cluster").projectDir = file("galaxy/cluster")
 project(":record").projectDir = file("galaxy/record")
+
+include(":auto-ui")
+project(":auto-ui").projectDir = file("galaxy/ui")
+
+include(":auto-lyrics")
+project(":auto-lyrics").projectDir=file("galaxy/lyrics")

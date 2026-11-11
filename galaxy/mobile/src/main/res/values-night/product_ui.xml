@@ -1,17 +1,17 @@
 <resources>
     <!-- 夜间保留文字层级，降低大面积背景亮度。 -->
-    <color name="product_ui_background">#20272E</color>
-    <color name="product_ui_surface">#252A30</color>
-    <color name="product_ui_control">#15191F</color>
-    <color name="product_ui_border">#33FFFFFF</color>
-    <color name="product_ui_accent">#0088FF</color>
-    <color name="product_ui_selected">#240088FF</color>
-    <color name="product_ui_connected">#7BD89B</color>
-    <color name="product_ui_text">#E5FFFFFF</color>
-    <color name="product_ui_muted">#99FFFFFF</color>
-    <color name="product_ui_disabled">#66FFFFFF</color>
-    <color name="product_ui_ripple">#330088FF</color>
-    <color name="product_ui_warning">#FFB34D</color>
-    <color name="product_ui_danger">#FF747A</color>
-    <color name="product_ui_primary_text">#FFFFFF</color>
+    <color name="product_ui_background">@color/galaxy_ui_background</color>
+    <color name="product_ui_surface">@color/galaxy_ui_surface</color>
+    <color name="product_ui_control">@color/galaxy_ui_control</color>
+    <color name="product_ui_border">@color/galaxy_ui_border</color>
+    <color name="product_ui_accent">@color/galaxy_ui_accent</color>
+    <color name="product_ui_selected">@color/galaxy_ui_selected</color>
+    <color name="product_ui_connected">@color/galaxy_ui_connected</color>
+    <color name="product_ui_text">@color/galaxy_ui_text</color>
+    <color name="product_ui_muted">@color/galaxy_ui_muted</color>
+    <color name="product_ui_disabled">@color/galaxy_ui_disabled</color>
+    <color name="product_ui_ripple">@color/galaxy_ui_ripple</color>
+    <color name="product_ui_warning">@color/galaxy_ui_warning</color>
+    <color name="product_ui_danger">@color/galaxy_ui_danger</color>
+    <color name="product_ui_primary_text">@color/galaxy_ui_primary_text</color>
 </resources>

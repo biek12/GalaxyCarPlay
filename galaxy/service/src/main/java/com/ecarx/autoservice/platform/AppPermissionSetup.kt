@@ -21,6 +21,13 @@ internal class AppPermissionSetup(private val context: Context) {
                 command("pm grant --user $user com.ecarx.autoservice $name")
             results += "${name.substringAfterLast('.')}=" + (context.checkSelfPermission(name) == PackageManager.PERMISSION_GRANTED)
         }
+        if(active()) {
+            val component=android.content.ComponentName(context,com.ecarx.autoservice.media.MediaAccessListener::class.java)
+            val manager=context.getSystemService(android.app.NotificationManager::class.java)
+            if(!manager.isNotificationListenerAccessGranted(component))
+                command("cmd notification allow_listener ${component.flattenToString()} $user")
+            results += "media_session_access=${manager.isNotificationListenerAccessGranted(component)}"
+        }
         val appOps = context.getSystemService(AppOpsManager::class.java)
         for ((operation, shellName) in listOf("android:run_in_background" to "RUN_IN_BACKGROUND", "android:run_any_in_background" to "RUN_ANY_IN_BACKGROUND")) {
             if (!active()) break

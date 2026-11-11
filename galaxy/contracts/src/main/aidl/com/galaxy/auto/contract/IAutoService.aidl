@@ -42,4 +42,14 @@ interface IAutoService {
     /** 车辆账号公共入口；action白名单、仅本App与AutoRecord，绝不接受Shell/URL。 */
     void vehicleWebRequest(IBinder owner, String action, in Bundle payload, IAutoResult result);
     void vehicleWebUpload(IBinder owner, String clipId, String direction, in ParcelFileDescriptor file, long length, IAutoResult result);
+    /** 追加式独立元素方案；仅AutoCluster的elements租约，解绑/死亡立即撤销需求。 */
+    void configureClusterElements(IBinder owner, in Bundle configuration);
+    /** 可视歌词仅由AutoCluster音乐租约发布，不能覆盖原始媒体内容。 */
+    void publishVisualMedia(IBinder owner, in Bundle media);
+    /** 封面携带曲目身份，防止排队中的旧封面在切歌后被接受。 */
+    void publishTrackArtwork(IBinder owner, String track, in ParcelFileDescriptor artwork);
+    /** CarPlay专用原厂封面，只接图像FD，不接路径或Shell。 */
+    void prepareOemArtwork(IBinder owner, in ParcelFileDescriptor artwork, IAutoResult result);
+    /** AutoCluster图片方案与有界图像FD原子提交；只有解码成功且原租约仍有效才应用。 */
+    void configureClusterImage(IBinder owner, in Bundle configuration, in ParcelFileDescriptor image, IAutoResult result);
 }

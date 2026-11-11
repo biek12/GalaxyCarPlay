@@ -136,7 +136,7 @@ internal class ClusterSceneOutput(
         if(!production){active?.close();active=prepared;pending=null;renderer?.close();renderer=null;return}
         token=maxOf(SystemClock.elapsedRealtimeNanos(),token+1)
         val compiled=compiled(prepared)
-        val geometry=SceneConfiguration(token,prepared.id,compiled.map?.let { MapViewport(it.x,it.y,it.width,it.height) },compiled.mapAppearance,compiled.backdrops)
+        val geometry=SceneConfiguration(token,prepared.id,compiled.map?.let { MapViewport(it.x,it.y,it.width,it.height) },compiled.mapAppearance,compiled.backdrops,SceneTree.flatten(prepared.content.scene.document.nodes).any{it.visible&&it.type=="lyrics"})
         main.post { if(!closed)client.configureScene(geometry) }
     }
     private fun rebind(){if(closed)return;active?.let { stage(it.copy(lease=it.lease.fork())) }}

@@ -1,0 +1,550 @@
+{
+  "date": "2026-11-10",
+  "baseline": "eb756396d714b0f386ce318956129f7433004c52",
+  "evidenceLevel": "static_source_and_local_vehicle_firmware_only",
+  "runtimeTestsExecuted": false,
+  "sources": [
+    {
+      "id": "G01",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleCollector.kt",
+      "line": 75,
+      "sha256": "738d2575eda815f5bef729ec863b7857cc5a296445e1cb8fc986d6d531337132"
+    },
+    {
+      "id": "G02",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleDemand.kt",
+      "line": 21,
+      "sha256": "f7981ae63cd8bdfedda4431b75a7e9d8a9c8079ba3874aaad7062d96cdd77ca6"
+    },
+    {
+      "id": "G03",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/EcarxVehicleSource.kt",
+      "line": 34,
+      "sha256": "87e2269b57a1d4ae0d32c8a9a9a4c1c1581bf3ac7739c2b4907f185daef8252b"
+    },
+    {
+      "id": "G04",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/EcarxVehicleSource.kt",
+      "line": 239,
+      "sha256": "87e2269b57a1d4ae0d32c8a9a9a4c1c1581bf3ac7739c2b4907f185daef8252b"
+    },
+    {
+      "id": "G05",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VhalNumericSource.kt",
+      "line": 18,
+      "sha256": "d453cfdc1e294c2a58e23ab2b41b1f483ad8df26ad4cfa100e2f61d45cc3a4a9"
+    },
+    {
+      "id": "G06",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/AutoService.kt",
+      "line": 269,
+      "sha256": "24cac32beef3ed81554497edcfddc598f07e63093e92a5efcd4fc03bbd3c74d5"
+    },
+    {
+      "id": "G07",
+      "path": "galaxy/contracts/src/main/java/com/galaxy/auto/contract/VehicleSignal.kt",
+      "line": 7,
+      "sha256": "a41ba8ad8d45f55d7a86ff0137c8b712f62958d62a749b5d3e070a0a709cc63c"
+    },
+    {
+      "id": "G08",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleCollector.kt",
+      "line": 160,
+      "sha256": "738d2575eda815f5bef729ec863b7857cc5a296445e1cb8fc986d6d531337132"
+    },
+    {
+      "id": "G09",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/AutoService.kt",
+      "line": 603,
+      "sha256": "24cac32beef3ed81554497edcfddc598f07e63093e92a5efcd4fc03bbd3c74d5"
+    },
+    {
+      "id": "G10",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/AutoService.kt",
+      "line": 631,
+      "sha256": "24cac32beef3ed81554497edcfddc598f07e63093e92a5efcd4fc03bbd3c74d5"
+    },
+    {
+      "id": "G11",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/SerialWorker.kt",
+      "line": 8,
+      "sha256": "f06c1d9391914c8adf4feff74f35497427e9c71930bff60258680c9b0fbe765e"
+    },
+    {
+      "id": "G12",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/ClientRegistry.kt",
+      "line": 16,
+      "sha256": "1671f9eada64e65df42f39bb35d83532e857b11e7f323c84ba2d2ea08e86857d"
+    },
+    {
+      "id": "G13",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/AutoService.kt",
+      "line": 400,
+      "sha256": "24cac32beef3ed81554497edcfddc598f07e63093e92a5efcd4fc03bbd3c74d5"
+    },
+    {
+      "id": "G14",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleInventory.kt",
+      "line": 13,
+      "sha256": "df1bd480eeb51afbd5d5ab6f2bd4aecb61aa974b9c70fc38a3cfaf028e8634b6"
+    },
+    {
+      "id": "G15",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/startup/AutoStartup.kt",
+      "line": 10,
+      "sha256": "72fec551762db19d34c54d248812de29d263e3a3f09cf90eee08782a2e5184f2"
+    },
+    {
+      "id": "G16",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/FoundationRecovery.kt",
+      "line": 14,
+      "sha256": "36018b5393c58a83018b48c88acf81d6bc991de2e0a19cf040b383ce5a8e179d"
+    },
+    {
+      "id": "G17",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxReceiverLifecycle.kt",
+      "line": 14,
+      "sha256": "bca5880daf509457176fb2a69185fd72eaa8f1cf46e007cfdfcc77f910101044"
+    },
+    {
+      "id": "G18",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/ClientPermissionPolicy.kt",
+      "line": 3,
+      "sha256": "cc5aae50a061681da71288b2d9ef8a20f9d7c45129a3f137cd335947a19113b5"
+    },
+    {
+      "id": "G19",
+      "path": "galaxy/record/src/main/java/com/galaxy/autorecord/core/CameraProfile.kt",
+      "line": 1,
+      "sha256": "21c75c1a0b6d8f8dc13755e26593bfe816ef9c49e581c91019466e1b42201aa4"
+    },
+    {
+      "id": "G20",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/AutoService.kt",
+      "line": 77,
+      "sha256": "24cac32beef3ed81554497edcfddc598f07e63093e92a5efcd4fc03bbd3c74d5"
+    },
+    {
+      "id": "G21",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/web/VehicleWebBridge.kt",
+      "line": 11,
+      "sha256": "2b869c17f33fa06226a431166a5308326ff34df9182c43eee0adb67dbbaa0b88"
+    },
+    {
+      "id": "G22",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabFrames.kt",
+      "line": 3,
+      "sha256": "034586f731c46855d37f456fc5b3e0f9f78e134c2b24067c3b175b072f4a93b0"
+    },
+    {
+      "id": "G23",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootServiceMain.kt",
+      "line": 48,
+      "sha256": "b8585a9b56d9eb436bc2ea4922b8c3498e1a53d41731ba9d5c623aabba4d144a"
+    },
+    {
+      "id": "G24",
+      "path": "galaxy/record/src/main/java/com/galaxy/autorecord/core/AutoServiceRecordFeed.kt",
+      "line": 77,
+      "sha256": "f83e1bb10656117efe56e75315fd7712ce8f11aea461964481b5d17307129af9"
+    },
+    {
+      "id": "G25",
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleCatalog.kt",
+      "line": 18,
+      "sha256": "39dff13c46241da7512d933d245ae191d039489eebae491b67a46b60ea2037b7"
+    },
+    {
+      "id": "G26",
+      "path": "scripts/profile_vehicle_frequency.py",
+      "line": 11,
+      "sha256": "81e06b9de40e378bdf68da0e52c586cbf492617a02ae6a49be0df9732fc931fb"
+    },
+    {
+      "id": "A01",
+      "path": ".local/decoded/AutoFamily-20261110/service/business/sources/defpackage/nq.java",
+      "line": 444,
+      "sha256": "8f468c2ba5911763a795c2491168430b1545879ef1034fe3f8660b0966d4fb87"
+    },
+    {
+      "id": "A02",
+      "path": ".local/decoded/AutoFamily-20261110/service/business/sources/defpackage/d9.java",
+      "line": 324,
+      "sha256": "101507ad40f694513a205dc6473a66313f4fa8337f362c619ba5d5edfcd551b9"
+    },
+    {
+      "id": "A03",
+      "path": ".local/decoded/AutoFamily-20261110/service/business/sources/com/simplerbit/autoservice/contract/CarPropertyValue.java",
+      "line": 23,
+      "sha256": "3b48787b226c19a5959271df522655254acb3a58548c82b19de7fe4f8f597b08"
+    },
+    {
+      "id": "A04",
+      "path": ".local/decoded/AutoFamily-20261110/service/business/sources/defpackage/q4.java",
+      "line": 545,
+      "sha256": "f3fc7c90b879543d727670257a014e9bf4047abc6f94ed5508d97190f7887b9a"
+    },
+    {
+      "id": "A05",
+      "path": ".local/decoded/AutoFamily-20261110/service/business/sources/defpackage/i6.java",
+      "line": 91,
+      "sha256": "3b8b0f3eb238c576f395ecd9086a5f9d0cac027d2a508f4341108a05c6ee2133"
+    },
+    {
+      "id": "A06",
+      "path": ".local/decoded/AutoFamily-20261110/service/business/sources/com/simplerbit/autoservice/contract/ICarPropertyCallback.java",
+      "line": 58,
+      "sha256": "e52e57b0bae79d1442e3aef4517054903fe88475a52d6657e4d6924d05514ca4"
+    },
+    {
+      "id": "A07",
+      "path": ".local/decoded/AutoFamily-20261110/service/business/sources/defpackage/ok.java",
+      "line": 12,
+      "sha256": "e60eade93bd599ada1bd211f3c849d1855e1687fd5e73aafd319c4bf385be83d"
+    },
+    {
+      "id": "A08",
+      "path": ".local/decoded/AutoFamily-20261110/service/business/sources/defpackage/nq.java",
+      "line": 355,
+      "sha256": "8f468c2ba5911763a795c2491168430b1545879ef1034fe3f8660b0966d4fb87"
+    },
+    {
+      "id": "A09",
+      "path": ".local/decoded/AutoFamily-20261110/service/jadx/resources/assets/qnx_properties.json",
+      "line": 1,
+      "sha256": "ff6b95f68eb2f97be1988bb1027c4c79e5ca1173ad471f053462fd6299a415de"
+    },
+    {
+      "id": "A10",
+      "path": ".local/decoded/AutoFamily-20261110/service/business/sources/defpackage/f5.java",
+      "line": 96,
+      "sha256": "2887ddf0e5c3b88de0ad16557a37eea592802c2eef655ea9e96ba040e88a569d"
+    },
+    {
+      "id": "A11",
+      "path": ".local/decoded/AutoFamily-20261110/service/business/sources/defpackage/dk.java",
+      "line": 105,
+      "sha256": "10e9d27a255567e5c7393426b6451e01d713986716b66557346b10ccc2b9fec8"
+    },
+    {
+      "id": "A12",
+      "path": ".local/decoded/AutoFamily-20261110/service/business/sources/defpackage/i6.java",
+      "line": 48,
+      "sha256": "3b8b0f3eb238c576f395ecd9086a5f9d0cac027d2a508f4341108a05c6ee2133"
+    },
+    {
+      "id": "Q01",
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/g733-offline-environment-20261025/README.md",
+      "line": 3,
+      "sha256": "6bad5b200ca0a07445a5583c0ba249d2fded25b0e7b9159e59c97ff59d07fdfb"
+    },
+    {
+      "id": "Q02",
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/g733-offline-environment-20261025/rootfs/apps/cluster/FX11_HEV/bin/hmi/GLY_G733/ClusterHMI/ClusterDataSource.xml",
+      "line": 26,
+      "sha256": "9a38b5a5332be8424bf5f754354dc03c055e31a6fd4cb27cfb5301bd736cc682"
+    },
+    {
+      "id": "Q03",
+      "path": ".local/research/autoservice-optimization-20261110/gauge-init.txt",
+      "line": 1,
+      "sha256": "2b403da67a5dcce766b985881f8d6c19a568814bc3d891a828c8028c4624e03e"
+    },
+    {
+      "id": "Q04",
+      "path": ".local/research/autoservice-optimization-20261110/qnx-symbols.txt",
+      "line": 1,
+      "sha256": "101eb3ec144a422161c9f4627b70b6ba5efb770f2155b1acdce5c523de8c1b6a"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/EcarxVehicleSource.kt",
+      "line": 405,
+      "sha256": "87e2269b57a1d4ae0d32c8a9a9a4c1c1581bf3ac7739c2b4907f185daef8252b"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootServiceMain.kt",
+      "line": 97,
+      "sha256": "b8585a9b56d9eb436bc2ea4922b8c3498e1a53d41731ba9d5c623aabba4d144a"
+    },
+    {
+      "path": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootServiceClient.kt",
+      "line": 31,
+      "sha256": "e21e4ba8fe08c8bee99e449586b000556f5be691b00ed4a0b774462a7536ad1a"
+    },
+    {
+      "path": "galaxy/contracts/src/main/aidl/com/galaxy/auto/contract/IAutoCallback.aidl",
+      "line": 1,
+      "sha256": "0eae29b46a4ff7432ae9261e7f967fa837b8ae42b77c358dcd20a9d74b4198de"
+    },
+    {
+      "path": "galaxy/client/src/main/java/com/galaxy/auto/client/AutoClient.kt",
+      "line": 59,
+      "sha256": "940da14b7a2bd7003bd97fa2eed8f81e5782d32e5484efaed184ef838c78ac0b"
+    },
+    {
+      "path": ".local/decoded/AutoFamily-20261110/service/business/sources/defpackage/xm.java",
+      "line": 7,
+      "sha256": "9dd4d45377af229f750fc7d1e0be31b5a37eea29d67e14b7ad3f26482ff5266a"
+    },
+    {
+      "path": ".local/decoded/AutoFamily-20261110/service/business/sources/defpackage/ta.java",
+      "line": 66,
+      "sha256": "c96f84a326afb81c8642605084fa5ced267e96c3be4195aaf20a090733caa37c"
+    },
+    {
+      "path": ".local/decoded/AutoFamily-20261110/service/business/sources/defpackage/lq.java",
+      "line": 12,
+      "sha256": "ab9ae2878c2c922980e1f062bd6e1a649617b904f365f0049bd36da851c37b52"
+    },
+    {
+      "path": ".local/decoded/AutoFamily-20261110/service/business/sources/defpackage/t4.java",
+      "line": 319,
+      "sha256": "c5d9cadd737d0b0529ce7978f520b4617a389198cb0649b8f1ccc8742c7804ba"
+    },
+    {
+      "path": ".local/decoded/AutoFamily-20261110/service/business/sources/defpackage/i9.java",
+      "line": 200,
+      "sha256": "0c0cafa1e3d24a37e9e5b696a015fa79996810e407d1579c3116f58262850ca7"
+    },
+    {
+      "path": "scripts/compare_vehicle_frequency.py",
+      "line": 14,
+      "sha256": "be998edbe268cca82d9eb6776a6de4aa261474f63a7db55be56315267b8b92a6"
+    },
+    {
+      "path": "scripts/measure_autoservice.py",
+      "line": 44,
+      "sha256": "0dd0bc83830679a218cc58cf370750b2fee231d6c8b75205bbdf38864bee7c8e"
+    },
+    {
+      "path": ".local/decoded/AutoFamily-20261110/service/jadx/resources/assets/vhal_fs12_signal_mapping.json",
+      "line": 1,
+      "sha256": "cbed0c424f164012647c5d803d819a5b6b5dbcf83d7d6236658feb61a4e926f5"
+    },
+    {
+      "path": ".local/decoded/AutoFamily-20261110/service/jadx/resources/assets/car_properties.json",
+      "line": 1,
+      "sha256": "e6db6a59ab9fe4389312582b1d9d7b13865339e4680280ca4e28c5f7fc3c9d57"
+    },
+    {
+      "path": ".local/research/autoservice-optimization-20261110/gauge-constructor.txt",
+      "line": 1,
+      "sha256": "0abbf3adcef616df5ade74bbedd49e392f09bed14e3232a51e8fe9fc062e14e3"
+    },
+    {
+      "path": ".local/research/autoservice-optimization-20261110/gauge-speed.txt",
+      "line": 1,
+      "sha256": "d64ed8b3cd85c21733eca94da487ff104ff2e535208720ce869401813bd916ac"
+    },
+    {
+      "path": ".local/research/autoservice-optimization-20261110/gauge-destroy.txt",
+      "line": 1,
+      "sha256": "49acb98d65dacac232df9eeefa96a7bb7d67b8961ba4621b2b0f7df404b53f34"
+    },
+    {
+      "path": ".local/research/autoservice-optimization-20261110/gauge-message-map.txt",
+      "line": 1,
+      "sha256": "cc20efad783c4a7bae1e982f2cc3f3311e1b61d382e16ba6736cfae2e099e052"
+    }
+  ],
+  "qnxBinaries": [
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/g733-offline-environment-20261025/rootfs/apps/cluster/FX11_HEV/bin/hmi/GLY_G733/ClusterHMI/cluster-hmi",
+      "bytes": 13980616,
+      "sha256": "385d8fc526936a32fa08cf8dfd51db731a58c8a3c86fd43709a6269bdf080e64"
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/g733-offline-environment-20261025/rootfs/apps/cluster/FX11_HEV/lib/libMidProxy.so",
+      "bytes": 5170264,
+      "sha256": "276182f5f980f4784eb42d0bfad2e50ae5a854f66be80d1f1f5c9b717d139c92"
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/g733-offline-environment-20261025/rootfs/lib64/libVehicleToolProto.so",
+      "bytes": 555736,
+      "sha256": "241cf5c943a8e3a35427e89e56b905ab5c6bf03a13ecb541e98c694d9dfa8da7"
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/g733-offline-environment-20261025/rootfs/usr/lib64/libascdatanotify.so.1",
+      "bytes": 582256,
+      "sha256": "785f75e068c264971615793efbea64dde26e6399749550fc679ea6b6cfdd721b"
+    },
+    {
+      "path": "/Users/anjon/Documents/ChatGPT/Nexusx_星枢/.local/g733-offline-environment-20261025/rootfs/apps/cluster/common/bin/startup",
+      "bytes": 8017,
+      "sha256": "ac228dfc14916b2e5a56d12bdb6db88e8398f1609039e5e714041c1c3cbb6af2"
+    }
+  ],
+  "counts": {
+    "ourExplicitSpecs": 91,
+    "ourExplicitNormalizedIds": 78,
+    "sampleFs12ReadMappings": 89,
+    "sampleFs12WriteMappings": 24,
+    "normalizedIdIntersection": 71,
+    "sampleIdsNotExplicitInOurNormalizedIds": 18
+  },
+  "missingNormalizedIds": [
+    {
+      "propertyId": 10066,
+      "description": "当前驾驶模式值",
+      "sampleReadSignalId": 561023637,
+      "sampleReadSignalName": "padrivemodevalue",
+      "status": "not_explicit_normalizedId_in_our_catalog_not_proof_of_unreadable"
+    },
+    {
+      "propertyId": 10064,
+      "description": "50km平均油耗",
+      "sampleReadSignalId": 561024413,
+      "sampleReadSignalName": "patripaverageconsumption50",
+      "status": "not_explicit_normalizedId_in_our_catalog_not_proof_of_unreadable"
+    },
+    {
+      "propertyId": 10065,
+      "description": "本次里程平均油耗",
+      "sampleReadSignalId": 561025048,
+      "sampleReadSignalName": "patravelfuelconsumption",
+      "status": "not_explicit_normalizedId_in_our_catalog_not_proof_of_unreadable"
+    },
+    {
+      "propertyId": 10063,
+      "description": "电机功率-整数-kW",
+      "sampleReadSignalId": 557850075,
+      "sampleReadSignalName": "CLUSTER_POWERFLOW_TOTDRVPWRACT",
+      "status": "not_explicit_normalizedId_in_our_catalog_not_proof_of_unreadable"
+    },
+    {
+      "propertyId": 30012,
+      "description": "天窗位置-整数-范围1-26",
+      "sampleReadSignalId": 557854733,
+      "sampleReadSignalName": "HU_SUNROOFPOSNSTS",
+      "status": "not_explicit_normalizedId_in_our_catalog_not_proof_of_unreadable"
+    },
+    {
+      "propertyId": 30013,
+      "description": "遮阳帘位置-整数-范围1-26",
+      "sampleReadSignalId": 557854736,
+      "sampleReadSignalName": "HU_SUNCURTPOSNSTS",
+      "status": "not_explicit_normalizedId_in_our_catalog_not_proof_of_unreadable"
+    },
+    {
+      "propertyId": 30014,
+      "description": "主驾温度-整数档位-1:LO 2-26:16到28(0.5步进) 27:HI",
+      "sampleReadSignalId": 561023390,
+      "sampleReadSignalName": "pacllefttemp",
+      "status": "not_explicit_normalizedId_in_our_catalog_not_proof_of_unreadable"
+    },
+    {
+      "propertyId": 30015,
+      "description": "副驾温度-整数档位-1:LO 2-26:16到28(0.5步进) 27:HI",
+      "sampleReadSignalId": 561023391,
+      "sampleReadSignalName": "paclrighttemp",
+      "status": "not_explicit_normalizedId_in_our_catalog_not_proof_of_unreadable"
+    },
+    {
+      "propertyId": 30016,
+      "description": "空调内外循环-整数-0外循环 1内循环",
+      "sampleReadSignalId": 561023384,
+      "sampleReadSignalName": "paclrecirc",
+      "status": "not_explicit_normalizedId_in_our_catalog_not_proof_of_unreadable"
+    },
+    {
+      "propertyId": 30017,
+      "description": "空调风速-整数-0到9 0关闭",
+      "sampleReadSignalId": 561023389,
+      "sampleReadSignalName": "paclfanlevel",
+      "status": "not_explicit_normalizedId_in_our_catalog_not_proof_of_unreadable"
+    },
+    {
+      "propertyId": 30018,
+      "description": "后视镜折叠-整数-0展开 1折叠",
+      "sampleReadSignalId": 561024219,
+      "sampleReadSignalName": "parearmirrfoldsetting",
+      "status": "not_explicit_normalizedId_in_our_catalog_not_proof_of_unreadable"
+    },
+    {
+      "propertyId": 30019,
+      "description": "空调吹风模式-整数-0脚 1脸 2窗 3窗脚 4脸脚 5窗脸 6窗脸脚",
+      "sampleReadSignalId": 561023385,
+      "sampleReadSignalName": "paclmodefrstleft",
+      "status": "not_explicit_normalizedId_in_our_catalog_not_proof_of_unreadable"
+    },
+    {
+      "propertyId": 30020,
+      "description": "前除霜-整数-0关 1开",
+      "sampleReadSignalId": 561023392,
+      "sampleReadSignalName": "paclmaxdefrost",
+      "status": "not_explicit_normalizedId_in_our_catalog_not_proof_of_unreadable"
+    },
+    {
+      "propertyId": 30021,
+      "description": "后除霜-整数-0关 1开",
+      "sampleReadSignalId": 561023396,
+      "sampleReadSignalName": "paclreardefrost",
+      "status": "not_explicit_normalizedId_in_our_catalog_not_proof_of_unreadable"
+    },
+    {
+      "propertyId": 30022,
+      "description": "左侧座椅通风设置-整数-0关 1-3级别",
+      "sampleReadSignalId": 561023454,
+      "sampleReadSignalName": "pascvfirstlelvlsts",
+      "status": "not_explicit_normalizedId_in_our_catalog_not_proof_of_unreadable"
+    },
+    {
+      "propertyId": 30023,
+      "description": "右侧座椅通风设置-整数-0关 1-3级别",
+      "sampleReadSignalId": 561023455,
+      "sampleReadSignalName": "pascvfirstrilvlsts",
+      "status": "not_explicit_normalizedId_in_our_catalog_not_proof_of_unreadable"
+    },
+    {
+      "propertyId": 30024,
+      "description": "左侧座椅加热设置-整数-0关 1-3级别",
+      "sampleReadSignalId": 561023442,
+      "sampleReadSignalName": "paschfirstlelvlsts",
+      "status": "not_explicit_normalizedId_in_our_catalog_not_proof_of_unreadable"
+    },
+    {
+      "propertyId": 30025,
+      "description": "右侧座椅加热设置-整数-0关 1-3级别",
+      "sampleReadSignalId": 561023443,
+      "sampleReadSignalName": "paschfirstrilvlsts",
+      "status": "not_explicit_normalizedId_in_our_catalog_not_proof_of_unreadable"
+    }
+  ],
+  "qnxGaugeMessageMap": [
+    {
+      "messageId": 1,
+      "receiver": "GaugeSpeedNotify",
+      "memberOffset": "0x158"
+    },
+    {
+      "messageId": 3,
+      "receiver": "GaugeRPMNotify",
+      "memberOffset": "0x168"
+    },
+    {
+      "messageId": 7,
+      "receiver": "GaugeFuelNotify",
+      "memberOffset": "0x178"
+    },
+    {
+      "messageId": 8,
+      "receiver": "GaugeFuelWarnLampNotify",
+      "memberOffset": "0x198"
+    },
+    {
+      "messageId": 5,
+      "receiver": "GaugeWaterTempNotify",
+      "memberOffset": "0x188"
+    },
+    {
+      "messageId": 10,
+      "receiver": "EtcPowerMeterNotify",
+      "memberOffset": "0x1a8"
+    },
+    {
+      "messageId": 9,
+      "receiver": "EtcBatLevel",
+      "memberOffset": "0x1b8"
+    }
+  ]
+}

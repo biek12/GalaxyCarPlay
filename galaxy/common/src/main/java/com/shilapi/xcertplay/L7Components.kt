@@ -98,22 +98,7 @@ internal object L7Components {
         actionRow(context, title, detail, icon, click)
 
     fun switchRow(context: Context, title: String, detail: String, checked: Boolean, save: (Boolean) -> Unit): L7SettingRow =
-        L7SettingRow(context, title, detail).apply {
-            val control = Switch(context).apply {
-                contentDescription = title
-                isChecked = checked
-                minHeight = dp(context, 64)
-                L7SwitchStyle.apply(this)
-                // 行点击调用控件入口，拖动与点击都只经这个监听器提交一次。
-                setOnCheckedChangeListener { _, value -> if (!updatingSwitch) save(value) }
-            }
-            setAccessory(control, slotWidth = dp(context, 82), leading = true)
-            // 无障碍与键盘只提供一个带 checked 状态的开关目标，触屏仍可点整行。
-            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-            setOnClickListener { if (isEnabled && control.isEnabled) control.performClick() }
-            isFocusable = false
-            L7Ui.rowFeedback(this)
-        }
+        com.galaxy.auto.ui.GalaxyViews.switchRow(context,title,detail,checked,save)
 
     fun styleDialog(dialog: AlertDialog) {
         listOf(AlertDialog.BUTTON_POSITIVE, AlertDialog.BUTTON_NEGATIVE, AlertDialog.BUTTON_NEUTRAL).forEach { which ->
@@ -128,32 +113,9 @@ internal object L7Components {
     fun select(context: Context, title: String, options: List<String>, current: Int, applyLabel: String,
                onPreview: (Int) -> Unit = {}, onDismiss: () -> Unit = {},
                optionEnabled: ((Int) -> Boolean)? = null, onApply: (Int) -> Unit): AlertDialog {
-        var pending = current
-        var committed = false
-        val dialog = L7Dialogs.builder(context).setTitle(title)
-            .setSingleChoiceItems(options.toTypedArray(), current, optionEnabled) { dialog, index ->
-                if (optionEnabled?.invoke(index) == false) return@setSingleChoiceItems
-                pending = index
-                onPreview(index)
-                (dialog as AlertDialog).getButton(AlertDialog.BUTTON_POSITIVE).isEnabled = pending != current
-            }
-            .setNegativeButton(R.string.cancel, null)
-            .setPositiveButton(if (context is GalaxyConfigurationContext && context.editable)
-                context.getString(R.string.profile_update_draft) else applyLabel, null).create()
-        dialog.setOnDismissListener { onDismiss() }
-        dialog.setOnShowListener {
-            val apply = dialog.getButton(AlertDialog.BUTTON_POSITIVE)
-            apply.isEnabled = false
-            apply.setOnClickListener {
-                if (pending == current || committed || optionEnabled?.invoke(pending) == false) return@setOnClickListener
-                committed = true
-                // 先关闭，防止快速重复点击对一个任务提交两次。
-                dialog.dismiss()
-                onApply(pending)
-            }
-            styleDialog(dialog)
-        }
-        dialog.show()
-        return dialog
+        val label = if(context is GalaxyConfigurationContext && context.editable)
+            context.getString(R.string.profile_update_draft) else applyLabel
+        return com.galaxy.auto.ui.GalaxySelection.select(context,title,options,current,label,
+            onPreview,onDismiss,optionEnabled,builder=L7Dialogs.builder(context),onApply=onApply)
     }
 }

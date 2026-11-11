@@ -28,6 +28,17 @@ val prepareQnxReceiver by tasks.registering(Exec::class) {
     outputs.dir(qnxAssets)
     commandLine("python3", rootProject.file("scripts/prepare_auto_qnx_asset.py"), "--output", qnxAssets.get().dir("qnx").asFile)
 }
+val clusterAssets = layout.buildDirectory.dir("generated/cluster/assets")
+val prepareClusterHook by tasks.registering(Exec::class) {
+    inputs.dir(rootProject.file("galaxy/common/src/main/cpp/kanzi_background"))
+    inputs.dir(rootProject.file("galaxy/common/src/main/cpp/kanzi_music"))
+    inputs.dir(rootProject.file("tools/research"))
+    inputs.file(rootProject.file("scripts/build_g733_background_hook.py"))
+    inputs.file(rootProject.file("scripts/prepare_cluster_hook_asset.py"))
+    inputs.file(rootProject.file(".local/research/cluster-product-assets/profile.json"))
+    outputs.dir(clusterAssets)
+    commandLine("python3",rootProject.file("scripts/prepare_cluster_hook_asset.py"),"--output",clusterAssets.get().dir("cluster").asFile)
+}
 // Deployment endpoint stays outside version control; public builds use a reserved example host.
 val privateServer = Properties().apply {
     rootProject.file(".private/server.properties").takeIf { it.isFile }?.inputStream()?.use { load(it) }
@@ -46,11 +57,13 @@ android {
     packaging.jniLibs.useLegacyPackaging = true
     sourceSets.getByName("main").jniLibs.directories.add(habLibraries.get().asFile.path)
     sourceSets.getByName("main").assets.directories.add(qnxAssets.get().asFile.path)
+    sourceSets.getByName("main").assets.directories.add(clusterAssets.get().asFile.path)
     compileOptions { sourceCompatibility = JavaVersion.VERSION_11; targetCompatibility = JavaVersion.VERSION_11 }
     testOptions { unitTests.isIncludeAndroidResources = true }
 }
-tasks.named("preBuild") { dependsOn(buildHab, prepareQnxReceiver) }
+tasks.named("preBuild") { dependsOn(buildHab, prepareQnxReceiver, prepareClusterHook) }
 dependencies {
+    implementation(project(":auto-ui"))
     implementation(project(":auto-client"))
     implementation(libs.kadb)
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2")

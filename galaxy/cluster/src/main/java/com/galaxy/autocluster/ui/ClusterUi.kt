@@ -25,13 +25,7 @@ internal class ClusterUi(val context: Context) {
         if(size>=22)typeface=Typeface.create("sans-serif-medium",Typeface.NORMAL)
     }
     fun rounded(color: Int,radius: Int=4)=GradientDrawable().apply { setColor(color);cornerRadius=dp(radius).toFloat() }
-    fun button(value: String,primary: Boolean=false,action: ()->Unit)=Button(context).apply {
-        text=value;textSize=17f;isAllCaps=false;stateListAnimator=null;backgroundTintList=null;minWidth=0;minimumWidth=0
-        minHeight=dp(52);minimumHeight=dp(52);gravity=Gravity.CENTER;includeFontPadding=false
-        setTextColor(if(primary)Color.WHITE else this@ClusterUi.foreground)
-        background=RippleDrawable(ColorStateList.valueOf(0x281368FB),rounded(if(primary)accent else control),null)
-        setPadding(dp(12),dp(8),dp(12),dp(8));setOnClickListener { action() }
-    }
+    fun button(value: String,primary: Boolean=false,action: ()->Unit)=com.galaxy.auto.ui.GalaxyViews.button(context,value,primary,action) /* extracted */
     fun column(padding: Int=0)=LinearLayout(context).apply { orientation=LinearLayout.VERTICAL;setPadding(dp(padding),dp(padding),dp(padding),dp(padding)) }
     fun row()=LinearLayout(context).apply { orientation=LinearLayout.HORIZONTAL;gravity=Gravity.CENTER_VERTICAL }
     fun input(value: String)=EditText(context).apply {

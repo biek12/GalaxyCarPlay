@@ -282,7 +282,7 @@ int main(void)
             assert(!b.receiver.owned_consumption && b.receiver.scratch);
         }
         assert(galaxy_hab_sender_enable_consumption(&sender) == 0);
-        assert(sender.owned_consumption && b.receiver.owned_consumption && !b.receiver.scratch && !b.receiver.scratch_size);
+        assert(sender.owned_consumption && b.receiver.owned_consumption && b.receiver.scratch && b.receiver.scratch_size);
         assert(galaxy_hab_sender_enable_consumption(&sender) == -EALREADY);
         b.corrupt_posted = failure;
         sender.sequence = 29;

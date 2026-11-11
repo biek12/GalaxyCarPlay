@@ -12,7 +12,7 @@ import kotlin.math.*
 
 /** 时间戳只决定当前行，统一场景时钟负责视觉切换；seek/换歌直接定位，不补播旧行。 */
 internal class LyricsPainter(private val tools: DrawTools) {
-    private data class State(var track: String, var index: Int, var previous: Int, var changed: Long, var lastPosition: Long)
+    private data class State(var track: String, var index: Int, var previous: Int, var changed: Long, var lastPosition: Long,var scrollStart: Long)
     private val states = mutableMapOf<String, State>()
     private data class Key(val text: String, val width: Int, val size: Float, val font: Int, val spacing: Float, val align: String)
     private val layouts = LruCache<Key, StaticLayout>(80)
@@ -27,11 +27,12 @@ internal class LyricsPainter(private val tools: DrawTools) {
         }
         val index = media.lyricIndex(motion.now)
         val position = media.positionAt(motion.now)
-        val state = states.getOrPut(item.node.id) { State(media.track, index, index, motion.now, position) }
+        val state = states.getOrPut(item.node.id) { State(media.track, index, index, motion.now, position,position) }
         val changedTrack = state.track != media.track
         val seek = position < state.lastPosition - 200 || position - state.lastPosition > 1500
         if (changedTrack || seek || index != state.index) {
             val animate = !changedTrack && !seek && index == state.index + 1 && state.index >= 0 && p.string("transition") != "none"
+            state.scrollStart=position
             state.previous = if (animate) state.index else index
             state.index = index; state.track = media.track; state.changed = motion.now
         }
@@ -69,6 +70,21 @@ internal class LyricsPainter(private val tools: DrawTools) {
             if (p.string("transition") == "fade" && progress < 1 && line == state.index) opacity *= fraction
             // 动画字号量化到半像素，限制布局缓存增长；布局使用自己的TextPaint。
             val quantized = (size * 2).roundToInt() / 2f
+            tools.text.textSize=quantized
+            val longWidth=tools.text.measureText(text)
+            if(line==index&&longWidth>w){
+                val age=(position-state.scrollStart).coerceAtLeast(0)
+                val distance=longWidth-w
+                val offset=com.galaxy.auto.contract.LyricScroll.offset(distance,age)
+                tools.text.color=mix(p.color("lineColor"),p.color("activeColor"),emphasis)
+                tools.text.alpha=(opacity*255).roundToInt().coerceIn(0,255)
+                tools.text.textAlign=android.graphics.Paint.Align.LEFT
+                val lineSave=canvas.save();canvas.clipRect(0f,y-rowHeight/2,w,y+rowHeight/2)
+                canvas.drawText(text,-offset,y-(tools.text.ascent()+tools.text.descent())/2,tools.text)
+                canvas.restoreToCount(lineSave)
+                if(media.playing&&offset<distance){if(age<800)motion.deadline(motion.now+800-age)else motion.animate()}
+                continue
+            }
             val key = Key(text, w.toInt(), quantized, p.typeface.hashCode(), p.number("letterSpacing"), p.string("align"))
             val layout = layouts.get(key) ?: buildLayout(key, p).also { layouts.put(key, it) }
             layout.paint.color = mix(p.color("lineColor"), p.color("activeColor"), emphasis)

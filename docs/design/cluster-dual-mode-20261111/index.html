@@ -1,0 +1,442 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AutoCluster 双模式 · UI 设计画册（D1）</title>
+<style>
+  :root{
+    --bg:#F4F6FA; --panel:#FFFFFF; --panel-2:#FAFBFD;
+    --line:#E0E7F0; --line-strong:#CBD6E4;
+    --ink:#16212E; --ink-2:#5A6B80; --ink-3:#8B9AAB;
+    --accent:#1368FB; --accent-soft:#EAF2FF; --accent-ink:#0B4FC7;
+    --ok:#247744; --ok-soft:#E8F5EC;
+    --warn:#A65C00; --warn-soft:#FFF3DF;
+    --r:8px; --r-sm:5px;
+    --shadow:0 1px 2px rgba(16,32,56,.05), 0 8px 24px rgba(16,32,56,.06);
+    --font:'PingFang SC','Noto Sans CJK SC','Hiragino Sans GB','Microsoft YaHei',-apple-system,BlinkMacSystemFont,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:13px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  button{font-family:inherit;cursor:pointer;border:0;background:none;color:inherit}
+  button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+  button:disabled{opacity:.42;cursor:not-allowed}
+
+  /* ---------- 顶栏 ---------- */
+  .topbar{height:60px;display:flex;align-items:center;gap:18px;padding:0 20px;background:var(--panel);border-bottom:1px solid var(--line);position:relative;z-index:20}
+  .brand{display:flex;align-items:baseline;gap:10px;min-width:0}
+  .brand b{font-size:15px;font-weight:600;letter-spacing:.2px;white-space:nowrap}
+  .brand span{font-size:12px;color:var(--ink-3);white-space:nowrap}
+  .phase{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:20px;background:var(--warn-soft);color:var(--warn);font-size:11px;font-weight:600;white-space:nowrap}
+  .phase i{width:6px;height:6px;border-radius:50%;background:currentColor;display:block}
+  .spacer{flex:1}
+  .toolgroup{display:flex;align-items:center;gap:2px;padding:3px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-sm)}
+  .toolgroup button{padding:5px 11px;border-radius:4px;font-size:12px;color:var(--ink-2);white-space:nowrap}
+  .toolgroup button.on{background:var(--accent);color:#fff;font-weight:600}
+  .toolgroup button:not(.on):hover{background:#EEF2F8;color:var(--ink)}
+  .tbtn{display:inline-flex;align-items:center;gap:6px;padding:7px 12px;border:1px solid var(--line);border-radius:var(--r-sm);background:var(--panel);font-size:12px;color:var(--ink-2)}
+  .tbtn:hover{border-color:var(--line-strong);color:var(--ink)}
+  .tbtn.on{background:var(--accent-soft);border-color:#BBD3FF;color:var(--accent-ink);font-weight:600}
+  .tbtn .dot{width:7px;height:7px;border-radius:50%;background:currentColor;display:block}
+
+  /* ---------- 三栏 ---------- */
+  .layout{display:grid;grid-template-columns:246px minmax(0,1fr) 316px;height:calc(100vh - 60px - 34px)}
+  .sidebar,.inspector{background:var(--panel);overflow-y:auto}
+  .sidebar{border-right:1px solid var(--line)}
+  .inspector{border-left:1px solid var(--line)}
+  .side-h{padding:16px 16px 8px;font-size:11px;font-weight:700;letter-spacing:1.2px;color:var(--ink-3);text-transform:uppercase}
+  .grp{margin:0 0 14px}
+  .grp-t{padding:8px 16px;font-size:12px;font-weight:600;color:var(--ink-2);display:flex;align-items:center;gap:8px}
+  .grp-t em{font-style:normal;font-size:10px;font-weight:600;color:var(--accent-ink);background:var(--accent-soft);padding:1px 6px;border-radius:3px}
+  .pitem{display:flex;align-items:center;gap:9px;width:100%;text-align:left;padding:9px 14px 9px 18px;color:var(--ink-2);border-left:3px solid transparent;font-size:12.5px}
+  .pitem:hover{background:var(--panel-2);color:var(--ink)}
+  .pitem.on{background:var(--accent-soft);border-left-color:var(--accent);color:var(--accent-ink);font-weight:600}
+  .pitem .pid{font-variant-numeric:tabular-nums;font-size:10.5px;color:var(--ink-3);min-width:44px}
+  .pitem.on .pid{color:var(--accent)}
+  .pitem .th{margin-left:auto;font-size:10px;color:var(--ink-3);border:1px solid var(--line);border-radius:3px;padding:0 5px}
+  .side-note{margin:6px 14px 20px;padding:10px 12px;background:var(--panel-2);border:1px solid var(--line);border-radius:var(--r-sm);font-size:11px;color:var(--ink-2);line-height:1.65}
+
+  /* ---------- 画布 ---------- */
+  .canvas{overflow:auto;display:flex;flex-direction:column;align-items:center;padding:22px 24px 34px;background:
+    radial-gradient(circle at 1px 1px, #DCE3ED 1px, transparent 0) 0 0/22px 22px, var(--bg)}
+  .canvas-head{width:100%;max-width:1100px;display:flex;align-items:baseline;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+  .canvas-head h1{font-size:17px;margin:0;font-weight:600}
+  .canvas-head .meta{font-size:11.5px;color:var(--ink-3)}
+  .canvas-head .meta b{color:var(--ink-2);font-weight:600}
+  .frame{position:relative;display:block;width:var(--frame-w,560px);max-width:none;flex:none;background:#fff;border-radius:4px;box-shadow:var(--shadow);overflow:hidden;transition:width .18s ease}
+  .frame img{display:block;width:100%;height:auto}
+  .stage{position:absolute;inset:0;pointer-events:none}
+  .pin{position:absolute;transform:translate(-50%,-50%);width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;border:2px solid #fff;box-shadow:0 2px 8px rgba(19,104,251,.42);pointer-events:auto;cursor:pointer;transition:transform .12s ease, background .12s ease}
+  .pin:hover,.pin.active{transform:translate(-50%,-50%) scale(1.22);background:var(--accent-ink)}
+  .frame.zoomed{box-shadow:0 6px 30px rgba(16,32,56,.14)}
+  .ruler{margin-top:12px;font-size:11px;color:var(--ink-3);font-variant-numeric:tabular-nums;display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+  .ruler span{background:var(--panel);border:1px solid var(--line);padding:3px 9px;border-radius:4px}
+  .empty{padding:60px 20px;text-align:center;color:var(--ink-3)}
+
+  /* ---------- 右侧 ---------- */
+  .ins-h{padding:16px 18px 12px;border-bottom:1px solid var(--line)}
+  .ins-h h2{margin:0 0 4px;font-size:14px;font-weight:600}
+  .ins-h p{margin:0;font-size:11.5px;color:var(--ink-3)}
+  .ins-tabs{display:flex;gap:2px;padding:10px 16px 0}
+  .ins-tabs button{padding:7px 12px;font-size:12px;color:var(--ink-3);border-bottom:2px solid transparent}
+  .ins-tabs button.on{color:var(--accent-ink);border-bottom-color:var(--accent);font-weight:600}
+  .ins-body{padding:14px 18px 24px}
+  .spec-t{font-size:11px;font-weight:700;letter-spacing:1px;color:var(--ink-3);text-transform:uppercase;margin:0 0 8px}
+  .spec-list{list-style:none;margin:0 0 20px;padding:0}
+  .spec-list li{position:relative;padding:5px 0 5px 15px;font-size:12px;color:var(--ink-2);border-bottom:1px dashed var(--line)}
+  .spec-list li:before{content:"";position:absolute;left:2px;top:12px;width:5px;height:5px;border-radius:50%;background:var(--accent)}
+  .anno-item{border:1px solid var(--line);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:9px;cursor:pointer;background:var(--panel)}
+  .anno-item:hover,.anno-item.active{border-color:#BBD3FF;background:var(--accent-soft)}
+  .anno-item .n{display:inline-flex;width:19px;height:19px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;font-weight:700;align-items:center;justify-content:center;margin-right:7px;vertical-align:1px}
+  .anno-item b{font-size:12px;font-weight:600}
+  .anno-item p{margin:6px 0 0;font-size:11.5px;color:var(--ink-2);line-height:1.65}
+  .cmp-table{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:18px}
+  .cmp-table th,.cmp-table td{border:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top;line-height:1.6}
+  .cmp-table th{background:var(--panel-2);font-weight:600;color:var(--ink-2);width:70px}
+  .cmp-table td:first-child{width:70px;font-weight:600;color:var(--ink-2)}
+  .cmp-h{font-size:12px;font-weight:700;margin:16px 0 8px}
+  .cmp-h:first-child{margin-top:0}
+  .cmp-p{font-size:11.5px;color:var(--ink-2);margin:0 0 9px;line-height:1.7}
+  .rec{padding:10px 12px;background:var(--ok-soft);border:1px solid #CBE7D4;border-radius:var(--r-sm);font-size:11.5px;color:var(--ok);line-height:1.65}
+  .disclaim{padding:10px 12px;background:var(--warn-soft);border:1px solid #F0DCB8;border-radius:var(--r-sm);font-size:11px;color:var(--warn);line-height:1.65}
+
+  /* ---------- 状态条 ---------- */
+  .statusbar{height:34px;display:flex;align-items:center;gap:16px;padding:0 20px;background:var(--panel);border-top:1px solid var(--line);font-size:11px;color:var(--ink-3)}
+  .statusbar b{color:var(--ink-2);font-weight:600}
+  .statusbar .k{font-variant-numeric:tabular-nums}
+  .statusbar .right{margin-left:auto;display:flex;gap:14px}
+
+  /* ---------- 对照抽屉 ---------- */
+  .drawer{position:fixed;inset:0;z-index:50;display:none}
+  .drawer.open{display:block}
+  .drawer .scrim{position:absolute;inset:0;background:rgba(16,28,44,.42)}
+  .drawer .sheet{position:absolute;top:0;right:0;bottom:0;width:min(560px,92vw);background:var(--panel);box-shadow:-12px 0 40px rgba(16,32,56,.18);padding:22px 24px;overflow-y:auto}
+  .drawer h2{margin:0 0 4px;font-size:17px}
+  .drawer .sub{color:var(--ink-3);font-size:12px;margin:0 0 20px}
+  .close{position:absolute;top:18px;right:20px;font-size:20px;color:var(--ink-3);line-height:1}
+  .close:hover{color:var(--ink)}
+
+  @media (max-width:1180px){
+    .layout{grid-template-columns:210px minmax(0,1fr) 270px}
+    .topbar .brand span{display:none}
+  }
+  @media (max-width:900px){
+    .layout{grid-template-columns:1fr;height:auto}
+    .sidebar,.inspector{border:0;border-bottom:1px solid var(--line);max-height:230px}
+    .canvas{min-height:70vh}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <b>AutoCluster · 双模式 UI</b>
+    <span>中控 + 仪表设计画册</span>
+  </div>
+  <span class="phase"><i></i> D1 · 待视觉 / 页面方向评审</span>
+  <div class="spacer"></div>
+  <div class="toolgroup" id="groupFilter" aria-label="信息架构筛选">
+    <button data-g="A" class="on">A 四入口</button>
+    <button data-g="B">B 三 Tab</button>
+    <button data-g="C">仪表效果</button>
+    <button data-g="ALL">全部</button>
+  </div>
+  <div class="toolgroup" id="themeSwitch" aria-label="日夜切换">
+    <button data-t="day" class="on">日间</button>
+    <button data-t="night">夜间</button>
+  </div>
+  <button class="tbtn on" id="annoBtn" title="快捷键 A"><span class="dot"></span>标注</button>
+  <button class="tbtn" id="zoomBtn" title="快捷键 Z">适应窗口</button>
+  <button class="tbtn" id="compareBtn">A / B 对照</button>
+</header>
+
+<div class="layout">
+  <aside class="sidebar">
+    <div class="side-h">页面清单</div>
+    <div id="pageList"></div>
+    <div class="side-note" id="sideNote"></div>
+  </aside>
+
+  <main class="canvas" id="canvas">
+    <div class="canvas-head">
+      <h1 id="viewTitle">—</h1>
+      <div class="meta" id="viewMeta">—</div>
+    </div>
+    <div class="frame" id="frame">
+      <img id="viewImg" alt="设计稿">
+      <div class="stage" id="stage"></div>
+    </div>
+    <div class="ruler" id="ruler"></div>
+  </main>
+
+  <aside class="inspector">
+    <div class="ins-h">
+      <h2>规格与标注</h2>
+      <p id="insSub">—</p>
+    </div>
+    <div class="ins-tabs">
+      <button data-tab="anno" class="on">本页标注</button>
+      <button data-tab="spec">画布依据</button>
+    </div>
+    <div class="ins-body" id="insBody"></div>
+  </aside>
+</div>
+
+<footer class="statusbar">
+  <span>静态设计演示 · <b>不接设备 / 网络 / 生产接口</b></span>
+  <span class="k" id="countLabel">—</span>
+  <div class="right">
+    <span>快捷键：<b>← →</b> 翻页 · <b>D</b> 日夜 · <b>A</b> 标注</span>
+    <span id="fileLabel">—</span>
+  </div>
+</footer>
+
+<div class="drawer" id="drawer">
+  <div class="scrim" data-close="1"></div>
+  <div class="sheet">
+    <button class="close" data-close="1" aria-label="关闭">×</button>
+    <h2>A / B 信息架构对照</h2>
+    <p class="sub">同一套 FlymeAuto 视觉语言，区别只在导航组织；不另造两套品牌风格。</p>
+
+    <div class="cmp-h">常用操作步骤（按结构推演，非用户研究数据）</div>
+    <table class="cmp-table">
+      <tr><th></th><td><b>A · 四入口</b>（推荐）</td><td><b>B · 三 Tab + 独立入口</b></td></tr>
+      <tr><td>看当前状态</td><td>总览（一级入口，常驻左导航）</td><td>我的主题 Tab 顶部薄状态卡</td></tr>
+      <tr><td>改原厂音乐</td><td>原厂增强 → 音乐 → 预览 → 应用</td><td>顶部小控件「原厂增强」→ 同左</td></tr>
+      <tr><td>做完整主题</td><td>主题 → 主题库 → 编辑器</td><td>编辑主题 Tab（与总览同层）</td></tr>
+      <tr><td>日夜 / 启动设置</td><td>设置（独立一级入口）</td><td>顶部小控件「设置」</td></tr>
+    </table>
+
+    <div class="cmp-h">可见性差异</div>
+    <p class="cmp-p"><b>A</b>：日常启停、原厂配置、主题制作、基础设置是四个并列一级入口，任一任务 1 步可达；总览有独立空间逐项列出元素状态与应用回执。</p>
+    <p class="cmp-p"><b>B</b>：改动较少、沿用现有三 Tab，但模式与设置被压成顶部小控件；三 Tab 常占 100px，进入原厂配置时 Tab 与当前任务无关；状态卡被压缩，元素状态无独立位置。</p>
+    <p class="cmp-p">比较的是 <b>4 个任务入口</b> 与 <b>3 个主题入口加独立入口</b> 的组织差异，不是性能差异；两者共享同一套色阶、文字角色、组件与状态语义。</p>
+
+    <div class="rec"><b>建议采用 A</b>：Codex 规划中的推荐方向。现有三个主题功能下沉到「主题」内部，功能不删。模式名建议对用户展示为「完整自定义 / 原厂增强」，技术文档继续写遮罩 / 元素替换，避免混淆两条出口。</div>
+
+    <div class="cmp-h" style="margin-top:22px">D1 边界</div>
+    <div class="disclaim">本批只交关键页对照（A 日/夜 6 张、B 日间 3 张）与仪表效果 / 音乐区放大示意 6 张。P01–P14 全页展开、每个主页面日夜版本、弹层 / 空态 / 等待 / 失败模板属于 D2，待本方向评审确认后再做。仪表图为版式示意，不是实屏截图，也不冒充原厂素材。</div>
+  </div>
+</div>
+
+<script src="pages/manifest.js"></script>
+<script>
+(function(){
+  "use strict";
+  var PAGES = window.CLUSTER_PAGES || [];
+  var state = {id:'A-P01', theme:'day', group:'A', anno:true, zoom:'fit', tab:'anno', pin:-1};
+  var $ = function(s){ return document.querySelector(s); };
+  var el = {
+    list:$('#pageList'), img:$('#viewImg'), frame:$('#frame'), stage:$('#stage'),
+    title:$('#viewTitle'), meta:$('#viewMeta'), ruler:$('#ruler'), insBody:$('#insBody'),
+    insSub:$('#insSub'), sideNote:$('#sideNote'), countLabel:$('#countLabel'),
+    fileLabel:$('#fileLabel'), canvas:$('#canvas'), drawer:$('#drawer')
+  };
+
+  if(!PAGES.length){
+    el.insBody.innerHTML = '<div class="empty">未能读取 pages/manifest.js。请确认与设计画册位于同一目录，或运行 python3 tools/generate_pages.py 重新生成。</div>';
+    return;
+  }
+
+  function grpOf(p){ return p.id.charAt(0); }
+  function current(){ return PAGES.find(function(p){ return p.id===state.id && p.theme===state.theme; }); }
+  function hasOtherTheme(){
+    var t = state.theme==='day' ? 'night' : 'day';
+    return PAGES.some(function(p){ return p.id===state.id && p.theme===t; });
+  }
+
+  function renderList(){
+    var groups = [
+      {k:'A', label:'A · 四入口（推荐）', tag:'推荐'},
+      {k:'B', label:'B · 三 Tab + 独立入口', tag:''},
+      {k:'C', label:'仪表效果（1920 × 532）', tag:''}
+    ];
+    var html = '';
+    groups.forEach(function(g){
+      if(state.group!=='ALL' && state.group!==g.k) return;
+      // 每个页面 ID 只列一次（A 组日夜由顶栏切换，C 组按各自实际主题列出）
+      var seen = {};
+      var items = PAGES.filter(function(p){
+        if(grpOf(p)!==g.k || seen[p.id]) return false;
+        if(p.theme!=='day' && PAGES.some(function(q){ return q.id===p.id && q.theme==='day'; })) return false;
+        seen[p.id] = 1; return true;
+      });
+      html += '<div class="grp"><div class="grp-t">'+g.label+(g.tag?' <em>'+g.tag+'</em>':'')+'</div>';
+      items.forEach(function(p){
+        var on = p.id===state.id;
+        var th = g.k==='A' ? state.theme : p.theme;
+        html += '<button class="pitem'+(on?' on':'')+'" data-id="'+p.id+'">'
+              + '<span class="pid">'+p.id+'</span><span>'+p.title+'</span>'
+              + '<span class="th">'+th+'</span></button>';
+      });
+      html += '</div>';
+    });
+    el.list.innerHTML = html;
+    Array.prototype.forEach.call(el.list.querySelectorAll('.pitem'), function(b){
+      b.addEventListener('click', function(){ select(b.dataset.id, true); });
+    });
+    var nA = PAGES.filter(function(p){ return grpOf(p)==='A'; }).length;
+    var nB = PAGES.filter(function(p){ return grpOf(p)==='B'; }).length;
+    var nC = PAGES.filter(function(p){ return grpOf(p)==='C'; }).length;
+    el.sideNote.innerHTML = '共 <b>'+PAGES.length+'</b> 张静态稿：中控 '+(nA+nB)
+      + ' 张（A 日/夜 '+nA+' + B 日间 '+nB+'）、仪表效果与细节 '+nC+' 张。<br>'
+      + 'B 方案与多数仪表页暂无夜间稿，属 D2 展开范围，不虚构。';
+    el.countLabel.innerHTML = '<b>'+PAGES.length+'</b> 页 SVG · '+(nA+nB)+' 中控 / '+nC+' 仪表';
+  }
+
+  function renderInspector(p){
+    el.insSub.textContent = p.id + ' · ' + p.title + ' · ' + (p.theme==='day'?'日间':'夜间');
+    if(state.tab==='spec'){
+      var h = '<div class="spec-t">本页规格依据</div><ul class="spec-list">';
+      p.specs.forEach(function(s){ h += '<li>'+s+'</li>'; });
+      h += '</ul><div class="spec-t">画布与密度（全批统一）</div><ul class="spec-list">'
+        + '<li>中控 1440 × 1920 px，3:4 竖屏；实车 wm size 与 18 张真机截图一致</li>'
+        + '<li>App 资源密度 280dpi → 1dp = 1.75px；约 823 × 1097 dp（推导值）</li>'
+        + '<li>13.2 英寸为规格值，非实测；系统 densityDpi / xdpi / ydpi / smallestWidth 未登记</li>'
+        + '<li>状态栏与 Dock 为示意，Insets 由宿主运行时计算，不写死高度</li>'
+        + '<li>仪表 1920 × 532 px（QNX display ID2），与中控画布独立</li>'
+        + '</ul><div class="disclaim">所有色阶 / 字号 / 间距 / 控件尺寸来自 BRIEF.md 与 DESIGN.md 列出的源码路径，未以 AutoRecord 专属页面布局或过时尺寸替代。</div>';
+      el.insBody.innerHTML = h;
+      return;
+    }
+    var h2 = '<div class="spec-t">本页标注（'+p.annotations.length+'）</div>';
+    p.annotations.forEach(function(a,i){
+      h2 += '<div class="anno-item'+(state.pin===i?' active':'')+'" data-i="'+i+'">'
+          + '<span class="n">'+(i+1)+'</span><b>'+a.title+'</b><p>'+a.text+'</p></div>';
+    });
+    h2 += '<div class="spec-t" style="margin-top:18px">本页规格</div><ul class="spec-list">';
+    p.specs.forEach(function(s){ h2 += '<li>'+s+'</li>'; });
+    h2 += '</ul><div class="disclaim">预览是演示，实际状态是接口输入。绿色只在收到目标端回执后出现；不从开关值推导“已显示”。</div>';
+    el.insBody.innerHTML = h2;
+    Array.prototype.forEach.call(el.insBody.querySelectorAll('.anno-item'), function(n){
+      n.addEventListener('click', function(){
+        state.pin = parseInt(n.dataset.i,10);
+        renderPins(p); renderInspector(p);
+      });
+    });
+  }
+
+  function renderPins(p){
+    el.stage.innerHTML = '';
+    if(!state.anno) return;
+    p.annotations.forEach(function(a,i){
+      var b = document.createElement('button');
+      b.className = 'pin'+(state.pin===i?' active':'');
+      b.style.left = a.x+'%'; b.style.top = a.y+'%';
+      b.textContent = String(i+1);
+      b.title = a.title;
+      b.addEventListener('click', function(){
+        state.pin = i; renderPins(p); renderInspector(p);
+      });
+      el.stage.appendChild(b);
+    });
+  }
+
+  function frameWidth(p){
+    var avail = el.canvas.clientWidth - 56;
+    if(state.zoom==='full') return (p.canvas==='cluster') ? 1920 : 1440;
+    return Math.max(300, Math.min(avail, p.canvas==='cluster' ? 1080 : 560));
+  }
+
+  function render(){
+    var p = current();
+    if(!p){ el.insBody.innerHTML='<div class="empty">该页暂无此日夜版本（D2 展开）。</div>'; return; }
+    el.img.src = p.file;
+    el.img.alt = p.id+' '+p.title+' '+p.theme+' 设计稿';
+    el.frame.style.setProperty('--frame-w', frameWidth(p)+'px');
+    el.frame.classList.toggle('zoomed', state.zoom==='full');
+    el.title.textContent = p.title;
+    el.meta.innerHTML = '<b>'+p.id+'</b> · '+p.group+' · '+(p.theme==='day'?'日间':'夜间')
+      + ' · '+(p.canvas==='cluster'?'仪表 1920 × 532':'中控 1440 × 1920')+' px';
+    el.ruler.innerHTML = '<span>画布 '+(p.canvas==='cluster'?'1920 × 532':'1440 × 1920')+' px</span>'
+      + '<span>'+(p.canvas==='cluster'?'QNX display ID2':'3:4 竖屏 · 280dpi 资源口径')+'</span>'
+      + '<span>1dp = 1.75px</span>'
+      + '<span>显示 '+(state.zoom==='full'?'100%':'适应窗口')+'</span>';
+    el.fileLabel.textContent = p.file;
+    renderPins(p);
+    renderInspector(p);
+    renderList();
+    // 日夜按钮可用性
+    Array.prototype.forEach.call(document.querySelectorAll('#themeSwitch button'), function(b){
+      b.disabled = (b.dataset.t!==state.theme) && !hasOtherTheme();
+      b.classList.toggle('on', b.dataset.t===state.theme);
+    });
+    document.getElementById('annoBtn').classList.toggle('on', state.anno);
+    document.getElementById('zoomBtn').textContent = state.zoom==='full' ? '100% 原尺寸' : '适应窗口';
+  }
+
+  function select(id, keepTheme){
+    var t = keepTheme ? state.theme : 'day';
+    if(!PAGES.some(function(p){ return p.id===id && p.theme===t; })){
+      var any = PAGES.find(function(p){ return p.id===id; });
+      t = any ? any.theme : 'day';
+    }
+    state.id = id; state.theme = t; state.pin = -1;
+    if(state.group!=='ALL' && grpOf({id:id})!==state.group) state.group = grpOf({id:id});
+    Array.prototype.forEach.call(document.querySelectorAll('#groupFilter button'), function(b){
+      b.classList.toggle('on', b.dataset.g===state.group);
+    });
+    render();
+  }
+
+  Array.prototype.forEach.call(document.querySelectorAll('#groupFilter button'), function(b){
+    b.addEventListener('click', function(){
+      state.group = b.dataset.g;
+      Array.prototype.forEach.call(document.querySelectorAll('#groupFilter button'), function(x){
+        x.classList.toggle('on', x===b);
+      });
+      var first = PAGES.find(function(p){
+        return state.group==='ALL' || grpOf(p)===state.group;
+      });
+      if(first) select(first.id, false); else render();
+    });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('#themeSwitch button'), function(b){
+    b.addEventListener('click', function(){
+      if(b.disabled) return;
+      state.theme = b.dataset.t; state.pin = -1; render();
+    });
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('.ins-tabs button'), function(b){
+    b.addEventListener('click', function(){
+      state.tab = b.dataset.tab;
+      Array.prototype.forEach.call(document.querySelectorAll('.ins-tabs button'), function(x){
+        x.classList.toggle('on', x===b);
+      });
+      var p = current(); if(p) renderInspector(p);
+    });
+  });
+  document.getElementById('annoBtn').addEventListener('click', function(){
+    state.anno = !state.anno; var p=current(); if(p){ renderPins(p); }
+    this.classList.toggle('on', state.anno);
+  });
+  document.getElementById('zoomBtn').addEventListener('click', function(){
+    state.zoom = state.zoom==='fit' ? 'full' : 'fit'; render();
+  });
+  document.getElementById('compareBtn').addEventListener('click', function(){ el.drawer.classList.add('open'); });
+  el.drawer.addEventListener('click', function(e){ if(e.target.dataset.close) el.drawer.classList.remove('open'); });
+  document.addEventListener('keydown', function(e){
+    if(el.drawer.classList.contains('open')){ if(e.key==='Escape') el.drawer.classList.remove('open'); return; }
+    var vis = [], seen = {};
+    PAGES.forEach(function(p){
+      if(state.group!=='ALL' && grpOf(p)!==state.group) return;
+      if(seen[p.id]) return;
+      seen[p.id] = 1; vis.push(p);
+    });
+    var idx = vis.findIndex(function(p){ return p.id===state.id; });
+    if(e.key==='ArrowRight' && idx<vis.length-1) select(vis[idx+1].id, true);
+    else if(e.key==='ArrowLeft' && idx>0) select(vis[idx-1].id, true);
+    else if(e.key==='d'||e.key==='D'){ if(hasOtherTheme()){ state.theme = state.theme==='day'?'night':'day'; state.pin=-1; render(); } }
+    else if(e.key==='a'||e.key==='A') document.getElementById('annoBtn').click();
+    else if(e.key==='z'||e.key==='Z') document.getElementById('zoomBtn').click();
+    else if(e.key==='Escape') el.drawer.classList.remove('open');
+  });
+  window.addEventListener('resize', function(){ var p=current(); if(p && state.zoom==='fit') el.frame.style.setProperty('--frame-w', frameWidth(p)+'px'); });
+
+  render();
+})();
+</script>
+</body>
+</html>

@@ -19,6 +19,17 @@ struct galaxy_hab_qnx {
     int cache_last_error;
     screen_context_t context;
     screen_window_t windows[2];
+    /* Optional complete-frame consumer. prepare must allocate before ACK;
+     * acquire returns writable private storage, present must finish copying
+     * before returning. close is idempotent. No imported pointers escape. */
+    struct {
+        void *context;
+        int (*prepare)(void *, const struct galaxy_hab_layout *);
+        int (*acquire)(void *, uint32_t, uint8_t **, size_t *, uint32_t *);
+        int (*present)(void *, const struct galaxy_hab_frame_info *);
+        void (*close)(void *);
+    } consumer;
+    uint32_t handed_frames;
     /* 可选本地诊断：stage是静态操作名；INT_MIN表示调用前，其余为返回值，不含载荷/指针。 */
     void (*trace)(void *context, const char *stage, int result);
     void *trace_context;
@@ -36,7 +47,8 @@ int galaxy_hab_qnx_open(struct galaxy_hab_qnx *owner,
                           const struct galaxy_hab_target *targets, uint32_t count,
                           uint32_t open_timeout_ms);
 /* 0=处理了FRAME/重传请求/控制；1=STOP且已释放；负值=失败且已释放。
- * GLC2对实际post成功的帧发POSTED；不能将返回0或事件计数直接当作显示帧数。 */
+ * GLC2 POSTED表示当前消费者已取得安全副本：Screen模式为post完成，
+ * Texture模式为原子交接完成。handed_frames不能当作EGL/实屏计数。 */
 int galaxy_hab_qnx_step(struct galaxy_hab_qnx *owner);
 /* 自有长期会话使用有限空闲期；非零timeout沿已核验habmm_socket_recv参数传递。 */
 int galaxy_hab_qnx_step_timeout(struct galaxy_hab_qnx *owner, uint32_t timeout_ms);

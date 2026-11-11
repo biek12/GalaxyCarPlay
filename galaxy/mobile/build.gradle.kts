@@ -72,6 +72,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":auto-ui"))
     implementation(platform(libs.androidx.compose.bom))
     implementation(project(":common"))
     implementation(project(":shared"))

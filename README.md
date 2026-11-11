@@ -1,5 +1,9 @@
 # GalaxyPlay
 
+2026-11-11：[Cluster双模式与原厂多行歌词研究](docs/Cluster双模式与原厂多行歌词研究-20261111.md)。保留遮罩出口，规划可还原的元素替换和三类背景来源；已从本车资源核对音乐坐标，完成四行布局及节点还原层候选和离线检查，实屏复验、完整歌词数据与实时地图接入分别待完成。
+
+2026-11-10：[AutoService对标差异与优化设计](docs/AutoService对标差异与优化设计-20261110.md)及[编码任务书与审计清单](docs/AutoService优化编码任务书与审计清单-20261110.md)：比较AutoFamily 1.4.1与当前源码，列出8项现有链路整改、QNX与字段等缺项、分批写范围和验收条件。QNX以本车完整镜像及原厂消息订阅链为固件证据；当前只完成静态核验和文档，待其他Agents编码后由Codex审计，未修改业务代码或执行设备动作。[输入指纹](docs/AutoService优化证据索引-20261110.json)。
+
 2026-11-05：[AutoRecord平面画面与哨兵开发](docs/AutoRecord/平面回放与哨兵开发-20261105.md)：实时/历史共用GPU映射、转向窗仅平面、专用哨兵电源/VSTD接入与20%退出策略；299项离线回归和3项隔离模拟器探针通过，已构建同签名候选，物理标定与锁车深睡/原厂相机共存待指定L6实车验收，未安装车辆。
 
 2026-11-04：[AutoRecord现场复测](docs/AutoRecord/现场复测与协同-20261104.md)：用户恢复连接并确认驻车上电，中继429修复已部署、原签名/数据迁移完成，四路PRIVATE→SurfaceView呈现约25fps，数据改为250ms与即时刷新，88项回归通过。按[协作规范](docs/AutoRecord/Codex与WorkBuddy协作规范-20261104.md)，WorkBuddy在GalaxyPlay项目用Hy3实现独立暂存的存储候选，Codex负责调试/审查/集成；完整录像仍未接入。
@@ -105,3 +109,5 @@ scripts/verify_auto_platform.sh # 本轮契约/native/主题回归和三个APK�
 ```
 
 Android构建沿用上游固定工具链，不沿用旧工程Docker约定；签名材料仍外置，认证自动取得见[整改实施](docs/AutoService整改实施-20261030.md)。详见[工程基础](docs/工程基础.md)和[安全约定](SECURITY.md)。
+
+- 2026-11-11审定方案编码：[公共UI／独立AutoCluster／AutoService媒体与封面／仪表音乐卡片](docs/Cluster审定方案编码记录-20261111.md)。合同v5，同版本部署，离线结果与实车验收分别记录。

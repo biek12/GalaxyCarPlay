@@ -15,7 +15,8 @@ internal class ClientRegistry(private val died: (IBinder) -> Unit) {
      */
     data class Lease(val owner: IBinder, val uid: Int, val role: String, val callback: IAutoCallback,
         val death: IBinder.DeathRecipient, var active: Boolean = false, var feed: Set<String> = emptySet(),
-        var feedIntervalMillis: Int = AutoContract.DEFAULT_FEED_INTERVAL_MS, var lastFeedAt: Long = 0L)
+        var feedIntervalMillis: Int = AutoContract.DEFAULT_FEED_INTERVAL_MS, var lastFeedAt: Long = 0L,
+        var elements: ClusterDisplayConfiguration? = null)
     private val clients = linkedMapOf<IBinder, Lease>()
     fun attach(owner: IBinder, uid: Int, role: String, callback: IAutoCallback): Lease {
         require(AutoContract.roleValid(role)); check(clients.size < 16)
@@ -50,5 +51,7 @@ internal class ClientRegistry(private val died: (IBinder) -> Unit) {
         }
     }
     fun role(role: String) = clients.values.firstOrNull { it.role == role }
+    fun elementDemand() = role(AutoContract.ELEMENTS)?.takeIf { it.active }?.elements
+        ?.takeIf { it.needsElements }
     fun close() { clients.keys.toList().forEach(::remove) }
 }

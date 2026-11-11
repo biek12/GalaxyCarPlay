@@ -4,6 +4,7 @@
 #include "galaxy_hab_owned.h"
 #include <assert.h>
 #include <errno.h>
+#include <sys/mman.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -100,6 +101,12 @@ int habmm_socket_send(int vc, const void *packet, unsigned size, unsigned flags)
     assert(f.windows == (int)f.layout.count && f.buffers == (int)f.layout.count);
     for (uint32_t i = 0; i < f.layout.count; ++i) assert(!f.window[i].visible);
     assert(galaxy_hab_check_ack(packet, size) == 0); ++f.ack; return 0;
+}
+/* QNX cache maintenance is a platform call; the host cannot msync malloc memory. */
+int msync(void *address, size_t length, int flags)
+{
+    assert(address && length && flags == (0x02000000 | MS_INVALIDATE));
+    return 0;
 }
 int habmm_import(int vc, void **handle, unsigned size, unsigned export_id, unsigned flags)
 {
@@ -341,7 +348,7 @@ int main(void)
     assert(galaxy_hab_qnx_close(&q) == 0); released(&q);
     fixture(&q, 1); assert(galaxy_hab_qnx_open(&q, targets, 1, 10000) == 0);
     assert(galaxy_hab_owned_encode(f.packet, GALAXY_HAB_OWNED_HELLO, 0, 91, 0, 99, galaxy_hab_hmac_sign, &f.key) == 0);
-    assert(galaxy_hab_qnx_step(&q) == 0 && f.owned_ready == 1 && !q.receiver.scratch);
+    assert(galaxy_hab_qnx_step(&q) == 0 && f.owned_ready == 1 && q.receiver.scratch);
     frame(30, 0);
     assert(galaxy_hab_qnx_step(&q) == 0 && f.posts == 1 && f.owned_posted == 1);
     assert(galaxy_hab_qnx_close(&q) == 0); released(&q);

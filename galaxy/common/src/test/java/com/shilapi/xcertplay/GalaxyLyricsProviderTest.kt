@@ -65,7 +65,7 @@ class GalaxyLyricsProviderTest {
             seenUrl = url
             FakeHttpConnection(url, body.toByteArray()) { agent -> seenAgent = agent }
         })
-        val lines = client.lookup(GalaxyLyricQuery("Song", "Artist"), GalaxyLyricsHttpClient.Cancellation())
+        val lines = client.lookup(GalaxyLyricQuery("Song", "Artist"), com.galaxy.auto.lyrics.GalaxyLyricsHttpClient.Cancellation())
         assertEquals(listOf(ClusterLyricLine(1_000L, "Verse")), lines)
         assertTrue(seenUrl!!.query.contains("track_name=Song"))
         assertTrue(seenUrl!!.query.contains("artist_name=Artist"))
@@ -74,7 +74,7 @@ class GalaxyLyricsProviderTest {
         val wrong = GalaxyLyricsHttpClient(open = { url ->
             FakeHttpConnection(url, body.replace("\"artistName\":\"Artist, Guest\"", "\"artistName\":\"Different, Guest\"").toByteArray()) {}
         })
-        assertTrue(wrong.lookup(GalaxyLyricQuery("Song", "Artist"), GalaxyLyricsHttpClient.Cancellation())!!.isEmpty())
+        assertTrue(wrong.lookup(GalaxyLyricQuery("Song", "Artist"), com.galaxy.auto.lyrics.GalaxyLyricsHttpClient.Cancellation())!!.isEmpty())
     }
 
     private class FakeHttpConnection(url: URL, private val body: ByteArray, private val onAgent: (String?) -> Unit) : HttpURLConnection(url) {

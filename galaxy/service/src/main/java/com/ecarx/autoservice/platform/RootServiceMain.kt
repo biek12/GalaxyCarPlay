@@ -13,7 +13,7 @@ import java.io.DataOutputStream
 import java.util.concurrent.*
 import java.util.concurrent.atomic.AtomicLong
 
-/** 只服务启动它的App进程。控制、只读车辆和HAB分派独立处理；不改变原车进程或设备权限。 */
+/** 只服务启动它的App进程。控制、只读车辆和HAB分派独立处理；原厂Hook仅走固定材料与可撤销生命周期入口。 */
 object RootServiceMain {
     private fun org.json.JSONArray?.toStringSet(): Set<String> {
         if (this == null) return emptySet()
@@ -90,7 +90,7 @@ object RootServiceMain {
                             }
                             if(operation==10){sentinel.stream(output);return@execute}
                             if (operation == 6) { RootHabSession.run(client, input, output, apk); return@execute }
-                            val request = if (operation == 1 || operation in 3..5 || operation == 7 || operation == 9) RootWire.read(input, 16384) else JSONObject()
+                            val request = if (operation == 1 || operation in 3..5 || operation == 7 || operation == 9 || operation == 11) RootWire.read(input, 16384) else JSONObject()
                             val result = try {
                                 when (operation) {
                                     0 -> JSONObject().put("state", "root_ready").put("uid", Process.myUid())
@@ -112,6 +112,8 @@ object RootServiceMain {
                                     3 -> ShellExecutor.execute(request.getString("command"), request.getInt("timeoutMillis"))
                                     4 -> QnxReceiverDeployer.deploy(request)
                                     5 -> QnxReceiverDeployer.stop(request)
+                                    11 -> QnxClusterHook.control(request,owner.uid/100000)
+                                    12 -> QnxClusterHook.receipt()
                                     7 -> AdbKeyAuthorization.authorize(request.getString("publicKey"), request.optBoolean("forceReload"))
                                     9 -> sentinel.control(request.getString("action"),request.optLong("powerSequence"),request.optLong("requestAtNanos"))
                                     8 -> synchronized(source) { source.close(); JSONObject().put("state", "vehicle_stopped") }

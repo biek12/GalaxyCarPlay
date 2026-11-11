@@ -30,6 +30,26 @@ class ClientRegistryTest {
         assertNotNull(clients.role(AutoContract.MAP)); clients.close(); assertTrue(clients.all().isEmpty())
     }
 
+    @Test fun elementsHaveIndependentLeaseAndDemandDisappearsOnStopOrDetach() {
+        val clients = ClientRegistry {}
+        val owner = Binder()
+        val lease = clients.attach(owner, 10004, AutoContract.ELEMENTS, callback)
+        lease.elements = ClusterDisplayConfiguration(mode = ClusterDisplayConfiguration.OEM_ELEMENTS)
+        assertNull(clients.elementDemand())
+        lease.active = true
+        assertNotNull(clients.elementDemand())
+        assertFalse(AutoContract.producesOutput(lease.role))
+        clients.attach(Binder(), 10004, AutoContract.THEME, callback)
+        assertThrows(IllegalStateException::class.java) { clients.attach(Binder(), 10004, AutoContract.ELEMENTS, callback) }
+        lease.active = false
+        assertNull(clients.elementDemand())
+        lease.active = true
+        clients.remove(owner)
+        assertNull(clients.elementDemand())
+        assertNotNull(clients.role(AutoContract.THEME))
+        clients.close()
+    }
+
     /**
      * 停服/换车型只重置节流时刻、保留订阅意图。
      *

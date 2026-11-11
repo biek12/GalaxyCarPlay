@@ -92,6 +92,7 @@ int galaxy_hab_qnx_close(struct galaxy_hab_qnx *q)
     int code; trace(q, #call, INT_MIN); code = platform_result(call); \
     trace(q, #call, code); first_error(&result, code); \
 } while (0)
+    if (q->consumer.close) q->consumer.close(q->consumer.context);
     for (i = 0; i < 2; ++i)
         if (q->windows[i]) RELEASE(screen_set_window_property_iv(q->windows[i], SCREEN_PROPERTY_VISIBLE, &hidden));
     if (q->context) RELEASE(screen_flush_context(q->context, 0));
@@ -167,7 +168,7 @@ static int prepare_windows(struct galaxy_hab_qnx *q)
     for (stream = 0; stream < q->receiver.layout.count; ++stream) {
         const struct galaxy_hab_stream_layout *s = &q->receiver.layout.streams[stream];
         screen_display_t display = NULL;
-        screen_buffer_t buffer;
+        screen_buffer_t buffer = NULL;
         uint8_t *pointer;
         int id, stride, size[2] = {(int)s->target.width, (int)s->target.height};
         int hidden = 0, usage = SCREEN_USAGE_WRITE, format = SCREEN_FORMAT_RGBX8888;
@@ -205,6 +206,7 @@ int galaxy_hab_qnx_open(struct galaxy_hab_qnx *q, const struct galaxy_hab_target
     if (!q || !targets || count < 1 || count > 2 || !timeout) return -EINVAL;
     if (q->pmem_active || q->channel_open || q->receiver.authenticated) return -EALREADY;
     if (!q->receiver.sign) return -EACCES;
+    if (q->consumer.prepare && (!q->consumer.acquire || !q->consumer.present || !q->consumer.close)) return -EINVAL;
     for (i = 0; i < count; ++i) {
         if (targets[i].display_id < 0 || !targets[i].width || !targets[i].height ||
             targets[i].width > INT_MAX / 4 || targets[i].height > INT_MAX) return -EINVAL;
@@ -249,7 +251,7 @@ int galaxy_hab_qnx_open(struct galaxy_hab_qnx *q, const struct galaxy_hab_target
     if (result) goto failed;
     result = galaxy_hab_receiver_start(&q->receiver, packet, length, q->mapping, mapped, ack);
     if (result) goto failed;
-    result = prepare_windows(q);
+    result = q->consumer.prepare ? q->consumer.prepare(q->consumer.context, &q->receiver.layout) : prepare_windows(q);
     if (result) goto failed;
     result = cancellation(q);
     if (result) goto failed;
@@ -288,21 +290,30 @@ int galaxy_hab_qnx_step_timeout(struct galaxy_hab_qnx *q, uint32_t timeout_ms)
         if (result) goto failed;
     } else if (word(packet + 8) == 2) {
         struct galaxy_hab_frame_info info;
-        screen_buffer_t buffer;
+        screen_buffer_t buffer = NULL;
         uint8_t *destination;
         int stride, visible = 1;
+        size_t capacity; uint32_t consumer_stride;
         uint32_t stream = word(packet + 0x3c);
         if (stream >= q->receiver.layout.count) { result = -EPROTO; goto failed; }
         const struct galaxy_hab_stream_layout *layout = &q->receiver.layout.streams[stream];
         size_t offset = layout->base + (size_t)(word(packet + 0x0c) % layout->slots) * layout->slot_bytes;
         result = synchronize_import(q, offset, layout->slot_bytes);
         if (result) goto failed;
-        result = writable_buffer(q, q->windows[stream], &q->receiver.layout.streams[stream],
-                                  &buffer, &destination, &stride);
-        if (result) goto failed;
+        if (q->consumer.prepare) {
+            if (!q->consumer.acquire || !q->consumer.present) { result = -EINVAL; goto failed; }
+            result = q->consumer.acquire(q->consumer.context, stream, &destination, &capacity, &consumer_stride);
+            if (result) goto failed;
+            if (consumer_stride > INT_MAX) { result = -EINVAL; goto failed; }
+            stride = (int)consumer_stride;
+        } else {
+            result = writable_buffer(q, q->windows[stream], layout, &buffer, &destination, &stride);
+            if (result) goto failed;
+            capacity = (size_t)(unsigned)stride * layout->target.height;
+        }
         trace(q, "galaxy_hab_receiver_frame", INT_MIN);
         result = galaxy_hab_receiver_frame_strided(&q->receiver, packet, length,
-            destination, (size_t)(unsigned)stride * q->receiver.layout.streams[stream].target.height,
+            destination, capacity,
             (unsigned)stride, &info);
         trace(q, "galaxy_hab_receiver_frame", result);
         if (result == -EBADMSG && q->receiver.owned_consumption) {
@@ -324,15 +335,20 @@ int galaxy_hab_qnx_step_timeout(struct galaxy_hab_qnx *q, uint32_t timeout_ms)
         }
         if (result) goto failed;
         q->checksum_attempts = 0;
-        result = platform_result(screen_set_window_property_iv(q->windows[info.stream],
-                                                               SCREEN_PROPERTY_VISIBLE, &visible));
-        if (!result) {
-            trace(q, "screen_post_window", INT_MIN);
-            result = platform_result(screen_post_window(q->windows[info.stream], buffer, 0, NULL, 0));
-            trace(q, "screen_post_window", result);
+        if (q->consumer.prepare) {
+            result = q->consumer.present(q->consumer.context, &info);
+            if (result) goto failed;
+            ++q->handed_frames;
+        } else {
+            result = platform_result(screen_set_window_property_iv(q->windows[info.stream], SCREEN_PROPERTY_VISIBLE, &visible));
+            if (!result) {
+                trace(q,"screen_post_window",INT_MIN);
+                result = platform_result(screen_post_window(q->windows[info.stream], buffer, 0, NULL, 0));
+                trace(q,"screen_post_window",result);
+            }
+            if (result) goto failed;
+            ++q->posted_frames;
         }
-        if (result) goto failed;
-        ++q->posted_frames;
         if (q->receiver.owned_consumption) {
             uint8_t reply[GALAXY_HAB_PACKET_SIZE];
             result = galaxy_hab_owned_encode(reply, GALAXY_HAB_OWNED_POSTED,
@@ -353,6 +369,7 @@ int galaxy_hab_qnx_step_timeout(struct galaxy_hab_qnx *q, uint32_t timeout_ms)
         if (event.stream < 0 || (uint32_t)event.stream >= q->receiver.layout.count) {
             result = -EINVAL; goto failed;
         }
+        if (q->consumer.prepare) return 0; /* no window/z-order in texture mode */
         result = platform_result(screen_set_window_property_iv(q->windows[event.stream],
                                                                SCREEN_PROPERTY_ZORDER, &event.z_order));
         if (!result) result = platform_result(screen_flush_context(q->context, 0));

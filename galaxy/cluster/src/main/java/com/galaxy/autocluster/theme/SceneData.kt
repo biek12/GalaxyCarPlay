@@ -14,7 +14,7 @@ internal data class SceneMedia(val title: String, val artist: String, val album:
         if (duration > 0) elapsed.coerceAtMost(duration) else elapsed
     }
     fun lyricIndex(now: Long): Int {
-        val times = times ?: return -1
+        val times = times ?: return if(lyrics.isEmpty()) -1 else 0
         val position = positionAt(now)
         var low = 0; var high = times.size
         while (low < high) { val middle = (low + high) ushr 1; if (times[middle] <= position) low = middle + 1 else high = middle }
@@ -36,7 +36,7 @@ internal class SceneData(snapshot: Bundle = Bundle()) {
     val menuReceivedAt=snapshot.getLong("menuReceivedAt")
     val media: SceneMedia
     init {
-        val m = snapshot.getBundle("media") ?: Bundle()
+        val m = snapshot.getBundle("visualMedia") ?: snapshot.getBundle("media") ?: Bundle()
         val lyrics = m.getStringArrayList("lyrics").orEmpty().toList()
         val times = m.getLongArray("lyricTimes")?.takeIf { it.size == lyrics.size && it.asSequence().zipWithNext().all { (a, b) -> a <= b } }?.clone()
         media = SceneMedia(m.getString("title").orEmpty(), m.getString("artist").orEmpty(), m.getString("album").orEmpty(), m.getString("track").orEmpty(),

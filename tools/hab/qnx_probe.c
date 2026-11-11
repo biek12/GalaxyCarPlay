@@ -1,6 +1,7 @@
 /* SPDX-License-Identifier: GPL-3.0-only */
 #include "probe_common.h"
 #include "galaxy_hab_qnx.h"
+#include "qnx_texture_consumer.h"
 #include "galaxy_hab_owned.h"
 #include <errno.h>
 #include <limits.h>
@@ -80,6 +81,7 @@ int main(int argc, char **argv)
     probe_text("BUILD=QNX_SDK");
 #endif
     probe_number("OWNED_PROTOCOL_VERSION", GALAXY_HAB_OWNED_VERSION);
+    if (argc == 2 && !strcmp(argv[1], "hook-health")) return texture_health();
     if (argc == 2 && !strcmp(argv[1], "self-test")) return probe_selftest();
     if (probe_signals()) return 1;
     if (argc == 2 && !strcmp(argv[1], "inventory")) return inventory();
@@ -103,6 +105,8 @@ int main(int argc, char **argv)
         checksum_failures = 0;
         q.trace = !serving || argc == 8 ? diagnostic_trace : error_trace;
         q.cancelled = cancelled;
+        struct texture_consumer texture = {0};
+        texture_select(&q,&texture);
         result = galaxy_hab_qnx_open(&q, &target, 1, serving ? 600000 : 10000);
         probe_number("RECEIVER_READY_ACK", result);
         while (!result && !probe_stopping && (serving || frames < 120)) {
@@ -120,12 +124,14 @@ int main(int argc, char **argv)
                 if (!serving || frames % 100u == 0) {
                     probe_number("RECEIVER_FRAME_OR_CONTROL_COUNT", frames);
                     probe_number("RECEIVER_POSTED_FRAMES", q.posted_frames);
+        probe_number("RECEIVER_HANDED_FRAMES", q.handed_frames);
                 }
             }
         }
         probe_number("RECEIVER_LOOP_RESULT", result);
         probe_number("RECEIVER_PROCESSED_EVENTS", frames);
         probe_number("RECEIVER_POSTED_FRAMES", q.posted_frames);
+        probe_number("RECEIVER_HANDED_FRAMES", q.handed_frames);
         probe_number("RECEIVER_CACHE_SYNCS", q.cache_syncs);
         probe_number("RECEIVER_CACHE_FAILURES", q.cache_failures);
         probe_number("RECEIVER_CACHE_LAST_ERROR", q.cache_last_error);
