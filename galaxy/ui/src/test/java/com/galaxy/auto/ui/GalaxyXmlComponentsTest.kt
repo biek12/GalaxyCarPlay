@@ -5,6 +5,7 @@ import android.app.AlertDialog
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
 import android.os.Looper
+import android.view.Gravity
 import android.view.View
 import android.widget.Button
 import android.widget.CheckedTextView
@@ -297,6 +298,65 @@ class GalaxyXmlComponentsTest {
         primary.isEnabled = false
         assertEquals("禁用后仍是同一可调形状", 4f * density, corner(primary), 0.01f)
         assertEquals("其他实例仍不受影响", 2f * density, corner(twoDp), 0.01f)
+    }
+
+    /**
+     * 按钮合同属性矩阵：真实 XML 创建与既有普通 Button 适配都走同一 View style 来源。
+     *
+     * 覆盖 R2 三项确定修法的运行时结果：normal/compact 无字体附加留白（S1）、
+     * 文字按钮 18sp/26sp 与既定命中高度/内边距/重力（S2）；enabled 切换与原 refresh
+     * 之后属性不得丢失，且不得重建 View。
+     */
+    @Test
+    fun buttonsAndTextButtonKeepContractedViewAttributes() {
+        val owner = owner()
+        val density = owner.resources.displayMetrics.density
+        val normal = GalaxyViews.button(owner, "操作") {}
+        val compact = Button(owner)
+        GalaxyStyle.button(compact, compact = true)
+        val text = GalaxyViews.textButton(owner, "返回") {}
+
+        assertFalse("XML 真实按钮必须无字体附加留白（S1）", normal.includeFontPadding)
+        assertFalse("普通 Button 适配必须同样无字体附加留白（S1）", compact.includeFontPadding)
+        assertEquals("textButton 原字号 18sp（S2）", 18f, text.textSize / density, 0.01f)
+        assertEquals(
+            "textButton 原 26sp 行高必须由 View style 提供（S2）",
+            owner.resources.getDimensionPixelSize(R.dimen.galaxy_ui_text_button_line_height),
+            text.lineHeight,
+        )
+        assertFalse("textButton 必须无字体附加留白（S2）", text.includeFontPadding)
+        assertEquals(
+            "textButton 原 64dp 命中高度（S2）",
+            GalaxyViews.px(owner, R.dimen.galaxy_ui_touch_target),
+            text.minimumHeight,
+        )
+        assertEquals(0, text.paddingStart)
+        assertEquals(
+            GalaxyViews.px(owner, R.dimen.galaxy_ui_text_button_end_padding),
+            text.paddingEnd,
+        )
+        assertEquals(
+            GalaxyViews.px(owner, R.dimen.galaxy_ui_text_button_vertical_padding),
+            text.paddingTop,
+        )
+        assertEquals(
+            GalaxyViews.px(owner, R.dimen.galaxy_ui_text_button_vertical_padding),
+            text.paddingBottom,
+        )
+        assertEquals(Gravity.START or Gravity.CENTER_VERTICAL, text.gravity)
+
+        // 状态切换与原刷新入口之后属性不丢，且仍是同一实例。
+        text.isEnabled = false
+        GalaxyStyle.refresh(text)
+        text.isEnabled = true
+        GalaxyStyle.refresh(normal)
+        assertFalse(text.includeFontPadding)
+        assertEquals(
+            owner.resources.getDimensionPixelSize(R.dimen.galaxy_ui_text_button_line_height),
+            text.lineHeight,
+        )
+        assertEquals(0, text.paddingStart)
+        assertFalse(normal.includeFontPadding)
     }
 
     @Test

@@ -72,23 +72,23 @@
         <item name="android:textSize">20sp</item>
         <item name="android:textColor">@color/galaxy_ui_button_text</item>
         <item name="android:fontFamily">sans-serif-medium</item>
-        <item name="android:includeFontPadding">false</item>
     </style>
     <style name="GalaxyUi.TextAppearance.ButtonCompact" parent="">
         <item name="android:textSize">13sp</item>
         <item name="android:textColor">@color/galaxy_ui_button_text</item>
         <item name="android:fontFamily">sans-serif-medium</item>
-        <item name="android:includeFontPadding">false</item>
     </style>
     <style name="GalaxyUi.TextAppearance.TextButton" parent="">
         <item name="android:textSize">18sp</item>
         <item name="android:textColor">@color/galaxy_ui_action_text</item>
         <item name="android:fontFamily">sans-serif</item>
-        <item name="android:includeFontPadding">false</item>
     </style>
-    <!-- 主/次按钮的静态部分；primary 变体由 GalaxyStyle.button 选择对应 drawable 与文字色。 -->
+    <!-- 主/次按钮的静态部分；primary 变体由 GalaxyStyle.button 选择对应 drawable 与文字色。
+         无字体附加留白是 View 层属性：setTextAppearance 不应用 includeFontPadding，
+         因此必须声明在本 View style 上（Text 与 Compact 均继承此处声明）。 -->
     <style name="GalaxyUi.Button" parent="">
         <item name="android:textAppearance">@style/GalaxyUi.TextAppearance.Button</item>
+        <item name="android:includeFontPadding">false</item>
         <item name="android:minWidth">0dp</item>
         <item name="android:minHeight">@dimen/galaxy_ui_button_min_height</item>
         <item name="android:paddingStart">@dimen/galaxy_ui_button_padding_horizontal</item>
@@ -102,6 +102,8 @@
     </style>
     <style name="GalaxyUi.Button.Text" parent="GalaxyUi.Button">
         <item name="android:textAppearance">@style/GalaxyUi.TextAppearance.TextButton</item>
+        <!-- 原 26sp 行高：段落行高只被 View 层应用（含 setTextAppearance 的运行时路径不覆盖它），必须留在 View style。 -->
+        <item name="android:lineHeight">@dimen/galaxy_ui_text_button_line_height</item>
         <item name="android:minHeight">@dimen/galaxy_ui_touch_target</item>
         <item name="android:paddingStart">0dp</item>
         <item name="android:paddingEnd">@dimen/galaxy_ui_text_button_end_padding</item>
@@ -109,6 +111,16 @@
         <item name="android:paddingBottom">@dimen/galaxy_ui_text_button_vertical_padding</item>
         <item name="android:background">@drawable/galaxy_ui_button_text</item>
         <item name="android:gravity">start|center_vertical</item>
+    </style>
+    <!-- compact 变体：只覆盖既有 compact 资源，视觉参数与 GalaxyStyle.button(compact=true) 完全一致；
+         兼容普通 Button 调用方由此读取同一 includeFontPadding 合同。 -->
+    <style name="GalaxyUi.Button.Compact" parent="GalaxyUi.Button">
+        <item name="android:textAppearance">@style/GalaxyUi.TextAppearance.ButtonCompact</item>
+        <item name="android:minHeight">@dimen/galaxy_ui_button_min_height_compact</item>
+        <item name="android:paddingStart">@dimen/galaxy_ui_button_padding_horizontal_compact</item>
+        <item name="android:paddingEnd">@dimen/galaxy_ui_button_padding_horizontal_compact</item>
+        <item name="android:paddingTop">0dp</item>
+        <item name="android:paddingBottom">0dp</item>
     </style>
     <style name="GalaxyUi.IconButton" parent="">
         <item name="android:padding">@dimen/galaxy_ui_icon_button_padding</item>

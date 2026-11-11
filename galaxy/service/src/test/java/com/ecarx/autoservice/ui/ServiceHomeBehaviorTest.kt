@@ -5,8 +5,10 @@ import android.content.Context
 import android.content.Intent
 import android.os.Bundle
 import android.os.Looper
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
+import android.widget.LinearLayout
 import android.widget.Switch
 import android.widget.TextView
 import com.ecarx.autoservice.DiagnosticActivity
@@ -169,6 +171,35 @@ class ServiceHomeBehaviorTest {
         val vehicle = activity.findViewById<GalaxySettingRow>(R.id.service_vehicle)
         assertEquals(activity.getString(R.string.service_feature_vehicle), vehicle.titleView.text.toString())
         assertEquals(View.VISIBLE, vehicle.findViewById<View>(UiR.id.setting_row_icon).visibility)
+    }
+
+    /**
+     * 真实 XML/Activity 设置行默认样式（R2-S3）：orientation/padding/minHeight 来自平台四参
+     * 构造的 `GalaxyUi.SettingRow`，不再经过任何手工属性解析；代码构造行共用同一默认来源。
+     */
+    @Test
+    fun settingRowsUsePlatformDefaultStyleForLayoutAttributes() {
+        fun px(id: Int) = activity.resources.getDimensionPixelSize(id)
+        val row = activity.findViewById<GalaxySettingRow>(R.id.service_vehicle)
+        assertEquals("默认水平排布", LinearLayout.HORIZONTAL, row.orientation)
+        // 样式只声明 center_vertical；LinearLayout 布局时为水平补默认 START，垂直仍居中。
+        assertEquals("默认垂直居中", Gravity.START or Gravity.CENTER_VERTICAL, row.gravity)
+        assertEquals(px(UiR.dimen.galaxy_ui_row_padding_horizontal), row.paddingStart)
+        assertEquals(px(UiR.dimen.galaxy_ui_row_padding_horizontal), row.paddingEnd)
+        assertEquals(px(UiR.dimen.galaxy_ui_row_padding_vertical), row.paddingTop)
+        assertEquals(px(UiR.dimen.galaxy_ui_row_padding_vertical), row.paddingBottom)
+        assertEquals("带说明的行最小 96dp", px(UiR.dimen.galaxy_ui_row_min_height_detail), row.minimumHeight)
+
+        val codeRow = GalaxySettingRow(activity, "标题", "说明")
+        assertEquals(LinearLayout.HORIZONTAL, codeRow.orientation)
+        assertEquals(Gravity.START or Gravity.CENTER_VERTICAL, codeRow.gravity)
+        assertEquals(px(UiR.dimen.galaxy_ui_row_padding_horizontal), codeRow.paddingStart)
+        assertEquals(px(UiR.dimen.galaxy_ui_row_padding_vertical), codeRow.paddingTop)
+        assertEquals(px(UiR.dimen.galaxy_ui_row_min_height_detail), codeRow.minimumHeight)
+
+        // 开关与图标不受样式来源变化影响：真实行内仍能取到开关并回填。
+        assertTrue(control(R.id.service_projection).isChecked)
+        assertEquals(View.VISIBLE, row.findViewById<View>(UiR.id.setting_row_icon).visibility)
     }
 
     @Test

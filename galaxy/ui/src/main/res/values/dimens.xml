@@ -41,6 +41,8 @@
     <dimen name="galaxy_ui_icon_button_radius">8dp</dimen>
     <dimen name="galaxy_ui_text_button_vertical_padding">8dp</dimen>
     <dimen name="galaxy_ui_text_button_end_padding">12dp</dimen>
+    <!-- 文字按钮原 26sp 行高：View style 与测试共用的单一来源。 -->
+    <dimen name="galaxy_ui_text_button_line_height">26sp</dimen>
     <dimen name="galaxy_ui_dialog_padding_horizontal">24dp</dimen>
     <dimen name="galaxy_ui_dialog_padding_top">20dp</dimen>
     <dimen name="galaxy_ui_dialog_padding_bottom">24dp</dimen>

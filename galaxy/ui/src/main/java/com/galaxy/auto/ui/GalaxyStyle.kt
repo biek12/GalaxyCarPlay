@@ -10,6 +10,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.EditText
 import android.widget.TextView
+import android.R as AndroidR
 
 /**
  * Flyme 静态样式：颜色、圆角、按压与禁用状态都来自 `color/` 与 `drawable/` 资源。
@@ -84,6 +85,10 @@ object GalaxyStyle {
                 R.style.GalaxyUi_TextAppearance_Button
             },
         )
+        // 既有普通 Button 调用方与 XML 同合同：无字体附加留白是 View 属性，
+        // setTextAppearance 不应用它，只能从对应 View style（GalaxyUi.Button/Compact）读取。
+        val buttonStyle = if (compact) R.style.GalaxyUi_Button_Compact else R.style.GalaxyUi_Button
+        view.includeFontPadding = viewStyleFlag(view.context, buttonStyle, AndroidR.attr.includeFontPadding)
         view.minWidth = 0
         view.minimumWidth = 0
         view.minHeight =
@@ -166,6 +171,21 @@ object GalaxyStyle {
             setColor(color)
             cornerRadius = radius * context.resources.displayMetrics.density
         }
+
+    /**
+     * 从指定 View style 读取单一布尔属性。
+     *
+     * 只含一个 attr 的数组天然满足 `obtainStyledAttributes` 的升序契约；
+     * 用后必须 recycle，故用 try/finally 而不是依赖 `AutoCloseable`（minSdk 24）。
+     */
+    private fun viewStyleFlag(context: Context, styleRes: Int, attr: Int): Boolean {
+        val array = context.obtainStyledAttributes(styleRes, intArrayOf(attr))
+        return try {
+            array.getBoolean(0, true)
+        } finally {
+            array.recycle()
+        }
+    }
 
     /** 把调用方真实半径作用到当前背景的内容层；不是 GradientDrawable 时保持资源形状。 */
     private fun applyRadius(view: Button, radius: Int) {
