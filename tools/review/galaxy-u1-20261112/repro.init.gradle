@@ -1,0 +1,9 @@
+// 仅增加Lead审计测试源；生产源码、生产资源与依赖保持6184fa9。
+gradle.beforeProject { project ->
+    def fixture = System.getenv('GALAXY_U1_AUDIT_REPRO')
+    if (project.path == ':auto-ui') project.pluginManager.withPlugin('com.android.library') {
+        project.extensions.getByName('androidComponents').finalizeDsl { android ->
+            android.sourceSets.getByName('test').kotlin.srcDir(new File(fixture, 'ui'))
+        }
+    }
+}
