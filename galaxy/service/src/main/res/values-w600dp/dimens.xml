@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<resources>
+    <!-- 宽屏不再按车型/宽度分支代码，只放大页边距。 -->
+    <dimen name="service_header_padding">32dp</dimen>
+    <dimen name="service_content_padding">32dp</dimen>
+</resources>

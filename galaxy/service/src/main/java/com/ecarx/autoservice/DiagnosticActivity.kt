@@ -1,112 +1,65 @@
 package com.ecarx.autoservice
 
 import android.app.Activity
+import android.content.Context
 import android.content.Intent
 import android.os.Bundle
-import android.widget.*
-import com.galaxy.auto.client.AutoClient
-import com.galaxy.auto.contract.AutoContract
-import com.ecarx.autoservice.platform.QnxCredentials
-import com.ecarx.autoservice.ui.ServiceUi
-import com.ecarx.autoservice.settings.ServiceFeature
-import com.ecarx.autoservice.settings.ServiceFeatures
-import com.ecarx.autoservice.startup.AutoStartup
+import com.ecarx.autoservice.databinding.ActivityDiagnosticBinding
+import com.ecarx.autoservice.ui.AutoClientPageSession
+import com.ecarx.autoservice.ui.ServicePageSession
+import com.ecarx.autoservice.ui.diagnostic.DiagnosticPageController
+import java.util.concurrent.Executor
+import java.util.concurrent.Executors
 
-/** 偶尔使用的诊断入口。所有连接/Shell仍由服务执行，页面不拥有第二个连接器。 */
+/**
+ * 偶尔使用的诊断入口：只 inflate 布局，把生命周期与文件选择结果转交控制器。
+ *
+ * 所有连接、Shell、扫描与车辆分页仍由服务执行，页面不拥有第二个连接器。
+ * 线程：控制器在 `onStart` 建立观察者、`onStop` 关闭，`onDestroy` 释放导入线程。
+ */
 class DiagnosticActivity : Activity() {
-    private var client: AutoClient? = null
-    private lateinit var result: TextView
-    private var destroyed = false
+    /** 观察者工厂；测试在 `create()` 前替换，页面与控制器仍走生产代码。 */
+    internal var sessionFactory: (Context, (Bundle) -> Unit, (String) -> Unit) -> ServicePageSession =
+        { context, onSnapshot, onState -> AutoClientPageSession(context, onSnapshot, onState) }
+
+    /** 有界单线程：日志读取与认证导入；默认 daemon，destroy 时关闭。 */
+    internal var ioExecutor: Executor =
+        Executors.newSingleThreadExecutor { task ->
+            Thread(task, "AutoService-import").apply { isDaemon = true }
+        }
+
+    private lateinit var controller: DiagnosticPageController
+
     override fun onCreate(state: Bundle?) {
         super.onCreate(state)
-        val ui = ServiceUi(this)
-        val root = ui.column(24).apply { setBackgroundColor(ui.background) }
-        val header = ui.row()
-        header.addView(ui.button("返回") { finish() })
-        header.addView(ui.label("诊断与日志", 26f), LinearLayout.LayoutParams(-1, -2).apply { marginStart = ui.dp(20) })
-        root.addView(header)
-        root.addView(ui.label("高级操作遵守首页功能开关，运行日志仅保存在本机。", 14f, true),
-            LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(18); bottomMargin = ui.dp(18) })
-        result = ui.label("等待诊断操作", 15f).apply { setTextIsSelectable(true) }
-        root.addView(ui.card().apply { addView(result) })
-        fun buttonView(title: String, action: () -> Unit): Button =
-            ui.button(title, action = action).also { root.addView(it, LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(12) }) }
-        fun button(title: String, action: () -> Unit) { buttonView(title, action) }
-        button("重新初始化已开启的功能") {
-            if (AutoStartup.enabled(this)) startService(Intent(this, AutoService::class.java).setAction("prepare"))
-            else result.text = "后台已暂停，请先在首页开启自动运行"
-        }
-        button("查看运行日志与异常栈") {
-            result.text = listOf("app.log", "root.log").joinToString("\n\n") { name ->
-                val file = java.io.File(filesDir, "diagnostics/$name")
-                name + "\n" + if (file.exists()) file.readText().takeLast(16000) else "尚无记录"
-            }
-        }
-        val input = EditText(this).apply {
-            hint = "诊断 Shell 命令"; maxLines = 4; textSize = 17f
-            setTextColor(ui.foreground); setHintTextColor(ui.secondary)
-            background = ui.rounded(ui.surface); setPadding(ui.dp(16), ui.dp(14), ui.dp(16), ui.dp(14))
-        }
-        root.addView(input, LinearLayout.LayoutParams(-1, -2).apply { topMargin = ui.dp(20) })
-        for (transport in listOf("ROOT", "ADB")) button("执行 $transport") {
-            val feature = if (transport == "ROOT") ServiceFeature.ROOT else ServiceFeature.ADB
-            if (!AutoStartup.enabled(this) || !ServiceFeatures.read(this).enabled(feature)) {
-                result.text = "$transport 已关闭，请先在首页开启"
-            } else if (input.text.isNotBlank()) client?.executeShell(transport, input.text.toString()) { value ->
-                result.text = "exit=${value.getInt("exitCode", -1)} timeout=${value.getBoolean("timedOut")}\n${value.getString("error").orEmpty()}\n${value.getString("output").orEmpty()}"
-            }
-        }
-        // 全目录诊断扫描：默认关。开启后按32项/拍推进整个目录，是唯一会读未订阅属性的入口，
-        // 所以做成显式开关并在结果区说明成本，不参与正常运行的常驻采集。
-        var scanning = false
-        lateinit var scanButton: Button
-        scanButton = buttonView("全目录诊断扫描：关") {
-            scanning = !scanning
-            client?.setVehicleScan(scanning)
-            scanButton.text = if (scanning) "全目录诊断扫描：开（关闭前持续读取全目录）" else "全目录诊断扫描：关"
-            result.text = if (scanning)
-                "已开启全目录诊断扫描：每拍读取32个目录属性，用于核对全量可读范围。诊断完成后请关闭。"
-            else "已关闭全目录诊断扫描；恢复为只采集已订阅键。"
-        }
-        var offset = 0
-        button("车辆属性：下一页") { client?.vehiclePage(offset) { value ->
-            val items = value.getParcelableArrayList<Bundle>("items").orEmpty()
-            result.text = "属性 $offset / ${value.getInt("total")}\n" + items.joinToString("\n") {
-                "${it.getString("name")} [${it.getInt("propertyId")}/${it.getInt("areaId")}] ${it.getString("status")}\n${it.getString("value")}"
-            }
-            offset = if (offset + items.size >= value.getInt("total")) 0 else offset + items.size
-        } }
-        button("覆盖QNX认证（诊断）") {
-            startActivityForResult(Intent(Intent.ACTION_OPEN_DOCUMENT).setType("*/*").addCategory(Intent.CATEGORY_OPENABLE), 71)
-        }
-        for (model in listOf("L6", "L7")) button("配置车型 $model") {
-            getSharedPreferences("platform", 0).edit().putString("model", model).apply()
-            startService(Intent(this, AutoService::class.java).setAction("model"))
-        }
-        setContentView(ScrollView(this).apply { setBackgroundColor(ui.background); isFillViewport = true; addView(root) })
-        client = AutoClient(this, AutoContract.OBSERVER,
-            onSnapshot = { snapshot ->
-                // 扫描开关是服务端状态：页面重建后按快照回显，不凭本地变量假设。
-                val actual = snapshot.getBoolean("vehicleScanning")
-                if (actual != scanning) {
-                    scanning = actual
-                    scanButton.text = if (actual) "全目录诊断扫描：开（关闭前持续读取全目录）" else "全目录诊断扫描：关"
-                }
-            },
-            onState = { result.text = it }).also { it.connect() }
+        val binding = ActivityDiagnosticBinding.inflate(layoutInflater)
+        setContentView(binding.root)
+        controller = DiagnosticPageController(this, binding, sessionFactory, ioExecutor)
     }
+
+    override fun onStart() {
+        super.onStart()
+        controller.start()
+    }
+
+    override fun onStop() {
+        controller.stop()
+        super.onStop()
+    }
+
+    override fun onDestroy() {
+        controller.destroy()
+        super.onDestroy()
+    }
+
+    /** 平台文件选择器结果；请求码与 MIME 由 [com.ecarx.autoservice.settings.ServicePageCommands] 归属。 */
     @Deprecated("平台文件选择器")
     override fun onActivityResult(request: Int, code: Int, data: Intent?) {
         super.onActivityResult(request, code, data)
-        if (request == 71 && code == RESULT_OK) data?.data?.let { uri ->
-            Thread({
-                val ok = runCatching { QnxCredentials.store(this, checkNotNull(contentResolver.openInputStream(uri))) }.isSuccess
-                runOnUiThread { if (!destroyed) {
-                    result.text = if (ok) "诊断覆盖已保存" else "诊断覆盖失败"
-                    if (ok) startService(Intent(this, AutoService::class.java).setAction("prepare"))
-                } }
-            }, "AutoService-import").start()
-        }
+        deliverDocumentResult(request, code, data)
     }
-    override fun onDestroy() { destroyed = true; client?.close(); client = null; super.onDestroy() }
+
+    /** 把文件选择结果转交控制器；测试据此验证真实导入路径，不反射改私有状态。 */
+    internal fun deliverDocumentResult(requestCode: Int, resultCode: Int, data: Intent?) =
+        controller.onDocumentPicked(requestCode, resultCode, data)
 }

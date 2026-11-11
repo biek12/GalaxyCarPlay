@@ -1,4 +1,3 @@
-import java.util.Properties
 import com.android.build.api.instrumentation.AsmClassVisitorFactory
 import com.android.build.api.instrumentation.ClassContext
 import com.android.build.api.instrumentation.ClassData
@@ -7,6 +6,7 @@ import com.android.build.api.instrumentation.InstrumentationScope
 import org.objectweb.asm.ClassVisitor
 import org.objectweb.asm.MethodVisitor
 import org.objectweb.asm.Opcodes
+import java.util.Properties
 
 plugins { alias(libs.plugins.android.application) }
 val habLibraries = layout.buildDirectory.dir("generated/hab/jniLibs")
@@ -16,8 +16,14 @@ val buildHab by tasks.registering(Exec::class) {
     inputs.dir("src/main/cpp/hab")
     inputs.file(rootProject.file("scripts/build_hab_bridge.py"))
     outputs.dir(habLibraries)
-    commandLine("python3", rootProject.file("scripts/build_hab_bridge.py"), "--ndk", ndk.get(),
-        "--output", habLibraries.get().file("arm64-v8a/libgalaxy_hab_bridge.so").asFile)
+    commandLine(
+        "python3",
+        rootProject.file("scripts/build_hab_bridge.py"),
+        "--ndk",
+        ndk.get(),
+        "--output",
+        habLibraries.get().file("arm64-v8a/libgalaxy_hab_bridge.so").asFile,
+    )
 }
 val qnxAssets = layout.buildDirectory.dir("generated/qnx/assets")
 val prepareQnxReceiver by tasks.registering(Exec::class) {
@@ -26,7 +32,12 @@ val prepareQnxReceiver by tasks.registering(Exec::class) {
     inputs.file(rootProject.file("scripts/prepare_auto_qnx_asset.py"))
     inputs.file(rootProject.file(".work/hab-probes/build-report.json"))
     outputs.dir(qnxAssets)
-    commandLine("python3", rootProject.file("scripts/prepare_auto_qnx_asset.py"), "--output", qnxAssets.get().dir("qnx").asFile)
+    commandLine(
+        "python3",
+        rootProject.file("scripts/prepare_auto_qnx_asset.py"),
+        "--output",
+        qnxAssets.get().dir("qnx").asFile,
+    )
 }
 val clusterAssets = layout.buildDirectory.dir("generated/cluster/assets")
 val prepareClusterHook by tasks.registering(Exec::class) {
@@ -37,28 +48,69 @@ val prepareClusterHook by tasks.registering(Exec::class) {
     inputs.file(rootProject.file("scripts/prepare_cluster_hook_asset.py"))
     inputs.file(rootProject.file(".local/research/cluster-product-assets/profile.json"))
     outputs.dir(clusterAssets)
-    commandLine("python3",rootProject.file("scripts/prepare_cluster_hook_asset.py"),"--output",clusterAssets.get().dir("cluster").asFile)
+    commandLine(
+        "python3",
+        rootProject.file("scripts/prepare_cluster_hook_asset.py"),
+        "--output",
+        clusterAssets.get().dir("cluster").asFile,
+    )
 }
 // Deployment endpoint stays outside version control; public builds use a reserved example host.
-val privateServer = Properties().apply {
-    rootProject.file(".private/server.properties").takeIf { it.isFile }?.inputStream()?.use { load(it) }
-}
-val bridgeOrigin = providers.environmentVariable("GALAXY_ORIGIN")
-    .orElse(privateServer.getProperty("bridge.origin", "https://bridge.example.invalid/galaxy")).get()
-require(bridgeOrigin.startsWith("https://") && !bridgeOrigin.contains('"') && !bridgeOrigin.contains('\\') && !bridgeOrigin.contains('\n') && !bridgeOrigin.contains('\r'))
+val privateServer =
+    Properties().apply {
+        rootProject
+            .file(".private/server.properties")
+            .takeIf { it.isFile }
+            ?.inputStream()
+            ?.use { load(it) }
+    }
+val bridgeOrigin =
+    providers
+        .environmentVariable("GALAXY_ORIGIN")
+        .orElse(privateServer.getProperty("bridge.origin", "https://bridge.example.invalid/galaxy"))
+        .get()
+require(
+    bridgeOrigin.startsWith("https://") &&
+        !bridgeOrigin.contains('"') &&
+        !bridgeOrigin.contains('\\') &&
+        !bridgeOrigin.contains('\n') &&
+        !bridgeOrigin.contains('\r'),
+)
 
 android {
-    buildFeatures { buildConfig = true }
+    buildFeatures {
+        buildConfig = true
+        viewBinding = true
+    }
     namespace = "com.ecarx.autoservice"
     compileSdk = 37
     defaultConfig {
         buildConfigField("String", "GALAXY_ORIGIN", "\"$bridgeOrigin\"")
-        applicationId = "com.ecarx.autoservice"; minSdk = 29; targetSdk = 37; versionCode = 1; versionName = "0.1.0"; testInstrumentationRunner = "com.ecarx.autoservice.projection.ProjectionSmokeInstrumentation" }
+        applicationId = "com.ecarx.autoservice"
+        minSdk = 29
+        targetSdk = 37
+        versionCode = 1
+        versionName = "0.1.0"
+        testInstrumentationRunner =
+            "com.ecarx.autoservice.projection.ProjectionSmokeInstrumentation"
+    }
     packaging.jniLibs.useLegacyPackaging = true
-    sourceSets.getByName("main").jniLibs.directories.add(habLibraries.get().asFile.path)
-    sourceSets.getByName("main").assets.directories.add(qnxAssets.get().asFile.path)
-    sourceSets.getByName("main").assets.directories.add(clusterAssets.get().asFile.path)
-    compileOptions { sourceCompatibility = JavaVersion.VERSION_11; targetCompatibility = JavaVersion.VERSION_11 }
+    sourceSets
+        .getByName("main")
+        .jniLibs.directories
+        .add(habLibraries.get().asFile.path)
+    sourceSets
+        .getByName("main")
+        .assets.directories
+        .add(qnxAssets.get().asFile.path)
+    sourceSets
+        .getByName("main")
+        .assets.directories
+        .add(clusterAssets.get().asFile.path)
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+    }
     testOptions { unitTests.isIncludeAndroidResources = true }
 }
 tasks.named("preBuild") { dependsOn(buildHab, prepareQnxReceiver, prepareClusterHook) }
@@ -77,21 +129,48 @@ dependencies {
  */
 abstract class KadbLocalCrypto : AsmClassVisitorFactory<InstrumentationParameters.None> {
     override fun isInstrumentable(classData: ClassData) = classData.className == "com.flyfishxu.kadb.cert.CertUtils"
+
     override fun createClassVisitor(classContext: ClassContext, nextClassVisitor: ClassVisitor): ClassVisitor =
         object : ClassVisitor(Opcodes.ASM9, nextClassVisitor) {
             private var replaced = 0
-            override fun visitMethod(access: Int, name: String, descriptor: String, signature: String?, exceptions: Array<out String>?): MethodVisitor {
+
+            override fun visitMethod(
+                access: Int,
+                name: String,
+                descriptor: String,
+                signature: String?,
+                exceptions: Array<out String>?,
+            ): MethodVisitor {
                 val next = super.visitMethod(access, name, descriptor, signature, exceptions)
                 return object : MethodVisitor(Opcodes.ASM9, next) {
-                    override fun visitMethodInsn(opcode: Int, owner: String, method: String, desc: String, isInterface: Boolean) {
-                        if (opcode == Opcodes.INVOKESTATIC && owner == "java/security/KeyFactory" && method == "getInstance" &&
-                            desc == "(Ljava/lang/String;)Ljava/security/KeyFactory;" && name in setOf("parsePrivateKeyPem", "derivePublicKey")) {
+                    override fun visitMethodInsn(
+                        opcode: Int,
+                        owner: String,
+                        method: String,
+                        desc: String,
+                        isInterface: Boolean,
+                    ) {
+                        if (opcode == Opcodes.INVOKESTATIC &&
+                            owner == "java/security/KeyFactory" &&
+                            method == "getInstance" &&
+                            desc == "(Ljava/lang/String;)Ljava/security/KeyFactory;" &&
+                            name in setOf("parsePrivateKeyPem", "derivePublicKey")
+                        ) {
                             replaced++
-                            super.visitMethodInsn(opcode, "com/ecarx/autoservice/platform/AdbCrypto", "keyFactory", desc, false)
-                        } else super.visitMethodInsn(opcode, owner, method, desc, isInterface)
+                            super.visitMethodInsn(
+                                opcode,
+                                "com/ecarx/autoservice/platform/AdbCrypto",
+                                "keyFactory",
+                                desc,
+                                false,
+                            )
+                        } else {
+                            super.visitMethodInsn(opcode, owner, method, desc, isInterface)
+                        }
                     }
                 }
             }
+
             override fun visitEnd() {
                 check(replaced == 2) { "KADB CertUtils RSA 接点已改变，必须重核局部 Provider 补丁" }
                 super.visitEnd()
