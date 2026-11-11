@@ -168,7 +168,7 @@ internal class GalaxyModalDialog(
         if (neutral != null) {
             binding.dialogFooter.addView(
                 action(BUTTON_NEUTRAL, neutral),
-                LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) },
+                LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = actionGap },
             )
         }
         val row =
@@ -190,9 +190,9 @@ internal class GalaxyModalDialog(
                     }
                 if (row.childCount > 0) {
                     if (row.orientation == LinearLayout.HORIZONTAL) {
-                        params.marginStart = dp(12)
+                        params.marginStart = actionGap
                     } else {
-                        params.topMargin = dp(12)
+                        params.topMargin = actionGap
                     }
                 }
                 row.addView(action(which, value), params)
@@ -307,4 +307,7 @@ internal class GalaxyModalDialog(
     }
 
     private fun dp(value: Int) = GalaxyViews.dp(uiContext, value)
+
+    /** 操作按钮之间的间距；与样式资源保持同一数值来源。 */
+    private val actionGap get() = GalaxyViews.px(uiContext, R.dimen.galaxy_ui_dialog_action_gap)
 }
