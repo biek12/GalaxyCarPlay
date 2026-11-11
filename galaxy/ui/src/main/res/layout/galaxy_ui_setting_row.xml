@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+    <ImageView android:id="@+id/setting_row_icon" android:layout_width="@dimen/galaxy_ui_row_icon_size" android:layout_height="@dimen/galaxy_ui_row_icon_size" android:layout_marginEnd="@dimen/galaxy_ui_row_icon_gap" android:importantForAccessibility="no" android:visibility="gone"/>
+    <com.galaxy.auto.ui.GalaxySettingTextLayout android:id="@+id/setting_row_text" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"/>
+    <FrameLayout android:id="@+id/setting_row_accessory" android:layout_width="@dimen/galaxy_ui_row_accessory_width" android:layout_height="wrap_content" android:visibility="gone"/>
+</merge>

@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<selector xmlns:android="http://schemas.android.com/apk/res/android">
+    <item android:state_selected="true" android:color="@color/galaxy_ui_accent"/>
+    <item android:state_enabled="false" android:color="@color/galaxy_ui_disabled"/>
+    <item android:color="@color/galaxy_ui_text"/>
+</selector>

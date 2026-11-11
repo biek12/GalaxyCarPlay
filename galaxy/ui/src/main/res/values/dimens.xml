@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<resources>
+    <!-- 设置行：普通行 80dp，含说明/反馈 96dp；图标与操作槽尺寸与实际布局一致。 -->
+    <dimen name="galaxy_ui_row_min_height">80dp</dimen>
+    <dimen name="galaxy_ui_row_min_height_detail">96dp</dimen>
+    <dimen name="galaxy_ui_row_padding_horizontal">20dp</dimen>
+    <dimen name="galaxy_ui_row_padding_vertical">16dp</dimen>
+    <dimen name="galaxy_ui_row_icon_size">32dp</dimen>
+    <dimen name="galaxy_ui_row_icon_gap">16dp</dimen>
+    <dimen name="galaxy_ui_row_accessory_width">64dp</dimen>
+    <dimen name="galaxy_ui_row_switch_slot">82dp</dimen>
+    <dimen name="galaxy_ui_text_gap">4dp</dimen>
+    <dimen name="galaxy_ui_text_value_gap">16dp</dimen>
+    <dimen name="galaxy_ui_corner_radius">4dp</dimen>
+    <dimen name="galaxy_ui_group_padding">20dp</dimen>
+    <dimen name="galaxy_ui_section_gap">24dp</dimen>
+    <dimen name="galaxy_ui_section_title_gap">12dp</dimen>
+    <dimen name="galaxy_ui_touch_target">64dp</dimen>
+    <dimen name="galaxy_ui_switch_min_width">58dp</dimen>
+    <dimen name="galaxy_ui_button_min_height">72dp</dimen>
+    <dimen name="galaxy_ui_button_min_height_compact">48dp</dimen>
+    <dimen name="galaxy_ui_button_padding_horizontal">16dp</dimen>
+    <dimen name="galaxy_ui_button_padding_horizontal_compact">8dp</dimen>
+    <dimen name="galaxy_ui_button_padding_vertical">12dp</dimen>
+    <dimen name="galaxy_ui_icon_button_padding">16dp</dimen>
+    <dimen name="galaxy_ui_icon_button_radius">8dp</dimen>
+    <dimen name="galaxy_ui_text_button_vertical_padding">8dp</dimen>
+    <dimen name="galaxy_ui_text_button_end_padding">12dp</dimen>
+    <dimen name="galaxy_ui_dialog_padding_horizontal">24dp</dimen>
+    <dimen name="galaxy_ui_dialog_padding_top">20dp</dimen>
+    <dimen name="galaxy_ui_dialog_padding_bottom">24dp</dimen>
+    <dimen name="galaxy_ui_dialog_title_icon">40dp</dimen>
+    <dimen name="galaxy_ui_dialog_title_gap">12dp</dimen>
+    <dimen name="galaxy_ui_dialog_body_gap">20dp</dimen>
+    <dimen name="galaxy_ui_dialog_max_width">720dp</dimen>
+    <dimen name="galaxy_ui_dialog_message_gap">16dp</dimen>
+    <dimen name="galaxy_ui_dialog_close">64dp</dimen>
+    <dimen name="galaxy_ui_dialog_close_padding">16dp</dimen>
+    <dimen name="galaxy_ui_dialog_choice_height">72dp</dimen>
+    <dimen name="galaxy_ui_dialog_choice_padding_horizontal">12dp</dimen>
+    <dimen name="galaxy_ui_dialog_choice_padding_vertical">8dp</dimen>
+    <dimen name="galaxy_ui_dialog_action_gap">12dp</dimen>
+    <dimen name="galaxy_ui_input_min_height">64dp</dimen>
+    <dimen name="galaxy_ui_input_padding">16dp</dimen>
+</resources>

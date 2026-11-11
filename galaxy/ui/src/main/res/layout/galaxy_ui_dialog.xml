@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.galaxy.auto.ui.GalaxyDialogPanel xmlns:android="http://schemas.android.com/apk/res/android" style="@style/GalaxyUi.DialogPanel" android:layout_width="match_parent" android:layout_height="wrap_content">
+    <LinearLayout android:id="@+id/dialog_header" style="@style/GalaxyUi.DialogHeader" android:layout_width="match_parent" android:layout_height="wrap_content">
+        <ImageView android:id="@+id/dialog_icon" android:layout_width="@dimen/galaxy_ui_dialog_title_icon" android:layout_height="@dimen/galaxy_ui_dialog_title_icon" android:layout_marginEnd="@dimen/galaxy_ui_dialog_title_gap" android:importantForAccessibility="no" android:visibility="gone"/>
+        <TextView android:id="@+id/dialog_title" style="@style/GalaxyUi.TextAppearance.DialogTitle" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"/>
+        <ImageButton android:id="@+id/dialog_close" android:layout_width="@dimen/galaxy_ui_dialog_close" android:layout_height="@dimen/galaxy_ui_dialog_close" android:background="@null" android:contentDescription="@string/galaxy_ui_close" android:padding="@dimen/galaxy_ui_dialog_close_padding" android:src="@drawable/galaxy_ui_close"/>
+    </LinearLayout>
+    <ScrollView android:id="@+id/dialog_body_scroll" android:layout_width="match_parent" android:layout_height="0dp" android:layout_marginTop="@dimen/galaxy_ui_dialog_body_gap" android:layout_marginBottom="@dimen/galaxy_ui_dialog_body_gap" android:layout_weight="1" android:fillViewport="false">
+        <LinearLayout android:id="@+id/dialog_body" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+            <TextView android:id="@+id/dialog_message" style="@style/GalaxyUi.TextAppearance.DialogMessage" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginBottom="@dimen/galaxy_ui_dialog_message_gap" android:visibility="gone"/>
+        </LinearLayout>
+    </ScrollView>
+    <LinearLayout android:id="@+id/dialog_footer" style="@style/GalaxyUi.DialogFooter" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+</com.galaxy.auto.ui.GalaxyDialogPanel>
