@@ -4,6 +4,34 @@ set -euo pipefail
 
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 cd "$ROOT"
+native_path() {
+  local path="$1"
+  if command -v cygpath >/dev/null 2>&1; then
+    case "$path" in
+      /*|[A-Za-z]:*) cygpath -m "$path" ;;
+      *) printf '%s\n' "$path" ;;
+    esac
+  else
+    printf '%s\n' "$path"
+  fi
+}
+resolve_python() {
+  if [ -n "${GALAXY_PYTHON:-}" ] && "${GALAXY_PYTHON}" -c 'import sys' >/dev/null 2>&1; then
+    printf '%s\n' "$GALAXY_PYTHON"
+    return
+  fi
+  local candidate
+  for candidate in python3 python; do
+    if command -v "$candidate" >/dev/null 2>&1 && "$candidate" -c 'import sys; raise SystemExit(0 if sys.version_info[0] == 3 else 1)' >/dev/null 2>&1; then
+      printf '%s\n' "$candidate"
+      return
+    fi
+  done
+  echo '缺少 Python 3' >&2
+  exit 2
+}
+PY=$(resolve_python)
+export GALAXY_PYTHON="$PY"
 BASELINE=0
 case "${1:-}" in
   "") ;;
@@ -19,7 +47,8 @@ export ANDROID_SDK_ROOT="$ANDROID_HOME"
 export GRADLE_USER_HOME=${GRADLE_USER_HOME:-$CACHE_ROOT/gradle-home}
 export GALAXY_VERIFY_CACHE="$CACHE_ROOT"
 export GALAXY_ROBOLECTRIC_STRICT_OFFLINE=1
-AAPT2_PATH=${GALAXY_AAPT2:-$(GALAXY_ANDROID_SDK="$ANDROID_HOME" python3 scripts/verify/lib/local_aapt2.py)}
+AAPT2_PATH=${GALAXY_AAPT2:-$(GALAXY_ANDROID_SDK="$ANDROID_HOME" "$PY" scripts/verify/lib/local_aapt2.py)}
+AAPT2_PATH=$(native_path "$AAPT2_PATH")
 test -x "$AAPT2_PATH" || { echo '缺少本机 AAPT2' >&2; exit 2; }
 REPORT_DIR="$ROOT/.work/refactor-u1-validation"
 mkdir -p "$REPORT_DIR"
@@ -52,7 +81,7 @@ fi
   :cluster:testDebugUnitTest --tests com.galaxy.autocluster.ClusterAppNavigationTest \
   2>&1 | tee "$REPORT_DIR/tests.log"
 
-python3 - "$BASELINE" "$REPORT_DIR" <<'PY'
+"$PY" - "$BASELINE" "$(native_path "$REPORT_DIR")" <<'PY'
 """绑定真实 JUnit 报告和最终源码；缺少测试、跳过或失败均拒绝交审。"""
 import hashlib
 import json
@@ -84,13 +113,13 @@ for module, suites in expected.items():
         skipped = int(node.get("skipped", "0"))
         if tests <= 0 or failed or skipped:
             raise SystemExit(f"用例未达标: {suite}: tests={tests}, failed={failed}, skipped={skipped}")
-        results.append({"suite": suite, "tests": tests, "report": str(path),
+        results.append({"suite": suite, "tests": tests, "report": path.as_posix(),
                         "sha256": hashlib.sha256(path.read_bytes()).hexdigest()})
 sources = {}
 for module in ["ui", "service", "cluster", "client", "contracts", "common", "mobile", "record", "lyrics", "shared"]:
     for path in sorted(Path("galaxy", module).rglob("*")):
         if path.is_file() and "build" not in path.parts and path.suffix in {".kt", ".kts", ".xml", ".aidl"}:
-            sources[str(path)] = hashlib.sha256(path.read_bytes()).hexdigest()
+            sources[path.as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
 record = {
     "baselineOnly": baseline,
     "head": subprocess.check_output(["git", "rev-parse", "HEAD"], text=True).strip(),
@@ -101,6 +130,6 @@ record = {
     "suites": results,
     "sourceSha256": sources,
 }
-(report_dir / "result.json").write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n")
+(report_dir / "result.json").write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
 print(f"{'BASELINE' if baseline else 'U1'}: 编译成功，{len(results)} suites / {sum(x['tests'] for x in results)} cases通过，0失败/0跳过；未打包、未上车。")
 PY

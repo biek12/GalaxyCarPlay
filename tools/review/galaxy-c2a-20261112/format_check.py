@@ -42,7 +42,7 @@ def main():
     repository = Path(__file__).resolve().parents[3]
     worktree = args.worktree.resolve()
     files = FILES if args.files_from is None else [
-        line.strip() for line in args.files_from.read_text().splitlines()
+        line.strip() for line in args.files_from.read_text(encoding="utf-8").splitlines()
         if line.strip() and not line.lstrip().startswith("#")
     ]
     if not files or len(set(files)) != len(files):
@@ -56,12 +56,12 @@ def main():
     if hashlib.sha256(jar.read_bytes()).hexdigest() != expected:
         raise SystemExit("ktlint固定jar摘要不符")
     config = repository / "format/galaxy/.editorconfig"
-    base = ["java", "-jar", str(jar), f"--editorconfig={config}"]
+    base = ["java", "-Dfile.encoding=UTF-8", "-jar", str(jar), f"--editorconfig={config.as_posix()}"]
 
     def run(formatting=False):
         """每文件独立argv，不经shell换行拆分，并拒绝零匹配。"""
         command = base + (["--format"] if formatting else []) + files
-        result = subprocess.run(command, cwd=worktree, capture_output=True, text=True)
+        result = subprocess.run(command, cwd=worktree, capture_output=True, text=True, encoding="utf-8", errors="replace")
         output = result.stdout + result.stderr
         print(output, end="")
         if result.returncode or "No files matched" in output:

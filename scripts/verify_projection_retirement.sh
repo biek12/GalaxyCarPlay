@@ -5,6 +5,37 @@ set -euo pipefail
 
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 cd "$ROOT"
+
+# Git Bash 的 /f/... 不能直接交给 Windows Python/Gradle。只转换绝对路径。
+native_path() {
+  local path="$1"
+  if command -v cygpath >/dev/null 2>&1; then
+    case "$path" in
+      /*|[A-Za-z]:*) cygpath -m "$path" ;;
+      *) printf '%s\n' "$path" ;;
+    esac
+  else
+    printf '%s\n' "$path"
+  fi
+}
+resolve_python() {
+  if [ -n "${GALAXY_PYTHON:-}" ] && "${GALAXY_PYTHON}" -c 'import sys' >/dev/null 2>&1; then
+    printf '%s\n' "$GALAXY_PYTHON"
+    return
+  fi
+  local candidate
+  for candidate in python3 python; do
+    if command -v "$candidate" >/dev/null 2>&1 && "$candidate" -c 'import sys; raise SystemExit(0 if sys.version_info[0] == 3 else 1)' >/dev/null 2>&1; then
+      printf '%s\n' "$candidate"
+      return
+    fi
+  done
+  echo '缺少 Python 3' >&2
+  exit 2
+}
+PY=$(resolve_python)
+export GALAXY_PYTHON="$PY"
+
 # 显式环境变量优先。未设置时缓存和报告都落在当前仓库 .work，不写到仓库父目录。
 export GALAXY_REFACTOR_CACHE="${GALAXY_REFACTOR_CACHE:-$ROOT/.work}"
 export GALAXY_VERIFY_CACHE="${GALAXY_VERIFY_CACHE:-$GALAXY_REFACTOR_CACHE}"
@@ -19,7 +50,9 @@ export ANDROID_HOME="$GALAXY_REFACTOR_CACHE/android-sdk"
 export ANDROID_SDK_ROOT="$ANDROID_HOME"
 export GRADLE_USER_HOME="$GALAXY_REFACTOR_CACHE/gradle-home"
 export GALAXY_ROBOLECTRIC_STRICT_OFFLINE=1
-AAPT2_PATH=${GALAXY_AAPT2:-$(GALAXY_ANDROID_SDK="$ANDROID_HOME" python3 scripts/verify/lib/local_aapt2.py)}
+AAPT2_PATH=${GALAXY_AAPT2:-$(GALAXY_ANDROID_SDK="$ANDROID_HOME" "$PY" scripts/verify/lib/local_aapt2.py)}
+AAPT2_PATH=$(native_path "$AAPT2_PATH")
+export GALAXY_AAPT2="$AAPT2_PATH"
 test -x "$AAPT2_PATH" || { echo '缺少本机 AAPT2' >&2; exit 2; }
 
 ARGS=(--offline --no-daemon --no-configuration-cache --console=plain
@@ -33,7 +66,7 @@ ARGS=(--offline --no-daemon --no-configuration-cache --console=plain
 # 保证产物与 Manifest 都是本轮编译结果，不拿旧 build 的残留 class 冒充本轮产物；
 # 不清共享缓存、不动其他工作树。用「重命名到唯一后缀」隔离旧产物（移动而非删除），
 # 这些目录都在被 .gitignore 忽略的 build/ 下，不进入 Git 提交。
-python3 - <<'PY'
+"$PY" - <<'PY'
 from pathlib import Path
 import time
 
@@ -61,7 +94,7 @@ for rel in targets:
 PY
 
 # 1) 固定格式门槛：ktlint 1.4.1 二次幂等 + XML libxml 20913 语义/二次幂等 + 脚本语法。
-python3 tools/review/galaxy-r0-20261112/verify_format.py 2>&1 | tee "$LOG_DIR/format.log"
+"$PY" tools/review/galaxy-r0-20261112/verify_format.py 2>&1 | tee "$LOG_DIR/format.log"
 
 # 2) 复用既有 verify_cluster_pages：全下游编译/资源、U1 门槛与当前全部 Cluster 测试。
 bash scripts/verify_cluster_pages.sh 2>&1 | tee "$LOG_DIR/verify_cluster_pages.log"
@@ -81,7 +114,7 @@ bash scripts/verify_cluster_pages.sh 2>&1 | tee "$LOG_DIR/verify_cluster_pages.l
   2>&1 | tee "$LOG_DIR/service-tests.log"
 
 # 4) 真实产物/JUnit/归档摘要/最终源码 SHA256 核对，写父目录 VALIDATION.json。
-python3 tools/review/galaxy-r0-20261112/verify_artifacts.py ready 2>&1 | tee "$LOG_DIR/artifacts.log"
+"$PY" tools/review/galaxy-r0-20261112/verify_artifacts.py ready 2>&1 | tee "$LOG_DIR/artifacts.log"
 
 # 5) 保留实际 JUnit XML 与归档清单副本作为交付证据。
 mkdir -p "$LOG_DIR/junit"

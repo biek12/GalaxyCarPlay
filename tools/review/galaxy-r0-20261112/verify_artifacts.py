@@ -81,14 +81,78 @@ def sha256(data: bytes) -> str:
     return hashlib.sha256(data).hexdigest()
 
 
+def rel_posix(path: Path, root: Path = ROOT) -> str:
+    """产物和源码相对路径统一为 POSIX，避免 Windows 反斜线改变门槛语义。"""
+    return path.relative_to(root).as_posix()
+
+
+def read_text(path: Path) -> str:
+    """按 UTF-8 读取文本。Windows 默认代码页不能用来解释这些源文件。"""
+    return path.read_text(encoding="utf-8")
+
+
+def strip_kts_comments(text: str) -> str:
+    """去掉 KTS 行注释和块注释，保留字符串字面量。
+
+    说明文字里的退役词不能当成可执行配置；字符串中的真实路径和声明仍然保留。
+    """
+    out: list[str] = []
+    index = 0
+    length = len(text)
+    while index < length:
+        if text.startswith('"""', index) or text.startswith("'''", index):
+            quote = text[index:index + 3]
+            end = text.find(quote, index + 3)
+            if end < 0:
+                out.append(text[index:])
+                break
+            out.append(text[index:end + 3])
+            index = end + 3
+            continue
+        character = text[index]
+        if character in "\"'":
+            cursor = index + 1
+            while cursor < length:
+                if text[cursor] == "\\":
+                    cursor += 2
+                    continue
+                if text[cursor] == character:
+                    cursor += 1
+                    break
+                cursor += 1
+            out.append(text[index:cursor])
+            index = cursor
+            continue
+        if text.startswith("//", index):
+            newline = text.find("\n", index)
+            if newline < 0:
+                break
+            out.append("\n")
+            index = newline + 1
+            continue
+        if text.startswith("/*", index):
+            end = text.find("*/", index + 2)
+            if end < 0:
+                break
+            out.append("\n")
+            index = end + 2
+            continue
+        out.append(character)
+        index += 1
+    return "".join(out)
+
+
 def git_blob(path: str) -> bytes:
     """读取固定起点提交的原字节。"""
-    return subprocess.check_output(["git", "show", f"572ba0eb07113c8c1859efa9c34cb25a1676eff7:{path}"], cwd=ROOT)
+    return subprocess.check_output(
+        ["git", "show", f"572ba0eb07113c8c1859efa9c34cb25a1676eff7:{path}"],
+        cwd=ROOT,
+    )
 
 
 def archive_gate() -> dict:
     """逐项三方核对 git blob / 归档文件 / manifest.json，并确认原路径不在活跃源集。"""
-    manifest = json.loads((ROOT / ARCHIVE_ROOT / "manifest.json").read_text())
+    manifest = json.loads(read_text(ROOT / ARCHIVE_ROOT / "manifest.json"))
     if manifest["sourceBaseline"] != "572ba0eb07113c8c1859efa9c34cb25a1676eff7":
         raise SystemExit("归档 sourceBaseline 不符")
     checked = []
@@ -136,27 +200,28 @@ def manifest_gate() -> dict:
         path = ROOT / rel
         if not path.is_file():
             raise SystemExit(f"缺少本轮 merged manifest: {rel}")
-        text = path.read_text()
+        text = read_text(path)
         if "ThemeActivity" in text:
             raise SystemExit(f"merged manifest 仍含 ThemeActivity: {rel}")
         files.append({"path": rel, "sha256": sha256(path.read_bytes()),
                       "themeActivityPresent": False})
-    cluster_manifest = (ROOT / "galaxy/cluster/src/main/AndroidManifest.xml").read_text()
+    cluster_manifest = read_text(ROOT / "galaxy/cluster/src/main/AndroidManifest.xml")
     if "ThemeActivity" in cluster_manifest:
         raise SystemExit("cluster 源 Manifest 仍声明 ThemeActivity")
     return {"fileCount": len(files), "files": files, "themeActivityPresent": False}
 
 
-def classes_gate() -> dict:
+def classes_gate(root: Path | None = None) -> dict:
     """本轮 Kotlin class 输出：无旧专用输出类，新运行类与共享类齐全。"""
+    root = root or ROOT
     roots = [
-        ROOT / "galaxy/service/build/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes",
-        ROOT / "galaxy/cluster/build/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes",
+        root / "galaxy/service/build/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes",
+        root / "galaxy/cluster/build/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes",
     ]
     for directory in roots:
         if not directory.is_dir():
             raise SystemExit(f"缺少本轮 Kotlin class 输出: {directory}")
-    all_classes = sorted(str(p.relative_to(root)) for root in roots for p in root.rglob("*.class"))
+    all_classes = sorted(path.relative_to(directory).as_posix() for directory in roots for path in directory.rglob("*.class"))
     if not all_classes:
         raise SystemExit("本轮 class 输出为空")
     forbidden_hits = []
@@ -171,7 +236,7 @@ def classes_gate() -> dict:
     if missing:
         raise SystemExit(f"缺少运行类产物: {missing}")
     return {
-        "classRoots": [str(r.relative_to(ROOT)) for r in roots],
+        "classRoots": [rel_posix(directory, root) for directory in roots],
         "classCount": len(all_classes),
         "forbiddenChecked": len(FORBIDDEN_CLASSES),
         "forbiddenHits": forbidden_hits,
@@ -193,7 +258,7 @@ def junit_gate() -> dict:
             counts = {key: int(node.get(key, "0")) for key in ("tests", "failures", "errors", "skipped")}
             if counts["tests"] <= 0 or any(counts[k] for k in ("failures", "errors", "skipped")):
                 raise SystemExit(f"必测 suite 未达标: {suite}: {counts}")
-            parsed.append({"suite": suite, **counts, "report": str(path.relative_to(ROOT)),
+            parsed.append({"suite": suite, **counts, "report": rel_posix(path),
                            "sha256": sha256(path.read_bytes())})
         # 归档套件不得作为本轮活跃报告出现（历史证据只在 archive 中）。
         active_archived = [s for s in ARCHIVED_SUITES if (directory / f"TEST-{s}.xml").is_file()]
@@ -212,10 +277,12 @@ def junit_gate() -> dict:
     }
 
 
-def closure_gate() -> dict:
+def closure_gate(root: Path | None = None) -> dict:
     """共享调用闭包与 Gradle 退役依据（源码级审计，不冒充 QNX 运行）。"""
+    root = root or ROOT
+
     def read(path: str) -> str:
-        return (ROOT / path).read_text()
+        return read_text(root / path)
 
     hook = read("galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxClusterHook.kt")
     for token in ("receiver-candidate", "hook-health", "PosixChecksum.calculate"):
@@ -234,14 +301,16 @@ def closure_gate() -> dict:
         if token not in gradle:
             raise SystemExit(f"共享资产准备链缺失: {token}")
     # buildHab 必须是无动作占位（无 Exec、无 commandLine、无输入/输出、无依赖）。
+    # 只扫描去掉注释后的代码，说明文字不构成配置；字符串里的真实声明仍然拒绝。
     start = gradle.index("val buildHab by tasks.registering")
     end = gradle.index("val qnxAssets", start)
-    build_hab_block = gradle[start:end]
+    build_hab_block = strip_kts_comments(gradle[start:end])
     for token in ("Exec", "commandLine", "dependsOn", "inputs", "outputs", "libgalaxy_hab_bridge.so"):
         if token in build_hab_block:
             raise SystemExit(f"buildHab 占位仍含可执行/依赖: {token}")
+    gradle_code = strip_kts_comments(gradle)
     for token in ("jniLibs.directories", "testInstrumentationRunner", "libgalaxy_hab_bridge.so"):
-        if token in gradle:
+        if token in gradle_code:
             raise SystemExit(f"service Gradle 仍含旧 bridge 打包/烟测: {token}")
     if "dependsOn(prepareQnxReceiver, prepareClusterHook)" not in gradle:
         raise SystemExit("preBuild 未保留共享资产准备链")
@@ -274,13 +343,13 @@ def source_gate() -> dict:
     sources = {}
     for path in sorted((ROOT / "galaxy").rglob("*")):
         if path.is_file() and "build" not in path.parts and path.suffix in {".kt", ".kts", ".xml", ".aidl"}:
-            sources[str(path.relative_to(ROOT))] = sha256(path.read_bytes())
+            sources[rel_posix(path)] = sha256(path.read_bytes())
     archive_hashes = {}
     for path in sorted((ROOT / ARCHIVE_ROOT).rglob("*")):
         if path.is_file():
-            archive_hashes[str(path.relative_to(ROOT))] = sha256(path.read_bytes())
-    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True).strip()
-    status = subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True)
+            archive_hashes[rel_posix(path)] = sha256(path.read_bytes())
+    head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, encoding="utf-8").strip()
+    status = subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True, encoding="utf-8")
     return {
         "head": head,
         "worktreeStatus": status,
