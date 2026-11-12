@@ -68,7 +68,7 @@ class ThemeRetirementGateTest(unittest.TestCase):
                 for suite in suites:
                     ET.ElementTree(ET.Element("testsuite", name=suite, tests="1", failures="0",
                                               errors="0", skipped="0")).write(folder / f"TEST-{suite}.xml")
-            self.assertEqual(12, gates.junit_gate(root)["requiredSuiteCount"])
+            self.assertEqual(sum(map(len, gates.REQUIRED_SUITES.values())), gates.junit_gate(root)["requiredSuiteCount"])
             folder = root / "galaxy/cluster/build/test-results/testDebugUnitTest"
             retired = "com.galaxy.autocluster.theme.ThemeStoreTest"
             path = folder / f"TEST-{retired}.xml"

@@ -41,15 +41,20 @@ FORBIDDEN_CLASSES = [
 ]
 # 必须存在的新运行类与共享保留类。
 REQUIRED_CLASSES = [
-    "com/ecarx/autoservice/platform/RootProjectionArchive.class",
-    "com/ecarx/autoservice/platform/QnxReceiverCleanup.class",
-    "com/ecarx/autoservice/platform/PosixChecksum.class",
+    "com/ecarx/autoservice/platform/root/RootProjectionArchive.class",
+    "com/ecarx/autoservice/platform/qnx/QnxReceiverCleanup.class",
+    "com/ecarx/autoservice/platform/hook/PosixChecksum.class",
     "com/ecarx/autoservice/AutoService.class",
-    "com/ecarx/autoservice/platform/RootServiceMain.class",
-    "com/ecarx/autoservice/platform/PlatformCoordinator.class",
-    "com/ecarx/autoservice/platform/QnxClusterHook.class",
+    "com/ecarx/autoservice/platform/root/RootServiceMain.class",
+    "com/ecarx/autoservice/platform/foundation/PlatformCoordinator.class",
+    "com/ecarx/autoservice/platform/hook/QnxClusterHook.class",
     "com/galaxy/autocluster/ClusterRenderService.class",
     "com/galaxy/autocluster/ui/InstrumentMusicPreview.class",
+    "com/ecarx/autoservice/platform/adb/AdbCrypto.class",
+    "com/ecarx/autoservice/platform/root/RootOperation.class",
+    "com/ecarx/autoservice/platform/hook/HookLease.class",
+    "com/ecarx/autoservice/platform/hook/HookMaterials.class",
+    "com/ecarx/autoservice/platform/hook/QnxClusterRemote.class",
     *PREVIEW_CLASSES,
 ]
 # 本批必测：JUnit suite 必须真实存在、非空、零失败/错误/跳过。
@@ -69,6 +74,9 @@ REQUIRED_SUITES = {
         "com.ecarx.autoservice.ClientRegistryTest",
         "com.ecarx.autoservice.platform.foundation.FoundationRecoveryTest",
         "com.ecarx.autoservice.remote.RemoteConnectionStatusTest",
+        "com.ecarx.autoservice.platform.root.RootFramesTest",
+        "com.ecarx.autoservice.platform.hook.HookLeaseTest",
+        "com.ecarx.autoservice.platform.hook.HookMaterialsTest",
     ],
 }
 # 归档但保留原证据的测试套件（不参与本轮活跃用例数）。
@@ -175,7 +183,11 @@ def archive_gate() -> dict:
             raise SystemExit(f"归档摘要不一致: {entry['original']}")
         if len(archived) != entry["bytes"]:
             raise SystemExit(f"归档字节数不一致: {entry['original']}")
-        active = ROOT / entry["original"]
+        runtime_path = {
+            "galaxy/service/src/main/java/com/ecarx/autoservice/platform/PlatformCoordinator.kt":
+                "galaxy/service/src/main/java/com/ecarx/autoservice/platform/foundation/PlatformCoordinator.kt",
+        }.get(entry["original"], entry["original"])
+        active = ROOT / runtime_path
         if entry["kind"] == "moved":
             if active.exists():
                 raise SystemExit(f"归档文件仍在活跃源集: {entry['original']}")
@@ -363,13 +375,18 @@ def closure_gate(root: Path | None = None) -> dict:
     def read(path: str) -> str:
         return read_text(root / path)
 
-    hook = read("galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxClusterHook.kt")
-    for token in ("receiver-candidate", "hook-health", "PosixChecksum.calculate"):
-        if token not in hook:
-            raise SystemExit(f"共享 health 链缺失: {token}")
-    root_main = read("galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootServiceMain.kt")
+    hook = read("galaxy/service/src/main/java/com/ecarx/autoservice/platform/hook/QnxClusterHook.kt")
+    materials = read("galaxy/service/src/main/java/com/ecarx/autoservice/platform/hook/HookMaterials.kt")
+    remote = read("galaxy/service/src/main/java/com/ecarx/autoservice/platform/hook/QnxClusterRemote.kt")
+    for token, owner in (("receiver-candidate", materials), ("hook-health", remote),
+                         ("PosixChecksum.calculate", remote), ("HookMaterials.read", hook),
+                         ("HookMaterials.version", hook), ("lease.active", hook)):
+        if token not in owner:
+            raise SystemExit(f"共享 health/租约调用链缺失: {token}")
+    root_main = read("galaxy/service/src/main/java/com/ecarx/autoservice/platform/root/RootServiceMain.kt")
     for token in ("RootProjectionArchive.rejectIfArchived", "QnxReceiverCleanup.stop",
-                  "11 -> QnxClusterHook.control", "12 -> QnxClusterHook.receipt"):
+                  "RootOperation.HOOK_CONTROL to", "QnxClusterHook.control",
+                  "RootOperation.HOOK_RECEIPT to", "QnxClusterHook.receipt", "unknown_operation"):
         if token not in root_main:
             raise SystemExit(f"Root 分发链缺失: {token}")
     for token in ("RootHabSession.run", "QnxReceiverDeployer.deploy", "4 -> QnxReceiverDeployer"):
@@ -424,6 +441,13 @@ def closure_gate(root: Path | None = None) -> dict:
     }
 
 
+def kadb_transform_gate() -> dict:
+    """直接核验生产 Gradle transformer 的最终输出，并把产物摘要纳入交付。"""
+    sys.path.insert(0, str(ROOT / "tools/review/galaxy-platform-p1-20261113"))
+    from verify_kadb_transform import inspect_artifacts
+    return inspect_artifacts(ROOT)
+
+
 def source_gate() -> dict:
     """绑定最终源码/资源/KTS/归档摘要与工作树 HEAD。"""
     sources = {}
@@ -436,6 +460,7 @@ def source_gate() -> dict:
             if path.is_file():
                 archive_hashes[rel_posix(path)] = sha256(path.read_bytes())
     validation_paths = set((ROOT / "tools/review/galaxy-r0-20261112").rglob("*.py"))
+    validation_paths.update((ROOT / "tools/review/galaxy-platform-p1-20261113").rglob("*.py"))
     validation_paths.update((ROOT / "scripts/verify").rglob("*.py"))
     validation_paths.update((ROOT / "scripts/verify").rglob("*.gradle"))
     validation_paths.update(ROOT / name for name in (
@@ -467,12 +492,13 @@ def main() -> None:
     REPORT.mkdir(parents=True, exist_ok=True)
     fmt = json.loads(read_text(REPORT / "format-result.json"))
     record = {
-        "task": "GALAXY-ANDROID-R0-20261112",
+        "task": "GALAXY-PLATFORM-PORTS-P1-20261113",
         "status": "READY_FOR_REVIEW" if len(sys.argv) > 1 and sys.argv[1] == "ready" else "VALIDATED",
         "archive": archive_gate(),
         "themeArchive": theme_archive_gate(),
         "manifest": manifest_gate(),
         "classes": classes_gate(),
+        "kadbTransform": kadb_transform_gate(),
         "junit": junit_gate(),
         "format": fmt,
         "closure": closure_gate(),

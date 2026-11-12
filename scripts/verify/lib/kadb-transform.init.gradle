@@ -1,0 +1,27 @@
+// 读取生产 debug 仪器化 artifact view，记录实际产物；不改变产品依赖或字节码处理。
+gradle.projectsEvaluated {
+    def service = gradle.rootProject.findProject(':service')
+    service.tasks.register('recordGalaxyKadbTransformInputs') {
+        dependsOn service.tasks.named('transformDebugClassesWithAsm')
+        doLast {
+            def transform = service.tasks.named('transformDebugClassesWithAsm').get()
+            def consumer = service.tasks.named('testDebugUnitTest').get()
+            def instrumented = service.configurations.getByName('debugRuntimeClasspath').incoming.artifactView {
+                attributes.attribute(org.gradle.api.attributes.Attribute.of('artifactType', String), 'android-asm-instrumented-jars')
+                attributes.attribute(org.gradle.api.attributes.Attribute.of('asm-transformed-variant', String), 'debug')
+            }.files.files
+            def files = (transform.inputs.files.files + transform.outputs.files.files)
+                .collect { it.canonicalPath }.unique().sort()
+            def root = gradle.rootProject.projectDir.canonicalFile
+            def report = new File(System.getenv('GALAXY_R0_REPORT_DIR') ?: new File(root, '.work/p1-validation').path)
+            report.mkdirs()
+            new File(report, 'kadb-transform-inputs.json').write(
+                groovy.json.JsonOutput.prettyPrint(groovy.json.JsonOutput.toJson([
+                    projectRoot: root.path, task: transform.path, files: files,
+                    consumerTask: consumer.path,
+                    runtimeClasspath: consumer.classpath.files.collect { it.canonicalPath }.unique().sort(),
+                    instrumentedArtifacts: instrumented.collect { it.canonicalPath }.unique().sort(),
+                ])) + '\n', 'UTF-8')
+        }
+    }
+}

@@ -29,11 +29,16 @@ def write(root: Path, relative: str, text: str) -> None:
 
 def legal_closure_tree(root: Path) -> None:
     """构造能通过其他闭包检查的最小树。退役词只出现在注释里。"""
-    write(root, "galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxClusterHook.kt",
-          "receiver-candidate\nhook-health\nPosixChecksum.calculate\n")
-    write(root, "galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootServiceMain.kt",
+    write(root, "galaxy/service/src/main/java/com/ecarx/autoservice/platform/hook/QnxClusterHook.kt",
+          "HookMaterials.read\nHookMaterials.version\nlease.active\n")
+    write(root, "galaxy/service/src/main/java/com/ecarx/autoservice/platform/hook/HookMaterials.kt",
+          "receiver-candidate\n")
+    write(root, "galaxy/service/src/main/java/com/ecarx/autoservice/platform/hook/QnxClusterRemote.kt",
+          "hook-health\nPosixChecksum.calculate\n")
+    write(root, "galaxy/service/src/main/java/com/ecarx/autoservice/platform/root/RootServiceMain.kt",
           "RootProjectionArchive.rejectIfArchived\nQnxReceiverCleanup.stop\n"
-          "11 -> QnxClusterHook.control\n12 -> QnxClusterHook.receipt\n")
+          "RootOperation.HOOK_CONTROL to QnxClusterHook.control\n"
+          "RootOperation.HOOK_RECEIPT to QnxClusterHook.receipt\nunknown_operation\n")
     write(root, "galaxy/service/build.gradle.kts", """
 // 说明：不再声明 testInstrumentationRunner，也不打包 libgalaxy_hab_bridge.so，不使用 jniLibs.directories。
 val buildHab by tasks.registering {
