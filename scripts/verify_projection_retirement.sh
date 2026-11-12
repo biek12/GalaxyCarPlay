@@ -8,7 +8,7 @@ cd "$ROOT"
 
 # Git Bash 的 /f/... 不能直接交给 Windows Python/Gradle。只转换绝对路径。
 native_path() {
-  local path="$1"
+  local path="${1//\\//}"
   if command -v cygpath >/dev/null 2>&1; then
     case "$path" in
       /*|[A-Za-z]:*) cygpath -m "$path" ;;
@@ -16,6 +16,55 @@ native_path() {
     esac
   else
     printf '%s\n' "$path"
+  fi
+}
+# 把明确的宿主工具交给 Gradle Test。POSIX 未设置时保留 /bin/sh 和 PATH 上的 cksum。
+prepare_host_tools() {
+  export PYTHONIOENCODING=utf-8
+  export PYTHONUTF8=1
+  if [ -z "${LANG:-}" ]; then
+    export LANG=C.UTF-8
+  fi
+  if [ -z "${GALAXY_TEST_SHELL:-}" ] || [ -z "${GALAXY_TEST_CKSUM:-}" ] || [ -z "${GALAXY_TEST_PATH_PREFIX:-}" ]; then
+    if command -v cygpath >/dev/null 2>&1; then
+      local git_sh="/c/Program Files/Git/bin/sh.exe"
+      if [ -z "${GALAXY_TEST_SHELL:-}" ]; then
+        if [ -f "$git_sh" ]; then
+          export GALAXY_TEST_SHELL="$(cygpath -m "$git_sh")"
+        elif [ -x /bin/sh ]; then
+          export GALAXY_TEST_SHELL="$(cygpath -m /bin/sh)"
+        else
+          echo '缺少 Git Bash 的 sh.exe，请设置 GALAXY_TEST_SHELL' >&2
+          exit 2
+        fi
+      fi
+      if [ ! -x /usr/bin/cksum ] || [ ! -d /usr/bin ]; then
+        echo '缺少 Git Bash 的 cksum 或 usr/bin，请设置 GALAXY_TEST_CKSUM 和 GALAXY_TEST_PATH_PREFIX' >&2
+        exit 2
+      fi
+      export GALAXY_TEST_CKSUM="${GALAXY_TEST_CKSUM:-$(cygpath -m /usr/bin/cksum)}"
+      export GALAXY_TEST_PATH_PREFIX="${GALAXY_TEST_PATH_PREFIX:-$(cygpath -m /usr/bin)}"
+    elif [ -z "${GALAXY_TEST_SHELL:-}" ]; then
+      if [ ! -x /bin/sh ]; then
+        echo '缺少 /bin/sh，请设置 GALAXY_TEST_SHELL' >&2
+        exit 2
+      fi
+      export GALAXY_TEST_SHELL=/bin/sh
+    fi
+  fi
+  if [ -n "${GALAXY_TEST_SHELL:-}" ] && [ ! -x "$GALAXY_TEST_SHELL" ] && [ ! -f "$GALAXY_TEST_SHELL" ]; then
+    echo "宿主 shell 不存在: $GALAXY_TEST_SHELL" >&2
+    exit 2
+  fi
+  if [ -n "${GALAXY_TEST_CKSUM:-}" ] && [ ! -x "$GALAXY_TEST_CKSUM" ] && [ ! -f "$GALAXY_TEST_CKSUM" ]; then
+    echo "宿主 cksum 不存在: $GALAXY_TEST_CKSUM" >&2
+    exit 2
+  fi
+  if [ -n "${GALAXY_TEST_PATH_PREFIX:-}" ]; then
+    case ":$PATH:" in
+      *":$GALAXY_TEST_PATH_PREFIX:"*) ;;
+      *) export PATH="$GALAXY_TEST_PATH_PREFIX:$PATH" ;;
+    esac
   fi
 }
 resolve_python() {
@@ -33,14 +82,16 @@ resolve_python() {
   echo '缺少 Python 3' >&2
   exit 2
 }
-PY=$(resolve_python)
+PY=$(native_path "$(resolve_python)")
 export GALAXY_PYTHON="$PY"
+prepare_host_tools
 
 # 显式环境变量优先。未设置时缓存和报告都落在当前仓库 .work，不写到仓库父目录。
-export GALAXY_REFACTOR_CACHE="${GALAXY_REFACTOR_CACHE:-$ROOT/.work}"
-export GALAXY_VERIFY_CACHE="${GALAXY_VERIFY_CACHE:-$GALAXY_REFACTOR_CACHE}"
-export GALAXY_KTLINT_JAR="${GALAXY_KTLINT_JAR:-$GALAXY_REFACTOR_CACHE/tools/ktlint-1.4.1/ktlint-cli-1.4.1-all.jar}"
-export GALAXY_R0_REPORT_DIR="${GALAXY_R0_REPORT_DIR:-$ROOT/.work/r0-validation}"
+# 交给 native Python/Java 前转成 Windows 路径，不把 /f/... 直接送进去。
+export GALAXY_REFACTOR_CACHE="$(native_path "${GALAXY_REFACTOR_CACHE:-$ROOT/.work}")"
+export GALAXY_VERIFY_CACHE="$(native_path "${GALAXY_VERIFY_CACHE:-$GALAXY_REFACTOR_CACHE}")"
+export GALAXY_KTLINT_JAR="$(native_path "${GALAXY_KTLINT_JAR:-$GALAXY_REFACTOR_CACHE/tools/ktlint-1.4.1/ktlint-cli-1.4.1-all.jar}")"
+export GALAXY_R0_REPORT_DIR="$(native_path "${GALAXY_R0_REPORT_DIR:-$ROOT/.work/r0-validation}")"
 LOG_DIR="$GALAXY_R0_REPORT_DIR/logs"
 mkdir -p "$LOG_DIR" "$GALAXY_R0_REPORT_DIR"
 

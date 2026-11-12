@@ -1,6 +1,8 @@
 package com.ecarx.autoservice.platform
 
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
@@ -26,16 +28,28 @@ class PlatformExecutionTest {
      * pidin -p $$ user 的一行。列形状按 login() 的解析口径给足8个数字列：
      * 第2列是real UID、第4列是effective/saved UID，两者都为0才算UID0。
      */
-    private fun pidinRow(real: Int = 0, effective: Int = 0) =
-        "  4242   8   $real   $effective   0   0   0   0"
+    private fun pidinRow(
+        real: Int = 0,
+        effective: Int = 0,
+    ) = "  4242   8   $real   $effective   0   0   0   0"
 
-    private fun serve(server: ServerSocket, identityRow: String) = Executors.newSingleThreadExecutor().submit {
+    private fun serve(
+        server: ServerSocket,
+        identityRow: String,
+    ) = Executors.newSingleThreadExecutor().submit {
         server.accept().use { peer ->
             val input = peer.getInputStream().bufferedReader()
             val output = peer.getOutputStream()
-            fun send(text: String) { output.write(text.toByteArray()); output.flush() }
-            send("login:"); assertEquals("fixture", input.readLine())
-            send("Password:"); assertEquals("synthetic", input.readLine()); send("# ")
+
+            fun send(text: String) {
+                output.write(text.toByteArray())
+                output.flush()
+            }
+            send("login:")
+            assertEquals("fixture", input.readLine())
+            send("Password:")
+            assertEquals("synthetic", input.readLine())
+            send("# ")
             val first = input.readLine()
             val commandMarker = marker.find(first)!!.value
             send("QNX\r\n$identityRow\r\n$commandMarker:0\r\n")
@@ -46,21 +60,65 @@ class PlatformExecutionTest {
         }
     }
 
-    @Test fun shellKeepsExitCodeBoundsOutputAndTerminatesAtDeadline() {
-        val failed = ShellExecutor.execute("printf hello; exit 7", 2000, "/bin/sh")
-        assertEquals(7, failed.getInt("exitCode")); assertEquals("hello", failed.getString("output"))
-        val large = ShellExecutor.execute("yes x | head -c 100000", 3000, "/bin/sh")
-        assertEquals(65536, large.getString("output").length); assertTrue(large.getBoolean("truncated"))
-        assertTrue(ShellExecutor.execute("sleep 3", 100, "/bin/sh").getBoolean("timedOut"))
+    /**
+     * 验证用宿主 shell。POSIX 未设置时仍是 /bin/sh；Windows 必须由入口给出 Git 的 sh.exe。
+     * 不改变 [ShellExecutor] 的生产默认 shell。
+     */
+    private fun hostShell(): String {
+        val configured = System.getenv("GALAXY_TEST_SHELL")?.trim().orEmpty()
+        if (configured.isNotEmpty()) {
+            return configured
+        }
+        val os = System.getProperty("os.name").orEmpty()
+        if (os.contains("Windows", ignoreCase = true)) {
+            error("Windows 测试缺少 GALAXY_TEST_SHELL，请指向 Git 的 sh.exe")
+        }
+        return "/bin/sh"
     }
+
+    /**
+     * 真实 cksum 命令。未设置时 POSIX 沿 PATH；Windows 必须给出 GALAXY_TEST_CKSUM。
+     */
+    private fun checksumCommand(): List<String> {
+        val configured = System.getenv("GALAXY_TEST_CKSUM")?.trim().orEmpty()
+        if (configured.isNotEmpty()) {
+            return listOf(configured)
+        }
+        val os = System.getProperty("os.name").orEmpty()
+        if (os.contains("Windows", ignoreCase = true)) {
+            error("Windows 测试缺少 GALAXY_TEST_CKSUM，请指向 Git 的 cksum.exe")
+        }
+        return listOf("cksum")
+    }
+
+    @Test fun shellKeepsExitCodeBoundsOutputAndTerminatesAtDeadline() {
+        val shell = hostShell()
+        val failed = ShellExecutor.execute("printf hello; exit 7", 2000, shell)
+        assertEquals(7, failed.getInt("exitCode"))
+        assertEquals("hello", failed.getString("output"))
+        val large = ShellExecutor.execute("yes x | head -c 100000", 3000, shell)
+        assertEquals(65536, large.getString("output").length)
+        assertTrue(large.getBoolean("truncated"))
+        assertTrue(ShellExecutor.execute("sleep 3", 100, shell).getBoolean("timedOut"))
+    }
+
     @Test fun posixChecksumMatchesSystemToolAndIncludesFileLength() {
+        val command = checksumCommand()
         for (data in listOf(ByteArray(0), "123456789".toByteArray(), ByteArray(1024) { it.toByte() })) {
-            val process = ProcessBuilder("cksum").start()
+            val process = ProcessBuilder(command).start()
             process.outputStream.use { it.write(data) }
-            val expected = process.inputStream.bufferedReader().readText().trim().substringBefore(' ').toLong()
+            val expected =
+                process.inputStream
+                    .bufferedReader()
+                    .readText()
+                    .trim()
+                    .substringBefore(' ')
+                    .toLong()
             assertEquals(expected, PosixChecksum.calculate(data))
+            process.waitFor()
         }
     }
+
     @Test fun qnxLoginRequiresIndependentQnxRootIdentityAndCommandStatusMarker() {
         ServerSocket(0).use { server ->
             val pool = Executors.newSingleThreadExecutor()
@@ -71,7 +129,9 @@ class PlatformExecutionTest {
                     assertTrue(it.execute("receiver self-test").contains("SELFTEST_PASS"))
                 }
                 future.get(5, java.util.concurrent.TimeUnit.SECONDS)
-            } finally { pool.shutdownNow() }
+            } finally {
+                pool.shutdownNow()
+            }
         }
     }
 
@@ -84,13 +144,16 @@ class PlatformExecutionTest {
             val pool = Executors.newSingleThreadExecutor()
             serve(server, pidinRow(real = 1000, effective = 1000)).also { future ->
                 try {
-                    val failure = runCatching {
-                        QnxTelnet("127.0.0.1", server.localPort).use { it.login("fixture", "synthetic") }
-                    }.exceptionOrNull()
+                    val failure =
+                        runCatching {
+                            QnxTelnet("127.0.0.1", server.localPort).use { it.login("fixture", "synthetic") }
+                        }.exceptionOrNull()
                     assertNotNull("非UID0的shell必须登录失败", failure)
                     assertEquals("qnx_root_identity_rejected", failure?.message)
                     future.get(5, java.util.concurrent.TimeUnit.SECONDS)
-                } finally { pool.shutdownNow() }
+                } finally {
+                    pool.shutdownNow()
+                }
             }
         }
     }
