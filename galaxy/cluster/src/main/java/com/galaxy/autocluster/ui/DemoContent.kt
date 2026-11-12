@@ -2,7 +2,7 @@ package com.galaxy.autocluster.ui
 
 import android.graphics.*
 import android.os.Bundle
-import com.galaxy.autocluster.theme.SceneData
+import com.galaxy.autocluster.preview.SceneData
 
 /** 明确标注的本机样式/动画演示；只交给预览绘制器，绝不调用数据发布IPC。 */
 internal object DemoContent {

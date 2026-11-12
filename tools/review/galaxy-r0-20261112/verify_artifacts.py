@@ -43,7 +43,7 @@ REQUIRED_CLASSES = [
     "com/ecarx/autoservice/platform/QnxClusterHook.class",
     "com/galaxy/autocluster/ClusterRenderService.class",
     "com/galaxy/autocluster/ui/InstrumentMusicPreview.class",
-    "com/galaxy/autocluster/theme/SceneData.class",
+    "com/galaxy/autocluster/preview/SceneData.class",
 ]
 # 本批必测：JUnit suite 必须真实存在、非空、零失败/错误/跳过。
 REQUIRED_SUITES = {
@@ -256,7 +256,7 @@ def closure_gate() -> dict:
     if "putBoolean(\"qnxReady\", false)" not in auto or "putBoolean(\"projectionRequested\", false)" not in auto:
         raise SystemExit("AutoService 快照未恒为归档态")
     preview = read("galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/InstrumentMusicPreview.kt")
-    if "import com.galaxy.autocluster.theme.SceneData" not in preview:
+    if "import com.galaxy.autocluster.preview.SceneData" not in preview:
         raise SystemExit("InstrumentMusicPreview 丢失 SceneData 共享依赖")
     return {
         "qnxClusterHookHealthChain": True,

@@ -1,4 +1,4 @@
-package com.galaxy.autocluster.theme
+package com.galaxy.autocluster.preview
 
 import android.os.Bundle
 import kotlin.math.max

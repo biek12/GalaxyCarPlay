@@ -5,7 +5,7 @@ import android.graphics.*
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.View
-import com.galaxy.autocluster.theme.SceneData
+import com.galaxy.autocluster.preview.SceneData
 import com.galaxy.auto.contract.LyricScroll
 
 /** 320×316仪表卡片的真实数据预览；不是播放控制器，不发送媒体指令。 */
