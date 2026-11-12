@@ -1,0 +1,28 @@
+{
+  "task": "GALAXY-SERVICE-IPC-S1-20261113",
+  "status": "PREPARED_CODE_PENDING",
+  "sourceBaseline": "1fb4210d1dffbbc33ac4e0e6e15093c2de976d62",
+  "baselineValidationSha256": "02a7f750b44e0a58d4a4309e3fbe257a3c26520355c47714a044c9e0707c194b",
+  "baselineSourceCount": 1008,
+  "normalizedSourceMismatches": [],
+  "checkoutLineEndingDifferencesToLeader": 918,
+  "checkoutNote": "New worktree follows existing LF attributes. Three AIDL files use native CRLF under existing core.autocrlf; no content change. Archived bytes are compared exactly.",
+  "sourceAndArchiveGitBlobsChecked": 1109,
+  "gitBlobMismatches": [],
+  "gitBlobAidlLineEndingDifferences": [
+    "galaxy/contracts/src/main/aidl/com/galaxy/auto/contract/IAutoCallback.aidl",
+    "galaxy/contracts/src/main/aidl/com/galaxy/auto/contract/IAutoResult.aidl",
+    "galaxy/contracts/src/main/aidl/com/galaxy/auto/contract/IAutoService.aidl"
+  ],
+  "scriptRegressions": {
+    "tests": 7,
+    "failures": 0,
+    "errors": 0
+  },
+  "syntaxFiles": 8,
+  "finalFormatFileCount": 107,
+  "plannedNewCodeFiles": 6,
+  "fullS1GatePassed": false,
+  "apkBuilt": false,
+  "vehicleValidated": false
+}
