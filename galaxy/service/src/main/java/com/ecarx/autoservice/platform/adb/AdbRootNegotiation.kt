@@ -1,10 +1,10 @@
 package com.ecarx.autoservice.platform.adb
 
 import android.os.SystemClock
+import com.ecarx.autoservice.platform.root.ControlWork
 import java.io.IOException
 import java.net.SocketTimeoutException
 import java.util.Locale
-import com.ecarx.autoservice.platform.root.ControlWork
 
 /** Worker-thread Root ordering follows EVCC DEX; success requires a fresh UID readback. */
 internal class AdbRootNegotiation(
@@ -34,42 +34,57 @@ internal class AdbRootNegotiation(
     }
 
     private fun handshake(required: Boolean): Boolean {
-        val nativeSecret = try { nativeHandshakeSalt() } catch (_: Exception) { null }
-        val secret = try { nativeSecret ?: authentication.readVpwd() } catch (_: Exception) {
-            if (!required) return false
-            throw ControlTransportException(ControlFailure.AUTHENTICATION_STORAGE_ERROR)
-        } ?: run {
-            if (!required) return false
-            throw ControlTransportException(ControlFailure.VENDOR_AUTH_REQUIRED)
-        }
+        val nativeSecret =
+            try {
+                nativeHandshakeSalt()
+            } catch (_: Exception) {
+                null
+            }
+        val secret =
+            try {
+                nativeSecret ?: authentication.readVpwd()
+            } catch (_: Exception) {
+                if (!required) return false
+                throw ControlTransportException(ControlFailure.AUTHENTICATION_STORAGE_ERROR)
+            } ?: run {
+                if (!required) return false
+                throw ControlTransportException(ControlFailure.VENDOR_AUTH_REQUIRED)
+            }
         try {
             checkActive()
             if (!RootCredentialRules.valid(secret)) {
                 throw ControlTransportException(ControlFailure.AUTHENTICATION_REJECTED)
             }
             val escaped = "'" + String(secret).replace("'", "'\\''") + "'"
-            val output = connected { session ->
-                beforeMutation()
-                session.shell("vpwd $escaped", 1024)
-            }
+            val output =
+                connected { session ->
+                    beforeMutation()
+                    session.shell("vpwd $escaped", 1024)
+                }
             if (output.stdout.contains(AUTHENTICATION_FAILED, true) ||
-                output.stderr.contains(AUTHENTICATION_FAILED, true)) {
+                output.stderr.contains(AUTHENTICATION_FAILED, true)
+            ) {
                 if (!required) return false
                 throw ControlTransportException(ControlFailure.AUTHENTICATION_REJECTED)
             }
             return true
-        } finally { secret.fill('\u0000') }
+        } finally {
+            secret.fill('\u0000')
+        }
     }
 
-    private fun requestRoot(): String = try { connected { session ->
-        beforeMutation()
-        session.root()
-    } } catch (error: IOException) {
-        checkActive()
-        if (error is ControlTransportException && error.reason !in TRANSIENT_FAILURES) throw error
-        // adbd may restart before CLSE; only an actual UID readback can establish success.
-        ""
-    }
+    private fun requestRoot(): String =
+        try {
+            connected { session ->
+                beforeMutation()
+                session.root()
+            }
+        } catch (error: IOException) {
+            checkActive()
+            if (error is ControlTransportException && error.reason !in TRANSIENT_FAILURES) throw error
+            // adbd may restart before CLSE; only an actual UID readback can establish success.
+            ""
+        }
 
     private fun awaitRoot(): ControlIdentity {
         checkActive()
@@ -109,8 +124,12 @@ internal class AdbRootNegotiation(
     }
 
     private companion object {
-        val TRANSIENT_FAILURES = setOf(ControlFailure.DISCONNECTED, ControlFailure.TRANSPORT_ERROR,
-            ControlFailure.TIMEOUT)
+        val TRANSIENT_FAILURES =
+            setOf(
+                ControlFailure.DISCONNECTED,
+                ControlFailure.TRANSPORT_ERROR,
+                ControlFailure.TIMEOUT,
+            )
         const val AUTHENTICATION_FAILED = "Authentication failed"
         const val BEFORE_AUTHENTICATION = "before authentication"
         const val USE_ADB_SHELL_VPWD = "use adb shell vpwd"

@@ -6,6 +6,7 @@ import android.net.LocalSocketAddress
 import com.ecarx.autoservice.settings.ServiceFeatures
 import org.json.JSONArray
 import org.json.JSONObject
+import java.io.Closeable
 import java.io.DataInputStream
 import java.io.DataOutputStream
 
@@ -46,30 +47,25 @@ internal object RootServiceClient {
         keys: Collection<String>,
         due: Collection<String>,
         scan: Boolean,
-    ): JSONObject = synchronized(vehicleLock) {
-        val socket = vehicleSocket ?: connectOwned(context, 5000, false).also { vehicleSocket = it }
-        try {
-            val payload =
-                JSONObject()
-                    .put("keys", JSONArray(keys.toList()))
-                    .put("due", JSONArray(due.toList()))
-                    .put("scan", scan)
-            val bytes = payload.toString().toByteArray(Charsets.UTF_8)
-            require(bytes.size <= 16384) { "vehicle_request_too_large" }
-            DataOutputStream(socket.outputStream).apply {
-                writeInt(RootOperation.READ_VEHICLE.code)
-                writeInt(bytes.size)
-                write(bytes)
-                flush()
+    ): JSONObject =
+        synchronized(vehicleLock) {
+            val socket = vehicleSocket ?: connectOwned(context, 5000, false).also { vehicleSocket = it }
+            try {
+                val payload =
+                    JSONObject()
+                        .put("keys", JSONArray(keys.toList()))
+                        .put("due", JSONArray(due.toList()))
+                        .put("scan", scan)
+                val bytes = payload.toString().toByteArray(Charsets.UTF_8)
+                writeVehicleRequest(DataOutputStream(socket.outputStream), bytes)
+                RootWire.read(DataInputStream(socket.inputStream)).also {
+                    check(it.has("samples")) { "vehicle_reply_incomplete" }
+                }
+            } catch (error: Exception) {
+                closeVehicle()
+                throw error
             }
-            RootWire.read(DataInputStream(socket.inputStream)).also {
-                check(it.has("samples")) { "vehicle_reply_incomplete" }
-            }
-        } catch (error: Exception) {
-            closeVehicle()
-            throw error
         }
-    }
 
     /**
      * 在 Root 进程执行 shell。op3，定长 JSON。
@@ -90,10 +86,11 @@ internal object RootServiceClient {
     fun stopHelper(context: Context) {
         closeVehicle()
         connectOwned(context, 5000, true).use { socket ->
-            DataOutputStream(socket.outputStream).apply {
-                writeInt(RootOperation.STOP_HELPER.code)
-                flush()
-            }
+            writeControlRequest(
+                DataOutputStream(socket.outputStream),
+                RootOperation.STOP_HELPER,
+                JSONObject(),
+            )
             check(DataInputStream(socket.inputStream).readInt() == 0)
         }
     }
@@ -130,10 +127,11 @@ internal object RootServiceClient {
      * 不关闭套接字；调用方拥有连接，并在失败或停止时关闭。
      */
     fun sentinelStream(socket: LocalSocket) {
-        DataOutputStream(socket.outputStream).apply {
-            writeInt(RootOperation.SENTINEL_STREAM.code)
-            flush()
-        }
+        writeControlRequest(
+            DataOutputStream(socket.outputStream),
+            RootOperation.SENTINEL_STREAM,
+            JSONObject(),
+        )
     }
 
     /** 向已认证的 Root 进程发送 Hook 控制。op11，定长 JSON。 */
@@ -169,7 +167,8 @@ internal object RootServiceClient {
     }
 
     /**
-     * 唯一的通用帧写入。ADB 开关、disarm/stop 走关闭连接、16384 上限都在这里。
+     * 唯一的通用控制请求。ADB 开关和 disarm/stop 走关闭连接的条件在这里。
+     * 帧字节与 16384 上限由 [writeControlRequest] 写出。
      * 调用线程阻塞。返回前关闭连接；[work] 取消时也会关闭。
      */
     private fun request(
@@ -186,24 +185,50 @@ internal object RootServiceClient {
             (operation == RootOperation.SENTINEL && payload.optString("action") == "disarm") ||
                 (operation == RootOperation.HOOK_CONTROL && payload.optString("action") == "stop")
         val socket = connectOwned(context, timeout, stopping)
-        val owned = java.io.Closeable { socket.close() }
+        val owned = Closeable { socket.close() }
         work?.own(owned)
         try {
             return socket.use {
-                DataOutputStream(socket.outputStream).apply {
-                    writeInt(operation.code)
-                    if (operation.requestWritesJson) {
-                        val bytes = payload.toString().toByteArray(Charsets.UTF_8)
-                        require(bytes.size <= 16384)
-                        writeInt(bytes.size)
-                        write(bytes)
-                    }
-                    flush()
-                }
+                writeControlRequest(DataOutputStream(socket.outputStream), operation, payload)
                 RootWire.read(DataInputStream(socket.inputStream))
             }
         } finally {
             work?.release(owned)
         }
+    }
+
+    /**
+     * 写出车辆读取帧：op1、UTF-8 长度和原字节，然后 flush。
+     *
+     * 调用线程须已持有车辆连接。超过 16384 字节时一字节都不写，并抛出
+     * `vehicle_request_too_large`。本方法不关闭 [output]。
+     */
+    internal fun writeVehicleRequest(output: DataOutputStream, bytes: ByteArray) {
+        require(bytes.size <= 16384) { "vehicle_request_too_large" }
+        output.writeInt(RootOperation.READ_VEHICLE.code)
+        output.writeInt(bytes.size)
+        output.write(bytes)
+        output.flush()
+    }
+
+    /**
+     * 写出通用控制帧。先写 operation，再按 [RootOperation.requestWritesJson] 写定长 JSON，最后 flush。
+     *
+     * 无 JSON 的操作不检查 payload 体积。有 JSON 时超限保留已经写出的 operation，
+     * 长度和正文都不写，也不 flush；失败文本仍是原来的 `require`。本方法不关闭 [output]。
+     */
+    internal fun writeControlRequest(
+        output: DataOutputStream,
+        operation: RootOperation,
+        payload: JSONObject,
+    ) {
+        output.writeInt(operation.code)
+        if (operation.requestWritesJson) {
+            val bytes = payload.toString().toByteArray(Charsets.UTF_8)
+            require(bytes.size <= 16384)
+            output.writeInt(bytes.size)
+            output.write(bytes)
+        }
+        output.flush()
     }
 }

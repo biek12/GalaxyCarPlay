@@ -1,10 +1,10 @@
 package com.ecarx.autoservice.platform.foundation
 
+import com.ecarx.autoservice.platform.root.ControlWork
 import java.io.Closeable
 import java.net.InetSocketAddress
 import java.net.Socket
 import java.util.UUID
-import com.ecarx.autoservice.platform.root.ControlWork
 
 /**
  * 车机逆向live-root-debug-2026-09-17已确认的Android TCP/23 root调试入口。
@@ -18,25 +18,61 @@ internal object AndroidRootBootstrap {
         val owned = Closeable { socket.close() }.also(work::own)
         val deadline = PlatformDeadlines.after(10000) { runCatching { socket.close() } }
         try {
-            socket.connect(InetSocketAddress("::1", port), 2000); socket.soTimeout = 3000
-            val input = socket.getInputStream(); val output = socket.getOutputStream()
-            fun send(text: String) { work.checkActive(); output.write((text + "\r\n").toByteArray()); output.flush() }
+            socket.connect(InetSocketAddress("::1", port), 2000)
+            socket.soTimeout = 3000
+            val input = socket.getInputStream()
+            val output = socket.getOutputStream()
+
+            fun send(text: String) {
+                work.checkActive()
+                output.write((text + "\r\n").toByteArray())
+                output.flush()
+            }
+
             fun until(marker: String): String {
                 val bytes = java.io.ByteArrayOutputStream()
                 while (bytes.size() < 8192) {
                     work.checkActive()
-                    val value = input.read(); check(value >= 0) { "android_bootstrap_closed" }
+                    val value = input.read()
+                    check(value >= 0) { "android_bootstrap_closed" }
                     if (value == 255) {
                         val operation = input.read()
                         if (operation in 251..254) {
-                            val option = input.read(); check(option >= 0)
+                            val option = input.read()
+                            check(option >= 0)
                             if (operation == 251 || operation == 253) {
-                                output.write(byteArrayOf(255.toByte(), (if (operation == 251) 254 else 252).toByte(), option.toByte())); output.flush()
+                                output.write(
+                                    byteArrayOf(
+                                        255.toByte(),
+                                        (
+                                            if (operation ==
+                                                251
+                                            ) {
+                                                254
+                                            } else {
+                                                252
+                                            }
+                                        ).toByte(),
+                                        option.toByte(),
+                                    ),
+                                )
+                                output.flush()
                             }
                         } else if (operation == 250) {
                             var previous = 0
-                            while (true) { val next = input.read(); check(next >= 0); if (previous == 255 && next == 240) break; previous = next }
-                        } else if (operation == 255) bytes.write(255)
+                            while (true) {
+                                val next = input.read()
+                                check(next >= 0)
+                                if (previous == 255 &&
+                                    next == 240
+                                ) {
+                                    break
+                                }
+                                previous = next
+                            }
+                        } else if (operation == 255) {
+                            bytes.write(255)
+                        }
                         continue
                     }
                     bytes.write(value)
@@ -50,10 +86,15 @@ internal object AndroidRootBootstrap {
             val marker = "ASBOOT_" + UUID.randomUUID().toString().replace("-", "")
             send("printf '\\n${marker}_BEGIN\\n'; uname -s; id -u; printf '${marker}_END\\n'")
             val response = until("${marker}_END").replace("\r", "").substringAfter("\n${marker}_BEGIN\n", "")
-            check(response.lines().filter { it.isNotBlank() }.take(2) == listOf("Linux", "0")) { "android_bootstrap_not_root" }
+            check(
+                response.lines().filter { it.isNotBlank() }.take(2) == listOf("Linux", "0"),
+            ) { "android_bootstrap_not_root" }
             send("( $command ); _as_rc=\$?; printf '\\n${marker}_LAUNCH:%s\\n${marker}_DONE\\n' \"\$_as_rc\"")
             val result = until("${marker}_DONE")
             check(result.lines().any { it.trim() == "${marker}_LAUNCH:0" }) { "android_bootstrap_launch_failed" }
-        } finally { deadline.cancel(false); work.release(owned) }
+        } finally {
+            deadline.cancel(false)
+            work.release(owned)
+        }
     }
 }

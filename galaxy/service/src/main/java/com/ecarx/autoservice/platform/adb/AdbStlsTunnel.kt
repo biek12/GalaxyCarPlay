@@ -1,21 +1,26 @@
 package com.ecarx.autoservice.platform.adb
 
+import com.ecarx.autoservice.platform.root.ControlWork
 import java.io.Closeable
 import java.io.IOException
 import java.net.InetAddress
 import java.net.ServerSocket
 import java.net.Socket
 import java.net.SocketTimeoutException
-import java.util.concurrent.CountDownLatch
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
 import kotlin.concurrent.thread
-import com.ecarx.autoservice.platform.root.ControlWork
 
 /** Gates the actual KADB socket: the same upstream session must answer CNXN with STLS before TLS starts. */
-internal class AdbStlsTunnel(private val endpoint: AdbEndpoint, private val work: ControlWork) : Closeable {
+internal class AdbStlsTunnel(
+    private val endpoint: AdbEndpoint,
+    private val work: ControlWork,
+) : Closeable {
     private val server = ServerSocket()
     private val sockets = CopyOnWriteArrayList<Socket>()
+
     @Volatile private var closed = false
+
     @Volatile var failure: ControlFailure? = null
         private set
     val localPort: Int get() = server.localPort
@@ -57,8 +62,11 @@ internal class AdbStlsTunnel(private val endpoint: AdbEndpoint, private val work
             }
             request.writeOriginalFrame(upstream.getOutputStream())
             val response = AdbPacket.read(upstream.getInputStream(), MAX_STARTUP_PAYLOAD, version = null)
-            if (response.command != AdbPacket.STLS || response.arg0 != TLS_VERSION ||
-                response.arg1 != 0 || response.payload.isNotEmpty()) {
+            if (response.command != AdbPacket.STLS ||
+                response.arg0 != TLS_VERSION ||
+                response.arg1 != 0 ||
+                response.payload.isNotEmpty()
+            ) {
                 fail(ControlFailure.SECURE_ADB_REQUIRED)
                 return
             }
@@ -79,21 +87,31 @@ internal class AdbStlsTunnel(private val endpoint: AdbEndpoint, private val work
         pipe(client, upstream, done)
         pipe(upstream, client, done)
         try {
-            while (!closed && !work.cancelled.get() && !done.await(RELAY_POLL_MS, java.util.concurrent.TimeUnit.MILLISECONDS)) Unit
+            while (!closed &&
+                !work.cancelled.get() &&
+                !done.await(RELAY_POLL_MS, java.util.concurrent.TimeUnit.MILLISECONDS)
+            ) {
+                Unit
+            }
         } catch (_: InterruptedException) {
             Thread.currentThread().interrupt()
         }
     }
 
-    private fun pipe(source: Socket, target: Socket, done: CountDownLatch) = thread(isDaemon = true, name = "adb-stls-pipe") {
-        try { source.getInputStream().copyTo(target.getOutputStream()) } catch (_: IOException) { }
-        finally {
-            runCatching { target.shutdownOutput() }
-            done.countDown()
+    private fun pipe(source: Socket, target: Socket, done: CountDownLatch) =
+        thread(isDaemon = true, name = "adb-stls-pipe") {
+            try {
+                source.getInputStream().copyTo(target.getOutputStream())
+            } catch (_: IOException) {
+            } finally {
+                runCatching { target.shutdownOutput() }
+                done.countDown()
+            }
         }
-    }
 
-    private fun fail(reason: ControlFailure) { if (failure == null) failure = reason }
+    private fun fail(reason: ControlFailure) {
+        if (failure == null) failure = reason
+    }
 
     private fun closeSocket(socket: Socket) {
         sockets.remove(socket)

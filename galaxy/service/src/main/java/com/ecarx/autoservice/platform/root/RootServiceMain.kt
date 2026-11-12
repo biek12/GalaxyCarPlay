@@ -4,6 +4,10 @@ import android.net.LocalServerSocket
 import android.net.LocalSocket
 import android.os.Process
 import android.os.SystemClock
+import com.ecarx.autoservice.ServiceTrace
+import com.ecarx.autoservice.platform.adb.AdbKeyAuthorization
+import com.ecarx.autoservice.platform.hook.QnxClusterHook
+import com.ecarx.autoservice.platform.qnx.QnxReceiverCleanup
 import com.ecarx.autoservice.vehicle.EcarxVehicleSource
 import com.ecarx.autoservice.vehicle.VehicleCatalog
 import com.ecarx.autoservice.vehicle.VehicleRootExchange
@@ -17,10 +21,6 @@ import java.util.concurrent.SynchronousQueue
 import java.util.concurrent.ThreadPoolExecutor
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
-import com.ecarx.autoservice.platform.adb.AdbKeyAuthorization
-import com.ecarx.autoservice.platform.hook.QnxClusterHook
-import com.ecarx.autoservice.platform.qnx.QnxReceiverCleanup
-import com.ecarx.autoservice.ServiceTrace
 
 /** 只服务启动它的App进程。控制、只读车辆和HAB分派独立处理；原厂Hook仅走固定材料与可撤销生命周期入口。 */
 object RootServiceMain {

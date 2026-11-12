@@ -11,26 +11,40 @@ internal object ShellExecutor {
         val process = ProcessBuilder(shell, "-c", command).redirectErrorStream(true).start()
         val captured = java.io.ByteArrayOutputStream()
         var truncated = false
-        val drain = Thread {
-            runCatching { process.inputStream.use { stream ->
-                val buffer = ByteArray(4096)
-                while (true) {
-                    val count = stream.read(buffer); if (count < 0) break
-                    synchronized(captured) {
-                        val retained = minOf(count, 65536 - captured.size())
-                        if (retained > 0) captured.write(buffer, 0, retained)
-                        if (retained < count) truncated = true
+        val drain =
+            Thread {
+                runCatching {
+                    process.inputStream.use { stream ->
+                        val buffer = ByteArray(4096)
+                        while (true) {
+                            val count = stream.read(buffer)
+                            if (count < 0) break
+                            synchronized(captured) {
+                                val retained = minOf(count, 65536 - captured.size())
+                                if (retained > 0) captured.write(buffer, 0, retained)
+                                if (retained < count) truncated = true
+                            }
+                        }
                     }
                 }
-            } }
-        }.apply { isDaemon = true; start() }
+            }.apply {
+                isDaemon = true
+                start()
+            }
         val finished = process.waitFor(timeoutMillis.toLong(), TimeUnit.MILLISECONDS)
-        if (!finished) { process.destroy(); if (!process.waitFor(300, TimeUnit.MILLISECONDS)) process.destroyForcibly() }
+        if (!finished) {
+            process.destroy()
+            if (!process.waitFor(300, TimeUnit.MILLISECONDS)) process.destroyForcibly()
+        }
         drain.join(300)
         runCatching { process.inputStream.close() }
-        return synchronized(captured) { JSONObject().apply {
-            put("exitCode", if (finished) process.exitValue() else -1); put("timedOut", !finished)
-            put("output", captured.toString("UTF-8")); put("truncated", truncated)
-        } }
+        return synchronized(captured) {
+            JSONObject().apply {
+                put("exitCode", if (finished) process.exitValue() else -1)
+                put("timedOut", !finished)
+                put("output", captured.toString("UTF-8"))
+                put("truncated", truncated)
+            }
+        }
     }
 }

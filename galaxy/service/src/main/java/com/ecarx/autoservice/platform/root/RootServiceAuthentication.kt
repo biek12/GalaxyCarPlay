@@ -18,20 +18,23 @@ internal object RootServiceAuthentication {
 
     /** Reads the public signing-certificate digest; it is not a private key or secret. */
     fun signingCertificateHash(context: Context): ByteArray {
-        val signer = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            val info = context.packageManager.getPackageInfo(PACKAGE_NAME, PackageManager.GET_SIGNING_CERTIFICATES)
-            info.signingInfo?.apkContentsSigners?.firstOrNull()
-        } else {
-            legacySigningCertificate(context)
-        }
-            ?: throw IOException("Installed app signing certificate is unavailable")
+        val signer =
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                val info = context.packageManager.getPackageInfo(PACKAGE_NAME, PackageManager.GET_SIGNING_CERTIFICATES)
+                info.signingInfo?.apkContentsSigners?.firstOrNull()
+            } else {
+                legacySigningCertificate(context)
+            }
+                ?: throw IOException("Installed app signing certificate is unavailable")
         return MessageDigest.getInstance("SHA-256").digest(signer.toByteArray())
     }
 
     @Suppress("DEPRECATION")
-    private fun legacySigningCertificate(context: Context) = context.packageManager
-        .getPackageInfo(PACKAGE_NAME, PackageManager.GET_SIGNATURES)
-        .signatures?.firstOrNull()
+    private fun legacySigningCertificate(context: Context) =
+        context.packageManager
+            .getPackageInfo(PACKAGE_NAME, PackageManager.GET_SIGNATURES)
+            .signatures
+            ?.firstOrNull()
 
     /** Client reads the server challenge and returns the same 32-byte HMAC frame as EVCC. */
     fun answerChallenge(input: DataInputStream, output: DataOutputStream, certificateHash: ByteArray) {

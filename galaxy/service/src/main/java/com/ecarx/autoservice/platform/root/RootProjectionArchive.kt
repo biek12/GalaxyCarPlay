@@ -18,9 +18,8 @@ internal object RootProjectionArchive {
     /** 归档回执阶段码；op4 的 `error` 与 `stage` 都用它，便于客户端按既有错误字段读取。 */
     const val STAGE = "legacy_projection_archived"
 
-    /** 已退役的旧整屏投屏 operation，数字来自 [RootOperation]。 */
-
     /**
+     * 已退役的旧整屏投屏 operation，数字来自 [RootOperation]。
      * 若 [operation] 已退役，消费旧帧、回写归档回执并关闭连接，返回 `true`（调用方须结束本连接）。
      *
      * - op4：先按 [RootWire.read] 消费现有的长度前缀 JSON 帧（帧内容不参与任何决策），

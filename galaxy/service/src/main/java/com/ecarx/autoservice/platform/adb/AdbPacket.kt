@@ -6,17 +6,23 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 /** ADB's little-endian 24-byte transport header, bounded before allocating payload. */
-internal data class AdbPacket(val command: Int, val arg0: Int, val arg1: Int,
-    val payload: ByteArray = byteArrayOf(), private val wireHeader: ByteArray? = null) {
+internal data class AdbPacket(
+    val command: Int,
+    val arg0: Int,
+    val arg1: Int,
+    val payload: ByteArray = byteArrayOf(),
+    private val wireHeader: ByteArray? = null,
+) {
     fun write(output: OutputStream, version: Int = VERSION_ORIGINAL) {
-        val header = ByteBuffer.allocate(24).order(ByteOrder.LITTLE_ENDIAN).apply {
-            putInt(command)
-            putInt(arg0)
-            putInt(arg1)
-            putInt(payload.size)
-            putInt(if (version >= VERSION_SKIP_CHECKSUM) 0 else payload.sumOf { it.toInt() and 255 })
-            putInt(command xor -1)
-        }
+        val header =
+            ByteBuffer.allocate(24).order(ByteOrder.LITTLE_ENDIAN).apply {
+                putInt(command)
+                putInt(arg0)
+                putInt(arg1)
+                putInt(payload.size)
+                putInt(if (version >= VERSION_SKIP_CHECKSUM) 0 else payload.sumOf { it.toInt() and 255 })
+                putInt(command xor -1)
+            }
         output.write(header.array())
         output.write(payload)
         output.flush()
@@ -52,7 +58,9 @@ internal data class AdbPacket(val command: Int, val arg0: Int, val arg1: Int,
             val checksum = header.int
             val magic = header.int
             if (command !in setOf(CNXN, STLS, AUTH, OPEN, OKAY, WRTE, CLSE) ||
-                length !in 0..maxData || magic != (command xor -1)) {
+                length !in 0..maxData ||
+                magic != (command xor -1)
+            ) {
                 throw ControlTransportException(ControlFailure.PROTOCOL_ERROR)
             }
             if (command == CNXN && a0 !in setOf(VERSION_ORIGINAL, VERSION_SKIP_CHECKSUM)) {
@@ -60,26 +68,29 @@ internal data class AdbPacket(val command: Int, val arg0: Int, val arg1: Int,
             }
             val payload = readBytes(input, length)
             // CNXN advertises the version governing its own checksum; AUTH has no version field.
-            val skipChecksum = when {
-                version != null -> version >= VERSION_SKIP_CHECKSUM
-                command == CNXN -> a0 >= VERSION_SKIP_CHECKSUM
-                command == AUTH -> checksum == 0
-                else -> false
-            }
+            val skipChecksum =
+                when {
+                    version != null -> version >= VERSION_SKIP_CHECKSUM
+                    command == CNXN -> a0 >= VERSION_SKIP_CHECKSUM
+                    command == AUTH -> checksum == 0
+                    else -> false
+                }
             if (!skipChecksum &&
-                payload.sumOf { it.toInt() and 255 } != checksum) {
+                payload.sumOf { it.toInt() and 255 } != checksum
+            ) {
                 throw ControlTransportException(ControlFailure.PROTOCOL_ERROR)
             }
             return AdbPacket(command, a0, a1, payload, header.array())
         }
 
-        private fun readBytes(input: InputStream, size: Int): ByteArray = ByteArray(size).also { bytes ->
-            var offset = 0
-            while (offset < size) {
-                val count = input.read(bytes, offset, size - offset)
-                if (count <= 0) throw java.io.EOFException()
-                offset += count
+        private fun readBytes(input: InputStream, size: Int): ByteArray =
+            ByteArray(size).also { bytes ->
+                var offset = 0
+                while (offset < size) {
+                    val count = input.read(bytes, offset, size - offset)
+                    if (count <= 0) throw java.io.EOFException()
+                    offset += count
+                }
             }
-        }
     }
 }

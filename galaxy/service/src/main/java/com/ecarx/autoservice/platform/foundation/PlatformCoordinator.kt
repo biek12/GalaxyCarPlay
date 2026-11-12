@@ -4,9 +4,9 @@ import android.content.Context
 import android.os.Handler
 import android.os.HandlerThread
 import android.os.Looper
+import com.ecarx.autoservice.platform.root.RootServiceClient
 import com.ecarx.autoservice.settings.ServiceFeatures
 import java.io.Closeable
-import com.ecarx.autoservice.platform.root.RootServiceClient
 
 /**
  * 基础 ADB/Root 身份与权限的持续维护者。

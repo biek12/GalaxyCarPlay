@@ -18,7 +18,11 @@ import android.os.ParcelFileDescriptor
 import android.os.Process
 import android.os.SystemClock
 import android.view.Surface
+import com.ecarx.autoservice.oem.ClusterHookController
+import com.ecarx.autoservice.platform.foundation.ClientPermissionPolicy
+import com.ecarx.autoservice.platform.foundation.PlatformAccess
 import com.ecarx.autoservice.platform.foundation.PlatformCoordinator
+import com.ecarx.autoservice.platform.root.RootServiceClient
 import com.ecarx.autoservice.settings.ServiceFeatures
 import com.ecarx.autoservice.startup.AutoStartup
 import com.ecarx.autoservice.vehicle.ClusterFieldDiagnostics
@@ -34,10 +38,6 @@ import com.galaxy.auto.contract.IAutoResult
 import com.galaxy.auto.contract.IAutoService
 import com.galaxy.auto.contract.MapStreamSize
 import com.galaxy.auto.contract.ProjectionPolicy
-import com.ecarx.autoservice.oem.ClusterHookController
-import com.ecarx.autoservice.platform.root.RootServiceClient
-import com.ecarx.autoservice.platform.foundation.ClientPermissionPolicy
-import com.ecarx.autoservice.platform.foundation.PlatformAccess
 
 /** 旧整屏覆盖投屏归档态：经既有 [IAutoCallback.onProjectionState] 回报，不登记输出。 */
 private const val PROJECTION_ARCHIVED = "projection_archived"
