@@ -1,0 +1,84 @@
+{
+  "task": "GALAXY-PLATFORM-PORTS-P1-20261113",
+  "status": "PREPARED_CODE_PENDING",
+  "baseHead": "3574c573e426e938b933f17614d067616e250f47",
+  "compile": {
+    "tasks": [
+      ":service:transformDebugClassesWithAsm",
+      ":service:compileDebugAndroidTestKotlin"
+    ],
+    "exitCode": 0,
+    "log": ".work/p1-preparation/compile-transform-canonical.log"
+  },
+  "asmArtifactView": {
+    "task": ":service:recordGalaxyKadbTransformInputs",
+    "exitCode": 0,
+    "artifactType": "android-asm-instrumented-jars",
+    "variant": "debug"
+  },
+  "asmCheck": {
+    "exitCode": 1,
+    "expectedOwner": "com/ecarx/autoservice/platform/adb/AdbCrypto",
+    "actualOwner": "com/ecarx/autoservice/platform/AdbCrypto",
+    "methods": [
+      "parsePrivateKeyPem",
+      "derivePublicKey"
+    ],
+    "fixed": false
+  },
+  "scriptRegression": {
+    "tests": 7,
+    "failures": 0,
+    "errors": 0
+  },
+  "scriptSyntax": {
+    "files": 8,
+    "passed": true
+  },
+  "archiveBytes": {
+    "fullscreen": 53,
+    "theme": 44,
+    "passed": true
+  },
+  "scope": {
+    "writeWhitelist": 84,
+    "finalKotlinAndKts": 82,
+    "formatFiles": 101,
+    "deletedPaths": 2,
+    "requiredNewFiles": 23
+  },
+  "missingPlannedFiles": [
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/adb/AdbConnectionSettings.kt",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/adb/AdbConnectionSettingsStore.kt",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/adb/AdbEndpointResolver.kt",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/adb/AdbObservedIdentity.kt",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/adb/AdbRootDeviceFacts.kt",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/adb/AdbSession.kt",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/adb/AdbTlsPortDiscovery.kt",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/adb/AdbTlsProbe.kt",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/adb/ControlFailure.kt",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/adb/ControlIdentity.kt",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/adb/ControlTransportException.kt",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/adb/LocalAdbEndpointResolver.kt",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/adb/LocalAdbEndpointSettings.kt",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/adb/RootAuthenticationStore.kt",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/adb/RootCredentialRules.kt",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/adb/ShellV2Output.kt",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/hook/HookLease.kt",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/hook/HookMaterials.kt",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/hook/QnxClusterRemote.kt",
+    "galaxy/service/src/main/java/com/ecarx/autoservice/platform/root/RootOperation.kt",
+    "galaxy/service/src/test/java/com/ecarx/autoservice/platform/hook/HookLeaseTest.kt",
+    "galaxy/service/src/test/java/com/ecarx/autoservice/platform/hook/HookMaterialsTest.kt",
+    "galaxy/service/src/test/java/com/ecarx/autoservice/platform/root/RootFramesTest.kt"
+  ],
+  "logs": {
+    "compile-transform-canonical.log": "b08fc36b1a58f426636f3ed55f14f3e2468b7b8d7bde5aee131d40cd10f96032",
+    "record-debug-kadb.log": "ae08594cb10af0dbd869444c502a19ee0e477b89de422d7cc86ac879c3b001e6",
+    "kadb-negative-baseline.log": "805b03dec316803bc6da8270445b543839b7efade8dffe7ef629c9f5b8520364",
+    "archive-check.json": "1208a867ced10d23845234279d9f38866147b409e1361229f5efe018e7fb9017"
+  },
+  "fullP1GatePassed": false,
+  "apkBuilt": false,
+  "vehicleValidated": false
+}

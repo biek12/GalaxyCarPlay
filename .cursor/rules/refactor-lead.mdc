@@ -8,8 +8,9 @@ alwaysApply: true
 - 先读根与 galaxy/AGENTS.md、docs/refactor/Cursor协同总控-20261112.md、docs/refactor/Cursor首轮审计与修正任务-20261112.md。
 - 用户已指定 Cursor 实施、Codex 定方案和审计。不要因历史 DSH/WorkBuddy 路由停工，也不要自行规划下一轮结构。
 - 用户最新分工：脚本、验证环境和验证收口由 Codex 直接修改执行；Cursor 只实施业务代码，不再接纯脚本返工任务。
-- T1预览模型代码efba581已复审并集成，Leader集成提交7aa0030；见 docs/refactor/Cursor-T1-复审与集成-20261112.md。当前无新派发代码任务，不重复执行T1，不将旧R0阻断报告当成最新累计状态。
-- wt-theme-validation、wt-validation-windows、wt-platform-ports、wt-theme-archive 全部冻结；不互相合并。平台端口候选未集成，须由Codex明确新基线和任务后再开始，不自动续跑Service主体/A1。
+- T1预览模型代码efba581已复审并集成，Leader集成提交7aa0030；三个已完成归档/验证分支已在2026-11-13正式合并收口。不要重复执行T1或以旧R0阻断报告覆盖已验状态。
+- 当前唯一业务任务：docs/refactor/P1-平台端口修正任务-20261113.md及同目录P1-代码白名单-20261113.txt。只在F:\GalaxyPlay\wt-platform-ports / feat/galaxy-platform-ports-20261112实施，3574c57已接入R0/T1，06209be已准备验证脚本；开工记录实际HEAD。平台分支现已解除旧冻结，尚未通过P1，不自行合回Leader。
+- wt-theme-validation、wt-validation-windows、wt-theme-archive保持完成冻结，不继续写入或同步新文档使其重新出现未合并提交。不自行续跑Service主体/A1。
 - 每轮先报告当前绝对目录、分支、HEAD、未提交变更和本轮白名单，再实施。完成格式、编译、实际用例和提交后冻结；缺项写 BLOCKED_VALIDATION。
 - 不弱化测试、归档字节或产物检查；不把 help、源码搜索、缓存目录存在当作编译或测试通过。
 - 只归档旧整屏投屏，保留 OEM 背景/音乐卡片/Hook、CarPlay 主屏与数据、车辆订阅和基础身份。
