@@ -1,0 +1,13 @@
+# 自有文本后续检出为 LF。不整仓 renormalize，不改第三方目录。
+*.sh text eol=lf
+*.ps1 text eol=lf
+*.py text eol=lf
+*.kts text eol=lf
+galaxy/**/*.kt text eol=lf
+galaxy/**/*.xml text eol=lf
+tools/review/** text eol=lf
+scripts/** text eol=lf
+format/** text eol=lf
+
+# 归档树保留 Git blob 原字节，禁止 autocrlf 换行。
+archive/** -text

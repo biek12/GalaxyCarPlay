@@ -13,6 +13,7 @@ from __future__ import annotations
 import hashlib
 import json
 import os
+import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -52,7 +53,7 @@ def kotlin_gate() -> dict:
     actual = sha256(jar.read_bytes())
     if actual != expected:
         raise SystemExit(f"ktlint jar 摘要不符: {actual}")
-    files = [line.strip() for line in (ROOT / REVIEW / "format-files.txt").read_text().splitlines()
+    files = [line.strip() for line in (ROOT / REVIEW / "format-files.txt").read_text(encoding="utf-8").splitlines()
              if line.strip() and not line.lstrip().startswith("#")]
     if len(files) != len(set(files)):
         raise SystemExit("format-files.txt 存在重复路径")
@@ -68,7 +69,7 @@ def kotlin_gate() -> dict:
     ]
     logs = []
     for command in commands:
-        result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True)
+        result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
         logs.append(result.stdout + result.stderr)
         if result.returncode or "No files matched" in (result.stdout + result.stderr):
             raise SystemExit("ktlint 门槛失败:\n" + (result.stdout + result.stderr))
@@ -84,14 +85,34 @@ def kotlin_gate() -> dict:
     }
 
 
-def xmllint_bin() -> str:
-    """优先显式路径，其次本机 /usr/bin/xmllint，最后 PATH。缺二进制则失败。"""
-    explicit = os.environ.get("GALAXY_XMLLINT", "").strip()
+def tool_bin(explicit_name: str, candidates: list[Path], fallback: str) -> str:
+    """显式路径优先，其次已知安装位置，最后 PATH。"""
+    explicit = os.environ.get(explicit_name, "").strip()
     if explicit:
         return explicit
-    if Path("/usr/bin/xmllint").is_file():
-        return "/usr/bin/xmllint"
-    return "xmllint"
+    for candidate in candidates:
+        if candidate.is_file():
+            return str(candidate)
+    found = shutil.which(fallback)
+    return found or fallback
+
+
+def xmllint_bin() -> str:
+    """优先显式路径，其次本机 xmllint，最后 PATH。缺二进制则失败。"""
+    cache = Path(os.environ.get("GALAXY_REFACTOR_CACHE", "").strip() or (ROOT / ".work"))
+    return tool_bin("GALAXY_XMLLINT", [
+        Path("/usr/bin/xmllint"),
+        cache / "tools/xmllint/xmllint.exe",
+        Path(r"C:\Program Files\Git\usr\bin\xmllint.exe"),
+    ], "xmllint")
+
+
+def bash_bin() -> str:
+    """Git Bash 可在 Windows 上做 bash -n；不把 /f 路径交给其他原生程序。"""
+    return tool_bin("GALAXY_BASH", [
+        Path("/usr/bin/bash"),
+        Path(r"C:\Program Files\Git\bin\bash.exe"),
+    ], "bash")
 
 
 def xml_gate() -> dict:
@@ -105,7 +126,7 @@ def xml_gate() -> dict:
         # 1) 良构 parse
         ET.fromstring(raw)
         probe = subprocess.run([lint, "--noout", str(path)], cwd=ROOT,
-                               capture_output=True, text=True)
+                               capture_output=True, text=True, encoding="utf-8", errors="replace")
         if probe.returncode:
             raise SystemExit(f"xmllint parse 失败: {name}: {probe.stderr}")
         # 2) 格式化一次/两次，比对幂等
@@ -124,7 +145,7 @@ def xml_gate() -> dict:
             raise SystemExit(f"XML 格式化改变语义: {name}")
         details.append({"file": name, "sha256": sha256(raw), "wellFormed": True,
                         "semanticEqual": True, "formatIdempotent": True})
-    version = subprocess.run([lint, "--version"], capture_output=True, text=True).stderr.strip()
+    version = subprocess.run([lint, "--version"], capture_output=True, text=True, encoding="utf-8", errors="replace").stderr.strip()
     return {"tool": version, "indent": "    ", "fileCount": len(details), "files": details}
 
 
@@ -137,11 +158,11 @@ def script_gate() -> dict:
             raise SystemExit(f"缺少脚本: {name}")
         if name.endswith(".py"):
             result = subprocess.run([sys.executable, "-m", "py_compile", str(path)],
-                                    cwd=ROOT, capture_output=True, text=True)
+                                    cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
             kind = "py_compile"
         else:
-            result = subprocess.run(["bash", "-n", str(path)], cwd=ROOT,
-                                    capture_output=True, text=True)
+            result = subprocess.run([bash_bin(), "-n", str(path)], cwd=ROOT,
+                                    capture_output=True, text=True, encoding="utf-8", errors="replace")
             kind = "bash -n"
         if result.returncode:
             raise SystemExit(f"{kind} 失败: {name}: {result.stderr}")

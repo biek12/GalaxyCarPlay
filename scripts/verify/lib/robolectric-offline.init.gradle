@@ -10,10 +10,31 @@ def sandboxHome = new File(cacheRoot, 'android-user-home')
 def strictOffline = System.getenv('GALAXY_ROBOLECTRIC_STRICT_OFFLINE') == '1'
 def mirrorUrl = System.getenv('GALAXY_ROBOLECTRIC_REPO_URL') ?: 'https://maven.aliyun.com/repository/public'
 
-def hasDependencies = dependencyDir.isDirectory() && dependencyDir.list()?.any { it.endsWith('.jar') }
+// Robolectric 4.17 的 sdk 30 对应 android 11 / 6757853 / preinstrumented i7。
+// 不足 200 字节的占位文件和损坏 ZIP 不能算缓存就绪，也不改测试 SDK 来绕开。
+def requiredSdkJar = new File(dependencyDir, 'android-all-instrumented-11-robolectric-6757853-i7.jar')
+def requiredClass = 'android/app/Activity.class'
+
+def jarHasClass = { File jar, String entry ->
+    if (!jar.isFile() || jar.length() < 200) {
+        return false
+    }
+    try {
+        def zip = new java.util.zip.ZipFile(jar)
+        try {
+            return zip.getEntry(entry) != null
+        } finally {
+            zip.close()
+        }
+    } catch (IOException ignored) {
+        return false
+    }
+}
+
+def hasDependencies = jarHasClass(requiredSdkJar, requiredClass)
 
 if (strictOffline && !hasDependencies) {
-    throw new GradleException("缺少 Robolectric 离线依赖: ${dependencyDir}；先按 docs/工程基础.md 备齐缓存，或去掉 --offline")
+    throw new GradleException("缺少或无效的 Robolectric sdk 30 离线包: ${requiredSdkJar}（需要有效 ZIP 且含 ${requiredClass}）；不使用不足 200 字节的占位文件")
 }
 
 gradle.projectsEvaluated {
