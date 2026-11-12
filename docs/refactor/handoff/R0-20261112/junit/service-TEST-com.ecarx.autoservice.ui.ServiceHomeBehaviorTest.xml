@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.ecarx.autoservice.ui.ServiceHomeBehaviorTest" tests="10" skipped="0" failures="0" errors="0" timestamp="2026-11-12T10:22:50.579Z" hostname="anjondeMacBook-Pro.local" time="3.819">
+  <properties/>
+  <testcase name="remoteButtonsSendHoursOnceAndStatusUsesReadOnlyFields" classname="com.ecarx.autoservice.ui.ServiceHomeBehaviorTest" time="0.871"/>
+  <testcase name="featureRowsDeclaredInXmlResolveTitleAndIcon" classname="com.ecarx.autoservice.ui.ServiceHomeBehaviorTest" time="0.363"/>
+  <testcase name="connectionLossFallsBackToWaitingWithoutStoppingService" classname="com.ecarx.autoservice.ui.ServiceHomeBehaviorTest" time="0.343"/>
+  <testcase name="recreatedPageDoesNotStartBackgroundWork" classname="com.ecarx.autoservice.ui.ServiceHomeBehaviorTest" time="0.621"/>
+  <testcase name="userActionsPersistBeforeDispatchAndDisableAllCoversEverything" classname="com.ecarx.autoservice.ui.ServiceHomeBehaviorTest" time="0.361"/>
+  <testcase name="switchesReflectSettingsAndSnapshotWithoutDispatchingCommands" classname="com.ecarx.autoservice.ui.ServiceHomeBehaviorTest" time="0.29"/>
+  <testcase name="settingRowsUsePlatformDefaultStyleForLayoutAttributes" classname="com.ecarx.autoservice.ui.ServiceHomeBehaviorTest" time="0.2"/>
+  <testcase name="wifiHelpFollowsFeatureReadinessAndWifiState" classname="com.ecarx.autoservice.ui.ServiceHomeBehaviorTest" time="0.189"/>
+  <testcase name="pollingUpdatesOnlyForegroundAndStopsWithLifecycle" classname="com.ecarx.autoservice.ui.ServiceHomeBehaviorTest" time="0.222"/>
+  <testcase name="navigationUsesRealTypesAndWifiFailureShowsResourceFeedback" classname="com.ecarx.autoservice.ui.ServiceHomeBehaviorTest" time="0.332"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

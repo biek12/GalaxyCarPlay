@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.galaxy.autocluster.LegacyProjectionRetirementTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-12T10:20:30.814Z" hostname="anjondeMacBook-Pro.local" time="0.55">
+  <properties/>
+  <testcase name="legacyServiceCommandsReturnNotStickyWithoutAnyClient" classname="com.galaxy.autocluster.LegacyProjectionRetirementTest" time="0.136"/>
+  <testcase name="legacyOverlayPreferencesDoNotStartElementsOrProjectionOutput" classname="com.galaxy.autocluster.LegacyProjectionRetirementTest" time="0.156"/>
+  <testcase name="savedThemesPageValueFallsBackToHome" classname="com.galaxy.autocluster.LegacyProjectionRetirementTest" time="0.101"/>
+  <testcase name="explicitOemSubmissionStillStartsElements" classname="com.galaxy.autocluster.LegacyProjectionRetirementTest" time="0.149"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

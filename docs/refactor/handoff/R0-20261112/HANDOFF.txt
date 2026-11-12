@@ -1,0 +1,13 @@
+执行新批次 GALAXY-ANDROID-R0-20261112：整屏投屏归档与 AutoService 停注入。本次是全新产品范围任务，不恢复已取消的 C2b，不继续整屏主题编辑器重构。用户明确“只归档整屏投屏，原厂元素增强保留”，并追加“这条链条里的 AutoService 也需要停止相关注入”。
+
+唯一可写源码副本：/Users/anjon/Documents/GalaxyPlay/.work/tasks/galaxy-android-r0-20261112/worktree。所有命令 cwd 先设这里，核对分支 feat/galaxy-android-r0-20261112、HEAD 572ba0eb07113c8c1859efa9c34cb25a1676eff7、干净状态及父目录 BASELINE.json 的 1072 项源摘要。产品根及旧任务只读。报告/证据写本任务父目录。
+
+先完整读副本根/galaxy AGENTS、docs/refactor/Android工程规范.md、Common组件复用映射-20261111.md、覆盖投屏归档边界-20261112.md、本批 R0-整屏投屏归档任务书-20261112.md 与 R0-标准用例-20261112.md。Lead已给出每个生产文件/方法职责、关闭链、归档清单、共享保留、写范围、实际验证标准和提交要求，按文档直接实施，不猜协议或自选下一批。
+
+关键：关闭 THEME/PREVIEW、旧 cluster/themeEnabled 恢复、MAP 活跃隐式整屏输出、PlatformCoordinator旧部署重试及 Root op4/op6 启动。旧专用源码原字节移到 archive/legacy-fullscreen-projection/20261112/，不进Gradle源集；UI/Manifest/IPC/服务命令同样无入口。保留 OEM ELEMENTS、原厂音乐卡片/背景 Hook、Root op11/12、CarPlay主屏与MAP数据/媒体/导航、车辆订阅及基础ADB/Root；关闭OEM后MAP不能接管旧地图。
+
+共享依赖切勿误删：QnxClusterHook用 assets/qnx/receiver-candidate 执行 health hook-health，所以保留 prepareQnxReceiver 及其C/QNX来源；PosixChecksum 从Deployer抽出原算法保留；InstrumentMusicPreview仍用theme.SceneData，禁止整包搬theme。Root helper现有握手检查owner/apk，不随意升契约。保留op5仅清理自有旧receiver，不在此轮实际连车清理。
+
+按任务书实施生产入口和少量真实用例。新增单命令 scripts/verify_projection_retirement.sh 复用 verify_cluster_pages、离线缓存与真实编译/JUnit/Manifest/class/归档摘要；通过全部约定门槛和固定ktlint/XML幂等检查后，显式暂存白名单并提交，报告绑定最终SHA。不得以模型或字符串测试冒充生产行为，不为凑旧例数开放退役功能。编译/必测未执行或失败必须BLOCKED_VALIDATION，不能READY。固定缓存 GALAXY_REFACTOR_CACHE=/Users/anjon/Documents/GalaxyPlay/.work；不改全局环境、签名、依赖、上游核心，不读认证私密材料，不push/merge/reset/clean/stash。
+
+只离线编码/编译/测试：禁止连接或安装车辆、HMI操作、模拟器、远程部署，不声称车端已停或实屏通过。模型沿当前可用配置如实记录，不切换纠缠。请开始执行；交付父目录 DELIVERY.md、STATUS.md、VALIDATION.json、实际日志/JUnit及归档清单，最终提交后READY_FOR_REVIEW并冻结，等待用户叫Codex审计，不自动集成或续派。

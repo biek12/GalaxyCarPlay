@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.galaxy.autocluster.theme.ThemeStoreTest" tests="7" skipped="0" failures="0" errors="0" timestamp="2026-11-12T10:20:40.595Z" hostname="anjondeMacBook-Pro.local" time="0.385">
+  <properties/>
+  <testcase name="builtinEditingRequiresCopyAndImportNeverOverwritesIt" classname="com.galaxy.autocluster.theme.ThemeStoreTest" time="0.072"/>
+  <testcase name="renameIsRevisionCheckedAndActiveThemeMustBeReplacedBeforeDelete" classname="com.galaxy.autocluster.theme.ThemeStoreTest" time="0.058"/>
+  <testcase name="savingDraftDoesNotReplaceAppliedSnapshotAndReopensIndependently" classname="com.galaxy.autocluster.theme.ThemeStoreTest" time="0.042"/>
+  <testcase name="failedImportKeepsLibraryAndCorruptEntriesAreReportedWithoutRemoval" classname="com.galaxy.autocluster.theme.ThemeStoreTest" time="0.032"/>
+  <testcase name="staleEditorCannotOverwriteNewerSaveOrApplyWrongRevision" classname="com.galaxy.autocluster.theme.ThemeStoreTest" time="0.05"/>
+  <testcase name="energySyncPreservesEditedNodesAndDoesNotDuplicateOnRepeat" classname="com.galaxy.autocluster.theme.ThemeStoreTest" time="0.059"/>
+  <testcase name="failedAtomicWriteKeepsPreviousSavedAndActivePackages" classname="com.galaxy.autocluster.theme.ThemeStoreTest" time="0.061"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

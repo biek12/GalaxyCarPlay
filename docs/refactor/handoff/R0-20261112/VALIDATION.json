@@ -1,0 +1,196 @@
+{
+  "task": "GALAXY-ANDROID-R0-20261112",
+  "status": "BLOCKED_VALIDATION",
+  "readyForReview": false,
+  "generatedAt": "2026-11-12T18:29:16+08:00",
+  "generatedBy": "交付阶段手工汇总：单命令门槛第 3 步失败，set -e 终止，第 4 步 verify_artifacts.py ready 未执行",
+  "branch": "feat/galaxy-android-r0-20261112",
+  "baselineHead": "572ba0eb07113c8c1859efa9c34cb25a1676eff7",
+  "finalCommit": "b70482099b2dc2dfd418389ce3d8e5752a28cceb",
+  "finalCommitShort": "b704820",
+  "finalCommitSummary": "89 files changed, 4686 insertions(+), 1024 deletions(-); 50 个归档为 R100 原字节重命名；提交后工作树干净",
+  "finalCommitMessage": "logs/commit-message.txt",
+  "commitWhitelist": {
+    "path": "logs/commit-whitelist.txt",
+    "count": 139,
+    "added": 65,
+    "modified": 24,
+    "deleted": 50,
+    "method": "显式逐路径暂存，未使用 git add -A"
+  },
+  "script": {
+    "entry": "scripts/verify_projection_retirement.sh",
+    "invocation": "GALAXY_REFACTOR_CACHE=/Users/anjon/Documents/GalaxyPlay/.work bash scripts/verify_projection_retirement.sh",
+    "completed": false,
+    "exit": "BUILD FAILED",
+    "failedStep": 3,
+    "failedStepTask": ":service:testDebugUnitTest",
+    "stepsExecuted": [1, 2, 3],
+    "stepsNotExecuted": [4, 5, 6],
+    "rawLog": "logs/verify-full.log",
+    "rawLogSha256": "9697c181d834572db5f2ec7adc68ca2b95223d88780b8e1fe16bb4d5f827bbc2"
+  },
+  "format": {
+    "passed": true,
+    "kotlin": {
+      "tool": "ktlint 1.4.1",
+      "jarSha256": "abff61ead7dabdf1264ae7dce61cb5325e602896f33f3ee2fbc359238adeac70",
+      "config": "format/galaxy/.editorconfig",
+      "fileCount": 22,
+      "formatTwiceIdempotent": true,
+      "readOnlyCheck": true
+    },
+    "xml": {
+      "tool": "/usr/bin/xmllint (libxml 20913)",
+      "fileCount": 7,
+      "wellFormed": true,
+      "semanticEqual": true,
+      "formatIdempotent": true
+    },
+    "script": {
+      "fileCount": 4,
+      "checks": ["py_compile", "bash -n"],
+      "passed": true
+    },
+    "resultFile": "logs/format-result.json",
+    "resultFileSha256": "c67bd51f34c80582a2497968f6d84d1caa5fb1c8b28f4bb402549675be474dc7"
+  },
+  "compile": {
+    "gradleMode": "offline / no-daemon / no-configuration-cache / kotlin.incremental=false",
+    "downstreamBuild": "BUILD SUCCESSFUL",
+    "downstreamTasks": 102,
+    "log": "logs/verify_cluster_pages.log",
+    "excludedTasks": [":service:buildHab", ":service:prepareQnxReceiver", ":service:prepareClusterHook"],
+    "note": "排除的仅未改 Native/QNX 资产准备；Kotlin、resources、test 均未排除"
+  },
+  "junit": {
+    "service": {
+      "suites": 9,
+      "cases": 48,
+      "passed": 45,
+      "failures": 3,
+      "errors": 0,
+      "skipped": 0,
+      "suiteDetails": [
+        {"name": "com.ecarx.autoservice.ClientRegistryTest", "tests": 4, "failures": 0},
+        {"name": "com.ecarx.autoservice.ClusterElementPipelineTest", "tests": 4, "failures": 0},
+        {"name": "com.ecarx.autoservice.ClusterHookLifecycleTest", "tests": 4, "failures": 3},
+        {"name": "com.ecarx.autoservice.platform.FoundationRecoveryTest", "tests": 4, "failures": 0},
+        {"name": "com.ecarx.autoservice.platform.PlatformExecutionTest", "tests": 4, "failures": 0},
+        {"name": "com.ecarx.autoservice.platform.RootProjectionArchiveTest", "tests": 4, "failures": 0},
+        {"name": "com.ecarx.autoservice.remote.RemoteConnectionStatusTest", "tests": 2, "failures": 0},
+        {"name": "com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest", "tests": 12, "failures": 0},
+        {"name": "com.ecarx.autoservice.ui.ServiceHomeBehaviorTest", "tests": 10, "failures": 0}
+      ]
+    },
+    "cluster": {
+      "suites": 11,
+      "cases": 52,
+      "passed": 52,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "xmlCopies": "logs/junit/ (20 files)",
+    "archivedSuitesKeptAsEvidenceOnly": [
+      "com.ecarx.autoservice.projection.GalaxyFrameTimingsTest",
+      "com.ecarx.autoservice.projection.GalaxyHabFrameWakeTest",
+      "com.ecarx.autoservice.projection.GalaxyHabFramesTest",
+      "com.ecarx.autoservice.projection.GalaxyHabProcessTest",
+      "com.ecarx.autoservice.projection.GalaxyHabReconnectTest",
+      "com.ecarx.autoservice.projection.GalaxyHabSessionStartTest",
+      "com.ecarx.autoservice.platform.QnxReceiverLifecycleTest",
+      "com.ecarx.autoservice.platform.QnxReceiverRemoteTest",
+      "com.galaxy.autocluster.ThemeShellBehaviorTest",
+      "com.galaxy.autocluster.ui.ComponentUiTest",
+      "com.galaxy.autocluster.ui.ComponentCatalogTest",
+      "com.galaxy.autocluster.ui.ThemeLibraryPageTest"
+    ]
+  },
+  "failures": [
+    {
+      "suite": "com.ecarx.autoservice.ClusterHookLifecycleTest",
+      "case": "matchingLiveProcessReusesWithoutRestartOrStage",
+      "location": "ClusterHookLifecycleTest.kt:18",
+      "type": "java.lang.IllegalStateException",
+      "message": "cluster_restore_unconfirmed",
+      "stackTop": "QnxClusterRemote.stop (QnxClusterHook.kt:126) <- QnxClusterRemote.ensure (QnxClusterHook.kt:139)"
+    },
+    {
+      "suite": "com.ecarx.autoservice.ClusterHookLifecycleTest",
+      "case": "firstStartStagesVerifiesAndOnlyThenActivates",
+      "location": "ClusterHookLifecycleTest.kt:28",
+      "type": "java.lang.IllegalStateException",
+      "message": "cluster_restore_unconfirmed",
+      "stackTop": "QnxClusterRemote.stop (QnxClusterHook.kt:126) <- QnxClusterRemote.ensure (QnxClusterHook.kt:139)"
+    },
+    {
+      "suite": "com.ecarx.autoservice.ClusterHookLifecycleTest",
+      "case": "fixedFirmwareMismatchCannotActivate",
+      "location": "ClusterHookLifecycleTest.kt:51",
+      "type": "java.lang.AssertionError",
+      "message": "assertFalse(launched)",
+      "stackTop": "org.junit.Assert.assertFalse"
+    }
+  ],
+  "rootCauseAnalysis": {
+    "verifiedFacts": [
+      "ClusterHookLifecycleTest.kt 与 QnxClusterHook.kt 本批零改动，与起点 git blob 字节一致 (62d6d3f94bb9f93a... / f811f76f6cee4fa6...)",
+      "失败路径只经过 QnxClusterRemote.ensure/stop/installed/filesMatch，不经过本批任何新增或修改类",
+      "docs/refactor/文件台账-20261111.tsv:883 标注该测试『待重构，未验收』，登记 SHA 与当前文件一致",
+      "既有 scripts/verify_android_refactor.sh 的 SERVICE_TESTS 清单不含该 suite，历史门槛从未执行它",
+      "测试 fake token (AS_CLUSTER_INSTALLED / G733_RUNTIME_MATERIALS_MATCH) 与生产期望 (AS_CLUSTER_VERSION_MATCH / AS_CLUSTER_FILE_MATCH / G733_RUNTIME_OWNED / AS_CLUSTER_LIVE / AS_CLUSTER_RESTORED) 不同步"
+    ],
+    "inferenceNotIndependentlyVerified": "installed() 与 filesMatch() 恒 false 使 ensure() 落入 stop()，fake 的 pids 返回非数字串导致 15 次重试后抛 cluster_restore_unconfirmed；第 3 例因其它命令命中 else 分支置 launched=true 使 assertFalse 失败。未在独立基线 worktree 实跑复验。",
+    "baselineIndependentReproduction": "git worktree add --detach /tmp/r0-baseline-check 572ba0eb07113c8c1859efa9c34cb25a1676eff7 后单独跑该 suite"
+  },
+  "archive": {
+    "root": "archive/legacy-fullscreen-projection/20261112/",
+    "sourceBaseline": "572ba0eb07113c8c1859efa9c34cb25a1676eff7",
+    "movedCount": 50,
+    "snapshotCount": 3,
+    "entries": 53,
+    "breakdown": {
+      "运行Kotlin": 32,
+      "布局XML": 5,
+      "单元测试Kotlin": 12,
+      "instrumentation": 1,
+      "snapshot": 3
+    },
+    "byteIdenticalToBaselineBlob": true,
+    "postCommitByteCheck": "53/53 条与 572ba0eb07113c8c1859efa9c34cb25a1676eff7:<original> 逐字节一致且 SHA256 吻合；日志 logs/archive-byte-check.txt（提交后复验，取基线 HEAD 而非新 HEAD）",
+    "outsideGradleSourceSets": true,
+    "manifest": "archive/legacy-fullscreen-projection/20261112/manifest.json",
+    "manifestCopy": "logs/archive-manifest.json",
+    "manifestCopySha256": "f2eb0d0e36020ba67a3a0b63a52fb2202eb993653f0244b36f5c5c9781c2558b"
+  },
+  "artifactsCheckExecuted": false,
+  "artifactsCheckNote": "verify_artifacts.py ready 未执行：merged Manifest / Kotlin class / 三方 SHA256 / 共享闭包审计尚未由脚本逐项核对",
+  "apkBuilt": false,
+  "vehicleValidated": false,
+  "nativeAssetPreparationExcluded": true,
+  "hmiOrSimulatorUsed": false,
+  "certificationSecretsRead": false,
+  "remoteDeployment": false,
+  "residual": {
+    "summary": "3 个必测失败未修复；单命令门槛未全程执行；产物核对未跑；VALIDATION.json 为手工汇总",
+    "handoff": [
+      "按当前 QnxClusterRemote 协议重写 ClusterHookLifecycleTest 的 fake executor，保留 4 个用例原有语义（详见 DELIVERY.md §9.6）",
+      "不得删除/跳过该 suite、不得放宽 verify_artifacts.py 零失败判定、不得改生产 QnxClusterHook 迎合旧测试",
+      "补跑完整 scripts/verify_projection_retirement.sh 至全绿，并让 verify_artifacts.py ready 生成正式 VALIDATION.json",
+      "全绿后才可把状态从 BLOCKED_VALIDATION 改为 READY_FOR_REVIEW"
+    ],
+    "reference": "DELIVERY.md §9 / logs/service-tests.log / logs/junit/service-TEST-com.ecarx.autoservice.ClusterHookLifecycleTest.xml"
+  },
+  "boundaries": {
+    "pushed": false,
+    "merged": false,
+    "resetCleanStash": false,
+    "signatureOrGlobalConfigChanged": false,
+    "crossModuleRefactor": false,
+    "c2bRestored": false,
+    "offlinePassClaimedAsVehicleRecovered": false,
+    "frozenAfterCommit": true,
+    "note": "按用户 2026-11-12 18:24 指令不再继续编码，提交后冻结，交由新的 AI 完善"
+  }
+}

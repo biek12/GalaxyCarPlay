@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.galaxy.autocluster.ClusterAppNavigationTest" tests="4" skipped="0" failures="0" errors="0" timestamp="2026-11-12T10:20:10.004Z" hostname="anjondeMacBook-Pro.local" time="16.905">
+  <properties/>
+  <testcase name="appSeparatesHomeMusicAndBackgroundAndKeepsServiceSettingsOutside" classname="com.galaxy.autocluster.ClusterAppNavigationTest" time="13.417"/>
+  <testcase name="stagedImageIsNotAnEnabledSwitchAndUserControlsSubmitWithoutAnotherApply" classname="com.galaxy.autocluster.ClusterAppNavigationTest" time="1.331"/>
+  <testcase name="runtimeUsesRootEnabledAndRequiresAnActualReceipt" classname="com.galaxy.autocluster.ClusterAppNavigationTest" time="0.245"/>
+  <testcase name="changedPlanCannotDisplaySuccessFromPreviousImageReceipt" classname="com.galaxy.autocluster.ClusterAppNavigationTest" time="0.342"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

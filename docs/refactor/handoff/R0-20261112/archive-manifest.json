@@ -1,0 +1,433 @@
+{
+  "task": "GALAXY-ANDROID-R0-20261112",
+  "sourceBaseline": "572ba0eb07113c8c1859efa9c34cb25a1676eff7",
+  "archiveRoot": "archive/legacy-fullscreen-projection/20261112",
+  "movedCount": 50,
+  "snapshotCount": 3,
+  "entries": [
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyEglContext.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyEglContext.kt",
+      "sha256": "da9e2230bf417e65e45f8a5f8c90dac55121e0977dd2f5a29b777619e985b463",
+      "bytes": 3204,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyFrameTimings.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyFrameTimings.kt",
+      "sha256": "041eddcc32599f967ad4e01c8be80a70b70dd8ede7ae7436630312e99f5a8e4d",
+      "bytes": 932,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyGlComposition.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyGlComposition.kt",
+      "sha256": "e85347af7250481ecdd3ee6e459c8f819452e9e0751f66ccb61bffe7fa6d0cd2",
+      "bytes": 11088,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabComposition.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabComposition.kt",
+      "sha256": "dc98a4d637efb1be8ec64014ea802b8b40c19899fdf6d936aa5eb13602019bdd",
+      "bytes": 14687,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabFrames.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabFrames.kt",
+      "sha256": "034586f731c46855d37f456fc5b3e0f9f78e134c2b24067c3b175b072f4a93b0",
+      "bytes": 1384,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabFrameWake.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabFrameWake.kt",
+      "sha256": "6b24cb27e77207e3953d01649ae3fa69ffde229832c212e21ead100e272fed39",
+      "bytes": 1536,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabKey.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabKey.kt",
+      "sha256": "34c18b1146c8445d331a54c208d2facad0a22588d68d8ead1612677141bdf28f",
+      "bytes": 1245,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabLayout.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabLayout.kt",
+      "sha256": "78c0fd162b77c7b74236b19d2f4e7a9106f5ffa75428a5f4b0acee176126f5d6",
+      "bytes": 390,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabProcess.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabProcess.kt",
+      "sha256": "71b61cf82a1e4949c719768a26f0a72ad156c07bb4c87127c2be78462b1003e3",
+      "bytes": 5886,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabReconnect.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabReconnect.kt",
+      "sha256": "7c6e7ff76142f4b0f1beb8ab79ff168244078b959e77ca5d930d4dd140389762",
+      "bytes": 373,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabSessionStart.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyHabSessionStart.kt",
+      "sha256": "c2ca1c3ffa6f75ccd9746bc3cff94a69ab9f10c2ab84fb2590ced00f408682e7",
+      "bytes": 780,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyTextureInput.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyTextureInput.kt",
+      "sha256": "03342b5d4874257005b122870be15104fcf90e5a82ce92afbdace5be1dc45867",
+      "bytes": 1962,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyTextureProgram.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyTextureProgram.kt",
+      "sha256": "f5bdd7915b72e056e11d54d80d12289230e79d3e41a3873f51bd62c77564696e",
+      "bytes": 7303,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootHabSession.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootHabSession.kt",
+      "sha256": "5379c4baef96a31ed52221e4216c83ef67c55c5fe77e2591dcb2534d9b3f399c",
+      "bytes": 3428,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootHabProcess.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootHabProcess.kt",
+      "sha256": "fb65c60dac2dd0f00f6dc6f019ab9889238d9b94b24b5c28cba13688eab5cd45",
+      "bytes": 2278,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxReceiverDeployer.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxReceiverDeployer.kt",
+      "sha256": "203277165df6cd254c2663c3adea40ef8d09c61043873934c055368ffe170577",
+      "bytes": 2936,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxReceiverRemote.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxReceiverRemote.kt",
+      "sha256": "8cc36edc5dc672159de0c532906eff3581234c9d09339a72c35cf43589b29f3c",
+      "bytes": 4942,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxReceiverLifecycle.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxReceiverLifecycle.kt",
+      "sha256": "bca5880daf509457176fb2a69185fd72eaa8f1cf46e007cfdfcc77f910101044",
+      "bytes": 954,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/test/java/com/ecarx/autoservice/projection/GalaxyFrameTimingsTest.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/test/java/com/ecarx/autoservice/projection/GalaxyFrameTimingsTest.kt",
+      "sha256": "c2e82148e5f5d6d5eef0d21c905e107f21791801dcdc349a4fb1cf5cee75c3b0",
+      "bytes": 553,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/test/java/com/ecarx/autoservice/projection/GalaxyHabFramesTest.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/test/java/com/ecarx/autoservice/projection/GalaxyHabFramesTest.kt",
+      "sha256": "159833cf87fa374ab04ecc407b3eb06a85b3ed54d9dbec04fbf7d34a8d436af4",
+      "bytes": 1817,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/test/java/com/ecarx/autoservice/projection/GalaxyHabFrameWakeTest.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/test/java/com/ecarx/autoservice/projection/GalaxyHabFrameWakeTest.kt",
+      "sha256": "3d6eb84abec79052b9bebfadb98f40331e30ca74fe4e73e6c87900c8cef2fe7b",
+      "bytes": 1816,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/test/java/com/ecarx/autoservice/projection/GalaxyHabProcessTest.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/test/java/com/ecarx/autoservice/projection/GalaxyHabProcessTest.kt",
+      "sha256": "37bfea4447c1584e9566f492a31eb19393f3fc90e730990c061d76c72b3b56b5",
+      "bytes": 6363,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/test/java/com/ecarx/autoservice/projection/GalaxyHabReconnectTest.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/test/java/com/ecarx/autoservice/projection/GalaxyHabReconnectTest.kt",
+      "sha256": "e31ecb99c45314332afbb21b35e345755da1ba34cdf00116a8bd6f18e17f5ac7",
+      "bytes": 623,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/test/java/com/ecarx/autoservice/projection/GalaxyHabSessionStartTest.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/test/java/com/ecarx/autoservice/projection/GalaxyHabSessionStartTest.kt",
+      "sha256": "4decf36215b6e1bc25de62a8118be0077f6824b4ec2a25db919344415fa4350c",
+      "bytes": 1772,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/test/java/com/ecarx/autoservice/platform/QnxReceiverRemoteTest.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/test/java/com/ecarx/autoservice/platform/QnxReceiverRemoteTest.kt",
+      "sha256": "715fc97b27136cc7c725a757e5dea67cee8bfa211b9b6da47136cce482007f10",
+      "bytes": 3940,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/test/java/com/ecarx/autoservice/platform/QnxReceiverLifecycleTest.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/test/java/com/ecarx/autoservice/platform/QnxReceiverLifecycleTest.kt",
+      "sha256": "a61118c9ccac742a8a0c272e0512d403f78f1b9ea2804884360c33ccd27b8173",
+      "bytes": 3476,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/service/src/androidTest/java/com/ecarx/autoservice/projection/ProjectionSmokeInstrumentation.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/service/src/androidTest/java/com/ecarx/autoservice/projection/ProjectionSmokeInstrumentation.kt",
+      "sha256": "2fbeec303ef570d66c1d65a921b5d2bb8dffa6515002ff4429870b018fdad9a4",
+      "bytes": 8470,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/ThemeActivity.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/ThemeActivity.kt",
+      "sha256": "2d7db3214dca947d2e60f53a040000844f6eeb00446f8228f8dbb641c871ff7d",
+      "bytes": 30808,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/runtime/ClusterSceneOutput.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/runtime/ClusterSceneOutput.kt",
+      "sha256": "a65d486f9b4dc2f0692a4ceedac66010a89e24926606d8a51b6b4b6940ca2591",
+      "bytes": 15155,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ClusterEditorCanvas.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ClusterEditorCanvas.kt",
+      "sha256": "03529a5e08c25bf063bd7949e770195526b0330db6f7eeb2db9351dbc48770fb",
+      "bytes": 9591,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ClusterEditorPage.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ClusterEditorPage.kt",
+      "sha256": "942e1c28ed04faa36b55b9154bc71110c501f9779ddaa509524e1f86b05806b1",
+      "bytes": 7839,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ComponentGallery.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ComponentGallery.kt",
+      "sha256": "7defe97fcc1006a2be4784bc1ec2ac376b33fae37f84f8210b2937651948aa1e",
+      "bytes": 3464,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ComponentPresets.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ComponentPresets.kt",
+      "sha256": "8f7e5cbd7f737551d65c7e698954a74636d2d858daee2d31d34118714bf3239c",
+      "bytes": 6141,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ComponentPropertyPanel.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ComponentPropertyPanel.kt",
+      "sha256": "8059a5a8433be2b4d3d2a86012b215292fd72261d88046c982361d03bdfdd227",
+      "bytes": 12141,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ComponentSampleView.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ComponentSampleView.kt",
+      "sha256": "c64f48c06e1356962953a39f9ce999aa2c098d7858b9310735aa8d1cb6737ecf",
+      "bytes": 4305,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ThemeActions.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ThemeActions.kt",
+      "sha256": "4099e90d7d3076cdb303cf3ac3481f517f65afc5a52cd4ca138cdce9383a7e75",
+      "bytes": 8681,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ThemeAppearanceDialogs.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ThemeAppearanceDialogs.kt",
+      "sha256": "9fdf773ae53628111ff0f3e2ad8a2643f8b161d652b472f0a5f5c855d1993c39",
+      "bytes": 5946,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ThemeLibraryPage.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ThemeLibraryPage.kt",
+      "sha256": "621739a7666ced3839cd6bb0e0e1105ddcfb84f4099ec061cc48db781bc11da7",
+      "bytes": 3416,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ThemeLibraryAdapter.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ThemeLibraryAdapter.kt",
+      "sha256": "4a634b754d462c25e4d252e14b8da8dad6945c7ff5fc2ecb970ec70b21cca565",
+      "bytes": 5076,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ThemeRatioImageView.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ThemeRatioImageView.kt",
+      "sha256": "f25f6cd7cedee44e45c5377e457b15388e64fb5f97222d9259abd028c361d3ab",
+      "bytes": 1899,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ThemePreviewImages.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ThemePreviewImages.kt",
+      "sha256": "e540450e5a483cd19c5470d34ed21d1ba569983ccdc9202a6df49a8a7013f370",
+      "bytes": 1579,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/main/res/layout/activity_theme.xml",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/main/res/layout/activity_theme.xml",
+      "sha256": "0d1fb15a90c2442dba10638949075792d505f28753b837855ac3174f9c7db0e3",
+      "bytes": 2581,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/main/res/layout/header_theme_library.xml",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/main/res/layout/header_theme_library.xml",
+      "sha256": "4d9e5e1d4faac0d4acd29e30dc0e9a0ced0d57974f478470facc3be11591f5c5",
+      "bytes": 2743,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/main/res/layout/item_theme_library_row.xml",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/main/res/layout/item_theme_library_row.xml",
+      "sha256": "2f8e6e7b2507739a704ea49e7cb08e1ad092111da5019d0e473d9407c68e74f2",
+      "bytes": 834,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/main/res/layout/item_theme_library_card.xml",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/main/res/layout/item_theme_library_card.xml",
+      "sha256": "4a0c44f1b4d31624366cabf9ef4591703fa26c10b84439ecada38fcca7e2e237",
+      "bytes": 2426,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/main/res/layout/page_cluster_themes.xml",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/main/res/layout/page_cluster_themes.xml",
+      "sha256": "98d9f3d9d51b9cb2a8a64aa28fed532fd07c9920a19984eb986111939e242f9c",
+      "bytes": 1044,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/test/java/com/galaxy/autocluster/ThemeShellBehaviorTest.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/test/java/com/galaxy/autocluster/ThemeShellBehaviorTest.kt",
+      "sha256": "4d45d9f30f4444c04b3c4850d585c038df50503d3a7f47463106a7019e8f0221",
+      "bytes": 6713,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/test/java/com/galaxy/autocluster/ui/ThemeLibraryPageTest.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/test/java/com/galaxy/autocluster/ui/ThemeLibraryPageTest.kt",
+      "sha256": "a1bc6497be972ac606981ab8857bd2f227a5a0c422dac1c01dcba97c6f576351",
+      "bytes": 17691,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/test/java/com/galaxy/autocluster/ui/ComponentUiTest.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/test/java/com/galaxy/autocluster/ui/ComponentUiTest.kt",
+      "sha256": "6d6dd6fe5ca5e35ee86e10e3f2d3ca03daa890bcfa5776592a2c53194f9e678f",
+      "bytes": 4920,
+      "snapshot": false
+    },
+    {
+      "kind": "moved",
+      "original": "galaxy/cluster/src/test/java/com/galaxy/autocluster/ui/ComponentCatalogTest.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/galaxy/cluster/src/test/java/com/galaxy/autocluster/ui/ComponentCatalogTest.kt",
+      "sha256": "8a66be44bbe257c036075b8c7c15c486599f6a5f538f3b61858458c6fa63b8e8",
+      "bytes": 2890,
+      "snapshot": false
+    },
+    {
+      "kind": "snapshot",
+      "original": "galaxy/service/src/main/java/com/ecarx/autoservice/AutoService.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/snapshots/galaxy/service/src/main/java/com/ecarx/autoservice/AutoService.kt",
+      "sha256": "f083cfff395645f909944de9c523204bf555895b6470662f8c39e3b952ad8238",
+      "bytes": 57285,
+      "snapshot": true
+    },
+    {
+      "kind": "snapshot",
+      "original": "galaxy/service/src/main/java/com/ecarx/autoservice/platform/PlatformCoordinator.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/snapshots/galaxy/service/src/main/java/com/ecarx/autoservice/platform/PlatformCoordinator.kt",
+      "sha256": "bb45ad4b6f1c224b46b630229d987c9e48280a0abb8291ae239ffb317bc39c26",
+      "bytes": 7871,
+      "snapshot": true
+    },
+    {
+      "kind": "snapshot",
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/ClusterRenderService.kt",
+      "archived": "archive/legacy-fullscreen-projection/20261112/snapshots/galaxy/cluster/src/main/java/com/galaxy/autocluster/ClusterRenderService.kt",
+      "sha256": "bb97d35e4774398251a05ccee235aa73dfa1c8741f82b4dd4b00d820fc99caa7",
+      "bytes": 4633,
+      "snapshot": true
+    }
+  ]
+}
