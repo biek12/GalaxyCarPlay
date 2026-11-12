@@ -10,11 +10,37 @@ def sandboxHome = new File(cacheRoot, 'android-user-home')
 def strictOffline = System.getenv('GALAXY_ROBOLECTRIC_STRICT_OFFLINE') == '1'
 def mirrorUrl = System.getenv('GALAXY_ROBOLECTRIC_REPO_URL') ?: 'https://maven.aliyun.com/repository/public'
 
-def hasDependencies = dependencyDir.isDirectory() && dependencyDir.list()?.any { it.endsWith('.jar') }
+// Robolectric 4.17 的 sdk 30 对应 android 11 / 6757853 / preinstrumented i7。
+// 不足 200 字节的占位文件和损坏 ZIP 不能算缓存就绪，也不改测试 SDK 来绕开。
+def requiredSdkJar = new File(dependencyDir, 'android-all-instrumented-11-robolectric-6757853-i7.jar')
+def requiredClass = 'android/app/Activity.class'
+
+def jarHasClass = { File jar, String entry ->
+    if (!jar.isFile() || jar.length() < 200) {
+        return false
+    }
+    try {
+        def zip = new java.util.zip.ZipFile(jar)
+        try {
+            return zip.getEntry(entry) != null
+        } finally {
+            zip.close()
+        }
+    } catch (IOException ignored) {
+        return false
+    }
+}
+
+def hasDependencies = jarHasClass(requiredSdkJar, requiredClass)
 
 if (strictOffline && !hasDependencies) {
-    throw new GradleException("缺少 Robolectric 离线依赖: ${dependencyDir}；先按 docs/工程基础.md 备齐缓存，或去掉 --offline")
+    throw new GradleException("缺少或无效的 Robolectric sdk 30 离线包: ${requiredSdkJar}（需要有效 ZIP 且含 ${requiredClass}）；不使用不足 200 字节的占位文件")
 }
+
+// 只把验证入口已经解析好的宿主工具传给 Test 子进程。不改 SDK、offline 或依赖版本。
+def testShell = System.getenv('GALAXY_TEST_SHELL')
+def testCksum = System.getenv('GALAXY_TEST_CKSUM')
+def testPathPrefix = System.getenv('GALAXY_TEST_PATH_PREFIX')
 
 gradle.projectsEvaluated {
     gradle.rootProject.allprojects { project ->
@@ -27,6 +53,23 @@ gradle.projectsEvaluated {
                 // 没有本地缓存时退回公开镜像；仅本机验证用，不代表产品依赖声明。
                 task.systemProperty 'robolectric.dependency.repo.id', 'galaxy-verify-mirror'
                 task.systemProperty 'robolectric.dependency.repo.url', mirrorUrl
+            }
+            if (testShell) {
+                task.environment 'GALAXY_TEST_SHELL', testShell
+            }
+            if (testCksum) {
+                task.environment 'GALAXY_TEST_CKSUM', testCksum
+            }
+            if (testPathPrefix) {
+                // Windows 环境变量名是 Path。另写 PATH 不会被 CreateProcess 用来找 yes/head/sleep。
+                def pathKey = task.environment.keySet().find { it.equalsIgnoreCase('PATH') } ?: 'PATH'
+                def inherited = task.environment.get(pathKey)?.toString() ?: ''
+                def separator = File.pathSeparator
+                def nativePrefix = separator == ';' ? testPathPrefix.replace('/', '\\') : testPathPrefix
+                def alreadyPresent = inherited.split(java.util.regex.Pattern.quote(separator)).any { it.equalsIgnoreCase(nativePrefix) }
+                if (!alreadyPresent) {
+                    task.environment pathKey, nativePrefix + separator + inherited
+                }
             }
         }
     }
