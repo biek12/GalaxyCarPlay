@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 结果页：显示恢复进度/回执语义，收到 restored 才确认；返回仪表回首页。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+    <include android:id="@+id/page_header" layout="@layout/include_cluster_page_header" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+    <TextView android:id="@+id/result_status" style="@style/GalaxyUi.TextAppearance.Description" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="@dimen/cluster_note_padding_vertical" android:paddingBottom="@dimen/cluster_note_padding_vertical"/>
+    <com.galaxy.auto.ui.GalaxyActionButton android:id="@+id/result_back_button" style="@style/GalaxyUi.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/cluster_button_margin_top" android:text="@string/cluster_result_back_button"/>
+</LinearLayout>

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 恢复确认页：固定说明、确认（先停输出）与取消；取消不写配置不发命令。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+    <include android:id="@+id/page_header" layout="@layout/include_cluster_page_header" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+    <TextView android:id="@+id/restore_note" style="@style/GalaxyUi.TextAppearance.Description" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="@dimen/cluster_note_padding_vertical" android:paddingBottom="@dimen/cluster_note_padding_vertical" android:text="@string/cluster_restore_note"/>
+    <com.galaxy.auto.ui.GalaxyActionButton android:id="@+id/restore_confirm_button" style="@style/GalaxyUi.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/cluster_button_margin_top" android:text="@string/cluster_restore_confirm"/>
+    <com.galaxy.auto.ui.GalaxyActionButton android:id="@+id/restore_cancel_button" style="@style/GalaxyUi.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/cluster_button_margin_top" android:text="@string/cluster_restore_cancel"/>
+</LinearLayout>

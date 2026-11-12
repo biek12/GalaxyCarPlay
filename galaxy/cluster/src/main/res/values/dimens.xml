@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Cluster 普通页面尺寸：全部来自旧版代码拼布局的实际 dp 值。 -->
+<resources>
+    <!-- 旧版标题与整页外边距 24dp。 -->
+    <dimen name="cluster_page_padding">24dp</dimen>
+    <!-- 旧版左侧主导航固定宽度 100dp、横向内边距 8dp。 -->
+    <dimen name="cluster_nav_width">100dp</dimen>
+    <dimen name="cluster_nav_padding_horizontal">8dp</dimen>
+    <!-- 旧版内容区 start16 / end24 / bottom24。 -->
+    <dimen name="cluster_content_padding_start">16dp</dimen>
+    <dimen name="cluster_content_padding_end">24dp</dimen>
+    <dimen name="cluster_content_padding_bottom">24dp</dimen>
+    <!-- 旧版分组/按钮的顶部间距 16dp，说明与状态行的纵向内边距 12dp。 -->
+    <dimen name="cluster_group_margin_top">16dp</dimen>
+    <dimen name="cluster_button_margin_top">16dp</dimen>
+    <dimen name="cluster_note_padding_vertical">12dp</dimen>
+    <!-- 旧版音乐预览槽高 350dp。 -->
+    <dimen name="cluster_music_preview_height">350dp</dimen>
+    <!-- 行尾箭头与头部返回箭头的实际显示尺寸。 -->
+    <dimen name="cluster_arrow_size">24dp</dimen>
+    <dimen name="cluster_header_back_gap">4dp</dimen>
+    <dimen name="cluster_header_back_padding_vertical">8dp</dimen>
+</resources>
