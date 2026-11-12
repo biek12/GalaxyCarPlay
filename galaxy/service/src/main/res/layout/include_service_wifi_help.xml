@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 连接帮助：仅在自动运行开启且 ADB/Root 已选但未就绪时显示；点击只打开原生 Wi-Fi 页面。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/galaxy_ui_group" android:orientation="vertical" android:padding="@dimen/galaxy_ui_group_padding" android:visibility="gone">
+    <TextView android:id="@+id/service_wifi_message" style="@style/Service.TextAppearance.RowDescription" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/service_wifi_pending"/>
+    <Button android:id="@+id/service_open_wifi" style="@style/Service.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/service_open_wifi"/>
+</LinearLayout>

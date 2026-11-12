@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<resources>
+    <declare-styleable name="GalaxySettingRow">
+        <attr name="galaxyTitle" format="string"/>
+        <attr name="galaxyDescription" format="string"/>
+        <attr name="galaxyValue" format="string"/>
+        <attr name="galaxyLeadingIcon" format="reference"/>
+        <attr name="galaxyAccessoryPosition" format="enum">
+            <enum name="start" value="0"/>
+            <enum name="end" value="1"/>
+        </attr>
+    </declare-styleable>
+</resources>

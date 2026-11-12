@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 固定头部：分类、标题与“全部关闭”，底部渐隐到页面背景。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/service_header_background" android:orientation="vertical" android:padding="@dimen/service_header_padding">
+    <TextView style="@style/Service.TextAppearance.Category" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/service_header_category"/>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/service_gap_small" android:gravity="center_vertical" android:orientation="horizontal">
+        <TextView style="@style/Service.TextAppearance.Title" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/service_title"/>
+        <Button android:id="@+id/service_disable_all" style="@style/Service.Button" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/service_disable_all"/>
+    </LinearLayout>
+    <TextView style="@style/Service.TextAppearance.HeaderDescription" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/service_gap_small" android:text="@string/service_header_description"/>
+</LinearLayout>

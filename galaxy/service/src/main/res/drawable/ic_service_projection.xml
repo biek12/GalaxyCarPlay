@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 由原 ServiceGlyph 的 projection 路径等价转换为矢量；24 单位画布，1.7 圆头描边。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="@android:color/transparent" android:pathData="M4,4 L20,4 A2,2 0 0 1 22,6 L22,16 A2,2 0 0 1 20,18 L4,18 A2,2 0 0 1 2,16 L2,6 A2,2 0 0 1 4,4 Z" android:strokeColor="@color/galaxy_ui_text" android:strokeLineCap="round" android:strokeLineJoin="round" android:strokeWidth="1.7"/>
+    <path android:fillColor="@android:color/transparent" android:pathData="M8,22 L16,22" android:strokeColor="@color/galaxy_ui_text" android:strokeLineCap="round" android:strokeWidth="1.7"/>
+    <path android:fillColor="@android:color/transparent" android:pathData="M12,18 L12,22" android:strokeColor="@color/galaxy_ui_text" android:strokeLineCap="round" android:strokeWidth="1.7"/>
+    <path android:fillColor="@android:color/transparent" android:pathData="M7,14 L12,8 L17,14" android:strokeColor="@color/galaxy_ui_text" android:strokeLineCap="round" android:strokeLineJoin="round" android:strokeWidth="1.7"/>
+</vector>

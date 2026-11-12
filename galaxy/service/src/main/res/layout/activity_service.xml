@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 页面外壳：固定头部 + 单一滚动内容区；具体分块由 include_* 提供。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/service_background" android:orientation="vertical">
+    <include android:id="@+id/service_header" layout="@layout/include_service_header" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+    <ScrollView android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:fillViewport="true">
+        <LinearLayout android:id="@+id/service_content" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/service_content_padding">
+            <Button android:id="@+id/service_account" style="@style/Service.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/service_account"/>
+            <include android:id="@+id/service_overview" layout="@layout/include_service_overview" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <include android:id="@+id/service_wifi_help" layout="@layout/include_service_wifi_help" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/service_gap_medium"/>
+            <include android:id="@+id/service_features" layout="@layout/include_service_features" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <include android:id="@+id/service_remote" layout="@layout/include_service_remote" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+            <TextView style="@style/Service.TextAppearance.Footer" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/service_footer_top" android:gravity="center" android:text="@string/service_footer"/>
+        </LinearLayout>
+    </ScrollView>
+</LinearLayout>

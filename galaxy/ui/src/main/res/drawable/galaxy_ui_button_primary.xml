@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<!-- 主按钮：单一 shape，enabled/disabled 由填充色状态列表表达，便于把真实 radius 作用到同一内容层。 -->
+<ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="@color/galaxy_ui_ripple">
+    <item>
+        <shape android:shape="rectangle">
+            <corners android:radius="@dimen/galaxy_ui_corner_radius"/>
+            <solid android:color="@color/galaxy_ui_button_primary_fill"/>
+        </shape>
+    </item>
+</ripple>

@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<resources>
+    <!-- 紧凑屏（<600dp）沿用原 24/20dp 页边距；宽屏由 values-w600dp 覆盖为 32dp。 -->
+    <dimen name="service_header_padding">24dp</dimen>
+    <dimen name="service_content_padding">20dp</dimen>
+    <dimen name="service_diagnostic_padding">24dp</dimen>
+    <dimen name="service_card_padding">24dp</dimen>
+    <dimen name="service_card_padding_compact">20dp</dimen>
+    <dimen name="service_metric_padding">14dp</dimen>
+    <dimen name="service_metric_gap">10dp</dimen>
+    <dimen name="service_metric_value_top">10dp</dimen>
+    <dimen name="service_gap_small">10dp</dimen>
+    <dimen name="service_gap_medium">16dp</dimen>
+    <dimen name="service_gap_large">22dp</dimen>
+    <dimen name="service_section_top">28dp</dimen>
+    <dimen name="service_section_bottom">12dp</dimen>
+    <dimen name="service_section_start">4dp</dimen>
+    <dimen name="service_features_footer_top">14dp</dimen>
+    <dimen name="service_footer_top">24dp</dimen>
+    <dimen name="service_badge_padding_horizontal">12dp</dimen>
+    <dimen name="service_badge_padding_vertical">7dp</dimen>
+    <dimen name="service_corner_radius">6dp</dimen>
+    <dimen name="service_button_height">52dp</dimen>
+    <dimen name="service_switch_slot">64dp</dimen>
+    <dimen name="service_arrow_size">24dp</dimen>
+    <dimen name="service_button_padding_horizontal">18dp</dimen>
+    <dimen name="service_button_padding_vertical">10dp</dimen>
+    <dimen name="service_diagnostic_gap">12dp</dimen>
+    <dimen name="service_diagnostic_hint_gap">18dp</dimen>
+    <dimen name="service_diagnostic_shell_gap">20dp</dimen>
+    <dimen name="service_input_padding_horizontal">16dp</dimen>
+    <dimen name="service_input_padding_vertical">14dp</dimen>
+</resources>

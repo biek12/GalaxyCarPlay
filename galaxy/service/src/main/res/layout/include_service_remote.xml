@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 远程连接：显示状态与 12/24 小时授权、关闭；文案由状态资源提供。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+    <TextView style="@style/Service.TextAppearance.SectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="@dimen/service_section_start" android:layout_marginTop="@dimen/service_section_top" android:layout_marginBottom="@dimen/service_section_bottom" android:text="@string/service_section_remote"/>
+    <com.galaxy.auto.ui.GalaxySettingsCard android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/service_card_padding_compact">
+        <TextView style="@style/Service.TextAppearance.RowTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/service_remote_title"/>
+        <TextView style="@style/Service.TextAppearance.RowDescription" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/service_remote_description"/>
+        <TextView android:id="@+id/service_remote_status" style="@style/Service.TextAppearance.RemoteStatus" android:layout_width="match_parent" android:layout_height="wrap_content" android:text=""/>
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="horizontal">
+            <Button android:id="@+id/service_remote_12h" style="@style/Service.Button" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/service_remote_12h"/>
+            <Button android:id="@+id/service_remote_24h" style="@style/Service.Button" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/service_remote_24h"/>
+            <Button android:id="@+id/service_remote_disable" style="@style/Service.Button" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/service_remote_disable"/>
+        </LinearLayout>
+    </com.galaxy.auto.ui.GalaxySettingsCard>
+</LinearLayout>

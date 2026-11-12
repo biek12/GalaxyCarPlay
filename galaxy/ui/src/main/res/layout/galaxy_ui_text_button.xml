@@ -1,0 +1,3 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 纯文字按钮：字号/命中高度/内边距/背景全部由 GalaxyUi.Button.Text 提供。 -->
+<com.galaxy.auto.ui.GalaxyActionButton xmlns:android="http://schemas.android.com/apk/res/android" style="@style/GalaxyUi.Button.Text" android:layout_width="wrap_content" android:layout_height="wrap_content"/>

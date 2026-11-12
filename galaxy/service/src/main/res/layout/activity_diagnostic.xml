@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 诊断页：说明、结果、重新准备、日志、Shell、ROOT/ADB、扫描、分页、认证覆盖与车型。 -->
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/service_background" android:fillViewport="true">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/service_diagnostic_padding">
+        <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+            <Button android:id="@+id/diagnostic_back" style="@style/Service.Button" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/diagnostic_back"/>
+            <TextView style="@style/Service.TextAppearance.DiagnosticTitle" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/service_gap_large" android:layout_weight="1" android:text="@string/diagnostic_title"/>
+        </LinearLayout>
+        <TextView style="@style/Service.TextAppearance.DiagnosticHint" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/service_diagnostic_hint_gap" android:layout_marginBottom="@dimen/service_diagnostic_hint_gap" android:text="@string/diagnostic_hint"/>
+        <com.galaxy.auto.ui.GalaxySettingsCard android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/service_card_padding_compact">
+            <TextView android:id="@+id/diagnostic_result" style="@style/Service.TextAppearance.DiagnosticResult" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/diagnostic_waiting" android:textIsSelectable="true"/>
+        </com.galaxy.auto.ui.GalaxySettingsCard>
+        <Button android:id="@+id/diagnostic_prepare" style="@style/Service.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/service_diagnostic_gap" android:text="@string/diagnostic_prepare"/>
+        <Button android:id="@+id/diagnostic_logs" style="@style/Service.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/service_diagnostic_gap" android:text="@string/diagnostic_logs"/>
+        <EditText android:id="@+id/diagnostic_shell_input" style="@style/Service.Input" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/service_diagnostic_shell_gap" android:hint="@string/diagnostic_shell_hint" android:importantForAutofill="no" android:inputType="text" android:maxLines="4"/>
+        <Button android:id="@+id/diagnostic_run_root" style="@style/Service.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/service_diagnostic_gap" android:text="@string/diagnostic_run_root"/>
+        <Button android:id="@+id/diagnostic_run_adb" style="@style/Service.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/service_diagnostic_gap" android:text="@string/diagnostic_run_adb"/>
+        <Button android:id="@+id/diagnostic_scan" style="@style/Service.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/service_diagnostic_gap" android:text="@string/diagnostic_scan_off"/>
+        <Button android:id="@+id/diagnostic_vehicle_page" style="@style/Service.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/service_diagnostic_gap" android:text="@string/diagnostic_vehicle_page"/>
+        <Button android:id="@+id/diagnostic_auth_override" style="@style/Service.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/service_diagnostic_gap" android:text="@string/diagnostic_auth_override"/>
+        <Button android:id="@+id/diagnostic_model_l6" style="@style/Service.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/service_diagnostic_gap" android:text="@string/diagnostic_model_l6"/>
+        <Button android:id="@+id/diagnostic_model_l7" style="@style/Service.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/service_diagnostic_gap" android:text="@string/diagnostic_model_l7"/>
+    </LinearLayout>
+</ScrollView>

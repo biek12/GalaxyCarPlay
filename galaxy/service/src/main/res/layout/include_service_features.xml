@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 后台运行、四个功能开关与“更多”入口；开关本体由 Presenter 插入同一公共控件。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+    <TextView style="@style/Service.TextAppearance.SectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="@dimen/service_section_start" android:layout_marginTop="@dimen/service_section_top" android:layout_marginBottom="@dimen/service_section_bottom" android:text="@string/service_section_background"/>
+    <com.galaxy.auto.ui.GalaxySettingsCard android:layout_width="match_parent" android:layout_height="wrap_content">
+        <com.galaxy.auto.ui.GalaxySettingRow android:id="@+id/service_automatic" android:layout_width="match_parent" android:layout_height="wrap_content" app:galaxyDescription="@string/service_automatic_description" app:galaxyLeadingIcon="@drawable/ic_service_automatic" app:galaxyTitle="@string/service_automatic_title"/>
+    </com.galaxy.auto.ui.GalaxySettingsCard>
+    <TextView style="@style/Service.TextAppearance.SectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="@dimen/service_section_start" android:layout_marginTop="@dimen/service_section_top" android:layout_marginBottom="@dimen/service_section_bottom" android:text="@string/service_section_features"/>
+    <com.galaxy.auto.ui.GalaxySettingsCard android:layout_width="match_parent" android:layout_height="wrap_content">
+        <com.galaxy.auto.ui.GalaxySettingRow android:id="@+id/service_projection" android:layout_width="match_parent" android:layout_height="wrap_content" app:galaxyDescription="@string/service_feature_projection_description" app:galaxyLeadingIcon="@drawable/ic_service_projection" app:galaxyTitle="@string/service_feature_projection"/>
+        <com.galaxy.auto.ui.GalaxySettingRow android:id="@+id/service_vehicle" android:layout_width="match_parent" android:layout_height="wrap_content" app:galaxyDescription="@string/service_feature_vehicle_description" app:galaxyLeadingIcon="@drawable/ic_service_vehicle" app:galaxyTitle="@string/service_feature_vehicle"/>
+        <com.galaxy.auto.ui.GalaxySettingRow android:id="@+id/service_adb" android:layout_width="match_parent" android:layout_height="wrap_content" app:galaxyDescription="@string/service_feature_adb_description" app:galaxyLeadingIcon="@drawable/ic_service_adb" app:galaxyTitle="@string/service_feature_adb"/>
+        <com.galaxy.auto.ui.GalaxySettingRow android:id="@+id/service_root" android:layout_width="match_parent" android:layout_height="wrap_content" app:galaxyDescription="@string/service_feature_root_description" app:galaxyLeadingIcon="@drawable/ic_service_root" app:galaxyTitle="@string/service_feature_root"/>
+    </com.galaxy.auto.ui.GalaxySettingsCard>
+    <TextView style="@style/Service.TextAppearance.FeaturesFooter" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="@dimen/service_section_start" android:layout_marginTop="@dimen/service_features_footer_top" android:text="@string/service_features_footer"/>
+    <TextView style="@style/Service.TextAppearance.SectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="@dimen/service_section_start" android:layout_marginTop="@dimen/service_section_top" android:layout_marginBottom="@dimen/service_section_bottom" android:text="@string/service_section_more"/>
+    <com.galaxy.auto.ui.GalaxySettingsCard android:layout_width="match_parent" android:layout_height="wrap_content">
+        <com.galaxy.auto.ui.GalaxySettingRow android:id="@+id/service_diagnostics" android:layout_width="match_parent" android:layout_height="wrap_content" app:galaxyDescription="@string/service_diagnostics_description" app:galaxyTitle="@string/service_diagnostics_title"/>
+    </com.galaxy.auto.ui.GalaxySettingsCard>
+</LinearLayout>

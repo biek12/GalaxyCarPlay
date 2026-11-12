@@ -2,159 +2,224 @@ package com.galaxy.auto.ui
 
 import android.content.Context
 import android.content.res.ColorStateList
+import android.util.AttributeSet
 import android.view.Gravity
+import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
+import android.widget.CompoundButton
 import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import com.galaxy.auto.ui.databinding.GalaxyUiSettingRowBinding
 
+/**
+ * 设置行：图标列、文字区与操作槽三段的静态骨架来自 `galaxy_ui_setting_row.xml`。
+ *
+ * 普通参数不占图标列，只读信息不占操作列；标题、说明、当前值与反馈各自独立更新。
+ * 开关等操作控件由 [setAccessory] 插入同一操作槽，本类不持有任何业务或服务状态。
+ * 静态默认样式（orientation/gravity/padding/minHeight）由平台四参构造的
+ * defStyleRes `R.style.GalaxyUi_SettingRow` 提供，XML 与代码构造共用同一来源；
+ * 80/96dp 的运行时切换仍由内容状态决定。
+ *
+ * 线程/所有者：全部在主线程使用；[setAccessory] 会移动自己的槽位，调用方不要缓存槽内 View 的索引。
+ */
+class GalaxySettingRow
+    @JvmOverloads
+    constructor(
+        context: Context,
+        attrs: AttributeSet? = null,
+        defStyleAttr: Int = 0,
+    ) : LinearLayout(context, attrs, defStyleAttr, R.style.GalaxyUi_SettingRow) {
+        private val binding = GalaxyUiSettingRowBinding.inflate(LayoutInflater.from(context), this)
 
-/** 普通参数不占图标列；只读信息不占操作列。当前值、说明与反馈分别更新。 */
-class GalaxySettingRow(context: Context, title: String, description: String = "", icon: Int? = null) : LinearLayout(context) {
-    private val labels = SettingText(context)
-    val titleView get() = labels.label
-    val descriptionView get() = labels.description
-    val valueView get() = labels.value
-    val feedbackView get() = labels.feedback
-    private val accessory = FrameLayout(context)
-    var updatingSwitch = false
-        private set
-    private val iconInset = if (icon == null) 0 else dp(48)
-    private var leadingAccessoryWidth = 0
-    val textInset get() = dp(20) + iconInset + leadingAccessoryWidth
+        /** 文字区；XML 与代码构造共用同一实例。 */
+        private val labels: GalaxySettingTextLayout get() = binding.settingRowText
 
-    init {
-        orientation = HORIZONTAL
-        gravity = Gravity.CENTER_VERTICAL
-        minimumHeight = dp(80)
-        setPadding(dp(20), dp(16), dp(20), dp(16))
-        if (icon != null) addView(ImageView(context).apply {
-            setImageResource(icon)
-            GalaxyStyle.bind(this) { imageTintList = ColorStateList.valueOf(context.getColor(R.color.galaxy_ui_text)) }
-            importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-        }, LayoutParams(dp(32), dp(32)).apply { marginEnd = dp(16) })
-        addView(labels, LayoutParams(0, -2, 1f))
-        addView(accessory, LayoutParams(dp(64), -2))
-        accessory.visibility = GONE
-        titleView.text = title
-        setDescription(description)
-    }
+        /** 前置图标。 */
+        private val iconView: ImageView get() = binding.settingRowIcon
 
-    fun setDescription(value: String) = update(descriptionView, value)
-    fun setValue(value: String) = update(valueView, value)
-    fun setFeedback(value: String, error: Boolean = false) {
-        update(feedbackView, value)
-        GalaxyStyle.text(feedbackView, if (error) R.color.galaxy_ui_danger else R.color.galaxy_ui_muted)
-        feedbackView.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
-    }
+        /** 操作槽；开关、箭头等由调用方插入。 */
+        private val accessory: FrameLayout get() = binding.settingRowAccessory
 
-    fun setAccessory(view: View, width: Int = -2, height: Int = -2, slotWidth: Int = dp(64), leading: Boolean = false) {
-        accessory.removeAllViews()
-        leadingAccessoryWidth = if (leading) slotWidth else 0
-        removeView(accessory)
-        addView(accessory, if (leading) 0 else childCount, LayoutParams(slotWidth, -2))
-        // 开关置于文字前，箭头仍在末端；视觉尺寸和整行命中区域分别处理。
-        accessory.addView(view, FrameLayout.LayoutParams(width, height,
-            (if (leading) Gravity.START else Gravity.END) or Gravity.CENTER_VERTICAL))
-        accessory.visibility = VISIBLE
-        view.isEnabled = isEnabled
-    }
+        /** 标题文字，供兼容入口与测试读取。 */
+        val titleView: TextView get() = labels.label
 
-    /** 外部服务状态回填不等于用户操作，不能再次触发权限或服务调用。 */
-    fun setSwitchChecked(checked: Boolean) {
-        val control = accessory.getChildAt(0) as? android.widget.CompoundButton ?: return
-        updatingSwitch = true
-        try { control.isChecked = checked } finally { updatingSwitch = false }
-    }
+        /** 说明文字。 */
+        val descriptionView: TextView get() = labels.description
 
-    override fun setEnabled(enabled: Boolean) {
-        super.setEnabled(enabled)
-        // 禁用只减弱控件；名称、确认值和禁用原因保持可读。
-        accessory.alpha = if (enabled) 1f else .4f
-        for (index in 0 until accessory.childCount) accessory.getChildAt(index).isEnabled = enabled
-    }
+        /** 当前值文字。 */
+        val valueView: TextView get() = labels.value
 
-    private fun update(view: TextView, value: String) {
-        if (view.text.toString() != value) view.text = value
-        view.visibility = if (value.isEmpty()) GONE else VISIBLE
-        minimumHeight = dp(if (descriptionView.visibility == VISIBLE || feedbackView.visibility == VISIBLE) 96 else 80)
-    }
+        /** 反馈文字。 */
+        val feedbackView: TextView get() = labels.feedback
 
-    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        super.onMeasure(widthMeasureSpec, heightMeasureSpec)
-        if (labels.measuredHeight > titleView.measuredHeight && measuredHeight < dp(96)) {
-            setMeasuredDimension(measuredWidth, resolveSize(dp(96), heightMeasureSpec))
-        }
-    }
+        /** 外部回填开关期间为 true；监听器据此跳过业务回调。 */
+        var updatingSwitch = false
+            private set
 
-    private fun dp(value: Int) = GalaxyViews.dp(context, value)
-}
+        private var hasIcon = false
+        private var leadingAccessoryWidth = 0
 
-/** 用实际文字宽度决定值的排布，大字号和长值可自然增高，不截断关键信息。 */
-private class SettingText(context: Context) : ViewGroup(context) {
-    val label = GalaxyTypography.text(context, "", GalaxyTypography.Role.LABEL)
-    val description = GalaxyTypography.text(context, "", GalaxyTypography.Role.DESCRIPTION)
-    val value = GalaxyTypography.text(context, "", GalaxyTypography.Role.VALUE)
-    val feedback = GalaxyTypography.text(context, "", GalaxyTypography.Role.FEEDBACK)
-    private var inline = false
-    private var firstHeight = 0
-    private var textHeight = 0
-    private val gap = GalaxyViews.dp(context, 4)
-    private val valueGap = GalaxyViews.dp(context, 16)
+        /** 操作槽默认位置：XML 属性 `galaxyAccessoryPosition`，默认末位。 */
+        private var accessoryLeading = false
 
-    init {
-        listOf(label, value, description, feedback).forEach { addView(it, LayoutParams(-1, -2)) }
-        listOf(value, description, feedback).forEach { it.visibility = GONE }
-    }
+        /** 文字区左缘到行起点的距离；卡片分隔线用它对齐文字列。 */
+        val textInset: Int
+            get() =
+                GalaxyViews.px(context, R.dimen.galaxy_ui_row_padding_horizontal) +
+                    if (hasIcon) {
+                        GalaxyViews.px(context, R.dimen.galaxy_ui_row_icon_size) +
+                            GalaxyViews.px(context, R.dimen.galaxy_ui_row_icon_gap)
+                    } else {
+                        0
+                    } + leadingAccessoryWidth
 
-    override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
-        val width = MeasureSpec.getSize(widthMeasureSpec)
-        val naturalLabel = label.paint.measureText(label.text.toString())
-        val naturalValue = value.paint.measureText(value.text.toString())
-        inline = value.visibility == VISIBLE && !value.text.contains('\n') &&
-            naturalValue <= width * .45f && naturalLabel + naturalValue + valueGap <= width
-        fun measureText(view: View, available: Int, exact: Boolean = true) {
-            view.measure(MeasureSpec.makeMeasureSpec(available.coerceAtLeast(0), if (exact) MeasureSpec.EXACTLY else MeasureSpec.AT_MOST),
-                MeasureSpec.makeMeasureSpec(0, MeasureSpec.UNSPECIFIED))
-        }
-        val textWidth = if (inline) {
-            measureText(value, width, false)
-            width - value.measuredWidth - valueGap
-        } else {
-            width
-        }
-        measureText(label, textWidth)
-        firstHeight = label.measuredHeight
-        textHeight = firstHeight
-        listOf(value, description, feedback).forEach { view ->
-            if (view.visibility != GONE && !(view === value && inline)) {
-                measureText(view, textWidth)
-                textHeight += gap + view.measuredHeight
+        init {
+            val array = context.obtainStyledAttributes(attrs, R.styleable.GalaxySettingRow)
+            try {
+                applyTitle(array.getString(R.styleable.GalaxySettingRow_galaxyTitle).orEmpty())
+                setDescription(
+                    array.getString(R.styleable.GalaxySettingRow_galaxyDescription).orEmpty(),
+                )
+                array.getString(R.styleable.GalaxySettingRow_galaxyValue)?.let(::setValue)
+                array
+                    .getResourceId(R.styleable.GalaxySettingRow_galaxyLeadingIcon, 0)
+                    .takeIf { it != 0 }
+                    ?.let(::setLeadingIcon)
+                accessoryLeading =
+                    array.getInt(R.styleable.GalaxySettingRow_galaxyAccessoryPosition, ACCESSORY_END) ==
+                    ACCESSORY_START
+            } finally {
+                array.recycle()
             }
         }
-        val height = maxOf(textHeight, if (inline) value.measuredHeight else 0)
-        setMeasuredDimension(width, resolveSize(height, heightMeasureSpec))
-    }
 
-    override fun onLayout(changed: Boolean, left: Int, top: Int, right: Int, bottom: Int) {
-        val rtl = layoutDirection == LAYOUT_DIRECTION_RTL
-        fun place(view: View, x: Int, y: Int) {
-            val start = if (rtl) width - x - view.measuredWidth else x
-            view.layout(start, y, start + view.measuredWidth, y + view.measuredHeight)
+        /** 代码构造兼容入口：标题、说明与可选前置图标。 */
+        constructor(
+            context: Context,
+            title: String,
+            description: String = "",
+            icon: Int? = null,
+        ) : this(context) {
+            applyTitle(title)
+            setDescription(description)
+            setLeadingIcon(icon)
         }
-        // 短值独立于标题与说明，按整条文字区居中，与右侧操作槽保持同一中心线。
-        val textTop = (height - textHeight) / 2
-        place(label, 0, textTop)
-        if (inline) place(value, width - value.measuredWidth, (height - value.measuredHeight) / 2)
-        var y = textTop + firstHeight
-        listOf(value, description, feedback).forEach { view ->
-            if (view.visibility != GONE && !(view === value && inline)) {
-                y += gap
-                place(view, 0, y)
-                y += view.measuredHeight
+
+        /** 更新标题；不复用 [setValue] 的隐藏语义，空标题仍保留行高。 */
+        fun setTitle(value: String) = applyTitle(value)
+
+        /** 更新说明；空字符串隐藏该行。 */
+        fun setDescription(value: String) = update(descriptionView, value)
+
+        /** 更新当前值；空字符串隐藏该行。 */
+        fun setValue(value: String) = update(valueView, value)
+
+        /** 更新反馈文案与色调；反馈区作为无障碍实时区域播报。 */
+        fun setFeedback(value: String, error: Boolean = false) {
+            update(feedbackView, value)
+            GalaxyStyle.text(
+                feedbackView,
+                if (error) R.color.galaxy_ui_danger else R.color.galaxy_ui_muted,
+            )
+            feedbackView.accessibilityLiveRegion = View.ACCESSIBILITY_LIVE_REGION_POLITE
+        }
+
+        /** 设置/替换前置图标；为空时整列收起，文字区左移。 */
+        fun setLeadingIcon(icon: Int?) {
+            hasIcon = icon != null
+            iconView.visibility = if (hasIcon) VISIBLE else GONE
+            if (icon != null) {
+                iconView.setImageResource(icon)
+                GalaxyStyle.bind(iconView) {
+                    iconView.imageTintList =
+                        ColorStateList.valueOf(context.getColor(R.color.galaxy_ui_text))
+                }
+            }
+            requestLayout()
+        }
+
+        /**
+         * 把操作控件插入操作槽。`leading` 为 true 时槽位移到文字之前（开关行），否则停在末位（箭头/状态）。
+         * 槽宽由调用方决定，视觉尺寸与整行命中区域分别处理。
+         */
+        fun setAccessory(
+            view: View,
+            width: Int = LayoutParams.WRAP_CONTENT,
+            height: Int = LayoutParams.WRAP_CONTENT,
+            slotWidth: Int = GalaxyViews.px(context, R.dimen.galaxy_ui_row_accessory_width),
+            leading: Boolean = accessoryLeading,
+        ) {
+            accessory.removeAllViews()
+            leadingAccessoryWidth = if (leading) slotWidth else 0
+            removeView(accessory)
+            addView(
+                accessory,
+                if (leading) 0 else childCount,
+                LayoutParams(slotWidth, LayoutParams.WRAP_CONTENT),
+            )
+            accessory.addView(
+                view,
+                FrameLayout.LayoutParams(
+                    width,
+                    height,
+                    (if (leading) Gravity.START else Gravity.END) or Gravity.CENTER_VERTICAL,
+                ),
+            )
+            accessory.visibility = VISIBLE
+            view.isEnabled = isEnabled
+        }
+
+        /** 外部服务状态回填不等于用户操作，不能再次触发权限或服务调用。 */
+        fun setSwitchChecked(checked: Boolean) {
+            val control = accessory.getChildAt(0) as? CompoundButton ?: return
+            updatingSwitch = true
+            try {
+                control.isChecked = checked
+            } finally {
+                updatingSwitch = false
             }
         }
+
+        /** 禁用只减弱控件；名称、确认值和禁用原因保持可读。 */
+        override fun setEnabled(enabled: Boolean) {
+            super.setEnabled(enabled)
+            accessory.alpha = if (enabled) 1f else .4f
+            for (index in 0 until accessory.childCount) accessory.getChildAt(index).isEnabled = enabled
+        }
+
+        /** 文字变化后同步可见性与行高；长值或说明存在时保持 96dp 下限。 */
+        private fun update(view: TextView, value: String) {
+            if (view.text.toString() != value) view.text = value
+            view.visibility = if (value.isEmpty()) GONE else VISIBLE
+            minimumHeight =
+                GalaxyViews.px(
+                    context,
+                    if (descriptionView.visibility == VISIBLE || feedbackView.visibility == VISIBLE) {
+                        R.dimen.galaxy_ui_row_min_height_detail
+                    } else {
+                        R.dimen.galaxy_ui_row_min_height
+                    },
+                )
+        }
+
+        /** 标题之外文字换行导致增高时，行高与操作槽中心线一起抬高。 */
+        override fun onMeasure(widthMeasureSpec: Int, heightMeasureSpec: Int) {
+            super.onMeasure(widthMeasureSpec, heightMeasureSpec)
+            val detailHeight = GalaxyViews.px(context, R.dimen.galaxy_ui_row_min_height_detail)
+            if (labels.measuredHeight > titleView.measuredHeight && measuredHeight < detailHeight) {
+                setMeasuredDimension(measuredWidth, resolveSize(detailHeight, heightMeasureSpec))
+            }
+        }
+
+        /** 设置标题文字。 */
+        private fun applyTitle(value: String) {
+            titleView.text = value
+        }
+
+        private companion object {
+            const val ACCESSORY_START = 0
+            const val ACCESSORY_END = 1
+        }
     }
-}

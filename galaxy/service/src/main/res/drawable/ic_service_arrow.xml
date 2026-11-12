@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 列表进入箭头；替代原来的文本符号，保持 24 单位画布与 1.7 圆头描边。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="@android:color/transparent" android:pathData="M9,6 L15,12 L9,18" android:strokeColor="@color/galaxy_ui_muted" android:strokeLineCap="round" android:strokeLineJoin="round" android:strokeWidth="1.7"/>
+</vector>

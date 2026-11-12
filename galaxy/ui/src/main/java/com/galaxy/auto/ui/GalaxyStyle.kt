@@ -2,121 +2,201 @@ package com.galaxy.auto.ui
 
 import android.content.Context
 import android.content.res.ColorStateList
-import android.graphics.Color
-import android.graphics.Typeface
-import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.graphics.drawable.RippleDrawable
-import android.graphics.drawable.StateListDrawable
+import android.view.Gravity
 import android.view.View
 import android.view.ViewGroup
-import android.view.Gravity
 import android.widget.Button
+import android.widget.EditText
 import android.widget.TextView
+import android.R as AndroidR
 
-
-/** L7 的静态界面样式；主题更新只重绘控件，不重建视频 Surface 或连接会话。 */
+/**
+ * Flyme 静态样式：颜色、圆角、按压与禁用状态都来自 `color/` 与 `drawable/` 资源。
+ *
+ * 主题更新只重新解析资源并重绘已绑定控件，不重建视频 Surface 或连接会话。
+ * 例外：按钮的 [button] 保留真实动态 `radius` 参数（`GalaxyConfigurationTabs` 传 2dp，
+ * 其他调用方传 4dp），在资源形状基础上只把半径作用到本实例的内容层。
+ *
+ * 线程/所有者：主线程操作 View；绑定的 lambda 由 View 持有，随视图一起释放。
+ */
 object GalaxyStyle {
-    private class PaletteBinding(val apply: () -> Unit)
+    /** 一个可重新执行的样式绑定。 */
+    private class PaletteBinding(
+        val apply: () -> Unit,
+    )
 
+    /** 绑定样式并在当前配置下立即执行一次。 */
     fun bind(view: View, apply: () -> Unit) {
         view.setTag(R.id.galaxy_palette_binding, PaletteBinding(apply))
         apply()
     }
 
+    /** 是否已经绑定过样式；用于避免覆盖调用方自行配置的控件。 */
     fun isBound(view: View) = view.getTag(R.id.galaxy_palette_binding) is PaletteBinding
 
+    /** 递归重执行样式绑定；日夜或强调色变化后调用。 */
     fun refresh(view: View) {
         (view.getTag(R.id.galaxy_palette_binding) as? PaletteBinding)?.apply?.invoke()
         if (view is ViewGroup) for (index in 0 until view.childCount) refresh(view.getChildAt(index))
     }
 
+    /** 文字颜色绑定。 */
     fun text(view: TextView, color: Int = R.color.galaxy_ui_text) {
         bind(view) { view.setTextColor(view.context.getColor(color)) }
     }
 
+    /** 运行时填充色容器（宿主注入色板）。静态卡片/分组请使用 drawable 资源。 */
     fun surface(view: View, color: Int = R.color.galaxy_ui_surface, radius: Int = 4) {
         bind(view) { view.background = rounded(view.context, view.context.getColor(color), radius) }
     }
 
-    /** 按压只在当前行内扩散；悬停和键盘焦点使用整行底色，不绘制无边界光圈。 */
-    fun rowFeedback(view: View) = bind(view) {
-        val accent = view.context.getColor(R.color.galaxy_ui_ripple)
-        val highlight = view.context.getColor(R.color.galaxy_ui_selected)
-        val states = StateListDrawable().apply {
-            addState(intArrayOf(-android.R.attr.state_enabled), ColorDrawable(Color.TRANSPARENT))
-            addState(intArrayOf(android.R.attr.state_hovered), ColorDrawable(highlight))
-            addState(intArrayOf(android.R.attr.state_focused), ColorDrawable(highlight))
-            addState(intArrayOf(), ColorDrawable(Color.TRANSPARENT))
+    /** 行级按压/悬停/焦点反馈；整行底色而非无边界光圈。 */
+    fun rowFeedback(view: View) =
+        bind(view) {
+            view.background = view.context.getDrawable(R.drawable.galaxy_ui_row_feedback)
         }
-        val ripple = ColorStateList(arrayOf(
-            intArrayOf(-android.R.attr.state_enabled), intArrayOf(android.R.attr.state_pressed),
-            intArrayOf(android.R.attr.state_hovered), intArrayOf(android.R.attr.state_focused), intArrayOf(),
-        ), intArrayOf(Color.TRANSPARENT, accent, Color.TRANSPARENT, Color.TRANSPARENT, accent))
-        view.background = RippleDrawable(ripple, states, ColorDrawable(Color.WHITE))
-    }
 
-    fun button(view: Button, primary: Boolean = false, radius: Int = 4, compact: Boolean = false,
-               surface: Int = R.color.galaxy_ui_control, withIcon: Boolean = true, decorate: ((Button) -> Unit)? = null) {
+    /**
+     * 主/次按钮样式。文字样式取 `GalaxyUi.TextAppearance.Button*`，形状/颜色取资源。
+     *
+     * [radius] 是既有公开动态接口：每次 bind 取独立背景副本，把半径作用到内容 GradientDrawable，
+     * 不污染其他按钮实例，也不退回固定 4dp。`compact` 只切换字号与尺寸档。
+     * 非默认 [surface] 时对次按钮内容层做 tint，宿主色板仍可生效。
+     */
+    fun button(
+        view: Button,
+        primary: Boolean = false,
+        radius: Int = 4,
+        compact: Boolean = false,
+        surface: Int = R.color.galaxy_ui_control,
+        withIcon: Boolean = true,
+        decorate: ((Button) -> Unit)? = null,
+    ) {
         view.isAllCaps = false
-        view.typeface = Typeface.create("sans-serif-medium", Typeface.NORMAL)
         view.stateListAnimator = null
         view.backgroundTintList = null
         view.gravity = Gravity.CENTER
-        view.includeFontPadding = false
-        view.textSize = if (compact) 13f else 20f
+        view.setTextAppearance(
+            if (compact) {
+                R.style.GalaxyUi_TextAppearance_ButtonCompact
+            } else {
+                R.style.GalaxyUi_TextAppearance_Button
+            },
+        )
+        // 既有普通 Button 调用方与 XML 同合同：无字体附加留白是 View 属性，
+        // setTextAppearance 不应用它，只能从对应 View style（GalaxyUi.Button/Compact）读取。
+        val buttonStyle = if (compact) R.style.GalaxyUi_Button_Compact else R.style.GalaxyUi_Button
+        view.includeFontPadding = viewStyleFlag(view.context, buttonStyle, AndroidR.attr.includeFontPadding)
         view.minWidth = 0
         view.minimumWidth = 0
-        view.minHeight = GalaxyViews.dp(view.context, if (compact) 48 else 72)
+        view.minHeight =
+            GalaxyViews.px(
+                view.context,
+                if (compact) R.dimen.galaxy_ui_button_min_height_compact else R.dimen.galaxy_ui_button_min_height,
+            )
         view.minimumHeight = view.minHeight
         bind(view) {
             val context = view.context
             view.backgroundTintList = null
-            val foreground = context.getColor(if (primary) R.color.galaxy_ui_primary_text else R.color.galaxy_ui_text)
-            view.setTextColor(ColorStateList(
-                arrayOf(intArrayOf(-android.R.attr.state_enabled), intArrayOf()),
-                intArrayOf(context.getColor(R.color.galaxy_ui_disabled), foreground)
-            ))
-            val fill = rounded(context, context.getColor(
-                if (primary && view.isEnabled) R.color.galaxy_ui_accent else surface), radius)
-            view.background = RippleDrawable(ColorStateList.valueOf(context.getColor(R.color.galaxy_ui_ripple)),
-                fill, null)
+            view.setTextColor(
+                context.getColorStateList(
+                    if (primary) R.color.galaxy_ui_button_primary_text else R.color.galaxy_ui_button_text,
+                ),
+            )
+            // 独立副本：动态 radius 与 tint 只作用于本按钮实例。
+            val background =
+                context
+                    .getDrawable(
+                        if (primary) R.drawable.galaxy_ui_button_primary else R.drawable.galaxy_ui_button_secondary,
+                    )?.mutate()
+            view.background = background
+            applyRadius(view, radius)
+            if (!primary) applySurfaceTint(view, surface)
             // 替换背景后再次设置内边距，防止系统 Button 的 inset 覆盖统一的图标/文字留白。
-            val horizontal = GalaxyViews.dp(context, if (compact) 8 else 16)
-            val vertical = GalaxyViews.dp(context, if (compact) 0 else 12)
+            val horizontal =
+                GalaxyViews.px(
+                    context,
+                    if (compact) {
+                        R.dimen.galaxy_ui_button_padding_horizontal_compact
+                    } else {
+                        R.dimen.galaxy_ui_button_padding_horizontal
+                    },
+                )
+            val vertical =
+                if (compact) {
+                    0
+                } else {
+                    GalaxyViews.px(
+                        context,
+                        R.dimen.galaxy_ui_button_padding_vertical,
+                    )
+                }
             view.setPaddingRelative(horizontal, vertical, horizontal, vertical)
             // 按当前可用状态直接重绘背景，避免主题切换复用旧 drawable 的状态与 tint。
             view.backgroundTintList = null
             view.invalidate()
-            if (withIcon) decorate?.invoke(view)
-            else view.setCompoundDrawablesRelativeWithIntrinsicBounds(null, null, null, null)
+            if (withIcon) {
+                decorate?.invoke(view)
+            } else {
+                view.setCompoundDrawablesRelativeWithIntrinsicBounds(
+                    null,
+                    null,
+                    null,
+                    null,
+                )
+            }
         }
     }
 
-    /** 输入框采用细圆角填充和明确的焦点边框，避免 Material 默认下划线。 */
-    fun input(view: android.widget.EditText) {
+    /** 输入框：细圆角填充与明确焦点边框，避免 Material 默认下划线。 */
+    fun input(view: EditText) {
         view.textSize = 20f
-        view.minimumHeight = GalaxyViews.dp(view.context, 64)
+        view.minimumHeight = GalaxyViews.px(view.context, R.dimen.galaxy_ui_input_min_height)
         bind(view) {
             val context = view.context
             view.setTextColor(context.getColor(R.color.galaxy_ui_text))
             view.setHintTextColor(context.getColor(R.color.galaxy_ui_muted))
             view.backgroundTintList = null
-            fun outline(focused: Boolean) = rounded(context, context.getColor(R.color.galaxy_ui_control), 4).apply {
-                setStroke(GalaxyViews.dp(context, 1).coerceAtLeast(1), context.getColor(
-                    if (focused) R.color.galaxy_ui_accent else R.color.galaxy_ui_border))
-            }
-            view.background = StateListDrawable().apply {
-                addState(intArrayOf(android.R.attr.state_focused), outline(true))
-                addState(intArrayOf(), outline(false))
-            }
-            val padding = GalaxyViews.dp(context, 16)
+            view.background = context.getDrawable(R.drawable.galaxy_ui_input_background)
+            val padding = GalaxyViews.px(context, R.dimen.galaxy_ui_input_padding)
             view.setPaddingRelative(padding, padding, padding, padding)
         }
     }
 
-    fun rounded(context: Context, color: Int, radius: Int) = GradientDrawable().apply {
-        setColor(color)
-        cornerRadius = radius * context.resources.displayMetrics.density
+    /** 运行时圆角填充；仅用于宿主注入颜色或自绘装饰，静态形状请用资源。 */
+    fun rounded(context: Context, color: Int, radius: Int) =
+        GradientDrawable().apply {
+            setColor(color)
+            cornerRadius = radius * context.resources.displayMetrics.density
+        }
+
+    /**
+     * 从指定 View style 读取单一布尔属性。
+     *
+     * 只含一个 attr 的数组天然满足 `obtainStyledAttributes` 的升序契约；
+     * 用后必须 recycle，故用 try/finally 而不是依赖 `AutoCloseable`（minSdk 24）。
+     */
+    private fun viewStyleFlag(context: Context, styleRes: Int, attr: Int): Boolean {
+        val array = context.obtainStyledAttributes(styleRes, intArrayOf(attr))
+        return try {
+            array.getBoolean(0, true)
+        } finally {
+            array.recycle()
+        }
+    }
+
+    /** 把调用方真实半径作用到当前背景的内容层；不是 GradientDrawable 时保持资源形状。 */
+    private fun applyRadius(view: Button, radius: Int) {
+        val content = (view.background as? RippleDrawable)?.getDrawable(0) as? GradientDrawable ?: return
+        content.cornerRadius = radius * view.resources.displayMetrics.density
+    }
+
+    /** 宿主色板与公共默认不同时，仅对次按钮内容层染色；主按钮保持强调色。 */
+    private fun applySurfaceTint(view: Button, surface: Int) {
+        if (surface == R.color.galaxy_ui_control) return
+        val content = (view.background as? RippleDrawable)?.getDrawable(0) ?: return
+        content.setTintList(ColorStateList.valueOf(view.context.getColor(surface)))
     }
 }

@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 由原 ServiceGlyph 的 root 盾牌与对勾路径等价转换为矢量；24 单位画布，1.7 圆头描边。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android" android:width="24dp" android:height="24dp" android:viewportWidth="24" android:viewportHeight="24">
+    <path android:fillColor="@android:color/transparent" android:pathData="M12,2 L21,6 L20,14 Q18,20 12,23 Q6,20 4,14 L3,6 Z" android:strokeColor="@color/galaxy_ui_text" android:strokeLineCap="round" android:strokeLineJoin="round" android:strokeWidth="1.7"/>
+    <path android:fillColor="@android:color/transparent" android:pathData="M8,12 L11,15 L16,9" android:strokeColor="@color/galaxy_ui_text" android:strokeLineCap="round" android:strokeLineJoin="round" android:strokeWidth="1.7"/>
+</vector>
