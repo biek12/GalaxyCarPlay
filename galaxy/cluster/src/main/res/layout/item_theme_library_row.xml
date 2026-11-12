@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 主题库列表行：固定两张卡片（稳定 id 的 include），等宽且第一张带 14dp 列距；奇数尾项由 Adapter 置 INVISIBLE。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+    <include android:id="@+id/theme_card_left" layout="@layout/item_theme_library_card" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginEnd="@dimen/theme_card_gap" android:layout_weight="1"/>
+    <include android:id="@+id/theme_card_right" layout="@layout/item_theme_library_card" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1"/>
+</LinearLayout>

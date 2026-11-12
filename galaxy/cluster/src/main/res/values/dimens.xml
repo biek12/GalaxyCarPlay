@@ -20,4 +20,31 @@
     <dimen name="cluster_arrow_size">24dp</dimen>
     <dimen name="cluster_header_back_gap">4dp</dimen>
     <dimen name="cluster_header_back_padding_vertical">8dp</dimen>
+    <!-- C2a 主题编辑器外壳与主题库：全部为旧版 ClusterUi.dp 的实际 dp/sp 值。 -->
+    <dimen name="theme_root_padding">20dp</dimen>
+    <dimen name="theme_tab_height">56dp</dimen>
+    <dimen name="theme_tab_bar_margin">22dp</dimen>
+    <dimen name="theme_footer_margin_top">14dp</dimen>
+    <dimen name="theme_header_name_margin_top">10dp</dimen>
+    <dimen name="theme_header_name_margin_bottom">18dp</dimen>
+    <dimen name="theme_section_margin_top">28dp</dimen>
+    <dimen name="theme_section_margin_bottom">18dp</dimen>
+    <dimen name="theme_header_button_gap">12dp</dimen>
+    <dimen name="theme_card_padding">12dp</dimen>
+    <dimen name="theme_card_gap">14dp</dimen>
+    <dimen name="theme_card_title_margin_top">14dp</dimen>
+    <dimen name="theme_card_detail_margin_top">8dp</dimen>
+    <dimen name="theme_card_detail_margin_bottom">14dp</dimen>
+    <dimen name="theme_card_button_gap">8dp</dimen>
+    <dimen name="theme_card_menu_width">48dp</dimen>
+    <dimen name="theme_list_divider_height">14dp</dimen>
+    <dimen name="theme_note_padding_vertical">12dp</dimen>
+    <dimen name="theme_note_line_spacing_extra">3dp</dimen>
+    <dimen name="theme_text_title">26sp</dimen>
+    <dimen name="theme_text_section">23sp</dimen>
+    <dimen name="theme_text_name">18sp</dimen>
+    <dimen name="theme_text_card_title">18sp</dimen>
+    <dimen name="theme_text_card_detail">13sp</dimen>
+    <dimen name="theme_text_footer">13sp</dimen>
+    <dimen name="theme_text_note">14sp</dimen>
 </resources>

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 单张主题卡片：比例预览、至多两行标题、状态说明与编辑/应用/更多三个公共按钮。preview.tag 保留给 ThemeActions 的缩略图票据。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@drawable/cluster_theme_library_card" android:orientation="vertical" android:padding="@dimen/theme_card_padding">
+    <com.galaxy.autocluster.ui.ThemeRatioImageView android:id="@+id/theme_card_preview" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@color/cluster_theme_preview_background" android:scaleType="fitCenter"/>
+    <TextView android:id="@+id/theme_card_name" style="@style/ClusterTheme.CardTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/theme_card_title_margin_top" android:maxLines="2" android:minLines="1"/>
+    <TextView android:id="@+id/theme_card_detail" style="@style/ClusterTheme.CardDetail" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/theme_card_detail_margin_top" android:layout_marginBottom="@dimen/theme_card_detail_margin_bottom"/>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+        <com.galaxy.auto.ui.GalaxyActionButton android:id="@+id/theme_card_edit" style="@style/GalaxyUi.Button" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/theme_card_edit"/>
+        <com.galaxy.auto.ui.GalaxyActionButton android:id="@+id/theme_card_use" style="@style/GalaxyUi.Button" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/theme_card_button_gap" android:layout_weight="1" android:text="@string/theme_card_apply"/>
+        <com.galaxy.auto.ui.GalaxyActionButton android:id="@+id/theme_card_more" style="@style/ClusterTheme.Button.Menu" android:layout_width="@dimen/theme_card_menu_width" android:layout_height="wrap_content" android:layout_marginStart="@dimen/theme_card_button_gap" android:contentDescription="@string/theme_card_more_description" android:text="@string/theme_card_more"/>
+    </LinearLayout>
+</LinearLayout>

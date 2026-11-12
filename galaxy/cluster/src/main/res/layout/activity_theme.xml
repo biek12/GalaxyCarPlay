@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ThemeActivity 外壳：根 20dp；标题 26sp + 返回仪表；3 个等宽 56dp tab；内容槽 weight=1；footer 13sp 上距 14dp。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/galaxy_ui_background" android:orientation="vertical" android:padding="@dimen/theme_root_padding">
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+        <TextView android:id="@+id/theme_title" style="@style/ClusterTheme.Title" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/theme_title"/>
+        <com.galaxy.auto.ui.GalaxyActionButton android:id="@+id/theme_back" style="@style/GalaxyUi.Button" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/theme_back_to_cluster"/>
+    </LinearLayout>
+    <LinearLayout android:id="@+id/theme_tab_bar" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/theme_tab_bar_margin" android:layout_marginBottom="@dimen/theme_tab_bar_margin" android:gravity="center_vertical" android:orientation="horizontal">
+        <com.galaxy.auto.ui.GalaxyActionButton android:id="@+id/theme_tab_library" style="@style/GalaxyUi.Button" android:layout_width="0dp" android:layout_height="@dimen/theme_tab_height" android:layout_weight="1" android:text="@string/theme_tab_library"/>
+        <com.galaxy.auto.ui.GalaxyActionButton android:id="@+id/theme_tab_editor" style="@style/GalaxyUi.Button" android:layout_width="0dp" android:layout_height="@dimen/theme_tab_height" android:layout_weight="1" android:text="@string/theme_tab_editor"/>
+        <com.galaxy.auto.ui.GalaxyActionButton android:id="@+id/theme_tab_gallery" style="@style/GalaxyUi.Button" android:layout_width="0dp" android:layout_height="@dimen/theme_tab_height" android:layout_weight="1" android:text="@string/theme_tab_gallery"/>
+    </LinearLayout>
+    <FrameLayout android:id="@+id/theme_content" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"/>
+    <TextView android:id="@+id/theme_footer" style="@style/ClusterTheme.Footer" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/theme_footer_margin_top" android:text="@string/theme_status_connecting"/>
+</LinearLayout>

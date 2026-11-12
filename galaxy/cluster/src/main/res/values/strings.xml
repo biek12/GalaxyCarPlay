@@ -83,4 +83,35 @@
     <string name="cluster_result_withdrawn">已撤销本 App 显示需求，等待仪表恢复确认。</string>
     <string name="cluster_submit_failed_toast">仪表配置未能提交，请重试</string>
     <string name="cluster_image_invalid_toast">图片无法读取，请选择其他图片</string>
+    <!-- C2a 主题编辑器外壳、当前主题头部、两列卡片与状态文案；逐句对应旧版硬编码。 -->
+    <string name="theme_title">仪表 · AutoCluster</string>
+    <string name="theme_back_to_cluster">返回仪表</string>
+    <string name="theme_tab_library">我的主题</string>
+    <string name="theme_tab_editor">编辑主题</string>
+    <string name="theme_tab_gallery">组件库</string>
+    <string name="theme_status_connecting">正在连接 AutoService</string>
+    <string name="theme_status_qnx_ready">仪表通道已连接</string>
+    <string name="theme_status_root_ready">基础服务已就绪</string>
+    <string name="theme_status_with_state">AutoCluster · %1$s</string>
+    <string name="theme_current_section">当前主题</string>
+    <string name="theme_current_reading">正在读取主题库</string>
+    <string name="theme_current_empty">尚未应用主题</string>
+    <string name="theme_current_preview_note">主题样式预览 · 实时地图与数据可在编辑器中查看</string>
+    <string name="theme_edit_current">编辑当前主题</string>
+    <string name="theme_new">新建主题</string>
+    <string name="theme_import">导入主题包</string>
+    <string name="theme_library_section">主题库</string>
+    <string name="theme_card_edit">编辑</string>
+    <string name="theme_card_apply">应用</string>
+    <string name="theme_card_applied">已应用</string>
+    <string name="theme_card_more">⋯</string>
+    <string name="theme_card_more_description">更多主题操作</string>
+    <string name="theme_state_in_use">正在使用</string>
+    <string name="theme_state_in_use_modified">使用中 · 有未应用修改</string>
+    <string name="theme_state_builtin">内置模板 · 保存为副本</string>
+    <string name="theme_state_custom">自定义主题</string>
+    <plurals name="theme_unreadable_count">
+        <item quantity="one">%1$d 个主题无法读取，文件已保留</item>
+        <item quantity="other">%1$d 个主题无法读取，文件已保留</item>
+    </plurals>
 </resources>
