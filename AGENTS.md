@@ -4,6 +4,9 @@
 
 ## galaxy 代码整理与协作约束（2026-11-12 最新确认）
 
+- 2026-11-12 用户纠正协作分工：**脚本、验证环境、验证流程与证据收口由 Codex 直接修改和执行；业务代码重构才交 Cursor**。不能把纯脚本修正反复派给 Cursor，Codex 负责把代码任务的验证条件准备好，继续承担实际审计与集成。
+- 2026-11-12 最新收口：E0-R1三项修正已复验通过；Codex已在独立组合树 `F:\GalaxyPlay\wt-theme-validation` 直接补齐脚本，`a70697d` 实际通过完整离线门槛（归档53+44、Cluster12例、Service48例）。Leader尚未集成组合业务；当前只给Cursor [T1预览模型代码任务](docs/refactor/Cursor-T1-预览模型代码任务-20261112.md)，原三个编码树冻结，平台端口/Service主体/A1不续跑。后文E0阻断是历史基线事实，不能覆盖本条当前状态或被擦除。
+
 - 2026-11-12 E0 首轮审计：Cursor 提交 `451ac74` 的正式状态为 `BLOCKED_VALIDATION`，未集成。工具/归档部分复验通过，但 Service 宿主测试缺 `/bin/sh`、`cksum`，Windows 入口重复验证逻辑且实际中文日志乱码；本轮修正按 [E0-R1任务](docs/refactor/Cursor-E0-R1-修正任务-20261112.md)。旧主题 `ThemeStoreTest` 的 Windows 四项失败保留为基线事实，不由此授权修复已决定归档的主题生产代码；不绕过断言，不将未完成的完整 R0 门槛写成通过。
 
 - 2026-11-12 Windows 接手补充：用户要求 Codex 带领 Cursor 继续重构。Cursor 是本轮实施者，旧 DSH/WorkBuddy 路由不阻止接手；Codex 负责确定拆分、任务、验收和审计。先读 [Cursor协同总控](docs/refactor/Cursor协同总控-20261112.md) 和 [首轮审计与修正任务](docs/refactor/Cursor首轮审计与修正任务-20261112.md)。本轮先做 E0 Windows 验证与 R0 收口，平台端口、主题归档候选保持未验收；不自动开始 AutoService 主体拆分、跨 App 背景/卡片迁移或 A1，不自动合并业务分支。规范同步不代表业务代码审计通过，设备继续仅离线。
