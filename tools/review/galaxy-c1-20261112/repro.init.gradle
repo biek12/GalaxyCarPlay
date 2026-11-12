@@ -1,0 +1,8 @@
+// 只追加独立审计测试源；候选生产源码、资源和既有断言不改动。
+gradle.beforeProject { project ->
+    if (project.path == ':cluster') project.pluginManager.withPlugin('com.android.application') {
+        project.extensions.getByName('androidComponents').finalizeDsl { android ->
+            android.sourceSets.getByName('test').kotlin.srcDir(new File(System.getenv('GALAXY_C1_AUDIT_REPRO'), 'cluster'))
+        }
+    }
+}
