@@ -1,0 +1,15 @@
+---
+description: GalaxyPlay 本轮 Codex 与 Cursor 协同入口、批次和离线边界。
+alwaysApply: true
+---
+
+# 本轮协同入口
+
+- 先读根与 galaxy/AGENTS.md、docs/refactor/Cursor协同总控-20261112.md、docs/refactor/Cursor首轮审计与修正任务-20261112.md。
+- 用户已指定 Cursor 实施、Codex 定方案和审计。不要因历史 DSH/WorkBuddy 路由停工，也不要自行规划下一轮结构。
+- 当前唯一新实施批是 E0，工作树 F:/GalaxyPlay/wt-validation-windows；Leader 工作树只做任务和审计。
+- wt-platform-ports 与 wt-theme-archive 保留已有候选，首轮缺陷已列在修正任务中；E0 收口前不继续扩大业务改动，不互相合并。
+- 每轮先报告当前绝对目录、分支、HEAD、未提交变更和本轮白名单，再实施。完成格式、编译、实际用例和提交后冻结；缺项写 BLOCKED_VALIDATION。
+- 不弱化测试、归档字节或产物检查；不把 help、源码搜索、缓存目录存在当作编译或测试通过。
+- 只归档旧整屏投屏，保留 OEM 背景/音乐卡片/Hook、CarPlay 主屏与数据、车辆订阅和基础身份。
+- 不连车、不安装、不操作 HMI、不启模拟器、不推远端、不改应用签名。Mac ZIP 仅作只读材料来源，不整包覆盖 Windows 源码/缓存。

@@ -4,6 +4,8 @@
 
 ## galaxy 代码整理与协作约束（2026-11-12 最新确认）
 
+- 2026-11-12 Windows 接手补充：用户要求 Codex 带领 Cursor 继续重构。Cursor 是本轮实施者，旧 DSH/WorkBuddy 路由不阻止接手；Codex 负责确定拆分、任务、验收和审计。先读 [Cursor协同总控](docs/refactor/Cursor协同总控-20261112.md) 和 [首轮审计与修正任务](docs/refactor/Cursor首轮审计与修正任务-20261112.md)。本轮先做 E0 Windows 验证与 R0 收口，平台端口、主题归档候选保持未验收；不自动开始 AutoService 主体拆分、跨 App 背景/卡片迁移或 A1，不自动合并业务分支。规范同步不代表业务代码审计通过，设备继续仅离线。
+
 - 2026-11-12用户要求推送版本，换电脑使用Cursor继续重构。Cursor可接手现有R0，旧DSH/WorkBuddy任务路由不阻止本次换机接手；先读[换机交接](docs/refactor/Cursor换机交接-20261112.md)。R0实现b704820仍为BLOCKED_VALIDATION，不自动合入已审基线，不把保存/推送当验收通过；仍仅离线，原厂元素增强保留。
 
 - 2026-11-12用户追加：旧整屏投屏链中的 **AutoService 同样停止相关注入**；收口须贯穿客户端入口、服务 IPC/命令/恢复、Root helper 的旧接收端部署和 Android bridge 启动。原厂元素增强仍保留，共用 QNX health 资产不得误删。新任务 [R0](docs/refactor/R0-整屏投屏归档任务书-20261112.md)交DSH，编译/标准用例/格式/提交后再交审；本条是实施授权，不代表代码已关闭或车端已恢复。
