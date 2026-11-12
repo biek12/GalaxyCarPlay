@@ -1,12 +1,23 @@
 package com.ecarx.autoservice.platform
 
 import android.content.Context
-import android.os.*
-import com.ecarx.autoservice.projection.GalaxyHabKey
-import java.io.Closeable
+import android.os.Handler
+import android.os.HandlerThread
+import android.os.Looper
 import com.ecarx.autoservice.settings.ServiceFeatures
+import java.io.Closeable
 
-/** 基础连接持续维护，QNX仅按投屏需求准备。两者队列隔离，界面没有连接所有权。 */
+/**
+ * 基础 ADB/Root 身份与权限的持续维护者。
+ *
+ * 旧整屏覆盖投屏已归档：本类不再持有 QNX 投屏线程、不部署接收端、不发 op4、
+ * 不做失败重试补拉起，也不在 foundation 完成后重入旧输出准备。车辆订阅、媒体、
+ * 原厂元素 Hook 仍由各自 owner 使用这里恢复出的基础身份，不受本次收口影响。
+ *
+ * 线程：基础恢复在自有 `AutoService-foundation` HandlerThread 上排队；ready 回调
+ * 与换代计数在主线程结算。关闭屏障 [previousClose] 保证新一轮恢复不会抢在上一轮
+ * 释放之前启动。
+ */
 internal class PlatformCoordinator(
     private val context: Context,
     private val report: (String) -> Unit,
@@ -15,131 +26,110 @@ internal class PlatformCoordinator(
 ) : Closeable {
     private val thread = HandlerThread("AutoService-foundation").apply { start() }
     private val worker = Handler(thread.looper)
-    private val projectionThread by lazy { HandlerThread("AutoService-qnx").apply { start() } }
-    private val projectionWorkerDelegate = lazy { Handler(projectionThread.looper) }
-    private val projectionWorker by projectionWorkerDelegate
     private val main = Handler(Looper.getMainLooper())
     private val access = PlatformAccess(context)
     private val previousClose = closing
+
     @Volatile private var closed = false
+
     @Volatile private var foundationReady = false
+
     @Volatile private var generation = 0
-    private var projectionRequested = false
-    private var projectionReady = false
-    private var projectionPreparing = false
-    private var projectionCallback: (Boolean) -> Unit = {}
-    private var projectionRetry: Runnable? = null
-    private var projectionFailures = 0
-    @Volatile private var projectionWork: ControlWork? = null
-    private val recovery = FoundationRecovery({ !closed && (features.adb || features.root) }, { delay, action ->
-        val task = Runnable(action); main.postDelayed(task, delay); AutoCloseable { main.removeCallbacks(task) }
-    }, { active, complete ->
-        worker.post {
-            val result = runCatching {
-                previousClose.get(90, java.util.concurrent.TimeUnit.SECONDS)
-                check(active()) { "foundation_cancelled" }
-                if (features.root) {
-                    access.ensureRoot()
-                    check(active()) { "foundation_cancelled" }
-                    val permissions = AppPermissionSetup(context).repair(active)
-                    check(active()) { "foundation_cancelled" }
-                    report("platform:root_ready $permissions")
-                } else {
-                    access.ensureAdb()
-                    report("platform:adb_ready")
+    private val recovery =
+        FoundationRecovery({ !closed && (features.adb || features.root) }, { delay, action ->
+            val task = Runnable(action)
+            main.postDelayed(task, delay)
+            AutoCloseable { main.removeCallbacks(task) }
+        }, { active, complete ->
+            worker.post {
+                val result =
+                    runCatching {
+                        previousClose.get(90, java.util.concurrent.TimeUnit.SECONDS)
+                        check(active()) { "foundation_cancelled" }
+                        if (features.root) {
+                            access.ensureRoot()
+                            check(active()) { "foundation_cancelled" }
+                            val permissions = AppPermissionSetup(context).repair(active)
+                            check(active()) { "foundation_cancelled" }
+                            report("platform:root_ready $permissions")
+                        } else {
+                            access.ensureAdb()
+                            report("platform:adb_ready")
+                        }
+                    }
+                main.post {
+                    if (active()) {
+                        val next = result.isSuccess && features.root
+                        val changed = foundationReady != next
+                        foundationReady = next
+                        if (changed) foundationChanged(foundationReady)
+                        if (result.isFailure) report("platform:foundation_failed ${stage(result.exceptionOrNull())}")
+                        // 基础恢复失败时只换代作废本轮工作，不再重入任何旧投屏准备。
+                        if (!foundationReady) ++generation
+                    }
+                    complete(result.isSuccess)
                 }
             }
-            main.post {
-                if (active()) {
-                    val next = result.isSuccess && features.root
-                    val changed = foundationReady != next
-                    foundationReady = next
-                    if (changed) foundationChanged(foundationReady)
-                    if (result.isFailure) report("platform:foundation_failed ${stage(result.exceptionOrNull())}")
-                    if (foundationReady && projectionRequested && !projectionReady) prepareProjection()
-                    if (!foundationReady) { ++generation; projectionPreparing = false; projectionReady = false; projectionCallback(false) }
-                }
-                complete(result.isSuccess)
-            }
-        }
-    })
-    fun start() { recovery.start() }
+        })
+
+    /** 启动基础恢复调度；不再附带旧接收端部署或 QNX 登录。 */
+    fun start() {
+        recovery.start()
+    }
+
+    /** 基础身份的脱敏诊断证据，供服务快照与 dumpsys 使用。 */
     fun foundationEvidence() = access.foundationEvidence
+
+    /** 显式重试新一轮基础恢复；换代使在途回调失效，不再补拉起旧投屏。 */
     fun retry() {
-        ++generation; projectionReady = false; projectionPreparing = false; projectionCallback(false)
-        access.cancel(); recovery.close(); recovery.start()
-        projectionFailures = 0
-        if (projectionRequested && foundationReady) prepareProjection()
+        ++generation
+        access.cancel()
+        recovery.close()
+        recovery.start()
     }
-    fun prepare(active: Boolean, ready: (Boolean) -> Unit) {
-        if (active && !features.root) { ready(false); return }
-        projectionRequested = active; projectionCallback = ready
-        if (!active) {
-            ++generation; projectionReady = false; projectionPreparing = false
-            projectionRetry?.let(main::removeCallbacks); projectionRetry = null
-            // 正常断开交给HAB STOP/失联期限释放窗口；serve按已实现的有限监听接受下一会话。
-            // 不因投屏停止再登录QNX杀接收端，否则下次启动必然回到部署链。
-            ready(false)
-        } else {
-            // 调用者已用真实HAB握手确认现存会话不可用，旧的listening缓存不代表仍能连接。
-            projectionReady = false
-            report("platform:receiver_wake_requested")
-            if (foundationReady) prepareProjection() else recovery.requestNow()
-        }
-    }
-    private fun prepareProjection() {
-        if (closed || !features.root || projectionPreparing || !projectionRequested) return
-        projectionRetry?.let(main::removeCallbacks); projectionRetry = null
-        projectionPreparing = true
-        val ticket = ++generation
-        projectionWorker.post {
-            val work = ControlWork().also { projectionWork = it }
-            val result = runCatching {
-                check(!closed && ticket == generation && ServiceFeatures.read(context).root) { "projection_cancelled" }
-                val request = QnxCredentials.loadOptional(context)
-                val key = GalaxyHabKey.load(context)
-                try { request.put("ownerKey", android.util.Base64.encodeToString(key, android.util.Base64.NO_WRAP)) } finally { key.fill(0) }
-                val deployed = RootServiceClient.request(context, 4, request, 50000, work)
-                check(deployed.optString("state") == "receiver_listening") { deployed.optString("stage", "qnx_deploy_failed") }
-                report("platform:qnx_receiver_listening action=${deployed.optString("action")} reused=${deployed.optBoolean("reused")}")
-            }
-            work.close()
-            if (projectionWork === work) projectionWork = null
-            main.post {
-                if (!closed && ticket == generation) {
-                    projectionPreparing = false; projectionReady = result.isSuccess
-                    projectionCallback(projectionReady)
-                    if (result.isFailure) {
-                        report("platform:qnx_failed ${stage(result.exceptionOrNull())}")
-                        val delay = (30000L shl projectionFailures.coerceAtMost(3)).coerceAtMost(300000)
-                        projectionFailures++
-                        projectionRetry = Runnable { if (projectionRequested && foundationReady) prepareProjection() }.also { main.postDelayed(it, delay) }
-                    } else projectionFailures = 0
-                }
-            }
-        }
-    }
+
+    /** 基础 Root 丢失时作废就绪态并重启恢复；不触碰任何显示输出所有权。 */
     fun rootLost() {
         if (!foundationReady || closed) return
-        foundationReady = false; projectionReady = false
-        foundationChanged(false); projectionCallback(false)
+        foundationReady = false
+        foundationChanged(false)
         retry()
     }
+
     override fun close() = close(releaseRoot = true)
+
+    /**
+     * 关闭基础恢复并发布关闭屏障；释放 Root 时按已核验的认证通道停自有 helper。
+     * 不清理车端接收端、不改原车启动项。
+     */
     fun close(releaseRoot: Boolean) {
         if (closed) return
-        closed = true; ++generation; recovery.close(); access.close(); RootServiceClient.closeVehicle()
-        if (releaseRoot) projectionWork?.cancel()
-        projectionRetry?.let(main::removeCallbacks)
-        val completed = java.util.concurrent.CompletableFuture<Unit>().also { closing = it }
+        closed = true
+        ++generation
+        recovery.close()
+        access.close()
+        RootServiceClient.closeVehicle()
+        val completed =
+            java.util.concurrent
+                .CompletableFuture<Unit>()
+                .also { closing = it }
         val finish: () -> Unit = {
-            try { if (releaseRoot) runCatching { RootServiceClient.stop(context) } }
-            finally { completed.complete(Unit); thread.quitSafely() }
+            try {
+                if (releaseRoot) runCatching { RootServiceClient.stop(context) }
+            } finally {
+                completed.complete(Unit)
+                thread.quitSafely()
+            }
         }
-        if (projectionWorkerDelegate.isInitialized()) projectionWorker.post {
-            projectionThread.quitSafely(); worker.post(finish)
-        } else worker.post(finish)
+        worker.post(finish)
     }
-    private companion object { var closing = java.util.concurrent.CompletableFuture.completedFuture(Unit) }
-    private fun stage(error: Throwable?) = error?.message?.takeIf { it.matches(Regex("[a-z_]+")) } ?: error?.javaClass?.simpleName ?: "unknown"
+
+    private companion object {
+        var closing =
+            java.util.concurrent.CompletableFuture
+                .completedFuture(Unit)
+    }
+
+    private fun stage(error: Throwable?) =
+        error?.message?.takeIf { it.matches(Regex("[a-z_]+")) } ?: error?.javaClass?.simpleName ?: "unknown"
 }

@@ -2,6 +2,11 @@
 <!-- Cluster 普通页面固定文案；与旧版 ClusterActivity 逐句对应，含义不改。 -->
 <resources>
     <string name="cluster_app_name">AutoCluster</string>
+    <!-- R0：旧整屏覆盖投屏已归档；首页只读提示与原厂元素服务文案。 -->
+    <string name="cluster_projection_archived_note">整屏投屏已归档，仅提供原厂元素增强</string>
+    <string name="cluster_service_channel">原厂元素增强</string>
+    <string name="cluster_service_running">原厂元素增强运行中</string>
+    <string name="cluster_home_projection_archived">整屏投屏已归档</string>
     <string name="cluster_nav_home">仪表</string>
     <string name="cluster_nav_themes">主题</string>
     <string name="cluster_nav_settings">设置</string>

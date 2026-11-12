@@ -3,27 +3,9 @@ package com.galaxy.autocluster.ui.pages
 import com.galaxy.auto.ui.GalaxyStyle
 import com.galaxy.autocluster.databinding.PageClusterRestoreBinding
 import com.galaxy.autocluster.databinding.PageClusterResultBinding
-import com.galaxy.autocluster.databinding.PageClusterThemesBinding
 import com.galaxy.autocluster.ui.ClusterPageContent
 import com.galaxy.autocluster.ui.ClusterPageHost
 import com.galaxy.autocluster.ui.navigation.ClusterPage
-
-/**
- * 主题入口页 binder：只绑定 `page_cluster_themes`，“我的主题”显式进入既有 ThemeActivity。
- * 页面无动态数据，静态骨架与事件在构造时绑定一次。
- */
-internal class ThemeEntryPage(
-    binding: PageClusterThemesBinding,
-    host: ClusterPageHost,
-) : ClusterPageContent {
-    init {
-        ClusterPageBindings.bindHeader(binding.pageHeader, ClusterPage.THEMES, host)
-        ClusterPageBindings.bindAction(binding.themesEntryRow) { host.openThemes() }
-    }
-
-    /** 页面无动态数据；保留空实现以维持统一的页面内容合同。 */
-    override fun render() {}
-}
 
 /**
  * 恢复确认页 binder：只绑定 `page_cluster_restore`。确认走 enabled=false 同步 commit

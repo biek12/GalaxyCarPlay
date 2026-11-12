@@ -50,6 +50,9 @@ object ClusterDisplayStatus {
         element: String,
     ): String =
         when {
+            // 旧 OVERLAY 已归档：即使历史 enabled=true 也只显示只读归档态。
+            input.enabled && input.mode != ClusterDisplayConfiguration.OEM_ELEMENTS ->
+                resources.getString(R.string.cluster_home_projection_archived)
             !input.enabled || input.mode != ClusterDisplayConfiguration.OEM_ELEMENTS ->
                 when (input.snapshot.getString("clusterElementStatus")) {
                     "restoring", "active", "preparing", "waiting-content" ->
@@ -114,11 +117,12 @@ object ClusterDisplayStatus {
                 } else {
                     resources.getString(R.string.cluster_home_factory_display)
                 }
+            // 旧整屏覆盖投屏已归档：旧 OVERLAY/未知模式只显示只读归档态，
+            // 不再消费 qnxReady/MAP 在线状态展示“主题通道已连接/等待”。
+            input.mode != ClusterDisplayConfiguration.OEM_ELEMENTS ->
+                resources.getString(R.string.cluster_home_projection_archived)
             !input.connected -> resources.getString(R.string.cluster_status_waiting_connection)
-            input.mode == ClusterDisplayConfiguration.OEM_ELEMENTS -> elementStatus(resources, input, "")
-            input.snapshot.getBoolean("qnxReady") ->
-                resources.getString(R.string.cluster_home_theme_channel_ready)
-            else -> resources.getString(R.string.cluster_home_theme_channel_waiting)
+            else -> elementStatus(resources, input, "")
         }
 
     /** 结果页文案：已启用走通用状态；只有收到 restored 回执才确认恢复。 */

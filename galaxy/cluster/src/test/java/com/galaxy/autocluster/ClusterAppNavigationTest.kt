@@ -57,12 +57,12 @@ class ClusterAppNavigationTest {
             ClusterPageFixture.capture(root, "background-page")
             ClusterPageFixture.button(root, "设置").performClick()
             ClusterPageFixture.capture(root, "settings-page")
-            ClusterPageFixture.button(root, "主题").performClick()
-            ClusterPageFixture.capture(root, "themes-page")
-            row("我的主题").performClick()
-            assertEquals(
-                ThemeActivity::class.java.name,
-                shadowOf(activity).nextStartedActivity.component?.className,
+            // 旧整屏投屏已归档：主导航不再有“主题”按钮，也不再启动 ThemeActivity。
+            assertFalse(
+                ClusterPageFixture
+                    .walk(root)
+                    .filterIsInstance<android.widget.Button>()
+                    .any { it.text.toString() == "主题" },
             )
             // 恢复与结果页可 inflate：enabled 期间首页才有恢复入口。
             ClusterPageFixture.button(root, "仪表").performClick()

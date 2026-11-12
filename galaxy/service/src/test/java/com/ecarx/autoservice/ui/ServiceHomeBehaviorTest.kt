@@ -165,12 +165,26 @@ class ServiceHomeBehaviorTest {
 
     @Test
     fun featureRowsDeclaredInXmlResolveTitleAndIcon() {
-        val projection = activity.findViewById<GalaxySettingRow>(R.id.service_projection)
-        assertEquals(activity.getString(R.string.service_feature_projection), projection.titleView.text.toString())
-        assertEquals(View.VISIBLE, projection.findViewById<View>(UiR.id.setting_row_icon).visibility)
+        // 旧整屏投屏开关已归档：布局中不再声明 service_projection 这个 id。
+        assertEquals(0, activity.resources.getIdentifier("service_projection", "id", activity.packageName))
         val vehicle = activity.findViewById<GalaxySettingRow>(R.id.service_vehicle)
         assertEquals(activity.getString(R.string.service_feature_vehicle), vehicle.titleView.text.toString())
         assertEquals(View.VISIBLE, vehicle.findViewById<View>(UiR.id.setting_row_icon).visibility)
+        // 三项现行开关（车辆/ADB/Root）仍可解析。
+        assertEquals(
+            activity.getString(R.string.service_feature_adb),
+            activity
+                .findViewById<GalaxySettingRow>(R.id.service_adb)
+                .titleView.text
+                .toString(),
+        )
+        assertEquals(
+            activity.getString(R.string.service_feature_root),
+            activity
+                .findViewById<GalaxySettingRow>(R.id.service_root)
+                .titleView.text
+                .toString(),
+        )
     }
 
     /**
@@ -197,15 +211,17 @@ class ServiceHomeBehaviorTest {
         assertEquals(px(UiR.dimen.galaxy_ui_row_padding_vertical), codeRow.paddingTop)
         assertEquals(px(UiR.dimen.galaxy_ui_row_min_height_detail), codeRow.minimumHeight)
 
-        // 开关与图标不受样式来源变化影响：真实行内仍能取到开关并回填。
-        assertTrue(control(R.id.service_projection).isChecked)
+        // 开关与图标不受样式来源变化影响：真实行内仍能取到开关并回填（现行车辆行）。
+        assertTrue(control(R.id.service_vehicle).isChecked)
         assertEquals(View.VISIBLE, row.findViewById<View>(UiR.id.setting_row_icon).visibility)
     }
 
     @Test
     fun switchesReflectSettingsAndSnapshotWithoutDispatchingCommands() {
         assertEquals(1, session.connects)
-        assertTrue(control(R.id.service_projection).isChecked)
+        assertTrue(control(R.id.service_vehicle).isChecked)
+        assertTrue(control(R.id.service_adb).isChecked)
+        assertTrue(control(R.id.service_root).isChecked)
         assertTrue(control(R.id.service_automatic).isChecked)
         assertEquals(activity.getString(R.string.service_headline_waiting), text(R.id.service_headline))
         assertEquals(activity.getString(R.string.service_badge_connecting), text(R.id.service_badge))
@@ -221,8 +237,9 @@ class ServiceHomeBehaviorTest {
         assertEquals(activity.getString(R.string.service_badge_connected), text(R.id.service_badge))
         assertEquals(activity.getString(R.string.service_state_connected), text(R.id.service_adb_state))
         assertEquals(activity.getString(R.string.service_state_connected), text(R.id.service_root_state))
+        // 概览首项只读显示归档态，不随连接/就绪快照变成“准备/可用”。
         assertEquals(
-            activity.getString(R.string.service_metric_waiting_projection),
+            activity.getString(R.string.service_projection_archived),
             text(R.id.service_projection_state),
         )
         assertTrue(text(R.id.service_summary).contains("L6"))
@@ -273,12 +290,14 @@ class ServiceHomeBehaviorTest {
         assertFalse(platform.getBoolean("automatic", true))
         assertEquals("stop", drainServices().single().action)
 
-        control(R.id.service_projection).performClick()
-        assertFalse(platform.getBoolean("projectionEnabled", true))
+        // 现行车辆开关：先落盘再通知；旧投屏开关不再存在可操作入口。
+        control(R.id.service_vehicle).performClick()
+        assertFalse(platform.getBoolean("vehicleEnabled", true))
         assertEquals(ServiceFeatures.ACTION_CHANGED, drainServices().single().action)
 
         activity.findViewById<View>(R.id.service_disable_all).performClick()
         assertFalse(platform.getBoolean("automatic", true))
+        // disableAll 仍把旧 projectionEnabled 兼容键写 false（行为不变）。
         assertFalse(platform.getBoolean("projectionEnabled", true))
         assertFalse(platform.getBoolean("vehicleEnabled", true))
         assertFalse(platform.getBoolean("adbEnabled", true))

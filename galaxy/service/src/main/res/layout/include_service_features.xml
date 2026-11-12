@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 后台运行、四个功能开关与“更多”入口；开关本体由 Presenter 插入同一公共控件。 -->
+<!-- 后台运行、三个现行功能开关与“更多”入口；旧整屏投屏开关已归档，不再提供入口。 -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
     <TextView style="@style/Service.TextAppearance.SectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="@dimen/service_section_start" android:layout_marginTop="@dimen/service_section_top" android:layout_marginBottom="@dimen/service_section_bottom" android:text="@string/service_section_background"/>
     <com.galaxy.auto.ui.GalaxySettingsCard android:layout_width="match_parent" android:layout_height="wrap_content">
@@ -7,7 +7,6 @@
     </com.galaxy.auto.ui.GalaxySettingsCard>
     <TextView style="@style/Service.TextAppearance.SectionTitle" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginStart="@dimen/service_section_start" android:layout_marginTop="@dimen/service_section_top" android:layout_marginBottom="@dimen/service_section_bottom" android:text="@string/service_section_features"/>
     <com.galaxy.auto.ui.GalaxySettingsCard android:layout_width="match_parent" android:layout_height="wrap_content">
-        <com.galaxy.auto.ui.GalaxySettingRow android:id="@+id/service_projection" android:layout_width="match_parent" android:layout_height="wrap_content" app:galaxyDescription="@string/service_feature_projection_description" app:galaxyLeadingIcon="@drawable/ic_service_projection" app:galaxyTitle="@string/service_feature_projection"/>
         <com.galaxy.auto.ui.GalaxySettingRow android:id="@+id/service_vehicle" android:layout_width="match_parent" android:layout_height="wrap_content" app:galaxyDescription="@string/service_feature_vehicle_description" app:galaxyLeadingIcon="@drawable/ic_service_vehicle" app:galaxyTitle="@string/service_feature_vehicle"/>
         <com.galaxy.auto.ui.GalaxySettingRow android:id="@+id/service_adb" android:layout_width="match_parent" android:layout_height="wrap_content" app:galaxyDescription="@string/service_feature_adb_description" app:galaxyLeadingIcon="@drawable/ic_service_adb" app:galaxyTitle="@string/service_feature_adb"/>
         <com.galaxy.auto.ui.GalaxySettingRow android:id="@+id/service_root" android:layout_width="match_parent" android:layout_height="wrap_content" app:galaxyDescription="@string/service_feature_root_description" app:galaxyLeadingIcon="@drawable/ic_service_root" app:galaxyTitle="@string/service_feature_root"/>

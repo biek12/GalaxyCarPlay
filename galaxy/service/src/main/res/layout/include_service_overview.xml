@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 运行概览：标题、运行徽标、说明与固定三项指标（投屏 / 本机 ADB / Root）。 -->
+<!-- 运行概览：标题、运行徽标、说明与三项指标；首项只读展示整屏投屏已归档，不显示准备/可用。 -->
 <com.galaxy.auto.ui.GalaxySettingsCard xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical" android:padding="@dimen/service_card_padding">
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
         <TextView android:id="@+id/service_headline" style="@style/Service.TextAppearance.Headline" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/service_headline_waiting"/>
@@ -8,8 +8,8 @@
     <TextView android:id="@+id/service_summary" style="@style/Service.TextAppearance.Summary" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/service_gap_small" android:text=""/>
     <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/service_gap_large" android:orientation="horizontal">
         <LinearLayout style="@style/Service.Metric" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1">
-            <TextView style="@style/Service.TextAppearance.MetricLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/service_metric_projection"/>
-            <TextView android:id="@+id/service_projection_state" style="@style/Service.TextAppearance.MetricValue" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/service_metric_value_top" android:text="@string/service_metric_waiting_connection"/>
+            <TextView style="@style/Service.TextAppearance.MetricLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/service_metric_projection_archived"/>
+            <TextView android:id="@+id/service_projection_state" style="@style/Service.TextAppearance.MetricValue" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/service_metric_value_top" android:text="@string/service_projection_archived"/>
         </LinearLayout>
         <LinearLayout style="@style/Service.Metric" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/service_metric_gap" android:layout_weight="1">
             <TextView style="@style/Service.TextAppearance.MetricLabel" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/service_metric_adb"/>

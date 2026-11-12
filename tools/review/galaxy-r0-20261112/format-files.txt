@@ -1,0 +1,28 @@
+# R0 本批新增/修改的完整自有 Kotlin/KTS 文件（ktlint 1.4.1 + format/galaxy/.editorconfig）
+# 不含原字节 archive/、不含 XML/Python/Shell（各有对应语言检查）。
+# service 运行源
+galaxy/service/src/main/java/com/ecarx/autoservice/AutoService.kt
+galaxy/service/src/main/java/com/ecarx/autoservice/platform/PlatformCoordinator.kt
+galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootServiceMain.kt
+galaxy/service/src/main/java/com/ecarx/autoservice/platform/PosixChecksum.kt
+galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxReceiverCleanup.kt
+galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootProjectionArchive.kt
+galaxy/service/src/main/java/com/ecarx/autoservice/settings/ServiceFeatures.kt
+galaxy/service/src/main/java/com/ecarx/autoservice/ui/home/ServiceHomePresenter.kt
+galaxy/service/src/main/java/com/ecarx/autoservice/ui/home/ServiceHomeState.kt
+galaxy/service/build.gradle.kts
+# service 测试
+galaxy/service/src/test/java/com/ecarx/autoservice/ui/ServiceHomeBehaviorTest.kt
+galaxy/service/src/test/java/com/ecarx/autoservice/platform/RootProjectionArchiveTest.kt
+# cluster 运行源
+galaxy/cluster/src/main/java/com/galaxy/autocluster/ClusterRenderService.kt
+galaxy/cluster/src/main/java/com/galaxy/autocluster/runtime/ClusterDisplayStore.kt
+galaxy/cluster/src/main/java/com/galaxy/autocluster/runtime/ClusterDisplayStatus.kt
+galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ClusterDisplayActions.kt
+galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ClusterAppPresenter.kt
+galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/navigation/ClusterPage.kt
+galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/pages/ClusterFlowPages.kt
+galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/pages/ClusterHomePage.kt
+# cluster 测试
+galaxy/cluster/src/test/java/com/galaxy/autocluster/ClusterAppNavigationTest.kt
+galaxy/cluster/src/test/java/com/galaxy/autocluster/LegacyProjectionRetirementTest.kt

@@ -14,7 +14,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ThemeActivity" android:exported="false" android:configChanges="orientation|screenSize|uiMode" />
         <activity android:name=".BackgroundImagePicker" android:exported="false" android:configChanges="orientation|screenSize|uiMode" />
         <service android:name=".ClusterRenderService" android:exported="true" android:permission="com.ecarx.autoservice.permission.RENDER" android:foregroundServiceType="connectedDevice" />
     </application>

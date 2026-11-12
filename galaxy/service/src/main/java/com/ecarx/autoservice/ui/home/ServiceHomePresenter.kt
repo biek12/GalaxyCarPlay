@@ -39,9 +39,10 @@ internal class ServiceHomePresenter(
 ) {
     private val context: Context = activity
     private val actions = ServiceHomeActions(activity, ::refresh, ::showFeedback)
+
+    // 旧整屏投屏开关已归档：首页只保留车辆/ADB/Root 三个现行功能开关。
     private val featureRows: Map<ServiceFeature, GalaxySettingRow> =
         linkedMapOf(
-            ServiceFeature.PROJECTION to binding.serviceFeatures.serviceProjection,
             ServiceFeature.VEHICLE to binding.serviceFeatures.serviceVehicle,
             ServiceFeature.ADB to binding.serviceFeatures.serviceAdb,
             ServiceFeature.ROOT to binding.serviceFeatures.serviceRoot,
@@ -146,7 +147,7 @@ internal class ServiceHomePresenter(
             context.getColor(if (state.badgeReady) R.color.service_success else R.color.service_secondary),
         )
         binding.serviceOverview.serviceSummary.text = state.summary
-        binding.serviceOverview.serviceProjectionState.setText(state.projectionState)
+        // 首项由 XML 固定为“整屏投屏已归档”只读文案；不回填任何准备/就绪状态。
         binding.serviceOverview.serviceAdbState.setText(state.adbState)
         binding.serviceOverview.serviceRootState.setText(state.rootState)
         binding.serviceWifiHelp.root.visibility = if (state.wifiHelpVisible) View.VISIBLE else View.GONE
@@ -163,10 +164,10 @@ internal class ServiceHomePresenter(
     /** 各功能行的说明文案：车辆与 ADB 行带运行计数，其余为固定资源。 */
     private fun descriptionFor(state: ServiceHomeState, feature: ServiceFeature): CharSequence =
         when (feature) {
-            ServiceFeature.PROJECTION -> context.getString(state.projectionDescription)
             ServiceFeature.VEHICLE -> state.vehicleDescription
             ServiceFeature.ADB -> state.adbDescription
             ServiceFeature.ROOT -> context.getString(state.rootDescription)
+            else -> error("retired_projection_feature")
         }
 
     /** ticker 只更新远程文案，页面其他区域保持不动。 */

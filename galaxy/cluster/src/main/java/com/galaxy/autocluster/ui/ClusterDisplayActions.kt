@@ -6,7 +6,6 @@ import android.os.Bundle
 import com.galaxy.auto.contract.ClusterDisplayConfiguration
 import com.galaxy.autocluster.BackgroundImagePicker
 import com.galaxy.autocluster.ClusterRenderService
-import com.galaxy.autocluster.ThemeActivity
 import com.galaxy.autocluster.runtime.ClusterDisplayStore
 
 /**
@@ -80,8 +79,9 @@ internal class ClusterDisplayActions(
         return store.enabled
     }
 
-    /** 外观确认后 enabled 才需要重载仪表输出；reload 是既有服务入口。 */
+    /** 只有真实已启用的 OEM 方案才重载；旧 OVERLAY/历史 enabled 不触发任何输出命令。 */
     fun reloadDisplay() {
+        if (!store.oemEnabled) return
         val intent = Intent(activity, ClusterRenderService::class.java)
         intent.action = ACTION_RELOAD
         activity.startForegroundService(intent)
@@ -97,18 +97,14 @@ internal class ClusterDisplayActions(
     fun currentAppearanceIndex(): Int = appearanceValues.indexOf(currentAppearanceValue()).coerceAtLeast(0)
 
     /**
-     * onCreate 时已启用的显示恢复：无 action 启动让既有服务按持久配置自行恢复；
-     * 每个实例只执行一次，不随切页或快照重启输出。
+     * onCreate 时只对**真实已启用的原厂元素方案**恢复：无 action 启动让既有服务按
+     * 持久配置自行恢复；每个实例只执行一次，不随切页或快照重启输出。
+     * 旧 OVERLAY 与历史 enabled=true 只作历史，绝不在这里拉起旧整屏输出。
      */
     fun restoreEnabledOutputIfNeeded() {
         if (restoredOutput) return
         restoredOutput = true
-        if (store.enabled) activity.startForegroundService(Intent(activity, ClusterRenderService::class.java))
-    }
-
-    /** 显式进入既有主题编辑页；主题/编辑器业务不在本批范围。 */
-    fun openThemes() {
-        activity.startActivity(Intent(activity, ThemeActivity::class.java))
+        if (store.oemEnabled) activity.startForegroundService(Intent(activity, ClusterRenderService::class.java))
     }
 
     /** 打开车机自带图片选择器；请求码与结果 extra 沿 [BackgroundImagePicker] 原合同。 */

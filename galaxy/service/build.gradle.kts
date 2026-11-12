@@ -9,21 +9,10 @@ import org.objectweb.asm.Opcodes
 import java.util.Properties
 
 plugins { alias(libs.plugins.android.application) }
-val habLibraries = layout.buildDirectory.dir("generated/hab/jniLibs")
-val buildHab by tasks.registering(Exec::class) {
-    val sdk = providers.environmentVariable("ANDROID_HOME").orElse(rootProject.file(".work/android-sdk").path)
-    val ndk = providers.environmentVariable("GALAXY_ANDROID_NDK").orElse(sdk.map { "$it/ndk/28.2.13676358" })
-    inputs.dir("src/main/cpp/hab")
-    inputs.file(rootProject.file("scripts/build_hab_bridge.py"))
-    outputs.dir(habLibraries)
-    commandLine(
-        "python3",
-        rootProject.file("scripts/build_hab_bridge.py"),
-        "--ndk",
-        ndk.get(),
-        "--output",
-        habLibraries.get().file("arm64-v8a/libgalaxy_hab_bridge.so").asFile,
-    )
+// 旧整屏 HAB bridge 已归档：不再执行 native 构建，也不把 libgalaxy_hab_bridge.so 打进 main jniLibs。
+// 保留同名无动作 Task（无 Exec、无输入输出、无依赖）只为兼容既有离线脚本的 -x :service:buildHab。
+val buildHab by tasks.registering {
+    // 归档占位：新版不构建、不打包任何旧 Android bridge。
 }
 val qnxAssets = layout.buildDirectory.dir("generated/qnx/assets")
 val prepareQnxReceiver by tasks.registering(Exec::class) {
@@ -91,14 +80,10 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "0.1.0"
-        testInstrumentationRunner =
-            "com.ecarx.autoservice.projection.ProjectionSmokeInstrumentation"
+        // 旧整屏投屏烟测 runner 已归档，不再声明 testInstrumentationRunner。
     }
     packaging.jniLibs.useLegacyPackaging = true
-    sourceSets
-        .getByName("main")
-        .jniLibs.directories
-        .add(habLibraries.get().asFile.path)
+    // 共享 QNX/hook 资产准备保留：QnxClusterHook 仍以 receiver-candidate 作 health。
     sourceSets
         .getByName("main")
         .assets.directories
@@ -113,7 +98,8 @@ android {
     }
     testOptions { unitTests.isIncludeAndroidResources = true }
 }
-tasks.named("preBuild") { dependsOn(buildHab, prepareQnxReceiver, prepareClusterHook) }
+// buildHab 是归档占位，不挂 preBuild；prepareQnxReceiver/prepareClusterHook 仍按共享资产链保留。
+tasks.named("preBuild") { dependsOn(prepareQnxReceiver, prepareClusterHook) }
 dependencies {
     implementation(project(":auto-ui"))
     implementation(project(":auto-client"))

@@ -17,6 +17,9 @@
     <string name="service_summary_waiting">&#x6B63;&#x5728;&#x8BFB;&#x53D6;&#x670D;&#x52A1;&#x72B6;&#x6001;</string>
     <string name="service_summary_running">%1$s &#xB7; &#x8F66;&#x8F86;&#x6570;&#x636E;&#x4E0E;&#x4EEA;&#x8868;&#x670D;&#x52A1;&#x6309;&#x9700;&#x8FD0;&#x884C;</string>
     <string name="service_metric_projection">&#x4EEA;&#x8868;&#x6295;&#x5C4F;</string>
+    <!-- 旧整屏覆盖投屏已归档：概览首项只读，不显示准备/可用状态。 -->
+    <string name="service_metric_projection_archived">&#x6574;&#x5C4F;&#x6295;&#x5C4F;</string>
+    <string name="service_projection_archived">&#x5DF2;&#x5F52;&#x6863;</string>
     <string name="service_metric_adb">&#x672C;&#x673A; ADB</string>
     <string name="service_metric_root">Root</string>
     <string name="service_metric_waiting_projection">&#x5F85;&#x6295;&#x5C4F;</string>

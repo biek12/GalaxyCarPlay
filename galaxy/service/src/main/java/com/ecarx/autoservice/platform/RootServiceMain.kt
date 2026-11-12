@@ -10,7 +10,12 @@ import com.ecarx.autoservice.vehicle.VehicleScanMerge
 import org.json.JSONObject
 import java.io.DataInputStream
 import java.io.DataOutputStream
-import java.util.concurrent.*
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.Executors
+import java.util.concurrent.RejectedExecutionException
+import java.util.concurrent.SynchronousQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicLong
 
 /** 只服务启动它的App进程。控制、只读车辆和HAB分派独立处理；原厂Hook仅走固定材料与可撤销生命周期入口。 */
@@ -28,17 +33,33 @@ object RootServiceMain {
         require(owner.uid >= 10000 && owner.valid() && args[3] == owner.socketName)
         val apk = args[5]
         check(System.getenv("CLASSPATH")!!.substringBefore(':') == apk)
-        val certificate = args[6].also { require(it.matches(Regex("[0-9a-f]{64}"))) }
-            .chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+        val certificate =
+            args[6]
+                .also { require(it.matches(Regex("[0-9a-f]{64}"))) }
+                .chunked(2)
+                .map { it.toInt(16).toByte() }
+                .toByteArray()
         // 取消一轮准备时，已交给app_process的启动不能撤回。新一轮可能同时到达；
         // socket的内核绑定决定唯一owner，未取得监听权的本次进程直接退出，不创建线程或崩溃上报。
-        val server = try { LocalServerSocket(owner.socketName) }
-        catch (_: java.io.IOException) { certificate.fill(0); return }
-        com.ecarx.autoservice.ServiceTrace.configure(java.io.File("/data/user/${owner.uid / 100000}/com.ecarx.autoservice/files/diagnostics/root.log"), owner.uid)
-        com.ecarx.autoservice.ServiceTrace.event("root_helper_started")
+        val server =
+            try {
+                LocalServerSocket(owner.socketName)
+            } catch (
+                _: java.io.IOException,
+            ) {
+                certificate.fill(0)
+                return
+            }
+        com.ecarx.autoservice.ServiceTrace.configure(
+            java.io.File("/data/user/${owner.uid / 100000}/com.ecarx.autoservice/files/diagnostics/root.log"),
+            owner.uid,
+        )
+        com.ecarx.autoservice.ServiceTrace
+            .event("root_helper_started")
         val previousCrashHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, error ->
-            com.ecarx.autoservice.ServiceTrace.event("root_uncaught_${thread.name}", error)
+            com.ecarx.autoservice.ServiceTrace
+                .event("root_uncaught_${thread.name}", error)
             previousCrashHandler?.uncaughtException(thread, error)
         }
         // 与星枢RootServiceMain一致。目标固件的Looper.loop会访问主Looper，
@@ -46,22 +67,33 @@ object RootServiceMain {
         if (android.os.Looper.getMainLooper() == null) android.os.Looper.prepareMainLooper()
         val specs = VehicleCatalog.forModel(args[4])
         val source = EcarxVehicleSource()
-        val sentinelHolder=lazy { com.ecarx.autoservice.sentinel.RootSentinelPort() }
+        val sentinelHolder =
+            lazy {
+                com.ecarx.autoservice.sentinel
+                    .RootSentinelPort()
+            }
         val sentinel by sentinelHolder
-        val instance = java.util.UUID.randomUUID().toString()
+        val instance =
+            java.util.UUID
+                .randomUUID()
+                .toString()
         val lastRequest = AtomicLong(SystemClock.elapsedRealtime())
         val peers = ConcurrentHashMap.newKeySet<LocalSocket>()
         val pool = ThreadPoolExecutor(0, 6, 30, TimeUnit.SECONDS, SynchronousQueue())
         val watchdog = Executors.newSingleThreadScheduledExecutor()
+
         fun release() {
-            peers.forEach { runCatching { it.close() } }; RootHabSession.close()
+            peers.forEach { runCatching { it.close() } }
+            // 旧整屏 HAB bridge 已归档，helper 不再持有子进程集合需要终止。
             // helper退出不修改整车状态；用户关闭由已登记的哨兵控制请求明确完成。
             runCatching { server.close() }
         }
         watchdog.scheduleWithFixedDelay({
             val ownerValid = owner.valid()
             if (!ownerValid || (peers.isEmpty() && SystemClock.elapsedRealtime() - lastRequest.get() > 300000)) {
-                com.ecarx.autoservice.ServiceTrace.event(if (ownerValid) "root_exit_idle" else "root_exit_owner_invalid")
+                com.ecarx.autoservice.ServiceTrace.event(
+                    if (ownerValid) "root_exit_idle" else "root_exit_owner_invalid",
+                )
                 release()
                 // 星枢实车已确认跨线程close不能可靠唤醒accept，最后只结束本helper。
                 Process.killProcess(Process.myPid())
@@ -70,68 +102,164 @@ object RootServiceMain {
         try {
             while (owner.valid()) {
                 val peer = server.accept()
-                if (!owner.accepts(peer.peerCredentials)) { peer.close(); continue }
+                if (!owner.accepts(peer.peerCredentials)) {
+                    peer.close()
+                    continue
+                }
                 peers.add(peer)
-                try { pool.execute {
-                    try { peer.use { client ->
-                        client.soTimeout = 5000
-                        val input = DataInputStream(client.inputStream)
-                        val output = DataOutputStream(client.outputStream)
-                        RootServiceAuthentication.verifyClient(input, output, certificate)
-                        RootWire.write(output, JSONObject().put("version", RootWire.VERSION).put("uid", Process.myUid())
-                            .put("pid", Process.myPid()).put("ownerPid", owner.pid).put("ownerStarted", owner.started)
-                            .put("apk", apk).put("instance", instance))
-                        while (owner.accepts(client.peerCredentials)) {
-                            val operation = input.readInt()
-                            lastRequest.set(SystemClock.elapsedRealtime())
-                            if (operation == 2) {
-                                com.ecarx.autoservice.ServiceTrace.event("root_exit_requested")
-                                output.writeInt(0); output.flush(); release(); Process.killProcess(Process.myPid()); return@execute
-                            }
-                            if(operation==10){sentinel.stream(output);return@execute}
-                            if (operation == 6) { RootHabSession.run(client, input, output, apk); return@execute }
-                            val request = if (operation == 1 || operation in 3..5 || operation == 7 || operation == 9 || operation == 11) RootWire.read(input, 16384) else JSONObject()
-                            val result = try {
-                                when (operation) {
-                                    0 -> JSONObject().put("state", "root_ready").put("uid", Process.myUid())
-                                    1 -> synchronized(source) {
-                                        // 订阅键决定注册与读取；scan=true时额外推进一轮全目录诊断扫描。
-                                        // 扫描行必须并进同一回复的properties：只回条数/游标会让
-                                        // 未订阅属性停在helper里，跨进程分页接口一条也看不到。
-                                        val now = SystemClock.elapsedRealtime()
-                                        val keys = request.optJSONArray("keys").toStringSet()
-                                        val due = request.optJSONArray("due").toStringSet().intersect(keys)
-                                        val reply = source.cycle(specs, now, args[4], keys, due, request.optBoolean("scan"))
-                                        if (request.optBoolean("scan")) {
-                                            val scan = source.scanCycle(specs, now, args[4])
-                                            reply.put("scanCount", scan.optJSONArray("scan")?.length() ?: 0)
-                                            VehicleScanMerge.merge(reply, scan)
-                                        }
-                                        reply
+                try {
+                    pool.execute {
+                        try {
+                            peer.use { client ->
+                                client.soTimeout = 5000
+                                val input = DataInputStream(client.inputStream)
+                                val output = DataOutputStream(client.outputStream)
+                                RootServiceAuthentication.verifyClient(input, output, certificate)
+                                RootWire.write(
+                                    output,
+                                    JSONObject()
+                                        .put("version", RootWire.VERSION)
+                                        .put("uid", Process.myUid())
+                                        .put("pid", Process.myPid())
+                                        .put("ownerPid", owner.pid)
+                                        .put("ownerStarted", owner.started)
+                                        .put("apk", apk)
+                                        .put("instance", instance),
+                                )
+                                while (owner.accepts(client.peerCredentials)) {
+                                    val operation = input.readInt()
+                                    lastRequest.set(SystemClock.elapsedRealtime())
+                                    if (operation == 2) {
+                                        com.ecarx.autoservice.ServiceTrace
+                                            .event("root_exit_requested")
+                                        output.writeInt(0)
+                                        output.flush()
+                                        release()
+                                        Process.killProcess(Process.myPid())
+                                        return@execute
                                     }
-                                    3 -> ShellExecutor.execute(request.getString("command"), request.getInt("timeoutMillis"))
-                                    4 -> QnxReceiverDeployer.deploy(request)
-                                    5 -> QnxReceiverDeployer.stop(request)
-                                    11 -> QnxClusterHook.control(request,owner.uid/100000)
-                                    12 -> QnxClusterHook.receipt()
-                                    7 -> AdbKeyAuthorization.authorize(request.getString("publicKey"), request.optBoolean("forceReload"))
-                                    9 -> sentinel.control(request.getString("action"),request.optLong("powerSequence"),request.optLong("requestAtNanos"))
-                                    8 -> synchronized(source) { source.close(); JSONObject().put("state", "vehicle_stopped") }
-                                    else -> error("unknown_operation")
+                                    if (operation == 10) {
+                                        sentinel.stream(output)
+                                        return@execute
+                                    }
+                                    // 已退役的 op4/op6 在同一拒绝方法内答复并关闭连接；未退役的 operation 交回原分发。
+                                    if (RootProjectionArchive.rejectIfArchived(
+                                            operation,
+                                            input,
+                                            output,
+                                        ) { client.close() }
+                                    ) {
+                                        return@execute
+                                    }
+                                    val request =
+                                        if (operation == 1 ||
+                                            operation == 3 ||
+                                            operation == 5 ||
+                                            operation == 7 ||
+                                            operation == 9 ||
+                                            operation == 11
+                                        ) {
+                                            RootWire.read(input, 16384)
+                                        } else {
+                                            JSONObject()
+                                        }
+                                    val result =
+                                        try {
+                                            when (operation) {
+                                                0 -> JSONObject().put("state", "root_ready").put("uid", Process.myUid())
+                                                1 ->
+                                                    synchronized(source) {
+                                                        // 订阅键决定注册与读取；scan=true时额外推进一轮全目录诊断扫描。
+                                                        // 扫描行必须并进同一回复的properties：只回条数/游标会让
+                                                        // 未订阅属性停在helper里，跨进程分页接口一条也看不到。
+                                                        val now = SystemClock.elapsedRealtime()
+                                                        val keys = request.optJSONArray("keys").toStringSet()
+                                                        val due =
+                                                            request
+                                                                .optJSONArray(
+                                                                    "due",
+                                                                ).toStringSet()
+                                                                .intersect(keys)
+                                                        val reply =
+                                                            source.cycle(
+                                                                specs,
+                                                                now,
+                                                                args[4],
+                                                                keys,
+                                                                due,
+                                                                request.optBoolean("scan"),
+                                                            )
+                                                        if (request.optBoolean("scan")) {
+                                                            val scan = source.scanCycle(specs, now, args[4])
+                                                            reply.put(
+                                                                "scanCount",
+                                                                scan.optJSONArray("scan")?.length() ?: 0,
+                                                            )
+                                                            VehicleScanMerge.merge(reply, scan)
+                                                        }
+                                                        reply
+                                                    }
+                                                3 ->
+                                                    ShellExecutor.execute(
+                                                        request.getString("command"),
+                                                        request.getInt("timeoutMillis"),
+                                                    )
+                                                // op4 已退役并在上方拒绝器关闭；op5 仍允许显式清理自有旧 receiver。
+                                                5 -> QnxReceiverCleanup.stop(request)
+                                                11 -> QnxClusterHook.control(request, owner.uid / 100000)
+                                                12 -> QnxClusterHook.receipt()
+                                                7 ->
+                                                    AdbKeyAuthorization.authorize(
+                                                        request.getString("publicKey"),
+                                                        request.optBoolean("forceReload"),
+                                                    )
+                                                9 ->
+                                                    sentinel.control(
+                                                        request.getString("action"),
+                                                        request.optLong("powerSequence"),
+                                                        request.optLong("requestAtNanos"),
+                                                    )
+                                                8 ->
+                                                    synchronized(source) {
+                                                        source.close()
+                                                        JSONObject().put("state", "vehicle_stopped")
+                                                    }
+                                                else -> error("unknown_operation")
+                                            }
+                                        } catch (error: Exception) {
+                                            com.ecarx.autoservice.ServiceTrace
+                                                .event("root_operation_$operation", error)
+                                            JSONObject().put("error", error.javaClass.simpleName).put(
+                                                "stage",
+                                                error.message?.takeIf { it.matches(Regex("[a-z_]+")) }
+                                                    ?: "root_operation_failed",
+                                            )
+                                        }
+                                    RootWire.write(output, result)
                                 }
-                            } catch (error: Exception) {
-                                com.ecarx.autoservice.ServiceTrace.event("root_operation_$operation", error)
-                                JSONObject().put("error", error.javaClass.simpleName).put("stage", error.message?.takeIf { it.matches(Regex("[a-z_]+")) } ?: "root_operation_failed")
                             }
-                            RootWire.write(output, result)
+                        } catch (error: Exception) {
+                            if (error !is java.io.EOFException && error !is java.net.SocketTimeoutException) {
+                                com.ecarx.autoservice.ServiceTrace
+                                    .event("root_peer_failed", error)
+                            }
+                        } finally {
+                            peers.remove(peer)
+                            lastRequest.set(SystemClock.elapsedRealtime())
                         }
-                    } } catch (error: Exception) {
-                        if (error !is java.io.EOFException && error !is java.net.SocketTimeoutException)
-                            com.ecarx.autoservice.ServiceTrace.event("root_peer_failed", error)
                     }
-                    finally { peers.remove(peer); lastRequest.set(SystemClock.elapsedRealtime()) }
-                } } catch (_: RejectedExecutionException) { peers.remove(peer); peer.close() }
+                } catch (_: RejectedExecutionException) {
+                    peers.remove(peer)
+                    peer.close()
+                }
             }
-        } finally { release(); watchdog.shutdownNow(); pool.shutdownNow(); source.close(); if(sentinelHolder.isInitialized())sentinel.close(); certificate.fill(0) }
+        } finally {
+            release()
+            watchdog.shutdownNow()
+            pool.shutdownNow()
+            source.close()
+            if (sentinelHolder.isInitialized())sentinel.close()
+            certificate.fill(0)
+        }
     }
 }

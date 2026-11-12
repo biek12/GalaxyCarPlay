@@ -34,7 +34,6 @@ internal data class ServiceHomeState(
     val badge: Int,
     val badgeReady: Boolean,
     val summary: CharSequence,
-    val projectionState: Int,
     val adbState: Int,
     val rootState: Int,
     val wifiHelpVisible: Boolean,
@@ -42,7 +41,6 @@ internal data class ServiceHomeState(
     val automatic: Boolean,
     val automaticDescription: Int,
     val features: ServiceFeatures,
-    val projectionDescription: Int,
     val vehicleDescription: CharSequence,
     val adbDescription: CharSequence,
     val rootDescription: Int,
@@ -78,8 +76,7 @@ internal data class ServiceHomeState(
                         "adb_connected",
                     )
             val rootReady = features.root && connected && snapshot.getBoolean("rootReady")
-            val projectionReady =
-                features.projection && connected && snapshot.getBoolean("qnxReady")
+            // 旧整屏投屏已归档：不再读取 qnxReady/projectionRequested 推导任何投屏就绪指标。
             val wifiHelpVisible =
                 automatic &&
                     connected &&
@@ -122,14 +119,6 @@ internal data class ServiceHomeState(
                 }
 
             val pending = R.string.service_feature_pending
-            val projectionDescription =
-                when {
-                    !features.projection -> R.string.service_projection_off
-                    !automatic -> pending
-                    projectionReady -> R.string.service_projection_ready
-                    !features.root -> R.string.service_projection_no_root
-                    else -> R.string.service_projection_on
-                }
             val vehicleDescription: CharSequence =
                 when {
                     !features.vehicle -> resources.getString(R.string.service_vehicle_off)
@@ -172,16 +161,6 @@ internal data class ServiceHomeState(
                 badge = badge,
                 badgeReady = automatic && connected,
                 summary = summary,
-                projectionState =
-                    metric(
-                        features.projection,
-                        projectionReady,
-                        if (snapshot.getBoolean("projectionRequested")) {
-                            R.string.service_state_connecting
-                        } else {
-                            R.string.service_metric_waiting_projection
-                        },
-                    ),
                 adbState =
                     metric(
                         features.adb,
@@ -199,7 +178,6 @@ internal data class ServiceHomeState(
                         R.string.service_automatic_description
                     },
                 features = features,
-                projectionDescription = projectionDescription,
                 vehicleDescription = vehicleDescription,
                 adbDescription = adbDescription,
                 rootDescription = rootDescription,

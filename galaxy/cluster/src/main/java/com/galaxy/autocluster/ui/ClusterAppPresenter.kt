@@ -17,7 +17,6 @@ import com.galaxy.autocluster.databinding.PageClusterOemBinding
 import com.galaxy.autocluster.databinding.PageClusterRestoreBinding
 import com.galaxy.autocluster.databinding.PageClusterResultBinding
 import com.galaxy.autocluster.databinding.PageClusterSettingsBinding
-import com.galaxy.autocluster.databinding.PageClusterThemesBinding
 import com.galaxy.autocluster.runtime.ClusterDisplayStatus
 import com.galaxy.autocluster.runtime.ClusterDisplayStore
 import com.galaxy.autocluster.runtime.ClusterStatusInput
@@ -30,7 +29,6 @@ import com.galaxy.autocluster.ui.pages.DisplayResultPage
 import com.galaxy.autocluster.ui.pages.MusicCardPage
 import com.galaxy.autocluster.ui.pages.OemElementsPage
 import com.galaxy.autocluster.ui.pages.RestoreConfirmationPage
-import com.galaxy.autocluster.ui.pages.ThemeEntryPage
 import java.io.File
 import java.util.concurrent.Executor
 import java.util.concurrent.Executors
@@ -42,9 +40,6 @@ import java.util.concurrent.Executors
 interface ClusterPageHost {
     /** 导航到指定页面；主导航、标题返回与按钮返回共用。 */
     fun nav(next: ClusterPage)
-
-    /** 显式进入既有主题编辑页（首页“自定义仪表”与主题页“我的主题”）。 */
-    fun openThemes()
 
     /** 首页“原厂增强”入口：刷新草稿模式后进入原厂增强页。 */
     fun oemEntry()
@@ -204,10 +199,6 @@ internal class ClusterAppPresenter(
         show(next)
     }
 
-    override fun openThemes() {
-        actions.openThemes()
-    }
-
     override fun oemEntry() {
         draft = store.draft().copy(mode = ClusterDisplayConfiguration.OEM_ELEMENTS)
         show(ClusterPage.OEM)
@@ -347,11 +338,6 @@ internal class ClusterAppPresenter(
                         ::backgroundPageState,
                         ::pageStatus,
                     )
-                ClusterPage.THEMES ->
-                    ThemeEntryPage(
-                        PageClusterThemesBinding.inflate(inflater, slot, true),
-                        this,
-                    )
                 ClusterPage.SETTINGS ->
                     ClusterSettingsPage(
                         PageClusterSettingsBinding.inflate(inflater, slot, true),
@@ -376,14 +362,11 @@ internal class ClusterAppPresenter(
     /** 主导航选中归属、样式与点击：子页一律选中仪表；重建壳后重绑一次。 */
     private fun bindNavigation() {
         binding.clusterNavHome.setOnClickListener { nav(ClusterPage.HOME) }
-        binding.clusterNavThemes.setOnClickListener { nav(ClusterPage.THEMES) }
         binding.clusterNavSettings.setOnClickListener { nav(ClusterPage.SETTINGS) }
         val selected = page.mainNav
         binding.clusterNavHome.isSelected = selected == ClusterPage.HOME
-        binding.clusterNavThemes.isSelected = selected == ClusterPage.THEMES
         binding.clusterNavSettings.isSelected = selected == ClusterPage.SETTINGS
         GalaxyViews.navigationStyle(binding.clusterNavHome)
-        GalaxyViews.navigationStyle(binding.clusterNavThemes)
         GalaxyViews.navigationStyle(binding.clusterNavSettings)
     }
 
