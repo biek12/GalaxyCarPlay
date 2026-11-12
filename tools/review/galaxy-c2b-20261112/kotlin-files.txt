@@ -1,0 +1,6 @@
+galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ComponentGallery.kt
+galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ComponentGalleryAdapter.kt
+galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ComponentGalleryDialogs.kt
+galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ComponentSampleView.kt
+galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ClusterEditorPage.kt
+galaxy/cluster/src/test/java/com/galaxy/autocluster/ui/ComponentUiTest.kt
