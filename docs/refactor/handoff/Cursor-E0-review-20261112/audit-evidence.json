@@ -1,0 +1,200 @@
+{
+  "date": "2026-11-12",
+  "candidate": "451ac748776dd1032f6dfd5607ffb33c2a99b3cc",
+  "baseline": "0dcca1bb24dead868b013fd2d77bb7a8ca38ca5b",
+  "decision": "BLOCKED_VALIDATION",
+  "integrated": false,
+  "workerReportedStatus": "BLOCKED_VALIDATION",
+  "businessAndArchiveGitChanges": false,
+  "artifactGateUnitTests": {
+    "tests": 3,
+    "exitCode": 0
+  },
+  "independentGates": {
+    "archive_gate": {
+      "passed": true,
+      "sourceBaseline": "572ba0eb07113c8c1859efa9c34cb25a1676eff7",
+      "movedCount": 50,
+      "snapshotCount": 3,
+      "checkedCount": 53
+    },
+    "manifest_gate": {
+      "passed": true,
+      "fileCount": 4,
+      "themeActivityPresent": false
+    },
+    "classes_gate": {
+      "passed": true,
+      "classCount": 309,
+      "forbiddenChecked": 33,
+      "requiredChecked": 10
+    },
+    "closure_gate": {
+      "passed": true,
+      "qnxClusterHookHealthChain": true,
+      "rootOp11Op12Preserved": true,
+      "rootOp4Op6Rejected": true,
+      "prepareQnxReceiverPreserved": true,
+      "serviceGradleBridgeRetired": true,
+      "instrumentMusicPreviewSceneDataPreserved": true,
+      "note": "源码调用闭包审计；不代表 QNX/车辆已运行或实屏通过"
+    }
+  },
+  "format": {
+    "exitCode": 0,
+    "kotlinFiles": 23,
+    "xmlFiles": 7,
+    "scriptFiles": 4
+  },
+  "originalU1EvidenceVerified": {
+    "suites": 6,
+    "cases": 45,
+    "sourceHashes": 1027,
+    "sourceHashMismatches": 0,
+    "leadReranWholeDownstreamCompilation": false
+  },
+  "leadServiceRun": {
+    "gradleExitCode": 1,
+    "suites": [
+      {
+        "suite": "com.ecarx.autoservice.ClientRegistryTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "d11ce4b1963f606dc09b5e08ce2dd74a3e96dff754d33fc10c7179a3db718af3",
+        "failuresDetail": []
+      },
+      {
+        "suite": "com.ecarx.autoservice.ClusterElementPipelineTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "54ea1ad7570af609ca3f06e72404f1e2ea7fcf944267a0d9694b8f7559ed4984",
+        "failuresDetail": []
+      },
+      {
+        "suite": "com.ecarx.autoservice.ClusterHookLifecycleTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "265fed619521c291d3ed04f3ba8357a8c3c4a7cbfc0430653d7ec2cd6014b99f",
+        "failuresDetail": []
+      },
+      {
+        "suite": "com.ecarx.autoservice.platform.FoundationRecoveryTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "f3624820826f3089f5ec73ff7a6fc38bb40f9c5114d93ca0c52f132fe24a1d08",
+        "failuresDetail": []
+      },
+      {
+        "suite": "com.ecarx.autoservice.platform.PlatformExecutionTest",
+        "tests": 4,
+        "failures": 2,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "c906addf3cd60f1d24d02248dc55d813dd186c7ca208ff7f7506ff3513f5ef6c",
+        "failuresDetail": [
+          {
+            "test": "posixChecksumMatchesSystemToolAndIncludesFileLength",
+            "message": "java.io.IOException: Cannot run program \"cksum\": CreateProcess error=2, 系统找不到指定的文件。"
+          },
+          {
+            "test": "shellKeepsExitCodeBoundsOutputAndTerminatesAtDeadline",
+            "message": "java.io.IOException: Cannot run program \"/bin/sh\": CreateProcess error=2, 系统找不到指定的文件。"
+          }
+        ]
+      },
+      {
+        "suite": "com.ecarx.autoservice.platform.RootProjectionArchiveTest",
+        "tests": 4,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "b9ec216d5b4a04f92fa5b85f95ab71febd028404d95b9d313946a0b4a9db6d9c",
+        "failuresDetail": []
+      },
+      {
+        "suite": "com.ecarx.autoservice.remote.RemoteConnectionStatusTest",
+        "tests": 2,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "2988e2d3969403c3218fbec69b4f55c459c402fe821c5dffbb0d99ef3ba3bd86",
+        "failuresDetail": []
+      },
+      {
+        "suite": "com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest",
+        "tests": 12,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "8e033945d67d84011e55b19257333c078caf7da39aeafe664f04b0d821303920",
+        "failuresDetail": []
+      },
+      {
+        "suite": "com.ecarx.autoservice.ui.ServiceHomeBehaviorTest",
+        "tests": 10,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0,
+        "sha256": "ffe696f8630f0c58db754d25caa7804a568298d472353968b8f1fe53944891a7",
+        "failuresDetail": []
+      }
+    ],
+    "tests": 48,
+    "failures": 2
+  },
+  "leadThemeReproduction": {
+    "gradleExitCode": 1,
+    "suite": "com.galaxy.autocluster.theme.ThemeStoreTest",
+    "tests": 7,
+    "failures": 4,
+    "errors": 0,
+    "skipped": 0,
+    "sha256": "7aebd036999f7bb2553bcb234a3cb99d7699c36bedda0b205454b342fd79b44b",
+    "freshSeparateRun": true
+  },
+  "combinedDiagnosticClusterTaskDidNotRunAfterServiceFailure": true,
+  "fullR0GatePassed": false,
+  "vehicleValidated": false,
+  "apkBuilt": false,
+  "actualLogEncodingDefectVerified": true,
+  "logExpectedPhrase": "格式门槛通过",
+  "logContainsExpectedPhrase": false,
+  "localEvidence": {
+    "artifact-gate-tests.log": {
+      "absolutePath": "F:\\GalaxyPlay\\galaxycarplay\\.work\\codex-e0-review-451ac74\\artifact-gate-tests.log",
+      "sha256": "5ad69eea273f88cd58aa986675dec3af13ce204ee0a03e2a8567ee49ff624fbd"
+    },
+    "standalone-gates.json": {
+      "absolutePath": "F:\\GalaxyPlay\\galaxycarplay\\.work\\codex-e0-review-451ac74\\standalone-gates.json",
+      "sha256": "6f8d07ee4417cdb278bbd133a19b6bfa343280b82dd9444f83983ea6e6e3bbaa"
+    },
+    "format-result.json": {
+      "absolutePath": "F:\\GalaxyPlay\\galaxycarplay\\.work\\codex-e0-review-451ac74\\format-result.json",
+      "sha256": "93858912fde6296e7b7fac1ac49ba55a48f14f7541f35e152859fc9c4adf677e"
+    },
+    "targeted-gradle-command.json": {
+      "absolutePath": "F:\\GalaxyPlay\\galaxycarplay\\.work\\codex-e0-review-451ac74\\targeted-gradle-command.json",
+      "sha256": "85705e364fbda71da85a825be1fb2fcea4f3c333c764ea435487bc611a59cfd0"
+    },
+    "targeted-gradle.log": {
+      "absolutePath": "F:\\GalaxyPlay\\galaxycarplay\\.work\\codex-e0-review-451ac74\\targeted-gradle.log",
+      "sha256": "cbd9aba54d488a4f326f206a7d0423e86e5eaa435a8a90548b7c6549cebe2491"
+    },
+    "theme-reproduction.log": {
+      "absolutePath": "F:\\GalaxyPlay\\galaxycarplay\\.work\\codex-e0-review-451ac74\\theme-reproduction.log",
+      "sha256": "826ec12d06b03b5d77bafaf9e9d60041000cc5abce1881540c6f6095f0da4932"
+    },
+    "lead-theme-ThemeStoreTest.xml": {
+      "absolutePath": "F:\\GalaxyPlay\\galaxycarplay\\.work\\codex-e0-review-451ac74\\lead-theme-ThemeStoreTest.xml",
+      "sha256": "7aebd036999f7bb2553bcb234a3cb99d7699c36bedda0b205454b342fd79b44b"
+    }
+  }
+}
