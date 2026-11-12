@@ -131,6 +131,15 @@ class ArtifactGateTest(unittest.TestCase):
             nested.write_bytes(b"class")
             with self.assertRaises(SystemExit):
                 gates.classes_gate(root)
+            nested.unlink()
+            # 迁入 ipc 后不得留下同一租约类的旧根包副本；执行真实产物门槛。
+            for name in ("ClientRegistry.class", "ClientRegistry$Lease.class"):
+                obsolete = service_classes / "com/ecarx/autoservice" / name
+                obsolete.parent.mkdir(parents=True, exist_ok=True)
+                obsolete.write_bytes(b"class")
+                with self.assertRaisesRegex(SystemExit, "迁移前的根包租约类"):
+                    gates.classes_gate(root)
+                obsolete.unlink()
 
 
 if __name__ == "__main__":

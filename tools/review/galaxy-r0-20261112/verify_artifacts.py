@@ -55,6 +55,9 @@ REQUIRED_CLASSES = [
     "com/ecarx/autoservice/platform/hook/HookLease.class",
     "com/ecarx/autoservice/platform/hook/HookMaterials.class",
     "com/ecarx/autoservice/platform/hook/QnxClusterRemote.class",
+    "com/ecarx/autoservice/ipc/ClientRegistry.class",
+    "com/ecarx/autoservice/ipc/ServiceCallerIdentity.class",
+    "com/ecarx/autoservice/ipc/ServiceRequestQueue.class",
     *PREVIEW_CLASSES,
 ]
 # 本批必测：JUnit suite 必须真实存在、非空、零失败/错误/跳过。
@@ -71,7 +74,9 @@ REQUIRED_SUITES = {
         "com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest",
         "com.ecarx.autoservice.oem.ClusterElementPipelineTest",
         "com.ecarx.autoservice.platform.hook.ClusterHookLifecycleTest",
-        "com.ecarx.autoservice.ClientRegistryTest",
+        "com.ecarx.autoservice.ipc.ClientRegistryTest",
+        "com.ecarx.autoservice.ipc.ServiceCallerIdentityTest",
+        "com.ecarx.autoservice.ipc.ServiceRequestQueueTest",
         "com.ecarx.autoservice.platform.foundation.FoundationRecoveryTest",
         "com.ecarx.autoservice.remote.RemoteConnectionStatusTest",
         "com.ecarx.autoservice.platform.root.RootFramesTest",
@@ -299,6 +304,9 @@ def classes_gate(root: Path | None = None) -> dict:
             if leaf == f"{name}.class" or leaf.startswith(f"{name}$"):
                 forbidden_hits.append(item)
     for item in all_classes:
+        if (item == "com/ecarx/autoservice/ClientRegistry.class" or
+                item.startswith("com/ecarx/autoservice/ClientRegistry$")):
+            raise SystemExit(f"本轮产物仍含迁移前的根包租约类: {item}")
         if (item.startswith("com/galaxy/autocluster/theme/") or
                 item == "com/galaxy/autocluster/runtime/ScenePreparation.class" or
                 item.startswith("com/galaxy/autocluster/runtime/ScenePreparation$")):
@@ -492,7 +500,7 @@ def main() -> None:
     REPORT.mkdir(parents=True, exist_ok=True)
     fmt = json.loads(read_text(REPORT / "format-result.json"))
     record = {
-        "task": "GALAXY-PLATFORM-PORTS-P1-20261113",
+        "task": "GALAXY-SERVICE-IPC-S1-20261113",
         "status": "READY_FOR_REVIEW" if len(sys.argv) > 1 and sys.argv[1] == "ready" else "VALIDATED",
         "archive": archive_gate(),
         "themeArchive": theme_archive_gate(),
