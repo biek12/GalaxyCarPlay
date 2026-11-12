@@ -1,0 +1,116 @@
+{
+  "kotlin": {
+    "tool": "ktlint 1.4.1",
+    "jarSha256": "abff61ead7dabdf1264ae7dce61cb5325e602896f33f3ee2fbc359238adeac70",
+    "config": "format/galaxy/.editorconfig",
+    "fileCount": 22,
+    "files": [
+      "galaxy/service/src/main/java/com/ecarx/autoservice/AutoService.kt",
+      "galaxy/service/src/main/java/com/ecarx/autoservice/platform/PlatformCoordinator.kt",
+      "galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootServiceMain.kt",
+      "galaxy/service/src/main/java/com/ecarx/autoservice/platform/PosixChecksum.kt",
+      "galaxy/service/src/main/java/com/ecarx/autoservice/platform/QnxReceiverCleanup.kt",
+      "galaxy/service/src/main/java/com/ecarx/autoservice/platform/RootProjectionArchive.kt",
+      "galaxy/service/src/main/java/com/ecarx/autoservice/settings/ServiceFeatures.kt",
+      "galaxy/service/src/main/java/com/ecarx/autoservice/ui/home/ServiceHomePresenter.kt",
+      "galaxy/service/src/main/java/com/ecarx/autoservice/ui/home/ServiceHomeState.kt",
+      "galaxy/service/build.gradle.kts",
+      "galaxy/service/src/test/java/com/ecarx/autoservice/ui/ServiceHomeBehaviorTest.kt",
+      "galaxy/service/src/test/java/com/ecarx/autoservice/platform/RootProjectionArchiveTest.kt",
+      "galaxy/cluster/src/main/java/com/galaxy/autocluster/ClusterRenderService.kt",
+      "galaxy/cluster/src/main/java/com/galaxy/autocluster/runtime/ClusterDisplayStore.kt",
+      "galaxy/cluster/src/main/java/com/galaxy/autocluster/runtime/ClusterDisplayStatus.kt",
+      "galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ClusterDisplayActions.kt",
+      "galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/ClusterAppPresenter.kt",
+      "galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/navigation/ClusterPage.kt",
+      "galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/pages/ClusterFlowPages.kt",
+      "galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/pages/ClusterHomePage.kt",
+      "galaxy/cluster/src/test/java/com/galaxy/autocluster/ClusterAppNavigationTest.kt",
+      "galaxy/cluster/src/test/java/com/galaxy/autocluster/LegacyProjectionRetirementTest.kt"
+    ],
+    "formatTwiceIdempotent": true,
+    "readOnlyCheck": true,
+    "log": "R0 ktlint 1.4.1: 22 files, separate argv; format=True\nPASS: 22 files checked; formatting idempotent\n\nR0 ktlint 1.4.1: 22 files, separate argv; format=False\nPASS: 22 files checked\n"
+  },
+  "xml": {
+    "tool": "/usr/bin/xmllint: using libxml version 20913\n   compiled with: Threads Tree Output Push Reader Patterns Writer SAXv1 FTP HTTP DTDValid HTML Legacy C14N Catalog XPath XPointer XInclude ICU ISO8859X Unicode Regexps Automata Schemas Schematron Modules Debug Zlib",
+    "indent": "    ",
+    "fileCount": 7,
+    "files": [
+      {
+        "file": "galaxy/cluster/src/main/AndroidManifest.xml",
+        "sha256": "9debfc7c02d99c5f6c1fa77e8279c8a5c9df79452e180ba9c5fee77087ecb6e8",
+        "wellFormed": true,
+        "semanticEqual": true,
+        "formatIdempotent": true
+      },
+      {
+        "file": "galaxy/cluster/src/main/res/layout/activity_cluster.xml",
+        "sha256": "f668dd57d3eff585bdbcc9ca4ee78260437f54c74640dbe25b9c7e51bf12d19a",
+        "wellFormed": true,
+        "semanticEqual": true,
+        "formatIdempotent": true
+      },
+      {
+        "file": "galaxy/cluster/src/main/res/layout/page_cluster_home.xml",
+        "sha256": "48a094ef9ae4e711fba8b72f02353bd1e06fd40ee783bc72f2e73552e8ba4b70",
+        "wellFormed": true,
+        "semanticEqual": true,
+        "formatIdempotent": true
+      },
+      {
+        "file": "galaxy/cluster/src/main/res/values/strings.xml",
+        "sha256": "dc95e89588cb0a2ff520936606ab5578047ca7701e46a963202760ffa7c538c4",
+        "wellFormed": true,
+        "semanticEqual": true,
+        "formatIdempotent": true
+      },
+      {
+        "file": "galaxy/service/src/main/res/layout/include_service_features.xml",
+        "sha256": "f12fbd5d60618f890ca9ed5703a9ecd9e89fb6da75c46e715201c35e97c8b5ea",
+        "wellFormed": true,
+        "semanticEqual": true,
+        "formatIdempotent": true
+      },
+      {
+        "file": "galaxy/service/src/main/res/layout/include_service_overview.xml",
+        "sha256": "dadbe091dd37595b172e8ae1425781ebe46cf63cea9d30e87dd27b9e7b1ba25e",
+        "wellFormed": true,
+        "semanticEqual": true,
+        "formatIdempotent": true
+      },
+      {
+        "file": "galaxy/service/src/main/res/values/strings.xml",
+        "sha256": "6cdafdc2c551a1d38a2da86ccda8fd32dbc9daecde3fec71e0827de6536c8d65",
+        "wellFormed": true,
+        "semanticEqual": true,
+        "formatIdempotent": true
+      }
+    ]
+  },
+  "script": {
+    "fileCount": 4,
+    "files": [
+      {
+        "file": "tools/review/galaxy-r0-20261112/archive_projection.py",
+        "check": "py_compile",
+        "passed": true
+      },
+      {
+        "file": "tools/review/galaxy-r0-20261112/verify_format.py",
+        "check": "py_compile",
+        "passed": true
+      },
+      {
+        "file": "tools/review/galaxy-r0-20261112/verify_artifacts.py",
+        "check": "py_compile",
+        "passed": true
+      },
+      {
+        "file": "scripts/verify_projection_retirement.sh",
+        "check": "bash -n",
+        "passed": true
+      }
+    ]
+  }
+}

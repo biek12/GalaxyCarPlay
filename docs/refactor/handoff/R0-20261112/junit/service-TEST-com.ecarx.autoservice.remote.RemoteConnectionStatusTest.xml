@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.ecarx.autoservice.remote.RemoteConnectionStatusTest" tests="2" skipped="0" failures="0" errors="0" timestamp="2026-11-12T10:22:46.350Z" hostname="anjondeMacBook-Pro.local" time="0.068">
+  <properties/>
+  <testcase name="tlsInitializationFailureSurvivesSocketWrappingAndHasDistinctUi" classname="com.ecarx.autoservice.remote.RemoteConnectionStatusTest" time="0.043"/>
+  <testcase name="handshakeAndOrdinaryReconnectRemainDistinctAndRedacted" classname="com.ecarx.autoservice.remote.RemoteConnectionStatusTest" time="0.022"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

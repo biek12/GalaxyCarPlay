@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.galaxy.autocluster.theme.ThemePackageCodecTest" tests="8" skipped="0" failures="0" errors="0" timestamp="2026-11-12T10:20:40.306Z" hostname="anjondeMacBook-Pro.local" time="0.275">
+  <properties/>
+  <testcase name="externalDeclarationsAndMalformedXmlAreRejected" classname="com.galaxy.autocluster.theme.ThemePackageCodecTest" time="0.023"/>
+  <testcase name="unsupportedVersionsAndMissingMandatoryFilesAreRejected" classname="com.galaxy.autocluster.theme.ThemePackageCodecTest" time="0.04"/>
+  <testcase name="traversalAbsoluteNamesAndScriptsNeverBecomePackageResources" classname="com.galaxy.autocluster.theme.ThemePackageCodecTest" time="0.023"/>
+  <testcase name="streamingCompressionCannotBypassUncompressedResourceBudget" classname="com.galaxy.autocluster.theme.ThemePackageCodecTest" time="0.083"/>
+  <testcase name="directoryEntriesCannotHideCompressedPayload" classname="com.galaxy.autocluster.theme.ThemePackageCodecTest" time="0.023"/>
+  <testcase name="xmlAndResourcesRoundTripWithChineseAndEscapedName" classname="com.galaxy.autocluster.theme.ThemePackageCodecTest" time="0.025"/>
+  <testcase name="callerOwnsInputAndOutputLifetimes" classname="com.galaxy.autocluster.theme.ThemePackageCodecTest" time="0.031"/>
+  <testcase name="packageDefensivelyCopiesResourceArrays" classname="com.galaxy.autocluster.theme.ThemePackageCodecTest" time="0.021"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

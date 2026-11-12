@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.galaxy.autocluster.theme.ClusterVisualRefinementTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-12T10:20:31.973Z" hostname="anjondeMacBook-Pro.local" time="1.0">
+  <properties/>
+  <testcase name="lyricsAfterCenteredTrackAreIdenticalToIsolatedLyrics" classname="com.galaxy.autocluster.theme.ClusterVisualRefinementTest" time="0.28"/>
+  <testcase name="signedPowerSupportsSixtyBothDirectionsReversedConventionAndRejectsRawUnits" classname="com.galaxy.autocluster.theme.ClusterVisualRefinementTest" time="0.13"/>
+  <testcase name="musicHasOnePastCurrentAndTwoFutureRowsAndShortProgress" classname="com.galaxy.autocluster.theme.ClusterVisualRefinementTest" time="0.253"/>
+  <testcase name="cruiseArcEndsAtNeedleForBothSignsAndCustomScale" classname="com.galaxy.autocluster.theme.ClusterVisualRefinementTest" time="0.136"/>
+  <testcase name="headerGearAndFourModesAreIndependentEditableNodesAndExpire" classname="com.galaxy.autocluster.theme.ClusterVisualRefinementTest" time="0.194"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

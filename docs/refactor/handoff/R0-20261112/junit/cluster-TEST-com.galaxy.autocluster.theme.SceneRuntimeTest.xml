@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.galaxy.autocluster.theme.SceneRuntimeTest" tests="5" skipped="0" failures="0" errors="0" timestamp="2026-11-12T10:20:35.831Z" hostname="anjondeMacBook-Pro.local" time="4.47">
+  <properties/>
+  <testcase name="motionReplacesTargetAndIntroNeverResetsMovingSpeedToZero" classname="com.galaxy.autocluster.theme.SceneRuntimeTest" time="0.022"/>
+  <testcase name="nestedMapGeometryAndGroupResizeRemainConsistent" classname="com.galaxy.autocluster.theme.SceneRuntimeTest" time="0.019"/>
+  <testcase name="allSeventeenComponentsUseSameRendererAndUnknownValuesRemainUnavailable" classname="com.galaxy.autocluster.theme.SceneRuntimeTest" time="2.211"/>
+  <testcase name="builtinPackagesRoundTripAndKeepRealMapHoleInBothModes" classname="com.galaxy.autocluster.theme.SceneRuntimeTest" time="2.18"/>
+  <testcase name="perModeOverridePreservesTransparentZeroAndCannotChangeBindings" classname="com.galaxy.autocluster.theme.SceneRuntimeTest" time="0.023"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>

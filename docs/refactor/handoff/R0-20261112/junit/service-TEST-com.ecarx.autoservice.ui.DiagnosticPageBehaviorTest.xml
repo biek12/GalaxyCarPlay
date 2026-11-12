@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<testsuite name="com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest" tests="12" skipped="0" failures="0" errors="0" timestamp="2026-11-12T10:22:46.463Z" hostname="anjondeMacBook-Pro.local" time="4.093">
+  <properties/>
+  <testcase name="documentImportClosesStreamAndPreparesOnSuccess" classname="com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest" time="2.206"/>
+  <testcase name="repeatedLogClicksQueueOnceAndCompletionAllowsRetry" classname="com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest" time="0.172"/>
+  <testcase name="destroyedPageDropsLateIoResult" classname="com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest" time="0.161"/>
+  <testcase name="shellRunsThroughProductionSessionAndShowsRealResult" classname="com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest" time="0.179"/>
+  <testcase name="leavingPageClosesObserverWithoutStoppingService" classname="com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest" time="0.243"/>
+  <testcase name="vehiclePageAdvancesByActualItemsAndWrapsAtEnd" classname="com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest" time="0.157"/>
+  <testcase name="prepareRequiresEnabledBackgroundAndOtherwiseSendsNothing" classname="com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest" time="0.143"/>
+  <testcase name="logsAreReadOnWorkerAndShownFromRealFiles" classname="com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest" time="0.16"/>
+  <testcase name="modelSelectionWritesPreferenceAndNotifiesService" classname="com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest" time="0.199"/>
+  <testcase name="scanRequestsOnceAndSnapshotOnlyBackfills" classname="com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest" time="0.14"/>
+  <testcase name="disabledFeatureBlocksShellWithResourceFeedback" classname="com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest" time="0.14"/>
+  <testcase name="logReadFailureShowsResourceFeedbackAndRetrySucceeds" classname="com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest" time="0.163"/>
+  <system-out><![CDATA[]]></system-out>
+  <system-err><![CDATA[]]></system-err>
+</testsuite>
