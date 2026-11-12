@@ -9,6 +9,7 @@
 - 2026-11-12用户追加：旧整屏投屏链中的 **AutoService 同样停止相关注入**；收口须贯穿客户端入口、服务 IPC/命令/恢复、Root helper 的旧接收端部署和 Android bridge 启动。原厂元素增强仍保留，共用 QNX health 资产不得误删。新任务 [R0](docs/refactor/R0-整屏投屏归档任务书-20261112.md)交DSH，编译/标准用例/格式/提交后再交审；本条是实施授权，不代表代码已关闭或车端已恢复。
 - 2026-11-12用户进一步确认：没有页面入口的主题场景引擎随整屏归档移出 APK，音乐卡片只保留 `SceneData`。原厂元素、背景替换和 Hook 不随引擎删除。包、注入和批次见[加强规划](docs/refactor/包与架构加强规划-20261112.md)。本条是范围确认，文件尚未搬迁。
 - 2026-11-12用户最新决定并已澄清：**只归档旧整屏覆盖投屏，原厂元素增强保留**。旧整屏路线代码归档保留，新版不提供实际入口或注入投屏，旧链不再重构；原厂音乐卡片、背景元素替换及其Hook继续保留。此条覆盖此前“保留直接运行遮罩/完整主题”的产品要求。只服务旧整屏路线的主题库/编辑器/组件库重构停止，C2b已撤回。归档须落实UI、Manifest、命令/IPC、自动恢复及服务输出入口，不能只藏按钮；共享数据/基础能力按依赖盘点处理，不能连带停用原厂增强或CarPlay主屏会话。见[归档边界](docs/refactor/覆盖投屏归档边界-20261112.md)。
+- service 与 cluster 的边界和写法同时生效于项目规则 `.cursor/rules/service-cluster-project.mdc`、`.cursor/rules/service-cluster-code.mdc`。文档正文见 [项目规范](docs/refactor/service-cluster项目规范-20261112.md) 与 [代码规范](docs/refactor/service-cluster代码规范-20261112.md)。改这两个模块时规则和文档一起遵守，不把文档链接当成已经生效的规则。
 - 用户再次纠正：本次是 Android 结构重构，普通界面必须 XML + View Binding，文案/尺寸/样式/主题/图形按 Android 资源管理；不能以补注释代替职责拆分。完整执行 [Android工程规范](docs/refactor/Android工程规范.md) 与 [重构总图](docs/refactor/重构总图-20261111.md)。
 - 用户随后补充：common已有UI组件应先复用，ui只补充封装；按 [Common组件复用映射](docs/refactor/Common组件复用映射-20261111.md)沿现有实现适配XML/资源、消除重复，不新建另一套组件或引入common↔ui循环依赖。
 - 已有代码先提交保存；以后每批代码在指定隔离 worktree 编译和标准用例通过、Git 提交后才交审。此条覆盖旧任务书“不跑 Gradle/禁止提交”的限制；Codex 定文件拆分、调用关系与用例，编码 Agent 实施，Codex 待用户叫开始后审计集成，不后台续派。

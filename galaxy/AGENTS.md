@@ -4,7 +4,7 @@
 
 ## Android 工程结构（本次用户纠正，优先于旧任务书）
 
-- 完整标准见 [Android工程规范](../docs/refactor/Android工程规范.md)，批次和文件职责见 [重构总图](../docs/refactor/重构总图-20261111.md)。两份文档均是编码与审计依据，不能只阅读本摘要。
+- 完整标准见 [Android工程规范](../docs/refactor/Android工程规范.md)，批次和文件职责见 [重构总图](../docs/refactor/重构总图-20261111.md)。service 与 cluster 的模块边界、包和平台注入见 [项目规范](../docs/refactor/service-cluster项目规范-20261112.md)，类、端口和归档的写法见 [代码规范](../docs/refactor/service-cluster代码规范-20261112.md)。这四份都是编码与审计依据，不能只阅读本摘要。
 - 用户随后补充：先复用 `common`/`galaxy/common` 已有UI组件，`ui`只补必要跨应用封装、资源适配及缺口；已迁出的组件继续使用同一实现，不重写一套。复用来源、现有委托和本批缺口必须逐项列明；不能让ui反向依赖含CarPlay业务的common造成循环。详见 [组件复用映射](../docs/refactor/Common组件复用映射-20261111.md)。
 - 普通页面、列表项、设置行、弹窗及静态组件骨架使用 `res/layout` XML，启用 View Binding；Kotlin 只绑定状态、事件和确需动态的内容。禁止把原有 `addView` 工厂换个文件继续拼整页。Canvas/Surface 渲染、确需自适应测量的控件单独列例外与依据，其静态外壳仍使用资源。
 - 用户可见固定文案、格式化句子、数量文案分别使用 `string`、占位符、`plurals`；布局尺寸、文字角色、颜色、主题、图形和状态背景分别归 `values/dimens`、styles、colors、themes、drawable/color selector，夜间差异使用资源限定符。已有语言不得丢失。`mipmap` 用于实际启动图标，不为目录数量造素材。
