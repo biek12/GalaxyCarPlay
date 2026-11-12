@@ -57,7 +57,7 @@ REQUIRED_SUITES = {
         "com.ecarx.autoservice.platform.root.PlatformExecutionTest",
         "com.ecarx.autoservice.ui.ServiceHomeBehaviorTest",
         "com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest",
-        "com.ecarx.autoservice.ClusterElementPipelineTest",
+        "com.ecarx.autoservice.oem.ClusterElementPipelineTest",
         "com.ecarx.autoservice.platform.hook.ClusterHookLifecycleTest",
         "com.ecarx.autoservice.ClientRegistryTest",
         "com.ecarx.autoservice.platform.foundation.FoundationRecoveryTest",

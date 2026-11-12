@@ -73,7 +73,7 @@ bash scripts/verify_cluster_pages.sh 2>&1 | tee "$LOG_DIR/verify_cluster_pages.l
   --tests com.ecarx.autoservice.platform.root.PlatformExecutionTest \
   --tests com.ecarx.autoservice.ui.ServiceHomeBehaviorTest \
   --tests com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest \
-  --tests com.ecarx.autoservice.ClusterElementPipelineTest \
+  --tests com.ecarx.autoservice.oem.ClusterElementPipelineTest \
   --tests com.ecarx.autoservice.platform.hook.ClusterHookLifecycleTest \
   --tests com.ecarx.autoservice.ClientRegistryTest \
   --tests com.ecarx.autoservice.platform.foundation.FoundationRecoveryTest \
