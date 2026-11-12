@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 主题库固定头部：当前主题标题/名称/比例预览/说明，三等宽操作按钮，主题库分区标题。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+    <TextView android:id="@+id/theme_current_section" style="@style/ClusterTheme.Section" android:layout_width="wrap_content" android:layout_height="wrap_content" android:text="@string/theme_current_section"/>
+    <TextView android:id="@+id/theme_current_name" style="@style/ClusterTheme.CurrentName" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/theme_header_name_margin_top" android:layout_marginBottom="@dimen/theme_header_name_margin_bottom" android:text="@string/theme_current_reading"/>
+    <com.galaxy.autocluster.ui.ThemeRatioImageView android:id="@+id/theme_current_preview" android:layout_width="match_parent" android:layout_height="wrap_content" android:background="@color/cluster_theme_preview_background" android:scaleType="fitCenter"/>
+    <TextView android:id="@+id/theme_current_preview_note" style="@style/ClusterTheme.Note" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/theme_current_preview_note"/>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="wrap_content" android:gravity="center_vertical" android:orientation="horizontal">
+        <com.galaxy.auto.ui.GalaxyActionButton android:id="@+id/theme_edit_current" style="@style/GalaxyUi.Button" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_weight="1" android:text="@string/theme_edit_current"/>
+        <com.galaxy.auto.ui.GalaxyActionButton android:id="@+id/theme_create" style="@style/GalaxyUi.Button" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/theme_header_button_gap" android:layout_weight="1" android:text="@string/theme_new"/>
+        <com.galaxy.auto.ui.GalaxyActionButton android:id="@+id/theme_import" style="@style/GalaxyUi.Button" android:layout_width="0dp" android:layout_height="wrap_content" android:layout_marginStart="@dimen/theme_header_button_gap" android:layout_weight="1" android:text="@string/theme_import"/>
+    </LinearLayout>
+    <TextView android:id="@+id/theme_library_section" style="@style/ClusterTheme.Section" android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginTop="@dimen/theme_section_margin_top" android:layout_marginBottom="@dimen/theme_section_margin_bottom" android:text="@string/theme_library_section"/>
+</LinearLayout>

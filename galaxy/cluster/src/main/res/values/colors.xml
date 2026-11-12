@@ -1,0 +1,5 @@
+<?xml version="1.0"?>
+<resources>
+    <!-- 主题预览底色：旧 RatioImage 的 rgb(9,20,23)，日夜一致，改由资源提供而不在 Kotlin parseColor。 -->
+    <color name="cluster_theme_preview_background">#091417</color>
+</resources>

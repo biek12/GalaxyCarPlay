@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 主题卡片：旧版 ClusterUi.rounded(surface,4) 的资源化，日夜色阶由公共 surface 提供。 -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="rectangle">
+    <solid android:color="@color/galaxy_ui_surface"/>
+    <corners android:radius="@dimen/galaxy_ui_corner_radius"/>
+</shape>

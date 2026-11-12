@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<resources>
+    <!-- C2a 本页文字角色：从公共基础 TextAppearance 派生，只覆盖旧版 ThemeActivity/ThemeLibraryPage 的字号、字重与色阶。 -->
+    <!-- includeFontPadding / 行距 / 内边距属于 View 属性，必须落在作为 style= 使用的 View style 上；setTextAppearance 不会应用它们。 -->
+    <style name="ClusterTheme.Title" parent="GalaxyUi.TextAppearance">
+        <item name="android:textSize">@dimen/theme_text_title</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">@color/galaxy_ui_text</item>
+    </style>
+    <style name="ClusterTheme.Section" parent="GalaxyUi.TextAppearance">
+        <item name="android:textSize">@dimen/theme_text_section</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:textColor">@color/galaxy_ui_text</item>
+    </style>
+    <style name="ClusterTheme.CurrentName" parent="GalaxyUi.TextAppearance">
+        <item name="android:textSize">@dimen/theme_text_name</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textColor">@color/galaxy_ui_muted</item>
+    </style>
+    <style name="ClusterTheme.CardTitle" parent="GalaxyUi.TextAppearance">
+        <item name="android:textSize">@dimen/theme_text_card_title</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textColor">@color/galaxy_ui_text</item>
+    </style>
+    <style name="ClusterTheme.CardDetail" parent="GalaxyUi.TextAppearance">
+        <item name="android:textSize">@dimen/theme_text_card_detail</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textColor">@color/galaxy_ui_muted</item>
+    </style>
+    <style name="ClusterTheme.Footer" parent="GalaxyUi.TextAppearance">
+        <item name="android:textSize">@dimen/theme_text_footer</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textColor">@color/galaxy_ui_muted</item>
+    </style>
+    <!-- 说明文字沿用旧 note：14sp 次色，上下 12dp 内边距与 3dp 额外行距都是 View 层属性。 -->
+    <style name="ClusterTheme.Note" parent="GalaxyUi.TextAppearance">
+        <item name="android:textSize">@dimen/theme_text_note</item>
+        <item name="android:fontFamily">sans-serif</item>
+        <item name="android:textColor">@color/galaxy_ui_muted</item>
+        <item name="android:lineSpacingExtra">@dimen/theme_note_line_spacing_extra</item>
+        <item name="android:paddingTop">@dimen/theme_note_padding_vertical</item>
+        <item name="android:paddingBottom">@dimen/theme_note_padding_vertical</item>
+    </style>
+    <!-- 48dp 更多按钮：沿用公共按钮最小高度/颜色/背景，仅把水平 padding 置 0 让 20sp 符号在窄槽内完整显示。 -->
+    <style name="ClusterTheme.Button.Menu" parent="GalaxyUi.Button">
+        <item name="android:paddingStart">0dp</item>
+        <item name="android:paddingEnd">0dp</item>
+    </style>
+</resources>
