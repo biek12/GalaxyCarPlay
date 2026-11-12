@@ -1,0 +1,52 @@
+{
+  "date": "2026-11-12",
+  "owner": "Codex",
+  "scriptCommit": "a70697d93a972619612fa005ff33e8c53aa226a3",
+  "scope": "isolated theme retirement candidate; code structure cleanup pending",
+  "fullWindowsShellGateExitCode": 0,
+  "scriptRegressionTests": 7,
+  "scriptRegressionExitCode": 0,
+  "finalHashMismatches": [],
+  "legacyArchive": 53,
+  "themeArchive": 44,
+  "manifestFiles": 4,
+  "classCount": 223,
+  "previewModels": [
+    "com/galaxy/autocluster/preview/SceneData.class",
+    "com/galaxy/autocluster/preview/SceneMedia.class",
+    "com/galaxy/autocluster/preview/SceneSignal.class"
+  ],
+  "requiredJUnitSuites": 12,
+  "requiredJUnitCases": 60,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "sourceCount": 983,
+  "worktreeStatusAtValidation": "",
+  "apkBuilt": false,
+  "vehicleValidated": false,
+  "nativeAssetPreparationExcluded": true,
+  "leaderIntegrated": false,
+  "evidence": {
+    "VALIDATION.json": {
+      "path": "F:\\GalaxyPlay\\wt-theme-validation\\.work\\theme-retirement-validation\\VALIDATION.json",
+      "sha256": "76436d4d4ebf10bcbb22d2820a75dd28b81220825a09aa269534c8700ee809e6",
+      "bytes": 219202
+    },
+    "full-gate.log": {
+      "path": "F:\\GalaxyPlay\\wt-theme-validation\\.work\\theme-retirement-validation\\full-gate.log",
+      "sha256": "f76f016e8edc6aabfd3f42ba082a5f2ee67b5690bb567c3cc14915f576d39d1a",
+      "bytes": 60482
+    },
+    "script-regression.log": {
+      "path": "F:\\GalaxyPlay\\wt-theme-validation\\.work\\theme-retirement-validation\\script-regression.log",
+      "sha256": "10074bb0a4a96b863d4dc37c270bf06c3c8378cf572877b0e1794643d5b4b78b",
+      "bytes": 110
+    },
+    "format-result.json": {
+      "path": "F:\\GalaxyPlay\\wt-theme-validation\\.work\\theme-retirement-validation\\format-result.json",
+      "sha256": "b0e47ed3d3fcad3d065a4c6534c7dacf304a06d2c136d3554a084338b10b2db5",
+      "bytes": 5978
+    }
+  }
+}
