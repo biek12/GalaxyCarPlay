@@ -1,8 +1,8 @@
 package com.galaxy.autocluster.ui.pages
 
+import com.galaxy.autocluster.databinding.PageClusterSettingsBinding
 import com.galaxy.autocluster.ui.ClusterPageContent
 import com.galaxy.autocluster.ui.ClusterPageHost
-import com.galaxy.autocluster.databinding.PageClusterSettingsBinding
 import com.galaxy.autocluster.ui.navigation.ClusterPage
 
 /**

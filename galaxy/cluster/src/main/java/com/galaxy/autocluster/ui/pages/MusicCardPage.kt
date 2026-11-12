@@ -2,13 +2,13 @@ package com.galaxy.autocluster.ui.pages
 
 import android.os.Bundle
 import android.widget.FrameLayout
-import com.galaxy.autocluster.ui.ClusterPageContent
-import com.galaxy.autocluster.ui.ClusterPageHost
-import com.galaxy.autocluster.databinding.PageClusterMusicBinding
-import com.galaxy.autocluster.ui.InstrumentMusicPreview
-import com.galaxy.autocluster.ui.navigation.ClusterPage
 import com.galaxy.auto.ui.GalaxyStyle
 import com.galaxy.auto.ui.GalaxyViews
+import com.galaxy.autocluster.databinding.PageClusterMusicBinding
+import com.galaxy.autocluster.ui.ClusterPageContent
+import com.galaxy.autocluster.ui.ClusterPageHost
+import com.galaxy.autocluster.ui.InstrumentMusicPreview
+import com.galaxy.autocluster.ui.navigation.ClusterPage
 
 /**
  * 音乐卡片页 binder：只绑定 `page_cluster_music`。公共开关行、状态说明、
@@ -32,7 +32,8 @@ internal class MusicCardPage(
         ClusterPageBindings.bindHeader(binding.pageHeader, ClusterPage.MUSIC, host)
         GalaxyViews.attachSwitch(
             binding.musicSwitchRow,
-            binding.musicSwitchRow.titleView.text.toString(),
+            binding.musicSwitchRow.titleView.text
+                .toString(),
             checked(),
         ) { enabled -> host.musicSwitch(enabled) }
         preview =

@@ -19,14 +19,18 @@ import kotlin.concurrent.withLock
  * 本地图片导入：从旧 `ClusterActivity.onActivityResult` 原样迁移的校验、有界读、
  * 解码验证与 AtomicFile 保存；只管文件导入和结果交付，不读配置、不发服务 Intent。
  *
- * 调度合同（与旧实现语义一致）：
- * - 单后台线程 + 容量 1 待执行队列；新请求替换尚未执行的旧请求，最新选择优先；
+ * 调度合同：
+ * - 容量 1 的最新待执行请求：新请求直接替换尚未执行的旧请求，最新选择优先；
+ * - 最多一个已排入/正在运行的调度 pump：`importImage` 只替换 pending，
+ *   仅当 pump 未排入时向 executor 提交一次；pump 循环接续最新请求直至无 pending；
  * - 已在运行的旧任务允许结束，但其回调代次已失效，不回主线程；
- * - [close] 停止队列并使一切迟到回调失效，主线程回调不再触 View / 写配置 / 启动服务。
+ * - [close] 释放 pending、使一切迟到回调失效并停止自有队列，
+ *   主线程回调不再触 View / 写配置 / 启动服务。
  *
- * 线程/所有者：`importImage` 主线程调用；校验与 IO 全部在 worker；结果经主线程
- * [Handler] 交付。异常保留原因链随 [Result] 交给调用方展示，本类不记录完整私有路径或载荷。
- * `executor` 参数仅供测试用可控单线程驱动已排队任务（只替换调度边界），
+ * 线程/所有者：`importImage` 主线程调用；校验与 IO 全部在 worker（pump 锁外执行）；
+ * 结果经主线程 [Handler] 交付。异常保留原因链随 [Result] 交给调用方展示，
+ * 本类不记录完整私有路径或载荷。
+ * `executor` 参数仅供测试用可控调度驱动已排队任务（只替换调度边界），
  * 生产路径使用默认的单线程 [ExecutorService]。
  */
 internal class BackgroundImageImport(
@@ -41,6 +45,9 @@ internal class BackgroundImageImport(
     /** 容量 1 的待执行请求：新请求直接替换未执行的旧请求。 */
     private var pending: Runnable? = null
 
+    /** pump 已排入或正在运行；与 pending 同锁保护，避免重复提交或丢唤醒。 */
+    private var pumpScheduled = false
+
     /** 代次由本类单独拥有：每个请求一代，仅最新请求的回调有效。 */
     @Volatile
     private var generation = 0L
@@ -48,16 +55,29 @@ internal class BackgroundImageImport(
     @Volatile
     private var closed = false
 
-    /** 提交一次导入请求；重复提交时最新请求替换尚未执行的旧请求。 */
+    /** 提交一次导入请求；只替换 pending，pump 未排入时才向 executor 提交一次。 */
     fun importImage(source: File) {
         if (closed) return
         val ticket = ++generation
         val job = Runnable { runJob(source, ticket) }
-        lock.withLock { pending = job }
-        executor.execute(drain)
+        val needsSubmit =
+            lock.withLock {
+                pending = job
+                val submit = !pumpScheduled
+                pumpScheduled = true
+                submit
+            }
+        if (!needsSubmit) return
+        try {
+            executor.execute(pump)
+        } catch (error: Throwable) {
+            // 提交被拒绝：复原本轮调度标志并保留原异常，不留永久“已排入”的假状态。
+            lock.withLock { pumpScheduled = false }
+            throw error
+        }
     }
 
-    /** 关闭：停队列、使回调失效；已提交但未执行的任务不再运行。 */
+    /** 关闭：释放 pending、停自有队列、使回调失效；已提交未执行的任务不再运行。 */
     fun close() {
         if (closed) return
         closed = true
@@ -66,11 +86,28 @@ internal class BackgroundImageImport(
         (executor as? ExecutorService)?.shutdownNow()
     }
 
-    /** 单个排水任务：总是取最新的待执行请求执行，旧请求被替换后自然丢弃。 */
-    private val drain =
+    /**
+     * 唯一调度 pump：同一锁内取走并清空最新 pending，锁外执行原导入；
+     * 运行期间新请求只覆盖 pending，循环接续最新一份；找不到 pending 或已关闭时
+     * 在锁内复原调度标志并退出。
+     */
+    private val pump =
         Runnable {
-            val job = lock.withLock { val next = pending; pending = null; next } ?: return@Runnable
-            job.run()
+            while (true) {
+                val job =
+                    lock.withLock {
+                        val next = pending
+                        pending = null
+                        if (next == null || closed) {
+                            pumpScheduled = false
+                            null
+                        } else {
+                            next
+                        }
+                    }
+                if (job == null) return@Runnable
+                job.run()
+            }
         }
 
     /** 在 worker 执行导入；结束后按代次决定是否回主线程交付结果。 */

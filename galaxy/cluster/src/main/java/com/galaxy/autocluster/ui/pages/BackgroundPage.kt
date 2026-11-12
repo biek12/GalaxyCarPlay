@@ -1,12 +1,12 @@
 package com.galaxy.autocluster.ui.pages
 
 import android.view.View
-import com.galaxy.autocluster.R
-import com.galaxy.autocluster.ui.ClusterPageContent
-import com.galaxy.autocluster.ui.ClusterPageHost
-import com.galaxy.autocluster.databinding.PageClusterBackgroundBinding
 import com.galaxy.auto.contract.ClusterDisplayConfiguration
 import com.galaxy.auto.ui.GalaxyStyle
+import com.galaxy.autocluster.R
+import com.galaxy.autocluster.databinding.PageClusterBackgroundBinding
+import com.galaxy.autocluster.ui.ClusterPageContent
+import com.galaxy.autocluster.ui.ClusterPageHost
 import com.galaxy.autocluster.ui.navigation.ClusterPage
 
 /**
@@ -65,10 +65,42 @@ internal class BackgroundPage(
         val context = binding.root.context
         val selectedLabel = context.getString(R.string.cluster_background_selected_value)
         binding.backgroundStatus.text = status()
-        binding.backgroundSourceOriginal.setValue(if (selected == ClusterDisplayConfiguration.ORIGINAL) selectedLabel else "")
-        binding.backgroundSourceImage.setValue(if (selected == ClusterDisplayConfiguration.IMAGE_BACKGROUND) selectedLabel else "")
-        binding.backgroundSourceCarplay.setValue(if (selected == ClusterDisplayConfiguration.CARPLAY_MAP) selectedLabel else "")
-        binding.backgroundSourceLocal.setValue(if (selected == ClusterDisplayConfiguration.LOCAL_MAP) selectedLabel else "")
+        binding.backgroundSourceOriginal.setValue(
+            if (selected ==
+                ClusterDisplayConfiguration.ORIGINAL
+            ) {
+                selectedLabel
+            } else {
+                ""
+            },
+        )
+        binding.backgroundSourceImage.setValue(
+            if (selected ==
+                ClusterDisplayConfiguration.IMAGE_BACKGROUND
+            ) {
+                selectedLabel
+            } else {
+                ""
+            },
+        )
+        binding.backgroundSourceCarplay.setValue(
+            if (selected ==
+                ClusterDisplayConfiguration.CARPLAY_MAP
+            ) {
+                selectedLabel
+            } else {
+                ""
+            },
+        )
+        binding.backgroundSourceLocal.setValue(
+            if (selected ==
+                ClusterDisplayConfiguration.LOCAL_MAP
+            ) {
+                selectedLabel
+            } else {
+                ""
+            },
+        )
         val noteRes = value.noteRes
         if (noteRes == null) {
             binding.backgroundNote.visibility = View.GONE

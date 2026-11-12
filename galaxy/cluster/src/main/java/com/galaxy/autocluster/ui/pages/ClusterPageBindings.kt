@@ -2,11 +2,11 @@ package com.galaxy.autocluster.ui.pages
 
 import android.view.LayoutInflater
 import android.view.View
-import com.galaxy.autocluster.databinding.IncludeClusterPageHeaderBinding
-import com.galaxy.autocluster.ui.ClusterPageHost
-import com.galaxy.autocluster.databinding.ViewClusterActionArrowBinding
 import com.galaxy.auto.ui.GalaxySettingRow
 import com.galaxy.auto.ui.GalaxyStyle
+import com.galaxy.autocluster.databinding.IncludeClusterPageHeaderBinding
+import com.galaxy.autocluster.databinding.ViewClusterActionArrowBinding
+import com.galaxy.autocluster.ui.ClusterPageHost
 import com.galaxy.autocluster.ui.navigation.ClusterPage
 
 /**

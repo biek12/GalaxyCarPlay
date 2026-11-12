@@ -1,20 +1,20 @@
 package com.galaxy.autocluster
 
 import android.content.ComponentName
-import android.os.Bundle
-import android.widget.Button
-import java.util.concurrent.Executor
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Button
 import android.widget.TextView
 import com.galaxy.auto.contract.AutoContract
-import org.robolectric.RuntimeEnvironment
-import org.robolectric.Shadows
 import com.galaxy.auto.ui.GalaxySettingRow
 import com.galaxy.autocluster.ui.ClusterPageSession
+import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows
 import java.io.File
+import java.util.concurrent.Executor
 
 /**
  * 记录型观察者替身：只隔离 AutoClient 连接边界；快照与断连由测试按生产同型
@@ -62,6 +62,10 @@ internal class RecordingClusterPageSession : ClusterPageSession {
  */
 internal class QueuedImportExecutor : Executor {
     private val commands = mutableListOf<Runnable>()
+
+    /** 当前实际待执行任务数；只读观察，供容量 1 合同断言使用。 */
+    val pendingCount: Int
+        get() = commands.size
 
     override fun execute(command: Runnable) {
         commands.add(command)

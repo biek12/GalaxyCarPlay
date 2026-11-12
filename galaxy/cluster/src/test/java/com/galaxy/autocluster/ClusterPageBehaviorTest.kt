@@ -3,17 +3,15 @@ package com.galaxy.autocluster
 import android.app.Activity
 import android.app.AlertDialog
 import android.content.Intent
+import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.os.Bundle
-import android.content.res.Configuration
 import android.os.Looper
-import android.view.View
 import android.widget.TextView
 import com.galaxy.auto.contract.ClusterDisplayConfiguration
-import com.galaxy.autocluster.ui.InstrumentMusicPreview
-import com.galaxy.autocluster.runtime.ClusterDisplayStore
 import com.galaxy.auto.ui.GalaxySettingRow
-import com.galaxy.auto.ui.R as UiR
+import com.galaxy.autocluster.runtime.ClusterDisplayStore
+import com.galaxy.autocluster.ui.InstrumentMusicPreview
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotSame
@@ -23,14 +21,15 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
-import org.robolectric.Shadows.shadowOf
 import org.robolectric.RuntimeEnvironment
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowDialog
 import org.robolectric.shadows.ShadowToast
 import java.io.File
 import java.io.FileOutputStream
+import com.galaxy.auto.ui.R as UiR
 
 /**
  * C1 新增标准用例：页面生命周期与显式恢复（C1-05）、外观选择（C1-06）、真实图片导入（C1-07），
@@ -86,7 +85,8 @@ class ClusterPageBehaviorTest {
             assertEquals("等待服务连接", status.text.toString())
             // 全部回执快照不产生 apply/stop。
             val commands =
-                generateSequence { shadowOf(app).nextStartedService }.toList()
+                generateSequence { shadowOf(app).nextStartedService }
+                    .toList()
                     .filter { it.component?.className == ClusterRenderService::class.java.name }
             assertTrue(commands.none { it.action == "apply" || it.action == "stop" })
         } finally {
@@ -113,8 +113,10 @@ class ClusterPageBehaviorTest {
         session.push(Bundle().apply { putString("clusterElementStatus", "active") })
         assertEquals(1, ClusterPageFixture.walk(root).filterIsInstance<InstrumentMusicPreview>().count())
         assertSame(previewBefore, ClusterPageFixture.walk(root).filterIsInstance<InstrumentMusicPreview>().single())
+
         fun commands(): List<Intent> =
-            generateSequence { shadowOf(app).nextStartedService }.toList()
+            generateSequence { shadowOf(app).nextStartedService }
+                .toList()
                 .filter { it.component?.className == ClusterRenderService::class.java.name }
         assertTrue(commands().none { it.action == "apply" || it.action == "stop" })
         // 配置变化：重建壳与当前页，预览按新 Context 重建一次，路由保留。
@@ -172,8 +174,10 @@ class ClusterPageBehaviorTest {
         ClusterPageFixture.declareServiceUnbindable()
         val app = RuntimeEnvironment.getApplication()
         val preferences = app.getSharedPreferences("cluster-display", 0)
+
         fun reloadCommands(): List<Intent> =
-            generateSequence { shadowOf(app).nextStartedService }.toList()
+            generateSequence { shadowOf(app).nextStartedService }
+                .toList()
                 .filter { it.component?.className == ClusterRenderService::class.java.name && it.action == "reload" }
 
         // enabled=false：取消不写；确认 day 不重载。
@@ -225,7 +229,10 @@ class ClusterPageBehaviorTest {
         ClusterPageFixture.button(readRoot, "设置").performClick()
         assertEquals(
             "夜间",
-            controllerRead.get().findViewById<GalaxySettingRow>(R.id.settings_appearance_row).valueView.text
+            controllerRead
+                .get()
+                .findViewById<GalaxySettingRow>(R.id.settings_appearance_row)
+                .valueView.text
                 .toString(),
         )
         assertEquals(
@@ -262,6 +269,7 @@ class ClusterPageBehaviorTest {
         try {
             val activity = controller.get()
             val root = activity.window.decorView
+
             fun drain(): List<Intent> = generateSequence { shadowOf(app).nextStartedService }.toList()
             drain()
             ClusterPageFixture.row(root, "原厂增强").performClick()
@@ -278,7 +286,13 @@ class ClusterPageBehaviorTest {
             assertEquals(saved.name, store.read().image)
             assertEquals("image", store.read().background)
             assertTrue(store.read().music)
-            assertEquals(1, drain().count { it.component?.className == ClusterRenderService::class.java.name && it.action == "apply" })
+            assertEquals(
+                1,
+                drain().count {
+                    it.component?.className == ClusterRenderService::class.java.name &&
+                        it.action == "apply"
+                },
+            )
             // 实际非法图片：不改原配置、不发 apply，显示原错误提示。
             val invalid = File(sourceDir, "invalid.png").apply { writeBytes(byteArrayOf(0, 1, 2, 3)) }
             ClusterPageFixture.button(root, "更换图片").performClick()
@@ -286,7 +300,12 @@ class ClusterPageBehaviorTest {
             shadowOf(Looper.getMainLooper()).idle()
             assertEquals(saved.name, store.read().image)
             assertEquals("image", store.read().background)
-            assertTrue(drain().none { it.component?.className == ClusterRenderService::class.java.name && it.action == "apply" })
+            assertTrue(
+                drain().none {
+                    it.component?.className == ClusterRenderService::class.java.name &&
+                        it.action == "apply"
+                },
+            )
             assertEquals("图片无法读取，请选择其他图片", ShadowToast.getTextOfLatestToast())
         } finally {
             controller.pause().stop().destroy()
@@ -303,10 +322,12 @@ class ClusterPageBehaviorTest {
             val second = writeRealPng(File(sourceDir, "second.png"), 0xFFFF0000)
             ClusterPageFixture.row(root, "原厂增强").performClick()
             ClusterPageFixture.row(root, "背景").performClick()
+            // 容量 1 观察点：连续两次选择后、执行前，实际待执行任务不超过 1。
             ClusterPageFixture.button(root, "选择新图片").performClick()
             activity.deliverActivityResult(41, Activity.RESULT_OK, Intent().putExtra("imagePath", first.absolutePath))
             ClusterPageFixture.button(root, "选择新图片").performClick()
             activity.deliverActivityResult(41, Activity.RESULT_OK, Intent().putExtra("imagePath", second.absolutePath))
+            assertTrue("两次选择只允许排入一个待执行调度任务", executor.pendingCount <= 1)
             executor.runAll()
             shadowOf(Looper.getMainLooper()).idle()
             val committed = File(app.filesDir, "display-backgrounds").listFiles()!!.map { it.name }
@@ -315,20 +336,43 @@ class ClusterPageBehaviorTest {
             val newFileName = committed.single { it != savedName }
             assertEquals(newFileName, store.read().image)
             assertEquals("image", store.read().background)
+            assertTrue(store.read().music)
             assertTrue(
-                generateSequence { shadowOf(app).nextStartedService }.toList()
-                    .count { it.component?.className == ClusterRenderService::class.java.name && it.action == "apply" } == 1,
+                generateSequence { shadowOf(app).nextStartedService }
+                    .toList()
+                    .count {
+                        it.component?.className == ClusterRenderService::class.java.name && it.action == "apply"
+                    } ==
+                    1,
             )
             assertEquals(1, queuedSession.connectCount)
-            // 关闭后完成的任务：不写配置、不发命令。
+            // 执行完成后再选择新图片：pump 标志跨周期复原，仍只排入一个任务并正常提交。
+            val third = writeRealPng(File(sourceDir, "third.png"), 0xFF00FF00)
             ClusterPageFixture.button(root, "更换图片").performClick()
-            activity.deliverActivityResult(41, Activity.RESULT_OK, Intent().putExtra("imagePath", first.absolutePath))
+            activity.deliverActivityResult(41, Activity.RESULT_OK, Intent().putExtra("imagePath", third.absolutePath))
+            assertTrue("新周期同样只排入一个调度任务", executor.pendingCount <= 1)
+            executor.runAll()
+            shadowOf(Looper.getMainLooper()).idle()
+            assertEquals(3, File(app.filesDir, "display-backgrounds").listFiles()!!.size)
+            // 第三次选择同样提交：相对上一分段恰好新增一条 apply，且配置指向最新文件。
+            assertEquals(1, File(app.filesDir, "display-backgrounds").listFiles()!!.count { it.name !in committed })
+            assertEquals(
+                1,
+                generateSequence { shadowOf(app).nextStartedService }
+                    .toList()
+                    .count { it.component?.className == ClusterRenderService::class.java.name && it.action == "apply" },
+            )
+            // 关闭后完成的任务：不写配置、不发命令。
+            val beforeClose = File(app.filesDir, "display-backgrounds").listFiles()!!.map { it.name }
+            ClusterPageFixture.button(root, "更换图片").performClick()
+            activity.deliverActivityResult(41, Activity.RESULT_OK, Intent().putExtra("imagePath", third.absolutePath))
             controllerQueued.pause().stop().destroy()
             executor.runAll()
             shadowOf(Looper.getMainLooper()).idle()
-            assertEquals(newFileName, store.read().image)
+            assertEquals(beforeClose, File(app.filesDir, "display-backgrounds").listFiles()!!.map { it.name })
             assertTrue(
-                generateSequence { shadowOf(app).nextStartedService }.toList()
+                generateSequence { shadowOf(app).nextStartedService }
+                    .toList()
                     .none { it.component?.className == ClusterRenderService::class.java.name && it.action == "apply" },
             )
         } finally {

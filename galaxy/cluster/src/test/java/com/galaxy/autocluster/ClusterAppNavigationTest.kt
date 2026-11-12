@@ -1,12 +1,10 @@
 package com.galaxy.autocluster
 
 import android.os.Bundle
-import android.view.View
 import android.widget.Switch
 import android.widget.TextView
 import com.galaxy.auto.contract.ClusterDisplayConfiguration
 import com.galaxy.autocluster.runtime.ClusterDisplayStore
-import com.galaxy.auto.ui.GalaxySettingRow
 import com.galaxy.autocluster.ui.InstrumentMusicPreview
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -38,6 +36,7 @@ class ClusterAppNavigationTest {
         try {
             val activity = controller.get()
             val root = activity.window.decorView
+
             fun row(name: String) = ClusterPageFixture.row(root, name)
             ClusterPageFixture.capture(root, "overview")
             assertTrue(ClusterPageFixture.hasText(root, "我的仪表"))
@@ -113,15 +112,20 @@ class ClusterAppNavigationTest {
         val app = org.robolectric.RuntimeEnvironment.getApplication()
         ClusterPageFixture.declareServiceUnbindable()
         val store = ClusterDisplayStore(app)
-        store.saveDraft(ClusterDisplayConfiguration(ClusterDisplayConfiguration.OEM_ELEMENTS, "image", true, "aurora.png"))
+        store.saveDraft(
+            ClusterDisplayConfiguration(ClusterDisplayConfiguration.OEM_ELEMENTS, "image", true, "aurora.png"),
+        )
         val controller = Robolectric.buildActivity(ClusterActivity::class.java)
         ClusterPageFixture.install(controller.get())
         controller.setup()
         try {
             val activity = controller.get()
             val root = activity.window.decorView
+
             fun row(name: String) = ClusterPageFixture.row(root, name)
+
             fun control() = ClusterPageFixture.walk(root).filterIsInstance<Switch>().single()
+
             fun drain(): List<android.content.Intent> = generateSequence { shadowOf(app).nextStartedService }.toList()
             row("原厂增强").performClick()
             row("音乐卡片").performClick()
@@ -134,14 +138,24 @@ class ClusterAppNavigationTest {
             // 草稿图片不因音乐开关启用图片背景。
             assertEquals("original", store.elements().background)
             assertTrue(control().isChecked)
-            assertTrue(drain().any { it.component?.className == ClusterRenderService::class.java.name && it.action == "apply" })
+            assertTrue(
+                drain().any {
+                    it.component?.className == ClusterRenderService::class.java.name &&
+                        it.action == "apply"
+                },
+            )
             activity.onBackPressed()
             row("背景").performClick()
             row("本地图片").performClick()
             assertEquals("image", store.elements().background)
             assertEquals("aurora.png", store.elements().image)
             assertTrue(store.elements().music)
-            assertTrue(drain().any { it.component?.className == ClusterRenderService::class.java.name && it.action == "apply" })
+            assertTrue(
+                drain().any {
+                    it.component?.className == ClusterRenderService::class.java.name &&
+                        it.action == "apply"
+                },
+            )
             activity.onBackPressed()
             row("音乐卡片").performClick()
             control().performClick()
@@ -153,7 +167,12 @@ class ClusterAppNavigationTest {
             row("背景").performClick()
             row("原厂背景").performClick()
             assertFalse(store.enabled)
-            assertTrue(drain().any { it.component?.className == ClusterRenderService::class.java.name && it.action == "stop" })
+            assertTrue(
+                drain().any {
+                    it.component?.className == ClusterRenderService::class.java.name &&
+                        it.action == "stop"
+                },
+            )
             activity.onBackPressed()
             row("音乐卡片").performClick()
             assertFalse(control().isChecked)

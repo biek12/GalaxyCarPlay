@@ -1,11 +1,11 @@
 package com.galaxy.autocluster.ui.pages
 
-import com.galaxy.autocluster.ui.ClusterPageContent
-import com.galaxy.autocluster.ui.ClusterPageHost
-import com.galaxy.autocluster.databinding.PageClusterHomeBinding
-import com.galaxy.autocluster.ui.navigation.ClusterPage
 import android.view.View
 import com.galaxy.auto.ui.GalaxyStyle
+import com.galaxy.autocluster.databinding.PageClusterHomeBinding
+import com.galaxy.autocluster.ui.ClusterPageContent
+import com.galaxy.autocluster.ui.ClusterPageHost
+import com.galaxy.autocluster.ui.navigation.ClusterPage
 
 /**
  * 首页 binder：只绑定 `page_cluster_home`，展示当前显示状态、原厂增强与自定义仪表入口，

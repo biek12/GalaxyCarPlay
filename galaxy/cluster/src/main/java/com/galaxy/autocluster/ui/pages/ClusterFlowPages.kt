@@ -1,12 +1,12 @@
 package com.galaxy.autocluster.ui.pages
 
+import com.galaxy.auto.ui.GalaxyStyle
+import com.galaxy.autocluster.databinding.PageClusterRestoreBinding
+import com.galaxy.autocluster.databinding.PageClusterResultBinding
+import com.galaxy.autocluster.databinding.PageClusterThemesBinding
 import com.galaxy.autocluster.ui.ClusterPageContent
 import com.galaxy.autocluster.ui.ClusterPageHost
-import com.galaxy.autocluster.databinding.PageClusterResultBinding
-import com.galaxy.autocluster.databinding.PageClusterRestoreBinding
-import com.galaxy.autocluster.databinding.PageClusterThemesBinding
 import com.galaxy.autocluster.ui.navigation.ClusterPage
-import com.galaxy.auto.ui.GalaxyStyle
 
 /**
  * 主题入口页 binder：只绑定 `page_cluster_themes`，“我的主题”显式进入既有 ThemeActivity。

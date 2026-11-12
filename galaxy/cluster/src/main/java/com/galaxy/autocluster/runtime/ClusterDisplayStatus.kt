@@ -2,8 +2,8 @@ package com.galaxy.autocluster.runtime
 
 import android.content.res.Resources
 import android.os.Bundle
-import com.galaxy.autocluster.R
 import com.galaxy.auto.contract.ClusterDisplayConfiguration
+import com.galaxy.autocluster.R
 
 /**
  * 状态判定的纯输入集合：由 Presenter 从当前快照与持久配置组装，
@@ -72,11 +72,19 @@ object ClusterDisplayStatus {
                 resources.getString(R.string.cluster_status_image_failed)
             input.snapshot.getLong("clusterElementRevision") < input.pendingRevision ->
                 resources.getString(R.string.cluster_status_submitting)
-            input.snapshot.getBundle("clusterElements")?.let { ClusterDisplayConfiguration.from(it) } != input.elements ->
+            input.snapshot
+                .getBundle(
+                    "clusterElements",
+                )?.let { ClusterDisplayConfiguration.from(it) } != input.elements ->
                 resources.getString(R.string.cluster_status_submitting)
-            element == "music" && input.snapshot.getBundle("clusterElementRuntime")?.getBoolean("musicMounted") == true ->
+            element == "music" &&
+                input.snapshot
+                    .getBundle(
+                        "clusterElementRuntime",
+                    )?.getBoolean("musicMounted") == true ->
                 resources.getString(R.string.cluster_status_music_replaced)
-            element == "background" && input.snapshot.getBundle("clusterElementRuntime")?.getBoolean("backgroundMounted") == true ->
+            element == "background" &&
+                input.snapshot.getBundle("clusterElementRuntime")?.getBoolean("backgroundMounted") == true ->
                 resources.getString(R.string.cluster_status_background_replaced)
             else ->
                 when (input.snapshot.getString("clusterElementStatus")) {
@@ -131,7 +139,10 @@ object ClusterDisplayStatus {
         value: String,
     ): String =
         when (value) {
-            ClusterDisplayConfiguration.IMAGE_BACKGROUND -> resources.getString(R.string.cluster_background_source_image)
+            ClusterDisplayConfiguration.IMAGE_BACKGROUND ->
+                resources.getString(
+                    R.string.cluster_background_source_image,
+                )
             ClusterDisplayConfiguration.CARPLAY_MAP -> resources.getString(R.string.cluster_background_source_carplay)
             ClusterDisplayConfiguration.LOCAL_MAP -> resources.getString(R.string.cluster_background_source_local)
             else -> resources.getString(R.string.cluster_background_source_original)

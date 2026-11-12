@@ -3,15 +3,24 @@ import java.util.Properties
 plugins { alias(libs.plugins.android.application) }
 
 val privateServer =
-    Properties().apply { rootProject.file(".private/server.properties").takeIf { it.isFile }?.inputStream()?.use { load(it) } }
+    Properties().apply {
+        rootProject
+            .file(".private/server.properties")
+            .takeIf { it.isFile }
+            ?.inputStream()
+            ?.use { load(it) }
+    }
 val bridgeOrigin =
     providers
         .environmentVariable("GALAXY_ORIGIN")
         .orElse(privateServer.getProperty("bridge.origin", "https://bridge.example.invalid/galaxy"))
         .get()
 require(
-    bridgeOrigin.startsWith("https://") && !bridgeOrigin.contains('"') && !bridgeOrigin.contains('\\') &&
-        !bridgeOrigin.contains('\n') && !bridgeOrigin.contains('\r')
+    bridgeOrigin.startsWith("https://") &&
+        !bridgeOrigin.contains('"') &&
+        !bridgeOrigin.contains('\\') &&
+        !bridgeOrigin.contains('\n') &&
+        !bridgeOrigin.contains('\r'),
 )
 
 android {
