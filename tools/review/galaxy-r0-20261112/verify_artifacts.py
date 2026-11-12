@@ -53,14 +53,14 @@ REQUIRED_SUITES = {
         "com.galaxy.autocluster.LegacyProjectionRetirementTest",
     ],
     "service": [
-        "com.ecarx.autoservice.platform.RootProjectionArchiveTest",
-        "com.ecarx.autoservice.platform.PlatformExecutionTest",
+        "com.ecarx.autoservice.platform.root.RootProjectionArchiveTest",
+        "com.ecarx.autoservice.platform.root.PlatformExecutionTest",
         "com.ecarx.autoservice.ui.ServiceHomeBehaviorTest",
         "com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest",
         "com.ecarx.autoservice.ClusterElementPipelineTest",
-        "com.ecarx.autoservice.ClusterHookLifecycleTest",
+        "com.ecarx.autoservice.platform.hook.ClusterHookLifecycleTest",
         "com.ecarx.autoservice.ClientRegistryTest",
-        "com.ecarx.autoservice.platform.FoundationRecoveryTest",
+        "com.ecarx.autoservice.platform.foundation.FoundationRecoveryTest",
         "com.ecarx.autoservice.remote.RemoteConnectionStatusTest",
     ],
 }

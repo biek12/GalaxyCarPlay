@@ -9,7 +9,7 @@ export GALAXY_VERIFY_CACHE="$ROOT/.work" GALAXY_ROBOLECTRIC_STRICT_OFFLINE=1
 mkdir -p "$ROOT/.work/logs"
 cd "$ROOT"
 TESTS=(:record:testDebugUnitTest --tests 'com.galaxy.autorecord.recording.*' --tests 'com.galaxy.autorecord.storage.*' --tests 'com.galaxy.autorecord.runtime.*'
-       :service:testDebugUnitTest --tests 'com.ecarx.autoservice.remote.*' --tests 'com.ecarx.autoservice.platform.AdbCryptoTest' --tests 'com.ecarx.autoservice.diagnostics.*')
+       :service:testDebugUnitTest --tests 'com.ecarx.autoservice.remote.*' --tests 'com.ecarx.autoservice.platform.adb.AdbCryptoTest' --tests 'com.ecarx.autoservice.diagnostics.*')
 if [ "${1:-}" = --all-tests ]; then TESTS=(:record:testDebugUnitTest :service:testDebugUnitTest); fi
 ./gradlew --offline --no-daemon --console=plain -Pandroid.builder.sdkDownload=false \
   -Pkotlin.compiler.execution.strategy=in-process -I scripts/verify/lib/robolectric-offline.init.gradle \

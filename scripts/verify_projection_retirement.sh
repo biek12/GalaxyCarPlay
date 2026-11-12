@@ -69,14 +69,14 @@ bash scripts/verify_cluster_pages.sh 2>&1 | tee "$LOG_DIR/verify_cluster_pages.l
 # 3) 同一离线环境执行本批 service R0 用例及受影响的既有回归（精确 suite 清单）。
 # 零匹配由 Gradle "No tests found" 直接失败；具体报告再由 Python 逐项核对。
 ./gradlew "${ARGS[@]}" :service:testDebugUnitTest \
-  --tests com.ecarx.autoservice.platform.RootProjectionArchiveTest \
-  --tests com.ecarx.autoservice.platform.PlatformExecutionTest \
+  --tests com.ecarx.autoservice.platform.root.RootProjectionArchiveTest \
+  --tests com.ecarx.autoservice.platform.root.PlatformExecutionTest \
   --tests com.ecarx.autoservice.ui.ServiceHomeBehaviorTest \
   --tests com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest \
   --tests com.ecarx.autoservice.ClusterElementPipelineTest \
-  --tests com.ecarx.autoservice.ClusterHookLifecycleTest \
+  --tests com.ecarx.autoservice.platform.hook.ClusterHookLifecycleTest \
   --tests com.ecarx.autoservice.ClientRegistryTest \
-  --tests com.ecarx.autoservice.platform.FoundationRecoveryTest \
+  --tests com.ecarx.autoservice.platform.foundation.FoundationRecoveryTest \
   --tests com.ecarx.autoservice.remote.RemoteConnectionStatusTest \
   2>&1 | tee "$LOG_DIR/service-tests.log"
 
