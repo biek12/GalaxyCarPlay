@@ -1,0 +1,95 @@
+{
+  "date": "2026-11-12",
+  "scope": "read-only initial review, offline; not full R0 acceptance",
+  "businessBaselines": {
+    "r0": "92cf470af06f4999256f7c83502aa1edd56b7e44",
+    "platform": "ce1f309b2e182f0383ecb628985a2432af19dd9e",
+    "theme": "25f08487cbaa184cb0eb26cc135829402c75b8c9"
+  },
+  "executedChecks": {
+    "galaxycarplay": {
+      "head": "92cf470af06f4999256f7c83502aa1edd56b7e44",
+      "archive_gate": {
+        "passed": false,
+        "reason": "归档摘要不一致: galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyEglContext.kt"
+      },
+      "closure_gate": {
+        "passed": false,
+        "reason": "service Gradle 仍含旧 bridge 打包/烟测: testInstrumentationRunner"
+      }
+    },
+    "wt-platform-ports": {
+      "head": "ce1f309b2e182f0383ecb628985a2432af19dd9e",
+      "archive_gate": {
+        "passed": false,
+        "reason": "归档摘要不一致: galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyEglContext.kt"
+      },
+      "closure_gate": {
+        "passed": false,
+        "reason": "[Errno 2] No such file or directory: 'F:\\\\GalaxyPlay\\\\wt-platform-ports\\\\galaxy\\\\service\\\\src\\\\main\\\\java\\\\com\\\\ecarx\\\\autoservice\\\\platform\\\\QnxClusterHook.kt'"
+      }
+    },
+    "wt-theme-archive": {
+      "head": "25f08487cbaa184cb0eb26cc135829402c75b8c9",
+      "archive_gate": {
+        "passed": false,
+        "reason": "归档摘要不一致: galaxy/service/src/main/java/com/ecarx/autoservice/projection/GalaxyEglContext.kt"
+      },
+      "closure_gate": {
+        "passed": false,
+        "reason": "service Gradle 仍含旧 bridge 打包/烟测: testInstrumentationRunner"
+      }
+    }
+  },
+  "legacyArchive": {
+    "manifestEntries": 53,
+    "eachExistingWorktreeCRLFOnlyMismatches": 53,
+    "gitBlobMatchesManifest": true,
+    "diskByteGatePassed": false
+  },
+  "themeArchive": {
+    "entriesComparedToBaselineGitBlob": 44,
+    "sha256LengthAndBytesMatched": true,
+    "originalFilesAbsent": true
+  },
+  "ktlint": {
+    "version": "1.4.1",
+    "jarSha256": "abff61ead7dabdf1264ae7dce61cb5325e602896f33f3ee2fbc359238adeac70",
+    "mode": "read-only",
+    "files": 60,
+    "exitCode": 1
+  },
+  "gradle": {
+    "version": "9.5.0",
+    "offlineHelpExitCode": 0,
+    "serviceCompileAttemptExitCode": 1,
+    "failedTask": ":auto-ui:dataBindingMergeDependencyArtifactsDebug",
+    "reason": "No cached version of androidx.databinding:viewbinding:9.3.0 available for offline mode",
+    "businessKotlinCompiled": false
+  },
+  "fullR0GateExecuted": false,
+  "vehicleValidated": false,
+  "apkBuilt": false,
+  "localEvidence": {
+    "platform-format-files.txt": {
+      "absolutePath": "F:\\GalaxyPlay\\galaxycarplay\\.work\\codex-cursor-supervision-20261112\\platform-format-files.txt",
+      "sha256": "a051bd3f84fe9e5e95597456a62c5ddaf82f7643bb3a406687348697aa14e7f8",
+      "bytes": 5135
+    },
+    "platform-format-readonly.log": {
+      "absolutePath": "F:\\GalaxyPlay\\galaxycarplay\\.work\\codex-cursor-supervision-20261112\\platform-format-readonly.log",
+      "sha256": "460f20098c6c02563dd8141127294f2b105187e15d65f3c780c2102079baa124",
+      "bytes": 1343200
+    },
+    "platform-compile.log": {
+      "absolutePath": "F:\\GalaxyPlay\\galaxycarplay\\.work\\codex-cursor-supervision-20261112\\platform-compile.log",
+      "sha256": "e9a091487256017f8fdd8513eac0f55fa5dce751e907b35854a030bd84ab259e",
+      "bytes": 3743
+    },
+    "read-only-checks.json": {
+      "absolutePath": "F:\\GalaxyPlay\\galaxycarplay\\.work\\codex-cursor-supervision-20261112\\read-only-checks.json",
+      "sha256": "83313beff024270ac98021e5a9652b4a0f4ff2e45583b6814ae5c2f53647ca72",
+      "bytes": 1354
+    }
+  }
+}
