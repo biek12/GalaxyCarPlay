@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- ClusterActivity 外壳：标题、固定 100dp 左主导航与右侧滚动内容槽；尺寸沿旧版实际值。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:background="@color/galaxy_ui_background" android:orientation="vertical">
+    <TextView android:id="@+id/cluster_app_title" style="@style/GalaxyUi.TextAppearance.PageTitle" android:layout_width="wrap_content" android:layout_height="wrap_content" android:padding="@dimen/cluster_page_padding" android:text="@string/cluster_app_name"/>
+    <LinearLayout android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1" android:orientation="horizontal">
+        <LinearLayout android:id="@+id/cluster_nav" android:layout_width="@dimen/cluster_nav_width" android:layout_height="match_parent" android:orientation="vertical" android:paddingStart="@dimen/cluster_nav_padding_horizontal" android:paddingEnd="@dimen/cluster_nav_padding_horizontal">
+            <com.galaxy.auto.ui.GalaxyActionButton android:id="@+id/cluster_nav_home" style="@style/GalaxyUi.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/cluster_nav_home"/>
+            <com.galaxy.auto.ui.GalaxyActionButton android:id="@+id/cluster_nav_themes" style="@style/GalaxyUi.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/cluster_nav_themes"/>
+            <com.galaxy.auto.ui.GalaxyActionButton android:id="@+id/cluster_nav_settings" style="@style/GalaxyUi.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="@string/cluster_nav_settings"/>
+        </LinearLayout>
+        <ScrollView android:layout_width="0dp" android:layout_height="match_parent" android:layout_weight="1" android:fillViewport="true">
+            <FrameLayout android:id="@+id/cluster_page_slot" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingStart="@dimen/cluster_content_padding_start" android:paddingEnd="@dimen/cluster_content_padding_end" android:paddingBottom="@dimen/cluster_content_padding_bottom"/>
+        </ScrollView>
+    </LinearLayout>
+</LinearLayout>

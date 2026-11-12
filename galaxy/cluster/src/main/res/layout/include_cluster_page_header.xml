@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 页面公共头部：可选标题返回行（真实箭头矢量 + 文字）与页面标题；静态属性全部在 XML。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+    <LinearLayout android:id="@+id/cluster_header_back" android:layout_width="wrap_content" android:layout_height="wrap_content" android:background="@drawable/galaxy_ui_button_text" android:gravity="center_vertical" android:orientation="horizontal" android:paddingTop="@dimen/cluster_header_back_padding_vertical" android:paddingBottom="@dimen/cluster_header_back_padding_vertical" android:visibility="gone">
+        <ImageView android:id="@+id/cluster_header_back_arrow" android:layout_width="@dimen/cluster_arrow_size" android:layout_height="@dimen/cluster_arrow_size" android:importantForAccessibility="no" android:src="@drawable/galaxy_ui_back"/>
+        <TextView android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginStart="@dimen/cluster_header_back_gap" android:text="@string/cluster_back" android:textAppearance="@style/GalaxyUi.TextAppearance.TextButton"/>
+    </LinearLayout>
+    <TextView android:id="@+id/cluster_header_title" style="@style/GalaxyUi.TextAppearance.PageTitle" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+</LinearLayout>

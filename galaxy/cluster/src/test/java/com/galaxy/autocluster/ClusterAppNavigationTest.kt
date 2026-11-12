@@ -1,140 +1,228 @@
 package com.galaxy.autocluster
 
-import android.graphics.Bitmap
-import android.graphics.Canvas
-import android.view.View
-import android.view.ViewGroup
-import android.widget.TextView
+import android.os.Bundle
 import android.widget.Switch
-import android.content.Intent
+import android.widget.TextView
 import com.galaxy.auto.contract.ClusterDisplayConfiguration
 import com.galaxy.autocluster.runtime.ClusterDisplayStore
-import com.galaxy.auto.ui.GalaxySettingRow
-import org.junit.Assert.*
+import com.galaxy.autocluster.ui.InstrumentMusicPreview
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
+import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
-import java.io.File
 
-/** 真实Activity离线布局截图；不是模拟器、车机截图或音乐数据验收。 */
+/**
+ * Cluster 普通页面既有标准用例：真实 Activity、XML/View Binding、Presenter/Store/导入。
+ * 旧反射断言已改为 fixture 投递 → 实际页面可见文案断言，原输入与期望行为保持不变。
+ */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk=[30],qualifiers="w571dp-h1028dp-280dpi")
+@Config(sdk = [30], qualifiers = "w571dp-h1028dp-280dpi")
 @GraphicsMode(GraphicsMode.Mode.NATIVE)
 class ClusterAppNavigationTest {
-    @Test fun appSeparatesHomeMusicAndBackgroundAndKeepsServiceSettingsOutside(){
-        org.robolectric.Shadows.shadowOf(org.robolectric.RuntimeEnvironment.getApplication()).declareComponentUnbindable(
-            android.content.ComponentName(com.galaxy.auto.contract.AutoContract.SERVICE_PACKAGE,com.galaxy.auto.contract.AutoContract.SERVICE_CLASS))
-        val controller=Robolectric.buildActivity(ClusterActivity::class.java).setup()
-        try{
-            val activity=controller.get();val root=activity.window.decorView
-            fun row(name:String)=walk(root).filterIsInstance<GalaxySettingRow>().single{it.titleView.text.toString()==name}
-            capture(root,"overview")
-            assertTrue(walk(root).filterIsInstance<TextView>().any{it.text.toString()=="我的仪表"})
-            assertFalse(walk(root).any{it is com.galaxy.autocluster.ui.InstrumentMusicPreview})
-            row("原厂增强").performClick();capture(root,"oem-enhancement")
-            row("音乐卡片").performClick();capture(root,"music-preview")
-            assertEquals(1,walk(root).count{it is com.galaxy.autocluster.ui.InstrumentMusicPreview})
-            assertFalse(walk(root).filterIsInstance<TextView>().any{it.text.contains("Wi-Fi")||it.text.toString()=="本机 ADB"})
-        }finally{controller.pause().stop().destroy()}
+    @Test
+    fun appSeparatesHomeMusicAndBackgroundAndKeepsServiceSettingsOutside() {
+        ClusterPageFixture.declareServiceUnbindable()
+        val store = ClusterDisplayStore(org.robolectric.RuntimeEnvironment.getApplication())
+        store.submitElements(ClusterDisplayConfiguration(mode = ClusterDisplayConfiguration.OEM_ELEMENTS, music = true))
+        val controller = Robolectric.buildActivity(ClusterActivity::class.java)
+        ClusterPageFixture.install(controller.get())
+        controller.setup()
+        try {
+            val activity = controller.get()
+            val root = activity.window.decorView
+
+            fun row(name: String) = ClusterPageFixture.row(root, name)
+            ClusterPageFixture.capture(root, "overview")
+            assertTrue(ClusterPageFixture.hasText(root, "我的仪表"))
+            assertFalse(ClusterPageFixture.walk(root).any { it is InstrumentMusicPreview })
+            row("原厂增强").performClick()
+            ClusterPageFixture.capture(root, "oem-enhancement")
+            row("音乐卡片").performClick()
+            ClusterPageFixture.capture(root, "music-preview")
+            assertEquals(1, ClusterPageFixture.walk(root).count { it is InstrumentMusicPreview })
+            assertFalse(
+                ClusterPageFixture.walk(root).filterIsInstance<TextView>().any {
+                    it.text.contains("Wi-Fi") || it.text.toString() == "本机 ADB"
+                },
+            )
+            // 背景页与设置页可 inflate，且没有服务设置串入。
+            activity.onBackPressed()
+            row("背景").performClick()
+            ClusterPageFixture.capture(root, "background-page")
+            ClusterPageFixture.button(root, "设置").performClick()
+            ClusterPageFixture.capture(root, "settings-page")
+            ClusterPageFixture.button(root, "主题").performClick()
+            ClusterPageFixture.capture(root, "themes-page")
+            row("我的主题").performClick()
+            assertEquals(
+                ThemeActivity::class.java.name,
+                shadowOf(activity).nextStartedActivity.component?.className,
+            )
+            // 恢复与结果页可 inflate：enabled 期间首页才有恢复入口。
+            ClusterPageFixture.button(root, "仪表").performClick()
+            ClusterPageFixture.button(root, "恢复原厂显示").performClick()
+            ClusterPageFixture.capture(root, "restore-page")
+            ClusterPageFixture.button(root, "恢复原厂").performClick()
+            ClusterPageFixture.capture(root, "result-page")
+            assertTrue(ClusterPageFixture.hasText(root, "仪表显示状态"))
+        } finally {
+            controller.pause().stop().destroy()
+        }
     }
-    @Test fun runtimeUsesRootEnabledAndRequiresAnActualReceipt(){
-        org.robolectric.Shadows.shadowOf(org.robolectric.RuntimeEnvironment.getApplication()).declareComponentUnbindable(
-            android.content.ComponentName(com.galaxy.auto.contract.AutoContract.SERVICE_PACKAGE,com.galaxy.auto.contract.AutoContract.SERVICE_CLASS))
-        val store=ClusterDisplayStore(org.robolectric.RuntimeEnvironment.getApplication())
-        val configuration=ClusterDisplayConfiguration(mode=ClusterDisplayConfiguration.OEM_ELEMENTS,music=true)
+
+    @Test
+    fun runtimeUsesRootEnabledAndRequiresAnActualReceipt() {
+        ClusterPageFixture.declareServiceUnbindable()
+        val store = ClusterDisplayStore(org.robolectric.RuntimeEnvironment.getApplication())
+        val configuration = ClusterDisplayConfiguration(mode = ClusterDisplayConfiguration.OEM_ELEMENTS, music = true)
         store.submitElements(configuration)
-        val controller=Robolectric.buildActivity(ClusterActivity::class.java).setup()
-        try{
-            val activity=controller.get()
-            val connected=ClusterActivity::class.java.getDeclaredField("connected").apply{isAccessible=true}
-            val snapshot=ClusterActivity::class.java.getDeclaredField("snapshot").apply{isAccessible=true}
-            val status=ClusterActivity::class.java.getDeclaredMethod("elementStatus",String::class.java).apply{isAccessible=true}
-            connected.setBoolean(activity,true)
-            val bundle=android.os.Bundle().apply{
-                putBundle("features",android.os.Bundle().apply{putBoolean("rootEnabled",true)})
-                putBundle("clusterElements",configuration.bundle())
-            }
-            snapshot.set(activity,bundle)
-            assertTrue((status.invoke(activity,"") as String).contains("等待仪表确认"))
-            bundle.putString("clusterElementStatus","active")
-            assertEquals("原厂增强运行中",status.invoke(activity,""))
-            bundle.getBundle("features")!!.putBoolean("rootEnabled",false)
-            assertTrue((status.invoke(activity,"") as String).contains("基础能力已关闭"))
-        }finally{controller.pause().stop().destroy()}
+        val controller = Robolectric.buildActivity(ClusterActivity::class.java)
+        val session = ClusterPageFixture.install(controller.get())
+        controller.setup()
+        try {
+            val activity = controller.get()
+            ClusterPageFixture.row(activity.window.decorView, "原厂增强").performClick()
+            val status = activity.findViewById<TextView>(R.id.oem_status)
+            val bundle =
+                Bundle().apply {
+                    putBundle("features", Bundle().apply { putBoolean("rootEnabled", true) })
+                    putBundle("clusterElements", configuration.bundle())
+                }
+            session.push(bundle)
+            assertEquals("配置已保存，等待仪表确认", status.text.toString())
+            bundle.putString("clusterElementStatus", "active")
+            session.push(bundle)
+            assertEquals("原厂增强运行中", status.text.toString())
+            bundle.getBundle("features")!!.putBoolean("rootEnabled", false)
+            session.push(bundle)
+            assertEquals("基础能力已关闭，请在 AutoService 中开启", status.text.toString())
+        } finally {
+            controller.pause().stop().destroy()
+        }
     }
 
-    @Test fun stagedImageIsNotAnEnabledSwitchAndUserControlsSubmitWithoutAnotherApply(){
-        val app=org.robolectric.RuntimeEnvironment.getApplication()
-        val shadow=org.robolectric.Shadows.shadowOf(app)
-        shadow.declareComponentUnbindable(android.content.ComponentName(com.galaxy.auto.contract.AutoContract.SERVICE_PACKAGE,com.galaxy.auto.contract.AutoContract.SERVICE_CLASS))
-        val store=ClusterDisplayStore(app)
-        store.saveDraft(ClusterDisplayConfiguration(ClusterDisplayConfiguration.OEM_ELEMENTS,"image",true,"aurora.png"))
-        val controller=Robolectric.buildActivity(ClusterActivity::class.java).setup()
-        try{
-            val activity=controller.get()
-            fun views()=walk(activity.window.decorView)
-            fun row(name:String)=views().filterIsInstance<GalaxySettingRow>().single{it.titleView.text.toString()==name}
-            fun control()=views().filterIsInstance<Switch>().single()
-            fun drain():List<Intent> = generateSequence{shadow.nextStartedService}.toList()
-            row("原厂增强").performClick();row("音乐卡片").performClick()
-            assertFalse(control().isChecked);assertFalse(store.enabled);drain()
-            control().performClick()
-            assertTrue(store.enabled);assertTrue(store.elements().music)
-            assertEquals("original",store.elements().background) // music does not enable a staged image
-            assertTrue(control().isChecked)
-            assertTrue(drain().any{it.component?.className==ClusterRenderService::class.java.name&&it.action=="apply"})
-            activity.onBackPressed();row("背景").performClick();row("本地图片").performClick()
-            assertEquals("image",store.elements().background);assertEquals("aurora.png",store.elements().image)
-            assertTrue(store.elements().music)
-            assertTrue(drain().any{it.component?.className==ClusterRenderService::class.java.name&&it.action=="apply"})
-            activity.onBackPressed();row("音乐卡片").performClick();control().performClick()
-            assertFalse(store.elements().music);assertEquals("image",store.elements().background)
-            assertTrue(store.enabled);drain()
-            activity.onBackPressed();row("背景").performClick();row("原厂背景").performClick()
+    @Test
+    fun stagedImageIsNotAnEnabledSwitchAndUserControlsSubmitWithoutAnotherApply() {
+        val app = org.robolectric.RuntimeEnvironment.getApplication()
+        ClusterPageFixture.declareServiceUnbindable()
+        val store = ClusterDisplayStore(app)
+        store.saveDraft(
+            ClusterDisplayConfiguration(ClusterDisplayConfiguration.OEM_ELEMENTS, "image", true, "aurora.png"),
+        )
+        val controller = Robolectric.buildActivity(ClusterActivity::class.java)
+        ClusterPageFixture.install(controller.get())
+        controller.setup()
+        try {
+            val activity = controller.get()
+            val root = activity.window.decorView
+
+            fun row(name: String) = ClusterPageFixture.row(root, name)
+
+            fun control() = ClusterPageFixture.walk(root).filterIsInstance<Switch>().single()
+
+            fun drain(): List<android.content.Intent> = generateSequence { shadowOf(app).nextStartedService }.toList()
+            row("原厂增强").performClick()
+            row("音乐卡片").performClick()
+            assertFalse(control().isChecked)
             assertFalse(store.enabled)
-            assertTrue(drain().any{it.component?.className==ClusterRenderService::class.java.name&&it.action=="stop"})
-            activity.onBackPressed();row("音乐卡片").performClick();assertFalse(control().isChecked)
-        }finally{controller.pause().stop().destroy()}
-        val recreated=Robolectric.buildActivity(ClusterActivity::class.java).setup()
-        try{
+            drain()
+            control().performClick()
+            assertTrue(store.enabled)
+            assertTrue(store.elements().music)
+            // 草稿图片不因音乐开关启用图片背景。
+            assertEquals("original", store.elements().background)
+            assertTrue(control().isChecked)
+            assertTrue(
+                drain().any {
+                    it.component?.className == ClusterRenderService::class.java.name &&
+                        it.action == "apply"
+                },
+            )
+            activity.onBackPressed()
+            row("背景").performClick()
+            row("本地图片").performClick()
+            assertEquals("image", store.elements().background)
+            assertEquals("aurora.png", store.elements().image)
+            assertTrue(store.elements().music)
+            assertTrue(
+                drain().any {
+                    it.component?.className == ClusterRenderService::class.java.name &&
+                        it.action == "apply"
+                },
+            )
+            activity.onBackPressed()
+            row("音乐卡片").performClick()
+            control().performClick()
+            assertFalse(store.elements().music)
+            assertEquals("image", store.elements().background)
+            assertTrue(store.enabled)
+            drain()
+            activity.onBackPressed()
+            row("背景").performClick()
+            row("原厂背景").performClick()
+            assertFalse(store.enabled)
+            assertTrue(
+                drain().any {
+                    it.component?.className == ClusterRenderService::class.java.name &&
+                        it.action == "stop"
+                },
+            )
+            activity.onBackPressed()
+            row("音乐卡片").performClick()
+            assertFalse(control().isChecked)
+        } finally {
+            controller.pause().stop().destroy()
+        }
+        val recreated = Robolectric.buildActivity(ClusterActivity::class.java)
+        ClusterPageFixture.install(recreated.get())
+        recreated.setup()
+        try {
             assertFalse(ClusterDisplayStore(recreated.get()).enabled)
-            val starts=generateSequence{shadow.nextStartedService}.toList()
-            assertFalse(starts.any{it.component?.className==ClusterRenderService::class.java.name})
-        }finally{recreated.pause().stop().destroy()}
+            val starts = generateSequence { shadowOf(app).nextStartedService }.toList()
+            assertFalse(starts.any { it.component?.className == ClusterRenderService::class.java.name })
+        } finally {
+            recreated.pause().stop().destroy()
+        }
     }
 
-    @Test fun changedPlanCannotDisplaySuccessFromPreviousImageReceipt(){
-        val app=org.robolectric.RuntimeEnvironment.getApplication()
-        org.robolectric.Shadows.shadowOf(app).declareComponentUnbindable(android.content.ComponentName(com.galaxy.auto.contract.AutoContract.SERVICE_PACKAGE,com.galaxy.auto.contract.AutoContract.SERVICE_CLASS))
-        val store=ClusterDisplayStore(app)
-        val current=ClusterDisplayConfiguration(ClusterDisplayConfiguration.OEM_ELEMENTS,"image",true,"new.png")
+    @Test
+    fun changedPlanCannotDisplaySuccessFromPreviousImageReceipt() {
+        val app = org.robolectric.RuntimeEnvironment.getApplication()
+        ClusterPageFixture.declareServiceUnbindable()
+        val store = ClusterDisplayStore(app)
+        val current = ClusterDisplayConfiguration(ClusterDisplayConfiguration.OEM_ELEMENTS, "image", true, "new.png")
         store.submitElements(current)
-        val controller=Robolectric.buildActivity(ClusterActivity::class.java).setup()
-        try{
-            val activity=controller.get()
-            ClusterActivity::class.java.getDeclaredField("connected").apply{isAccessible=true}.setBoolean(activity,true)
-            val snapshot=android.os.Bundle().apply{
-                putString("clusterElementStatus","active")
-                putBundle("clusterElements",current.copy(image="old.png").bundle())
-                putBundle("clusterElementRuntime",android.os.Bundle().apply{putBoolean("backgroundMounted",true)})
-            }
-            ClusterActivity::class.java.getDeclaredField("snapshot").apply{isAccessible=true}.set(activity,snapshot)
-            val status=ClusterActivity::class.java.getDeclaredMethod("elementStatus",String::class.java).apply{isAccessible=true}
-            assertEquals("正在提交仪表配置",status.invoke(activity,"background"))
-            snapshot.putBundle("clusterElements",current.bundle())
-            assertEquals("仪表背景已替换",status.invoke(activity,"background"))
-            snapshot.putString("clusterConfigurationStatus","failed")
-            assertTrue((status.invoke(activity,"background") as String).contains("未能应用"))
-        }finally{controller.pause().stop().destroy()}
-    }
-    private fun walk(view:View):List<View> = listOf(view)+if(view is ViewGroup)(0 until view.childCount).flatMap{walk(view.getChildAt(it))}else emptyList()
-    private fun capture(root:View,name:String){
-        root.measure(View.MeasureSpec.makeMeasureSpec(1000,View.MeasureSpec.EXACTLY),View.MeasureSpec.makeMeasureSpec(1800,View.MeasureSpec.EXACTLY))
-        root.layout(0,0,1000,1800)
-        val image=Bitmap.createBitmap(1000,1800,Bitmap.Config.ARGB_8888)
-        try{root.draw(Canvas(image));val directory=File("build/outputs/refactor-ui").apply{mkdirs()};File(directory,"$name.png").outputStream().use{image.compress(Bitmap.CompressFormat.PNG,100,it)}}finally{image.recycle()}
+        val controller = Robolectric.buildActivity(ClusterActivity::class.java)
+        val session = ClusterPageFixture.install(controller.get())
+        controller.setup()
+        try {
+            val activity = controller.get()
+            val root = activity.window.decorView
+            ClusterPageFixture.row(root, "原厂增强").performClick()
+            ClusterPageFixture.row(root, "背景").performClick()
+            val status = activity.findViewById<TextView>(R.id.background_status)
+            val snapshot =
+                Bundle().apply {
+                    putString("clusterElementStatus", "active")
+                    putBundle("clusterElements", current.copy(image = "old.png").bundle())
+                    putBundle("clusterElementRuntime", Bundle().apply { putBoolean("backgroundMounted", true) })
+                }
+            session.push(snapshot)
+            assertEquals("正在提交仪表配置", status.text.toString())
+            snapshot.putBundle("clusterElements", current.bundle())
+            session.push(snapshot)
+            assertEquals("仪表背景已替换", status.text.toString())
+            snapshot.putString("clusterConfigurationStatus", "failed")
+            session.push(snapshot)
+            assertEquals("背景图片未能应用，显示选择已保留", status.text.toString())
+        } finally {
+            controller.pause().stop().destroy()
+        }
     }
 }

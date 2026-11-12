@@ -1,0 +1,7 @@
+<!-- 导航返回箭头；迁自 common/src/main/res/drawable/ic_l7_back.xml，形状/线宽不变，颜色改公共语义色 galaxy_ui_text。 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="32dp" android:height="32dp" android:viewportWidth="80" android:viewportHeight="80">
+    <path android:fillColor="@android:color/transparent" android:strokeColor="@color/galaxy_ui_text"
+        android:strokeWidth="4" android:strokeLineCap="round" android:strokeLineJoin="round"
+        android:pathData="M51,20L29,40L51,60" />
+</vector>

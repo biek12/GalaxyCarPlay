@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 主题入口页：我的主题，进入既有 ThemeActivity。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+    <include android:id="@+id/page_header" layout="@layout/include_cluster_page_header" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+    <com.galaxy.auto.ui.GalaxySettingsCard android:id="@+id/themes_entry_card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/cluster_group_margin_top">
+        <com.galaxy.auto.ui.GalaxySettingRow android:id="@+id/themes_entry_row" android:layout_width="match_parent" android:layout_height="wrap_content" app:galaxyDescription="@string/cluster_themes_entry_description" app:galaxyTitle="@string/cluster_themes_entry"/>
+    </com.galaxy.auto.ui.GalaxySettingsCard>
+</LinearLayout>

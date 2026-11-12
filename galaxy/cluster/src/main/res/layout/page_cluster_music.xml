@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 音乐卡片页：公共开关行、状态、真实绘制预览槽（350dp）、只读歌词行与返回按钮。 -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" xmlns:app="http://schemas.android.com/apk/res-auto" android:layout_width="match_parent" android:layout_height="wrap_content" android:orientation="vertical">
+    <include android:id="@+id/page_header" layout="@layout/include_cluster_page_header" android:layout_width="match_parent" android:layout_height="wrap_content"/>
+    <com.galaxy.auto.ui.GalaxySettingsCard android:id="@+id/music_switch_card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/cluster_group_margin_top">
+        <com.galaxy.auto.ui.GalaxySettingRow android:id="@+id/music_switch_row" android:layout_width="match_parent" android:layout_height="wrap_content" app:galaxyDescription="@string/cluster_music_switch_description" app:galaxyTitle="@string/cluster_music_switch_title"/>
+    </com.galaxy.auto.ui.GalaxySettingsCard>
+    <TextView android:id="@+id/music_status" style="@style/GalaxyUi.TextAppearance.Description" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="@dimen/cluster_note_padding_vertical" android:paddingBottom="@dimen/cluster_note_padding_vertical"/>
+    <FrameLayout android:id="@+id/music_preview_slot" android:layout_width="match_parent" android:layout_height="@dimen/cluster_music_preview_height"/>
+    <TextView android:id="@+id/music_preview_note" style="@style/GalaxyUi.TextAppearance.Description" android:layout_width="match_parent" android:layout_height="wrap_content" android:paddingTop="@dimen/cluster_note_padding_vertical" android:paddingBottom="@dimen/cluster_note_padding_vertical" android:text="@string/cluster_music_preview_note"/>
+    <com.galaxy.auto.ui.GalaxySettingsCard android:id="@+id/music_lyrics_card" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/cluster_group_margin_top">
+        <com.galaxy.auto.ui.GalaxySettingRow android:id="@+id/music_lyrics_row" android:layout_width="match_parent" android:layout_height="wrap_content" app:galaxyTitle="@string/cluster_music_lyrics_rows" app:galaxyValue="@string/cluster_music_lyrics_rows_value"/>
+        <com.galaxy.auto.ui.GalaxySettingRow android:id="@+id/music_long_line_row" android:layout_width="match_parent" android:layout_height="wrap_content" app:galaxyTitle="@string/cluster_music_long_line" app:galaxyValue="@string/cluster_music_long_line_value"/>
+    </com.galaxy.auto.ui.GalaxySettingsCard>
+    <com.galaxy.auto.ui.GalaxyActionButton android:id="@+id/music_back_button" style="@style/GalaxyUi.Button" android:layout_width="match_parent" android:layout_height="wrap_content" android:layout_marginTop="@dimen/cluster_button_margin_top" android:text="@string/cluster_music_back_button"/>
+</LinearLayout>
