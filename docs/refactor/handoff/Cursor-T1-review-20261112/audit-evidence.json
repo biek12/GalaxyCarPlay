@@ -1,0 +1,47 @@
+{
+  "date": "2026-11-12",
+  "decision": "ACCEPTED_AND_INTEGRATED_OFFLINE",
+  "cursorCodeCommit": "efba5811ed73442e3ff68c442924a994035c3966",
+  "leadWrapperFixCommit": "4d5fe43874a422bef3dc987947f2b1effb6a2d50",
+  "integrationCommit": "7aa00300be80db3e413d33d4dca1306c24c48274",
+  "integrationBranch": "feat/galaxy-android-r0-20261112",
+  "candidateFullGateExitCode": 0,
+  "integrationFullGateExitCode": 0,
+  "fiveFileKtlintExitCode": 0,
+  "scriptRegressionTests": 7,
+  "scriptRegressionExitCode": 0,
+  "requiredJUnitSuites": 12,
+  "requiredJUnitCases": 60,
+  "failures": 0,
+  "errors": 0,
+  "skipped": 0,
+  "legacyArchive": 53,
+  "themeArchive": 44,
+  "classCount": 223,
+  "manifestCount": 4,
+  "sourceCount": 985,
+  "worktreeStatusAtSnapshot": "",
+  "mainUnchangedAt": "eb756396d714b0f386ce318956129f7433004c52",
+  "platformCandidateIntegrated": false,
+  "apkBuilt": false,
+  "vehicleValidated": false,
+  "nativeAssetPreparationExcluded": true,
+  "evidence": {
+    "VALIDATION-7aa0030.json": {
+      "path": "F:\\GalaxyPlay\\galaxycarplay\\.work\\t1-integration-validation\\VALIDATION-7aa0030.json",
+      "sha256": "35aed717fa9236d99acebe1d8ea3cf3f1228e45179e4f6c7b352d4d84f35ff15"
+    },
+    "integration-full-gate.log": {
+      "path": "F:\\GalaxyPlay\\galaxycarplay\\.work\\codex-t1-review-efba581\\integration-full-gate.log",
+      "sha256": "3582f041cf7b8ceaa511c93c65faeaa20a01204197122342ac4cdaad53114ab3"
+    },
+    "integration-five-file-format.log": {
+      "path": "F:\\GalaxyPlay\\galaxycarplay\\.work\\codex-t1-review-efba581\\integration-five-file-format.log",
+      "sha256": "14c476edfada7ae04c4051f3c33d413bf46688268912ee463149fc7bc1b7b01e"
+    },
+    "integration-script-regressions.log": {
+      "path": "F:\\GalaxyPlay\\galaxycarplay\\.work\\codex-t1-review-efba581\\integration-script-regressions.log",
+      "sha256": "c636b0700f1c9487584e6a6df4b381650570d154a6dd466fbb79d6bb3677f6c1"
+    }
+  }
+}
