@@ -2,8 +2,23 @@
 """固定批次文件集格式检查：默认C2a，后续批次可提供Lead固定清单。"""
 import argparse
 import hashlib
+import os
 from pathlib import Path
 import subprocess
+
+
+def ktlint_jar(repository: Path) -> Path:
+    """定位 ktlint 1.4.1。缺文件直接失败，不用别的版本代替。"""
+    explicit = os.environ.get("GALAXY_KTLINT_JAR", "").strip()
+    if explicit:
+        path = Path(explicit)
+    else:
+        cache = os.environ.get("GALAXY_REFACTOR_CACHE", "").strip()
+        root = Path(cache) if cache else repository / ".work"
+        path = root / "tools" / "ktlint-1.4.1" / "ktlint-cli-1.4.1-all.jar"
+    if not path.is_file():
+        raise SystemExit(f"缺少 ktlint 1.4.1: {path}")
+    return path
 
 
 FILES = [
@@ -35,8 +50,8 @@ def main():
     missing = [path for path in files if not (worktree / path).is_file()]
     if missing:
         raise SystemExit(f"缺少{args.label}必交文件，拒绝空检查: {missing}")
-    # 本副本不复制缓存；工具始终来自产品根中已核验的同一jar。
-    jar = Path("/Users/anjon/Documents/GalaxyPlay/.work/tools/ktlint-1.4.1/ktlint-cli-1.4.1-all.jar")
+    # 同一份 ktlint 1.4.1。显式 GALAXY_KTLINT_JAR 优先，否则用缓存根下的固定相对路径。
+    jar = ktlint_jar(repository)
     expected = "abff61ead7dabdf1264ae7dce61cb5325e602896f33f3ee2fbc359238adeac70"
     if hashlib.sha256(jar.read_bytes()).hexdigest() != expected:
         raise SystemExit("ktlint固定jar摘要不符")

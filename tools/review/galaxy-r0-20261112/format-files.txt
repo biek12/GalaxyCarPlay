@@ -14,6 +14,7 @@ galaxy/service/build.gradle.kts
 # service 测试
 galaxy/service/src/test/java/com/ecarx/autoservice/ui/ServiceHomeBehaviorTest.kt
 galaxy/service/src/test/java/com/ecarx/autoservice/platform/RootProjectionArchiveTest.kt
+galaxy/service/src/test/java/com/ecarx/autoservice/ClusterHookLifecycleTest.kt
 # cluster 运行源
 galaxy/cluster/src/main/java/com/galaxy/autocluster/ClusterRenderService.kt
 galaxy/cluster/src/main/java/com/galaxy/autocluster/runtime/ClusterDisplayStore.kt

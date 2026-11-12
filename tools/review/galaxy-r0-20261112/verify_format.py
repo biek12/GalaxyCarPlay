@@ -3,7 +3,7 @@
 
 - Kotlin/KTS：复用 tools/review/galaxy-c2a-20261112/format_check.py（--format 两遍 + check），
   清单为 format-files.txt，覆盖本批全部新增/修改的运行源与测试/KTS，不含原字节 archive。
-- XML：/usr/bin/xmllint libxml 20913，XMLLINT_INDENT='    '，逐文件做 parse 良构、
+- XML：xmllint（GALAXY_XMLLINT、/usr/bin/xmllint 或 PATH），XMLLINT_INDENT='    '，逐文件做 parse 良构、
   格式化前后语义等价、二次格式化幂等；不重写文本资源以改变句义。
 - Python/Shell：py_compile / bash -n 对应语言必要验证。
 结果写 VALIDATION_FORMAT.json（由 verify_projection_retirement.sh 收进证据）。
@@ -17,6 +17,9 @@ import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "galaxy-c2a-20261112"))
+from format_check import ktlint_jar  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[3]
 REVIEW = Path("tools/review/galaxy-r0-20261112")
@@ -44,7 +47,7 @@ def sha256(data: bytes) -> str:
 
 def kotlin_gate() -> dict:
     """按固定 jar 与 editorconfig 执行 --format 两遍幂等 + 只读 check。"""
-    jar = Path("/Users/anjon/Documents/GalaxyPlay/.work/tools/ktlint-1.4.1/ktlint-cli-1.4.1-all.jar")
+    jar = ktlint_jar(ROOT)
     expected = "abff61ead7dabdf1264ae7dce61cb5325e602896f33f3ee2fbc359238adeac70"
     actual = sha256(jar.read_bytes())
     if actual != expected:
@@ -81,23 +84,34 @@ def kotlin_gate() -> dict:
     }
 
 
+def xmllint_bin() -> str:
+    """优先显式路径，其次本机 /usr/bin/xmllint，最后 PATH。缺二进制则失败。"""
+    explicit = os.environ.get("GALAXY_XMLLINT", "").strip()
+    if explicit:
+        return explicit
+    if Path("/usr/bin/xmllint").is_file():
+        return "/usr/bin/xmllint"
+    return "xmllint"
+
+
 def xml_gate() -> dict:
     """xmllint 良构 + 语义等价 + 二次幂等，四空格缩进，不重写源文件。"""
     env = dict(os.environ, XMLLINT_INDENT="    ")
+    lint = xmllint_bin()
     details = []
     for name in XML_FILES:
         path = ROOT / name
         raw = path.read_bytes()
         # 1) 良构 parse
         ET.fromstring(raw)
-        probe = subprocess.run(["/usr/bin/xmllint", "--noout", str(path)], cwd=ROOT,
+        probe = subprocess.run([lint, "--noout", str(path)], cwd=ROOT,
                                capture_output=True, text=True)
         if probe.returncode:
             raise SystemExit(f"xmllint parse 失败: {name}: {probe.stderr}")
         # 2) 格式化一次/两次，比对幂等
-        first = subprocess.run(["/usr/bin/xmllint", "--format", str(path)], cwd=ROOT, env=env,
+        first = subprocess.run([lint, "--format", str(path)], cwd=ROOT, env=env,
                                capture_output=True, check=True).stdout
-        second = subprocess.run(["/usr/bin/xmllint", "--format", "-"], cwd=ROOT, env=env,
+        second = subprocess.run([lint, "--format", "-"], cwd=ROOT, env=env,
                                 input=first, capture_output=True, check=True).stdout
         if first != second:
             raise SystemExit(f"XML 二次格式化不幂等: {name}")
@@ -110,7 +124,7 @@ def xml_gate() -> dict:
             raise SystemExit(f"XML 格式化改变语义: {name}")
         details.append({"file": name, "sha256": sha256(raw), "wellFormed": True,
                         "semanticEqual": True, "formatIdempotent": True})
-    version = subprocess.run(["/usr/bin/xmllint", "--version"], capture_output=True, text=True).stderr.strip()
+    version = subprocess.run([lint, "--version"], capture_output=True, text=True).stderr.strip()
     return {"tool": version, "indent": "    ", "fileCount": len(details), "files": details}
 
 
@@ -138,7 +152,8 @@ def script_gate() -> dict:
 def main() -> None:
     """执行三项格式门槛并写证据文件。"""
     record = {"kotlin": kotlin_gate(), "xml": xml_gate(), "script": script_gate()}
-    target = ROOT / ".work/r0-validation/format-result.json"
+    report = Path(os.environ.get("GALAXY_R0_REPORT_DIR", "").strip() or (ROOT / ".work/r0-validation"))
+    target = report / "format-result.json"
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n")
     print(f"格式门槛通过: Kotlin {record['kotlin']['fileCount']} / "

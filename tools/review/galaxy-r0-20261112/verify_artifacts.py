@@ -9,15 +9,15 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
-TASK_DIR = ROOT.parent
 ARCHIVE_ROOT = Path("archive/legacy-fullscreen-projection/20261112")
-REPORT = ROOT / ".work/r0-validation"
+REPORT = Path(os.environ.get("GALAXY_R0_REPORT_DIR", "").strip() or (ROOT / ".work/r0-validation"))
 
 # 已退役、不得出现在本轮 Kotlin class 输出中的旧专用类。
 FORBIDDEN_CLASSES = [
@@ -309,7 +309,7 @@ def main() -> None:
         "closure": closure_gate(),
         "source": source_gate(),
     }
-    target = TASK_DIR / "VALIDATION.json"
+    target = REPORT / "VALIDATION.json"
     target.write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n")
     (REPORT / "validation-result.json").write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n")
     print(f"产物核对通过: 归档 {record['archive']['checkedCount']} / "

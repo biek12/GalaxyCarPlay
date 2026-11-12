@@ -5,14 +5,16 @@ set -euo pipefail
 
 ROOT=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd -P)
 cd "$ROOT"
-TASK_DIR=$(cd -- "$ROOT/.." && pwd -P)
-LOG_DIR="$TASK_DIR/logs"
-mkdir -p "$LOG_DIR" "$ROOT/.work/r0-validation"
+# 显式环境变量优先。未设置时缓存和报告都落在当前仓库 .work，不写到仓库父目录。
+export GALAXY_REFACTOR_CACHE="${GALAXY_REFACTOR_CACHE:-$ROOT/.work}"
+export GALAXY_VERIFY_CACHE="${GALAXY_VERIFY_CACHE:-$GALAXY_REFACTOR_CACHE}"
+export GALAXY_KTLINT_JAR="${GALAXY_KTLINT_JAR:-$GALAXY_REFACTOR_CACHE/tools/ktlint-1.4.1/ktlint-cli-1.4.1-all.jar}"
+export GALAXY_R0_REPORT_DIR="${GALAXY_R0_REPORT_DIR:-$ROOT/.work/r0-validation}"
+LOG_DIR="$GALAXY_R0_REPORT_DIR/logs"
+mkdir -p "$LOG_DIR" "$GALAXY_R0_REPORT_DIR"
 
-# 固定离线缓存：GALAXY_VERIFY_CACHE 必须与 GALAXY_REFACTOR_CACHE 同时指向 .work，
-# 否则 robolectric-offline init script 会去 worktree/.work 找依赖，与源码无关地失败。
-export GALAXY_REFACTOR_CACHE=/Users/anjon/Documents/GalaxyPlay/.work
-export GALAXY_VERIFY_CACHE=/Users/anjon/Documents/GalaxyPlay/.work
+# GALAXY_VERIFY_CACHE 必须与 GALAXY_REFACTOR_CACHE 同时指向同一缓存根，
+# 否则 robolectric-offline init script 会去另一处找依赖，与源码无关地失败。
 export ANDROID_HOME="$GALAXY_REFACTOR_CACHE/android-sdk"
 export ANDROID_SDK_ROOT="$ANDROID_HOME"
 export GRADLE_USER_HOME="$GALAXY_REFACTOR_CACHE/gradle-home"
@@ -90,6 +92,6 @@ for module in service cluster; do
   done
 done
 cp archive/legacy-fullscreen-projection/20261112/manifest.json "$LOG_DIR/archive-manifest.json"
-cp .work/r0-validation/format-result.json "$LOG_DIR/format-result.json"
+cp "$GALAXY_R0_REPORT_DIR/format-result.json" "$LOG_DIR/format-result.json"
 
 echo "R0 门槛通过：格式、全下游编译、JUnit、Manifest/class、归档摘要均已核对；未打包、未上车。"
