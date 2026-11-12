@@ -2,11 +2,12 @@ package com.ecarx.autoservice.remote
 
 import android.content.Context
 import android.util.AtomicFile
-import com.ecarx.autoservice.platform.PlatformAccess
+import com.ecarx.autoservice.platform.foundation.PlatformAccess
 import org.json.JSONObject
 import java.io.Closeable
 import java.io.File
 import java.security.MessageDigest
+import com.ecarx.autoservice.ServiceTrace
 
 /** 一个会话worker；命令先落领取记录再执行，结果丢失只重传结果，绝不自动重跑Shell。 */
 internal class RemoteBridge(context: Context,private val report: (String)->Unit): Closeable {
@@ -48,7 +49,7 @@ internal class RemoteBridge(context: Context,private val report: (String)->Unit)
                 http.json("/bridge/result?device=${settings.id}",record);pending.delete()
             }catch(error: Exception){
                 if(!closed){
-                    com.ecarx.autoservice.ServiceTrace.event("remote_connection",error)
+                    ServiceTrace.event("remote_connection",error)
                     report(RemoteConnectionStatus.failure(error));try{Thread.sleep(delay)}catch(_: InterruptedException){};delay=minOf(30000,delay*2)
                 }
             }

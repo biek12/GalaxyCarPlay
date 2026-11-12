@@ -2,10 +2,11 @@ package com.ecarx.autoservice.vehicle
 
 import android.content.Context
 import android.os.*
-import com.ecarx.autoservice.platform.RootServiceClient
+import com.ecarx.autoservice.platform.root.RootServiceClient
 import com.galaxy.auto.contract.*
 import org.json.JSONObject
 import java.io.Closeable
+import com.ecarx.autoservice.ServiceTrace
 
 /**
  * v4订阅驱动的串行采集器：只采当前订阅键，节拍取订阅里最紧的间隔。
@@ -127,9 +128,9 @@ internal class VehicleCollector(
         val due = if (wanted.isEmpty()) emptySet() else demand.due(now)
         ++tickTotal; readTotal += due.size
         val batch = if (mode == "root") runCatching {
-            RootServiceClient.read(context, wanted, due, scanDue)
+            RootServiceClient.readVehicle(context, wanted, due, scanDue)
         }.getOrElse {
-            com.ecarx.autoservice.ServiceTrace.event("vehicle_root_read_failed", it)
+            ServiceTrace.event("vehicle_root_read_failed", it)
             JSONObject().put("session", "$nextMode:disconnected").put("discovery", "root_disconnected")
         } else runCatching {
             val result = source.cycle(specs, now, model, wanted, due, scanEnabled)
@@ -138,7 +139,7 @@ internal class VehicleCollector(
             if (scanDue) VehicleScanMerge.merge(result, source.scanCycle(specs, now, model))
             result
         }.getOrElse {
-            com.ecarx.autoservice.ServiceTrace.event("vehicle_cycle_failed", it)
+            ServiceTrace.event("vehicle_cycle_failed", it)
             JSONObject().put("session", "$nextMode:failed").put("discovery", "not_connected")
         }
         if (ticket != generation) return
@@ -225,7 +226,7 @@ internal class VehicleCollector(
             menu.reset(); source.close(); inventory.clear(); demand.assign(emptyMap()); scanEnabled = false
             // 车辆采集关闭时也注销helper中的原厂订阅；Root还可独立服务Shell与QNX。
             if (com.ecarx.autoservice.settings.ServiceFeatures.read(context).root)
-                runCatching { RootServiceClient.request(context, 8, JSONObject(), 5000) }
+                runCatching { RootServiceClient.stopVehicle(context, 5000) }
         }
     }
     override fun close() {

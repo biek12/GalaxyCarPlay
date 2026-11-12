@@ -7,7 +7,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
-import com.ecarx.autoservice.platform.PlatformAccess
+import com.ecarx.autoservice.platform.foundation.PlatformAccess
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder

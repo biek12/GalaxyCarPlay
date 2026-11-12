@@ -7,7 +7,7 @@ import android.os.Bundle
 import com.ecarx.autoservice.AutoService
 import com.ecarx.autoservice.R
 import com.ecarx.autoservice.databinding.ActivityDiagnosticBinding
-import com.ecarx.autoservice.platform.QnxCredentials
+import com.ecarx.autoservice.platform.qnx.QnxCredentials
 import com.ecarx.autoservice.settings.ServiceFeature
 import com.ecarx.autoservice.settings.ServiceFeatures
 import com.ecarx.autoservice.settings.ServicePageCommands

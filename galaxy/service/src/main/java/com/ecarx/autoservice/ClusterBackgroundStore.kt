@@ -1,9 +1,15 @@
 package com.ecarx.autoservice
 
 import android.content.Context
-import android.graphics.*
+import android.graphics.BitmapFactory
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.Paint
+import android.graphics.RectF
 import android.os.ParcelFileDescriptor
 import java.io.File
+import com.ecarx.autoservice.platform.KzbBackgroundPatch
 
 /** 图像FD在普通服务身份下解码；Root只取得本App生成的固定格式资源。 */
 internal class ClusterBackgroundStore(context: Context) {
@@ -32,7 +38,7 @@ internal class ClusterBackgroundStore(context: Context) {
             val w=source.width*scale;val h=source.height*scale
             canvas.drawBitmap(source,null,RectF((1920-w)/2,(532-h)/2,(1920+w)/2,(532+h)/2),Paint(Paint.FILTER_BITMAP_FLAG))
             val png=ClusterBackgroundPng.encode(bytes,output)
-            require(png.size<=com.ecarx.autoservice.platform.KzbBackgroundPatch.PNG_BYTES-64){"background_png_too_large"}
+            require(png.size<=KzbBackgroundPatch.PNG_BYTES-64){"background_png_too_large"}
             val image=android.util.AtomicFile(File(directory,"$name.rgb.png"));val imageOutput=image.startWrite()
             try{imageOutput.write(png);image.finishWrite(imageOutput)}catch(e:Exception){image.failWrite(imageOutput);throw e}
             val row=IntArray(1920);val rgba=ByteArray(7680)

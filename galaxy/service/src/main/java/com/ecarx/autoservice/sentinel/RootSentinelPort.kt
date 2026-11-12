@@ -4,6 +4,7 @@ import android.os.*
 import org.json.JSONObject
 import java.io.Closeable
 import java.util.concurrent.ArrayBlockingQueue
+import com.ecarx.autoservice.platform.root.RootWire
 
 /** G733 专用哨兵口。只允许已核验的待机/关闭和CH服务就绪，不接受任意属性/值。 */
 internal class RootSentinelPort:Closeable {
@@ -89,10 +90,10 @@ internal class RootSentinelPort:Closeable {
     }
     fun stream(output:java.io.DataOutputStream){
         connect()
-        com.ecarx.autoservice.platform.RootWire.write(output,JSONObject().put("power",state).put("powerSequence",sequence).put("at",SystemClock.elapsedRealtime()))
+        RootWire.write(output,JSONObject().put("power",state).put("powerSequence",sequence).put("at",SystemClock.elapsedRealtime()))
         while(!closed){val event=events.poll(30,java.util.concurrent.TimeUnit.SECONDS)
             ?:JSONObject().put("power",state).put("powerSequence",sequence).put("at",SystemClock.elapsedRealtime())
-            com.ecarx.autoservice.platform.RootWire.write(output,event)}
+            RootWire.write(output,event)}
     }
     private fun disconnectPower(){power?.let{port->listener?.let{cb->runCatching{port.javaClass.getMethod("unregisterListener",Class.forName("android.car.hardware.power.ICarPowerStateListener")).invoke(port,cb)}}};power=null;listener=null}
     override fun close(){closed=true;armed=false;disconnectPower();property=null;events.offer(JSONObject().put("closed",true));thread.quitSafely()}

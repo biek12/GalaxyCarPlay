@@ -5,7 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
-import com.ecarx.autoservice.platform.PlatformAccess
+import com.ecarx.autoservice.platform.foundation.PlatformAccess
 import java.io.File
 
 /** 语义化封面写入只接受图像FD；目标、权限、缩放与原子替换全部由服务管理。 */

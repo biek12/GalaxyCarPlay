@@ -8,11 +8,12 @@ import java.nio.ByteOrder
 import java.util.zip.CRC32
 import java.util.zip.Deflater
 import java.util.zip.DeflaterOutputStream
+import com.ecarx.autoservice.platform.KzbBackgroundPatch
 
 /** Kanzi原图是RGB8 PNG；保留已符合尺寸的原PNG，否则从完整适配画面无损编码。 */
 internal object ClusterBackgroundPng {
     fun encode(original:ByteArray,bitmap:Bitmap):ByteArray {
-        if(original.size in 45..(com.ecarx.autoservice.platform.KzbBackgroundPatch.PNG_BYTES-64)) {
+        if(original.size in 45..(KzbBackgroundPatch.PNG_BYTES-64)) {
             val h=ByteBuffer.wrap(original).order(ByteOrder.BIG_ENDIAN)
             if(h.getLong(0)==0x89504e470d0a1a0aUL.toLong() && h.getInt(16)==1920 && h.getInt(20)==532 && original[24]==8.toByte() && original[25]==2.toByte())return original
         }

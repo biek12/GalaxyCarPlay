@@ -3,11 +3,12 @@ package com.ecarx.autoservice.sentinel
 import android.content.Context
 import android.net.LocalSocket
 import android.os.*
-import com.ecarx.autoservice.platform.RootServiceClient
+import com.ecarx.autoservice.platform.root.RootServiceClient
 import com.galaxy.auto.contract.*
 import org.json.JSONObject
 import java.io.DataInputStream
-import java.io.DataOutputStream
+import com.ecarx.autoservice.platform.root.RootWire
+import com.ecarx.autoservice.ServiceTrace
 
 /** AutoService持有持久布防意图、电源事件和专用VSTD写口；App只消费运行状态。 */
 internal class SentinelCoordinator(private val context:Context,private val ensureRoot:()->Unit,
@@ -81,7 +82,7 @@ internal class SentinelCoordinator(private val context:Context,private val ensur
         // 在途写也登记为本应用的意图，关闭/崩溃恢复必须能撤销。
         check(prefs.edit().putBoolean("ownsMode",true).commit())
         executor.execute{
-            val outcome=runCatching{ensureRoot();check(!closed&&ticket==generation&&enabled&&platform){"sentinel_cancelled"};RootServiceClient.request(context,9,JSONObject().put("action",if(resume)"resume"else"arm").put("requestAtNanos",requestAt))}
+            val outcome=runCatching{ensureRoot();check(!closed&&ticket==generation&&enabled&&platform){"sentinel_cancelled"};RootServiceClient.sentinel(context,JSONObject().put("action",if(resume)"resume"else"arm").put("requestAtNanos",requestAt))}
             main.post{
                 busy=false
                 if(ticket!=generation||!enabled||!platform){disarm();return@post}
@@ -97,7 +98,7 @@ internal class SentinelCoordinator(private val context:Context,private val ensur
         if(!prefs.getBoolean("ownsMode",false))return
         val requestAt=SystemClock.elapsedRealtimeNanos()
         executor.execute{
-            val result=runCatching{RootServiceClient.request(context,9,JSONObject().put("action","disarm").put("requestAtNanos",requestAt))}
+            val result=runCatching{RootServiceClient.sentinel(context,JSONObject().put("action","disarm").put("requestAtNanos",requestAt))}
             if(result.getOrNull()?.optBoolean("accepted")==true)prefs.edit().putBoolean("ownsMode",false).commit()
             else main.post{error="sentinel_disarm_pending";changed()}
         }
@@ -111,10 +112,10 @@ internal class SentinelCoordinator(private val context:Context,private val ensur
                 ensureRoot();check(!closed&&ticket==generation&&enabled&&platform){"sentinel_cancelled"};socket=RootServiceClient.connect(context,40_000)
                 val connected=socket
                 main.post{if(!closed&&ticket==generation&&enabled&&platform){stream=connected;busy=false;evaluate()}else connected.close()}
-                DataOutputStream(socket.outputStream).apply{writeInt(10);flush()}
+                RootServiceClient.sentinelStream(connected)
                 val input=DataInputStream(socket.inputStream)
                 while(!closed){
-                    val event=com.ecarx.autoservice.platform.RootWire.read(input)
+                    val event=RootWire.read(input)
                     check(!event.has("error")){"sentinel_power_stream_failed"}
                     main.post{if(ticket==generation&&enabled&&platform){power=event.optInt("power");powerSequence=event.optLong("powerSequence");evaluate()}}
                 }
@@ -125,8 +126,8 @@ internal class SentinelCoordinator(private val context:Context,private val ensur
     private fun stopStream(){generation++;runCatching{stream?.close()};stream=null;busy=false}
     fun idle(sequence:Long){
         if(sequence<=0||sequence!=powerSequence||power!=7)return
-        executor.execute{runCatching{RootServiceClient.request(context,9,JSONObject().put("action","powerReady").put("powerSequence",sequence))}
-            .onFailure{com.ecarx.autoservice.ServiceTrace.event("sentinel_power_completion",it)}}
+        executor.execute{runCatching{RootServiceClient.sentinel(context,JSONObject().put("action","powerReady").put("powerSequence",sequence))}
+            .onFailure{ServiceTrace.event("sentinel_power_completion",it)}}
     }
     fun snapshot()=Bundle().apply{
         val displayState=when{reason=="low_battery"->reason;error=="oem_sentinel_already_active"->"oem_active";error.isNotEmpty()->"prepare_failed";else->reason}
@@ -139,7 +140,7 @@ internal class SentinelCoordinator(private val context:Context,private val ensur
     fun preparePlatformStop(){
         platform=false;stopStream();armSent=false
         if(!prefs.getBoolean("ownsMode",false))return
-        val result=runCatching{RootServiceClient.request(context,9,JSONObject().put("action","disarm")
+        val result=runCatching{RootServiceClient.sentinel(context,JSONObject().put("action","disarm")
             .put("requestAtNanos",SystemClock.elapsedRealtimeNanos()),2000)}
         if(result.getOrNull()?.optBoolean("accepted")==true)prefs.edit().putBoolean("ownsMode",false).commit()
         else error="sentinel_disarm_pending"
