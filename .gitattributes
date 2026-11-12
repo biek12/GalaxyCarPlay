@@ -1,4 +1,5 @@
 # 自有文本后续检出为 LF。不整仓 renormalize，不改第三方目录。
+gradlew text eol=lf
 *.sh text eol=lf
 *.ps1 text eol=lf
 *.py text eol=lf
