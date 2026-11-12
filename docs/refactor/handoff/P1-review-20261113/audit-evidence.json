@@ -1,0 +1,70 @@
+{
+  "task": "GALAXY-PLATFORM-PORTS-P1-20261113",
+  "audit": "PASS_INTEGRATED",
+  "codeCommit": "fbb5f65fb2a1e68f79d7bbd5ac245736f6bd72fa",
+  "integrationCommit": "1fb4210d1dffbbc33ac4e0e6e15093c2de976d62",
+  "codeScope": {
+    "lastBatchChangedPaths": 75,
+    "outsideWhitelist": [],
+    "validationScriptsChangedByCursor": false
+  },
+  "review": [
+    "Root frame operation/JSON/size/flush order preserved",
+    "Hook lease/assets/Telnet/background/version/remote order preserved",
+    "ADB type split and root launch class reference checked",
+    "op4/op6 refusal and OEM op11/op12/health chain preserved"
+  ],
+  "verification": {
+    "candidate": "F:\\GalaxyPlay\\wt-platform-ports\\.work\\lead-p1-review",
+    "leader": "F:\\GalaxyPlay\\galaxycarplay\\.work\\p1-integration-validation",
+    "scriptRegressions": 7,
+    "kotlinAndKts": 101,
+    "xml": 7,
+    "scriptSyntax": 8,
+    "requiredSuites": 15,
+    "requiredCases": 72,
+    "serviceSuites": 35,
+    "serviceCases": 137,
+    "clusterSuites": 3,
+    "clusterCases": 12,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "classes": 233,
+    "activeSources": 1008,
+    "archiveEntries": 97,
+    "kadb": {
+      "kadbVersion": "2.1.1",
+      "calls": [
+        {
+          "method": "parsePrivateKeyPem",
+          "owner": "com/ecarx/autoservice/platform/adb/AdbCrypto"
+        },
+        {
+          "method": "derivePublicKey",
+          "owner": "com/ecarx/autoservice/platform/adb/AdbCrypto"
+        }
+      ],
+      "transformedJar": "F:/GalaxyPlay/galaxycarplay/.work/gradle-home/caches/9.5.0/transforms/2e7b0692aa950345c6e328e546ade700/transformed/kadb-runtime.jar",
+      "transformedJarSha256": "04460a2cbfadc227aaa691d21d881bbbce02da15b51cba18cd7a5b39b9583363",
+      "targetClass": "galaxy/service/build/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes/com/ecarx/autoservice/platform/adb/AdbCrypto.class",
+      "targetClassSha256": "cc7dfed6c1f077ea6639731702fc07420165828d52ef9d694da4d72b2fa967ce",
+      "sourceHead": "1fb4210d1dffbbc33ac4e0e6e15093c2de976d62",
+      "apkBuilt": false,
+      "vehicleValidated": false
+    }
+  },
+  "logSha256": {
+    "F:\\GalaxyPlay\\wt-platform-ports\\.work\\lead-p1-review\\VALIDATION-fbb5f65.json": "9aae37a4e65eb0e4ce4f82c591749ce7d3e62205c2d74e8beae2093ee9159a43",
+    "F:\\GalaxyPlay\\wt-platform-ports\\.work\\lead-p1-review-console.log": "634fee80bae3460f34b9e3b18416fa171f31f102f9c41eb9d7b574724d7a71e5",
+    "F:\\GalaxyPlay\\galaxycarplay\\.work\\p1-integration-validation\\VALIDATION-1fb4210.json": "02a7f750b44e0a58d4a4309e3fbe257a3c26520355c47714a044c9e0707c194b",
+    "F:\\GalaxyPlay\\galaxycarplay\\.work\\p1-integration-validation-console.log": "10592b626c1feb2cd6d97bdddc3ac9e2c3d26a0e344cd57e5ea92132b3f82f59"
+  },
+  "limitations": [
+    "Offline host verification only",
+    "Native asset preparation retained original exclusions",
+    "AutoService business ownership remains for follow-up batches; P1 does not complete the whole refactor"
+  ],
+  "apkBuilt": false,
+  "vehicleValidated": false
+}
