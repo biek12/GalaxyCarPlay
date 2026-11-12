@@ -4,6 +4,8 @@
 
 ## galaxy 代码整理与协作约束（2026-11-12 最新确认）
 
+- 2026-11-12 E0 首轮审计：Cursor 提交 `451ac74` 的正式状态为 `BLOCKED_VALIDATION`，未集成。工具/归档部分复验通过，但 Service 宿主测试缺 `/bin/sh`、`cksum`，Windows 入口重复验证逻辑且实际中文日志乱码；本轮修正按 [E0-R1任务](docs/refactor/Cursor-E0-R1-修正任务-20261112.md)。旧主题 `ThemeStoreTest` 的 Windows 四项失败保留为基线事实，不由此授权修复已决定归档的主题生产代码；不绕过断言，不将未完成的完整 R0 门槛写成通过。
+
 - 2026-11-12 Windows 接手补充：用户要求 Codex 带领 Cursor 继续重构。Cursor 是本轮实施者，旧 DSH/WorkBuddy 路由不阻止接手；Codex 负责确定拆分、任务、验收和审计。先读 [Cursor协同总控](docs/refactor/Cursor协同总控-20261112.md) 和 [首轮审计与修正任务](docs/refactor/Cursor首轮审计与修正任务-20261112.md)。本轮先做 E0 Windows 验证与 R0 收口，平台端口、主题归档候选保持未验收；不自动开始 AutoService 主体拆分、跨 App 背景/卡片迁移或 A1，不自动合并业务分支。规范同步不代表业务代码审计通过，设备继续仅离线。
 
 - 2026-11-12用户要求推送版本，换电脑使用Cursor继续重构。Cursor可接手现有R0，旧DSH/WorkBuddy任务路由不阻止本次换机接手；先读[换机交接](docs/refactor/Cursor换机交接-20261112.md)。R0实现b704820仍为BLOCKED_VALIDATION，不自动合入已审基线，不把保存/推送当验收通过；仍仅离线，原厂元素增强保留。
