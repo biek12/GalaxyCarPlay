@@ -21,8 +21,19 @@ if len(jars) != 1:
 jar = jars[0]
 if hashlib.sha1(jar.read_bytes()).hexdigest() != jar.parent.name:
     raise SystemExit('AAPT2缓存摘要与Gradle内容地址不一致')
+def assert_windows_pe(data: bytes) -> None:
+    """确认解出的是 Windows PE，拒绝 Mac ZIP 里的 Mach-O 或占位文件。"""
+    if len(data) < 64 or data[:2] != b'MZ':
+        raise SystemExit('AAPT2 不是 Windows PE 可执行文件')
+    pe_offset = int.from_bytes(data[0x3C:0x40], 'little')
+    if pe_offset < 0 or pe_offset + 4 > len(data) or data[pe_offset:pe_offset + 4] != b'PE\0\0':
+        raise SystemExit('AAPT2 PE 头无效')
+
+
 with zipfile.ZipFile(jar) as archive:
     data = archive.read('aapt2.exe' if classifier == 'windows' else 'aapt2')
+if classifier == 'windows':
+    assert_windows_pe(data)
 output = root / '.work/tooling' / f'{jar.parent.parent.name}-{classifier}' / ('aapt2.exe' if classifier == 'windows' else 'aapt2')
 output.parent.mkdir(parents=True, exist_ok=True)
 if not output.is_file() or hashlib.sha256(output.read_bytes()).digest() != hashlib.sha256(data).digest():
@@ -30,4 +41,4 @@ if not output.is_file() or hashlib.sha256(output.read_bytes()).digest() != hashl
     temporary.write_bytes(data)
     temporary.chmod(0o755)
     temporary.replace(output)
-print(output)
+print(output.as_posix())

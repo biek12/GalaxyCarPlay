@@ -1,0 +1,273 @@
+{
+  "task": "GALAXY-THEME-ENGINE-ARCHIVE-20261112",
+  "sourceBaseline": "92cf470af06f4999256f7c83502aa1edd56b7e44",
+  "archiveRoot": "archive/theme-engine/20261112",
+  "movedCount": 44,
+  "byteSource": "git blob at sourceBaseline",
+  "entries": [
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/runtime/ScenePreparation.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/runtime/ScenePreparation.kt",
+      "sha256": "8f1f89b637dd01cdf7a99ef209a7e3607e6ad35a8c4f2dedd13e78f70647b734",
+      "bytes": 5001
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/ArtworkBlur.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/ArtworkBlur.kt",
+      "sha256": "b567e54cc173e6194d51c77905b1897c0881aaa5f898dbfd757261cacdbe86f4",
+      "bytes": 1781
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/BuiltinThemes.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/BuiltinThemes.kt",
+      "sha256": "60febf38d47d207f6386eea235f78462102ad2401565caff1f1ab5b48025596b",
+      "bytes": 5948
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/CompiledScene.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/CompiledScene.kt",
+      "sha256": "c607e001661c1e0c4a831bde88492cf07e75ce00ac1175fdf52f122b6dfdc1da",
+      "bytes": 6131
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/ComponentProperties.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/ComponentProperties.kt",
+      "sha256": "91587dc385d131e4673c5b58a70bb518f649e2bb35307b8116fd7eaa52ca5159",
+      "bytes": 23337
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/CompositeComponents.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/CompositeComponents.kt",
+      "sha256": "9ca051f6c1fca4597c207a1bcba0da1795337bbffed5414a0de961829add0960",
+      "bytes": 2536
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/EditHistory.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/EditHistory.kt",
+      "sha256": "d5d2bf557dc6b1e48d0dcb8b502eb8db2d3bb09c6093565db16ca4291571dda0",
+      "bytes": 2142
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/EditorSession.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/EditorSession.kt",
+      "sha256": "4d500013e2cc98e35a90f935ee960d9514905ba75379fe2d8790c71b7d5400ee",
+      "bytes": 9217
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/EnergyThemeSync.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/EnergyThemeSync.kt",
+      "sha256": "910d2a882fe89dc636fbfa5a21c817a3950345fabd2fd58ed2bd2fae5709a929",
+      "bytes": 1534
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/SceneModel.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/SceneModel.kt",
+      "sha256": "886e83f2bf1aa58f51d911f2c6078d2b35a373f26f5196d3bae04007911ec6d0",
+      "bytes": 3604
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/ScenePropertyCache.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/ScenePropertyCache.kt",
+      "sha256": "341b354a95307e6cd74d4b4008770684145ee22c33d386a58cc6fe3716ffc1d1",
+      "bytes": 1015
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/SceneValidator.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/SceneValidator.kt",
+      "sha256": "7dd5a94857afe3e666883453531e1e37aee553d00cad5ffcb5c34996ded10100",
+      "bytes": 7341
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/SceneXml.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/SceneXml.kt",
+      "sha256": "6c7b162db016448d6548c08270a5e439d95cd0276724f87dc33e035bc02fa643",
+      "bytes": 9934
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/ThemePackage.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/ThemePackage.kt",
+      "sha256": "e6566624bd781afcf781a73b176123dfc8cb51e02704d5e05bce7232f565322e",
+      "bytes": 1050
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/ThemePackageCodec.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/ThemePackageCodec.kt",
+      "sha256": "6d7c026426ab4a0a38bf4da20cf734c4983961d13bd3d0acf2b1db2af25f70d6",
+      "bytes": 7530
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/ThemeResources.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/ThemeResources.kt",
+      "sha256": "693c2af4607cd1d59ae02acab58ac0a1f63c926e9f2404c0ceabba574c0270a8",
+      "bytes": 3825
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/ThemeStore.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/ThemeStore.kt",
+      "sha256": "cb11e74338babd7d1a2c4524afc1b5b7b8093f42c9ba5e4c028a989dd237589e",
+      "bytes": 7990
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/ConsumptionPainter.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/ConsumptionPainter.kt",
+      "sha256": "9d9c75b9ef00d8d2f6e949573816448366fc330087c7ec56be16191759d1545a",
+      "bytes": 2496
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/CruiseVisualState.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/CruiseVisualState.kt",
+      "sha256": "feaf88edeb0b5c5b4a669e8f1c1b852335cc5d5912757397473fb4e1b43dff94",
+      "bytes": 411
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/DrawTools.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/DrawTools.kt",
+      "sha256": "2b9e2eb47cadb8784b32c7927fa0d2adaf806c0215d357c5b4cc4fa27e9b8563",
+      "bytes": 2677
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/GaugePainter.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/GaugePainter.kt",
+      "sha256": "465adf5bd87d5d326ff78359f38d54ba0f9415264dc7eaca0258aaa7dae14027",
+      "bytes": 13655
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/IndicatorPainter.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/IndicatorPainter.kt",
+      "sha256": "86718caa3c82aafd57ff7736a154bd604604634eb41e6a79a835b7322a613a8c",
+      "bytes": 3481
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/LyricsPainter.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/LyricsPainter.kt",
+      "sha256": "275ad06efc711af9d2635a17638243004c38440ba0af6f82d204c816ff336f0e",
+      "bytes": 7794
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/MapPreviewPainter.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/MapPreviewPainter.kt",
+      "sha256": "d34a8e97524f1e736bb50a4e44fe98571bd117a0c69bea973de7c0d4e0d181e4",
+      "bytes": 3011
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/MediaPainter.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/MediaPainter.kt",
+      "sha256": "59cdee730232fe3536791970b2cfb414a6b11af2300fb464f47d500cf822c320",
+      "bytes": 5706
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/MusicBackgroundPainter.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/MusicBackgroundPainter.kt",
+      "sha256": "b4096b8e726c8c90763b7433e9e7e85c7d110b083202f8e82256ae6eb7e722d2",
+      "bytes": 2932
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/NavigationPainter.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/NavigationPainter.kt",
+      "sha256": "7e02ea12624b56f1f0430bc253fd8ac2d25574d080f275a4519eb04a8624aacb",
+      "bytes": 5274
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/PageMotion.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/PageMotion.kt",
+      "sha256": "4db9376e4aec4944b6d5d0ad7cda8b91e28edc5f0ad79bb9c090dd4de97e1144",
+      "bytes": 1729
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/PowerFlow.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/PowerFlow.kt",
+      "sha256": "bfa5fb97f4f82cb1f1d1a931545d60019e5198862dae057a4e26449fb086ec99",
+      "bytes": 961
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/PrimitivePainter.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/PrimitivePainter.kt",
+      "sha256": "bd085bbe1a8e5b7cf937eeb29032b0b7ed10786e11c13e9b9c8c40d7561494b5",
+      "bytes": 9188
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/RangePainter.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/RangePainter.kt",
+      "sha256": "1fb06ab1e0f878690a4da75046c9dbb448a6dd13476e910a56fbac406f75ec6e",
+      "bytes": 2066
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/RegenerationPainter.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/RegenerationPainter.kt",
+      "sha256": "83582966572378c4395ff59c85d58ab6ee244b200bcae1bf6dde04040f2c22f7",
+      "bytes": 3799
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/SceneMotion.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/SceneMotion.kt",
+      "sha256": "8aa8fe14f1e304c255570f4f75063254dbd075803d8ff3a8f58bcf9018c8cb22",
+      "bytes": 2372
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/SceneRenderer.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/SceneRenderer.kt",
+      "sha256": "d699488776f7604344265f5cbee96b99856687f604aab41628531c235122b0c0",
+      "bytes": 10310
+    },
+    {
+      "original": "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/VehiclePainter.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/render/VehiclePainter.kt",
+      "sha256": "49c59173d07418d79786e8d5b10f4e4c18dbe30424638f7aeb59b0edfe011f08",
+      "bytes": 4350
+    },
+    {
+      "original": "galaxy/cluster/src/test/java/com/galaxy/autocluster/theme/ClusterSecondRevisionTest.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/test/java/com/galaxy/autocluster/theme/ClusterSecondRevisionTest.kt",
+      "sha256": "3503bf0c92dd28282697afdc8dd7c0725cbb903f90be48c4c50e608fa16f6e42",
+      "bytes": 6464
+    },
+    {
+      "original": "galaxy/cluster/src/test/java/com/galaxy/autocluster/theme/ClusterVisualRefinementTest.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/test/java/com/galaxy/autocluster/theme/ClusterVisualRefinementTest.kt",
+      "sha256": "55e115e40d7882b02343526dfbec740f036a4935f81999650225c76bd91e93d7",
+      "bytes": 9324
+    },
+    {
+      "original": "galaxy/cluster/src/test/java/com/galaxy/autocluster/theme/EditHistoryTest.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/test/java/com/galaxy/autocluster/theme/EditHistoryTest.kt",
+      "sha256": "700bf32457df7f48ff3aa75b3332feee7c02dc09f7c050fd4959b96fa6ec7ffa",
+      "bytes": 1907
+    },
+    {
+      "original": "galaxy/cluster/src/test/java/com/galaxy/autocluster/theme/EditorSessionTest.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/test/java/com/galaxy/autocluster/theme/EditorSessionTest.kt",
+      "sha256": "4f7483d59b0eaa9e94f0fe2f937ea6076d4da24e8913133b07b057ee8071e0ac",
+      "bytes": 4457
+    },
+    {
+      "original": "galaxy/cluster/src/test/java/com/galaxy/autocluster/theme/SceneAnimationTest.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/test/java/com/galaxy/autocluster/theme/SceneAnimationTest.kt",
+      "sha256": "a58a6301ab058df5482b29d55196a95db50b714c74ca37b5b7bd909efa7b34da",
+      "bytes": 3269
+    },
+    {
+      "original": "galaxy/cluster/src/test/java/com/galaxy/autocluster/theme/SceneRuntimeTest.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/test/java/com/galaxy/autocluster/theme/SceneRuntimeTest.kt",
+      "sha256": "b7a444ee4e75baeb8fffa6eda5d1d01bdb437711dfd6818174df9ff7f5fa4610",
+      "bytes": 7160
+    },
+    {
+      "original": "galaxy/cluster/src/test/java/com/galaxy/autocluster/theme/ThemeFixtures.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/test/java/com/galaxy/autocluster/theme/ThemeFixtures.kt",
+      "sha256": "5f14ee4447c53523e0c874f8f35aa89f18eedae1d55e6e566843d1bcdd96d036",
+      "bytes": 377
+    },
+    {
+      "original": "galaxy/cluster/src/test/java/com/galaxy/autocluster/theme/ThemePackageCodecTest.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/test/java/com/galaxy/autocluster/theme/ThemePackageCodecTest.kt",
+      "sha256": "bfd79878a99b40b05173a4fd7758754503fa2a5708986586becbce634f707880",
+      "bytes": 3918
+    },
+    {
+      "original": "galaxy/cluster/src/test/java/com/galaxy/autocluster/theme/ThemeStoreTest.kt",
+      "archived": "archive/theme-engine/20261112/galaxy/cluster/src/test/java/com/galaxy/autocluster/theme/ThemeStoreTest.kt",
+      "sha256": "685d0a69213b2b90198ee546a1c2bb136b791200c24eefbd0b4b5e253c2b0243",
+      "bytes": 5514
+    }
+  ]
+}
