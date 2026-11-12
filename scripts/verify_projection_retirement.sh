@@ -111,6 +111,7 @@ ARGS=(--offline --no-daemon --no-configuration-cache --console=plain
   "-Pandroid.aapt2FromMavenOverride=$AAPT2_PATH"
   -I scripts/verify/lib/maven-mirror.init.gradle
   -I scripts/verify/lib/robolectric-offline.init.gradle
+  -I scripts/verify/lib/kadb-transform.init.gradle
   -x :service:buildHab -x :service:prepareQnxReceiver -x :service:prepareClusterHook)
 
 # 只清本任务自身模块的 Kotlin class / merged manifest / test-results 输出目录，
@@ -150,19 +151,12 @@ PY
 # 2) 复用既有 verify_cluster_pages：全下游编译/资源、U1 门槛与当前全部 Cluster 测试。
 bash scripts/verify_cluster_pages.sh 2>&1 | tee "$LOG_DIR/verify_cluster_pages.log"
 
-# 3) 同一离线环境执行本批 service R0 用例及受影响的既有回归（精确 suite 清单）。
-# 零匹配由 Gradle "No tests found" 直接失败；具体报告再由 Python 逐项核对。
-./gradlew "${ARGS[@]}" :service:testDebugUnitTest \
-  --tests com.ecarx.autoservice.platform.RootProjectionArchiveTest \
-  --tests com.ecarx.autoservice.platform.PlatformExecutionTest \
-  --tests com.ecarx.autoservice.ui.ServiceHomeBehaviorTest \
-  --tests com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest \
-  --tests com.ecarx.autoservice.ClusterElementPipelineTest \
-  --tests com.ecarx.autoservice.ClusterHookLifecycleTest \
-  --tests com.ecarx.autoservice.ClientRegistryTest \
-  --tests com.ecarx.autoservice.platform.FoundationRecoveryTest \
-  --tests com.ecarx.autoservice.remote.RemoteConnectionStatusTest \
+# 3) 同一离线环境执行全部 Service 回归，并只编译 AndroidTest。
+# Python 继续要求精确必测 suite 非空，且所有实际报告零失败/错误/跳过。
+./gradlew "${ARGS[@]}" :service:testDebugUnitTest :service:compileDebugAndroidTestKotlin :service:recordGalaxyKadbTransformInputs \
   2>&1 | tee "$LOG_DIR/service-tests.log"
+"$PY" tools/review/galaxy-platform-p1-20261113/verify_kadb_transform.py \
+  2>&1 | tee "$LOG_DIR/kadb-transform.log"
 
 # 4) 真实产物/JUnit/归档摘要/最终源码 SHA256 核对，写父目录 VALIDATION.json。
 "$PY" tools/review/galaxy-r0-20261112/verify_artifacts.py ready 2>&1 | tee "$LOG_DIR/artifacts.log"
@@ -179,4 +173,4 @@ cp archive/legacy-fullscreen-projection/20261112/manifest.json "$LOG_DIR/archive
 cp archive/theme-engine/20261112/manifest.json "$LOG_DIR/theme-archive-manifest.json"
 cp "$GALAXY_R0_REPORT_DIR/format-result.json" "$LOG_DIR/format-result.json"
 
-echo "R0 门槛通过：格式、全下游编译、JUnit、Manifest/class、归档摘要均已核对；未打包、未上车。"
+echo "R0/P1 门槛通过：格式、全下游/AndroidTest编译、全Service测试、KADB实际ASM、Manifest/class和归档摘要均已核对；未打包、未上车。"

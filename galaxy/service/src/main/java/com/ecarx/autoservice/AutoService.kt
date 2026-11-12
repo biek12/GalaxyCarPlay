@@ -18,7 +18,11 @@ import android.os.ParcelFileDescriptor
 import android.os.Process
 import android.os.SystemClock
 import android.view.Surface
-import com.ecarx.autoservice.platform.PlatformCoordinator
+import com.ecarx.autoservice.oem.ClusterHookController
+import com.ecarx.autoservice.platform.foundation.ClientPermissionPolicy
+import com.ecarx.autoservice.platform.foundation.PlatformAccess
+import com.ecarx.autoservice.platform.foundation.PlatformCoordinator
+import com.ecarx.autoservice.platform.root.RootServiceClient
 import com.ecarx.autoservice.settings.ServiceFeatures
 import com.ecarx.autoservice.startup.AutoStartup
 import com.ecarx.autoservice.vehicle.ClusterFieldDiagnostics
@@ -47,7 +51,7 @@ class AutoService : Service() {
     private val shellBusy =
         java.util.concurrent.atomic
             .AtomicBoolean()
-    private lateinit var shellAccess: com.ecarx.autoservice.platform.PlatformAccess
+    private lateinit var shellAccess: PlatformAccess
     private var sentinel: com.ecarx.autoservice.sentinel.SentinelCoordinator? = null
     private lateinit var collector: VehicleCollector
     private val inventory = VehicleInventory()
@@ -668,7 +672,7 @@ class AutoService : Service() {
             override fun requestClientPermissions(owner: IBinder, permissions: Array<String>?, result: IAutoResult) {
                 val calling = uid()
                 val requested = permissions.orEmpty().distinct()
-                val policy = com.ecarx.autoservice.platform.ClientPermissionPolicy
+                val policy = ClientPermissionPolicy
                 check(policy.allowed(packageManager.getPackagesForUid(calling).orEmpty().toList(), requested)) {
                     "permission_request_rejected"
                 }
@@ -901,8 +905,7 @@ class AutoService : Service() {
         prefs.edit().putString("vehicleMode", if (features.root) "root" else "app").apply()
         // 旧投屏帧率/策略持久配置不再读取：MapStreamSize 固定发布 DEFAULT（1920×536）。
         shellAccess =
-            com.ecarx.autoservice.platform
-                .PlatformAccess(this)
+            PlatformAccess(this)
         collector =
             VehicleCollector(this, inventory, { state, count ->
                 // 元数据（发现状态/条数）驱动快照；车辆值走feed，不再整包重投。
@@ -1403,7 +1406,15 @@ class AutoService : Service() {
                     .from(it)
             }
         val elementsWanted = snapshot.getBoolean("clusterElementsRequested") && !closed
-        if (elementsWanted && clusterHook == null)clusterHook = ClusterHookController(this, ::publish)
+        if (elementsWanted && clusterHook == null) {
+            clusterHook =
+                ClusterHookController(
+                    this,
+                    ::publish,
+                    RootServiceClient::hookControl,
+                    RootServiceClient::hookReceipt,
+                )
+        }
         clusterHook?.update(elementsWanted, rootReady, elementConfiguration)
         snapshot.putBundle("clusterElementRuntime", clusterHook?.snapshot())
         snapshot.putString("clusterConfigurationStatus", clusterConfigurationStatus)

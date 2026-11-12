@@ -145,7 +145,7 @@ abstract class KadbLocalCrypto : AsmClassVisitorFactory<InstrumentationParameter
                             replaced++
                             super.visitMethodInsn(
                                 opcode,
-                                "com/ecarx/autoservice/platform/AdbCrypto",
+                                "com/ecarx/autoservice/platform/adb/AdbCrypto",
                                 "keyFactory",
                                 desc,
                                 false,

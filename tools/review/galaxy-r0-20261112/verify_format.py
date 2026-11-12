@@ -40,6 +40,7 @@ PYTHON_FILES = [
     str(REVIEW / "test_verify_artifacts.py"),
     str(REVIEW / "test_theme_retirement.py"),
     str(REVIEW / "test_windows_entry.py"),
+    "tools/review/galaxy-platform-p1-20261113/verify_kadb_transform.py",
     "scripts/verify_projection_retirement.sh",
 ]
 

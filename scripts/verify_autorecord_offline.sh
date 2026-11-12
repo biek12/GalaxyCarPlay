@@ -10,7 +10,7 @@ export GALAXY_VERIFY_CACHE="$ROOT/.work" GALAXY_ROBOLECTRIC_STRICT_OFFLINE=1
 "$ROOT/gradlew" --offline --no-daemon --console=plain -Pandroid.builder.sdkDownload=false \
     -Pkotlin.compiler.execution.strategy=in-process -I "$ROOT/scripts/verify/lib/robolectric-offline.init.gradle" \
     :record:testDebugUnitTest :record:assembleDebug :record:assembleField :record:assembleEmulator \
-    :service:assembleDebug :service:testDebugUnitTest --tests com.ecarx.autoservice.platform.ClientPermissionPolicyTest
+    :service:assembleDebug :service:testDebugUnitTest --tests com.ecarx.autoservice.platform.foundation.ClientPermissionPolicyTest
 "$ROOT/gradlew" --offline --no-daemon --console=plain -Pandroid.builder.sdkDownload=false \
     -Pkotlin.compiler.execution.strategy=in-process -PgalaxyRecordEmulatorTest=true \
     -I "$ROOT/scripts/verify/lib/robolectric-offline.init.gradle" :record:assembleEmulatorAndroidTest
