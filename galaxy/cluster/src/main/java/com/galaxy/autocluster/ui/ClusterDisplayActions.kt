@@ -3,11 +3,11 @@ package com.galaxy.autocluster.ui
 import android.app.Activity
 import android.content.Intent
 import android.os.Bundle
+import com.galaxy.auto.contract.ClusterDisplayConfiguration
 import com.galaxy.autocluster.BackgroundImagePicker
 import com.galaxy.autocluster.ClusterRenderService
 import com.galaxy.autocluster.ThemeActivity
 import com.galaxy.autocluster.runtime.ClusterDisplayStore
-import com.galaxy.auto.contract.ClusterDisplayConfiguration
 
 /**
  * 一次提交的回执：提交方案与期望的仪表回执版本（pendingRevision）成对返回，
