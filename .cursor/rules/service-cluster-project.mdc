@@ -1,0 +1,22 @@
+---
+description: AutoService 与 AutoCluster 的模块边界、包和平台注入。改 galaxy/service 或 galaxy/cluster 时必须遵守。
+alwaysApply: true
+---
+
+# service / cluster 项目规则
+
+改 `galaxy/service`、`galaxy/cluster` 或这两处的归档时遵守本规则。完整表述见 `docs/refactor/service-cluster项目规范-20261112.md`。其他应用不要套用这里的包名。
+
+- AutoService 拥有 ADB/Root 身份、Root 分发、车辆订阅、媒体入口和原厂 Hook。AutoCluster 只提交显示意图、页面和音乐卡片预览。
+- cluster 不引用 `com.ecarx.autoservice` 实现，不调用 Root/QNX。platform 不引用页面或主题渲染器。
+- 不升契约版本，不改 applicationId 和签名，不新建 Gradle 模块。
+- 不恢复整屏投屏。MAP 在线不得接管仪表整屏。原厂音乐卡片、背景替换和 Hook 保留。
+- 主题场景引擎不留在活跃源集，归档到 `archive/theme-engine/20261112/`，不写进 sourceSets。`SceneData` 只放在 `com.galaxy.autocluster.preview`。
+- 新类按项目规范的包表落位，不先堆在根包。`platform.foundation` 只恢复身份，不调用 Hook。
+- Root 特权注入只在 `RootServiceMain` 和 `platform.root` 的 operation 表。业务包不打开第二套 Root 套接字。
+- 一个文件只放一个顶层类型。仅被该类使用的数据或回调写成它的嵌套类型，不再并列第二个 `class` 或 `object`。Kotlin 允许一个文件放多个类型，本项目不采用。归档里的旧文件先保持原样，恢复进活跃源集时再拆。
+- 原厂背景的选图、1920×532 RGB PNG 和 KZB 区间替换归 Cluster。Service 只经 QNX 取出原厂 KZB 并投放结果。`KzbBackgroundPatch`、`ClusterBackgroundPng`、`ClusterBackgroundStore` 不是 Hook 或 oem 连接代码；本批不把它们收进 `platform.hook`。
+- 原厂音乐卡片的 GKM1 字段布局归 Cluster，对应 `KanziMediaFrame`。Service 的 `KanziMediaPublisher` 只把已经编好的字节写到原厂通道。封面写入 `OemArtworkWriter` 仍归 Service。
+- Hook 控制器留在 Service：它持有 Root 租约。Cluster 只提交显示意图。
+- 方控菜单短按留在 Service。`ClusterMenuInput` 由车辆采集循环调用；Cluster 只消费已经生成的 `menuSequence`。
+- 缺编译或测试就写未验证。离线通过不写成车端已验收。

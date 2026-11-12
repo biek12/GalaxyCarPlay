@@ -1,0 +1,26 @@
+---
+description: service 与 cluster 的类、具名端口、归档和注释写法。
+globs: galaxy/service/**/*.kt,galaxy/cluster/**/*.kt,archive/theme-engine/**/*.kt,archive/legacy-fullscreen-projection/**/*.kt
+alwaysApply: false
+---
+
+# service / cluster 代码规则
+
+写法以 `docs/refactor/service-cluster代码规范-20261112.md` 为准。移动类型前先确定现文件、目标包、必须保留的调用顺序。
+
+- 一个类一个职责。装配类只创建对象、连接回调和按原顺序释放。不新建 Manager、Helper、Utils，不引入依赖注入框架或事件总线。
+- 业务代码调用具名端口，不传 operation 整数。数字、JSON 和车辆连接复用只写在 `RootOperations` 与 `RootServiceClient`。
+
+```kotlin
+// 不允许：业务包里写死帧号
+RootServiceClient.request(context, 11, payload, timeout)
+
+// 要这样：生产代码传入现有方法引用
+hookControl(context, payload, timeout)
+```
+
+- op4 与 op6 只走 `RootProjectionArchive.rejectIfArchived`。未知 operation 回 `unknown_operation`。
+- 拆 `QnxClusterHook.control` 时保持原顺序：租约、材料、Telnet、`QnxClusterRemote`。命令、令牌、睡眠次数和路径不变；顺序会变就不要拆。
+- 归档用字节复制，不改 package。活跃文件改包时只改 package 和 import，不改类体。
+- 本批新类型和新方法写中文 KDoc。先 import 再使用短名，不用星号 import。一条语句一行。格式用 ktlint 1.4.1 与 `format/galaxy/.editorconfig`；工具不在本机就按该配置手写，并写明未跑格式化。
+- 不改测试期望来放宽失败。包移动时只更新被检查的类路径，检查仍然要求该类存在。
