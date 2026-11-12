@@ -50,7 +50,7 @@ tasks.named("preBuild") { dependsOn(prepareQnxReceiver, prepareClusterHook) }
           'putBoolean("qnxReady", false)\n'
           'putBoolean("projectionRequested", false)\n')
     write(root, "galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/InstrumentMusicPreview.kt",
-          "import com.galaxy.autocluster.theme.SceneData\n")
+          "import com.galaxy.autocluster.preview.SceneData\n")
 
 
 class ArtifactGateTest(unittest.TestCase):
@@ -109,7 +109,8 @@ class ArtifactGateTest(unittest.TestCase):
                 (root / relative).mkdir(parents=True)
             service_classes = root / REQUIRED_CLASS_ROOTS[0]
             for required in gates.REQUIRED_CLASSES:
-                target = service_classes / required
+                module_root = root / REQUIRED_CLASS_ROOTS[1] if required.startswith("com/galaxy/autocluster/") else service_classes
+                target = module_root / required
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(b"class")
             passed = gates.classes_gate(root)

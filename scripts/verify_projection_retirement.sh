@@ -176,6 +176,7 @@ for module in service cluster; do
   done
 done
 cp archive/legacy-fullscreen-projection/20261112/manifest.json "$LOG_DIR/archive-manifest.json"
+cp archive/theme-engine/20261112/manifest.json "$LOG_DIR/theme-archive-manifest.json"
 cp "$GALAXY_R0_REPORT_DIR/format-result.json" "$LOG_DIR/format-result.json"
 
 echo "R0 门槛通过：格式、全下游编译、JUnit、Manifest/class、归档摘要均已核对；未打包、未上车。"

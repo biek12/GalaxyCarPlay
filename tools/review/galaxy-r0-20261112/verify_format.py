@@ -37,6 +37,9 @@ PYTHON_FILES = [
     str(REVIEW / "archive_projection.py"),
     str(REVIEW / "verify_format.py"),
     str(REVIEW / "verify_artifacts.py"),
+    str(REVIEW / "test_verify_artifacts.py"),
+    str(REVIEW / "test_theme_retirement.py"),
+    str(REVIEW / "test_windows_entry.py"),
     "scripts/verify_projection_retirement.sh",
 ]
 

@@ -17,6 +17,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[3]
 ARCHIVE_ROOT = Path("archive/legacy-fullscreen-projection/20261112")
+THEME_ARCHIVE_ROOT = Path("archive/theme-engine/20261112")
+THEME_BASELINE = "92cf470af06f4999256f7c83502aa1edd56b7e44"
+PREVIEW_CLASSES = [
+    "com/galaxy/autocluster/preview/SceneData.class",
+    "com/galaxy/autocluster/preview/SceneMedia.class",
+    "com/galaxy/autocluster/preview/SceneSignal.class",
+]
 REPORT = Path(os.environ.get("GALAXY_R0_REPORT_DIR", "").strip() or (ROOT / ".work/r0-validation"))
 
 # 已退役、不得出现在本轮 Kotlin class 输出中的旧专用类。
@@ -43,7 +50,7 @@ REQUIRED_CLASSES = [
     "com/ecarx/autoservice/platform/QnxClusterHook.class",
     "com/galaxy/autocluster/ClusterRenderService.class",
     "com/galaxy/autocluster/ui/InstrumentMusicPreview.class",
-    "com/galaxy/autocluster/preview/SceneData.class",
+    *PREVIEW_CLASSES,
 ]
 # 本批必测：JUnit suite 必须真实存在、非空、零失败/错误/跳过。
 REQUIRED_SUITES = {
@@ -73,6 +80,11 @@ ARCHIVED_SUITES = [
     "com.ecarx.autoservice.projection.GalaxyHabFramesTest",
     "com.ecarx.autoservice.platform.QnxReceiverRemoteTest",
     "com.ecarx.autoservice.platform.QnxReceiverLifecycleTest",
+    *[f"com.galaxy.autocluster.theme.{name}" for name in (
+        "ClusterSecondRevisionTest", "ClusterVisualRefinementTest", "EditHistoryTest",
+        "EditorSessionTest", "SceneAnimationTest", "SceneRuntimeTest",
+        "ThemePackageCodecTest", "ThemeStoreTest",
+    )],
 ]
 
 
@@ -186,6 +198,50 @@ def archive_gate() -> dict:
     }
 
 
+def theme_archive_gate(root: Path | None = None) -> dict:
+    """核对已授权归档的完整文件集和原字节；fixture 可替换磁盘树，Git 来源始终固定。"""
+    root = root or ROOT
+    manifest = json.loads(read_text(root / THEME_ARCHIVE_ROOT / "manifest.json"))
+    if manifest.get("sourceBaseline") != THEME_BASELINE or manifest.get("movedCount") != 44:
+        raise SystemExit("主题归档基线或文件数不符")
+    source_paths = [
+        "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme",
+        "galaxy/cluster/src/main/java/com/galaxy/autocluster/runtime/ScenePreparation.kt",
+        "galaxy/cluster/src/test/java/com/galaxy/autocluster/theme",
+    ]
+    baseline_paths = subprocess.check_output(
+        ["git", "ls-tree", "-r", "--name-only", THEME_BASELINE, "--", *source_paths],
+        cwd=ROOT, text=True, encoding="utf-8",
+    ).splitlines()
+    expected = set(baseline_paths) - {
+        "galaxy/cluster/src/main/java/com/galaxy/autocluster/theme/SceneData.kt",
+    }
+    entries = manifest["entries"]
+    originals = [entry["original"] for entry in entries]
+    if len(expected) != 44 or len(originals) != 44 or set(originals) != expected:
+        raise SystemExit("主题归档清单与固定基线文件集不符")
+    checked = []
+    for entry in entries:
+        original = entry["original"]
+        archived_path = THEME_ARCHIVE_ROOT / original
+        if entry["archived"] != archived_path.as_posix():
+            raise SystemExit(f"主题归档目标路径不符: {original}")
+        archived = (root / archived_path).read_bytes()
+        blob = subprocess.check_output(["git", "show", f"{THEME_BASELINE}:{original}"], cwd=ROOT)
+        if archived != blob or sha256(blob) != entry["sha256"] or len(blob) != entry["bytes"]:
+            raise SystemExit(f"主题归档原字节不一致: {original}")
+        if (root / original).exists():
+            raise SystemExit(f"主题归档原路径仍在活跃源集: {original}")
+        checked.append({"original": original, "archived": entry["archived"], "sha256": entry["sha256"]})
+    expected_files = {entry["archived"] for entry in entries} | {
+        (THEME_ARCHIVE_ROOT / name).as_posix() for name in ("manifest.json", "README.md")
+    }
+    actual_files = {rel_posix(path, root) for path in (root / THEME_ARCHIVE_ROOT).rglob("*") if path.is_file()}
+    if actual_files != expected_files:
+        raise SystemExit("主题归档目录存在清单外文件或缺项")
+    return {"sourceBaseline": THEME_BASELINE, "checkedCount": len(checked), "entries": checked}
+
+
 def manifest_gate() -> dict:
     """本轮 AGP merged manifest 中不得有 ThemeActivity 组件。"""
     files = []
@@ -230,25 +286,45 @@ def classes_gate(root: Path | None = None) -> dict:
             leaf = item.rsplit("/", 1)[-1]
             if leaf == f"{name}.class" or leaf.startswith(f"{name}$"):
                 forbidden_hits.append(item)
+    for item in all_classes:
+        if (item.startswith("com/galaxy/autocluster/theme/") or
+                item == "com/galaxy/autocluster/runtime/ScenePreparation.class" or
+                item.startswith("com/galaxy/autocluster/runtime/ScenePreparation$")):
+            forbidden_hits.append(item)
     if forbidden_hits:
         raise SystemExit(f"本轮产物仍含已归档类: {forbidden_hits[:10]}")
     missing = [c for c in REQUIRED_CLASSES if not any((root / c).is_file() for root in roots)]
     if missing:
         raise SystemExit(f"缺少运行类产物: {missing}")
+    missing_preview = [name for name in PREVIEW_CLASSES if not (roots[1] / name).is_file()]
+    if missing_preview:
+        raise SystemExit(f"Cluster 缺少共享预览模型: {missing_preview}")
     return {
         "classRoots": [rel_posix(directory, root) for directory in roots],
         "classCount": len(all_classes),
         "forbiddenChecked": len(FORBIDDEN_CLASSES),
         "forbiddenHits": forbidden_hits,
         "requiredChecked": len(REQUIRED_CLASSES),
+        "themeNamespaceAbsent": True,
+        "previewModelsInCluster": PREVIEW_CLASSES,
     }
 
 
-def junit_gate() -> dict:
+def junit_gate(root: Path | None = None) -> dict:
     """精确 suite 清单：真实 JUnit XML 非空、零失败/错误/跳过，零匹配即失败。"""
+    root = root or ROOT
     results = {}
+    observed = []
     for module, suites in REQUIRED_SUITES.items():
-        directory = ROOT / f"galaxy/{module}/build/test-results/testDebugUnitTest"
+        directory = root / f"galaxy/{module}/build/test-results/testDebugUnitTest"
+        for path in sorted(directory.glob("TEST-*.xml")):
+            node = ET.parse(path).getroot()
+            counts = {key: int(node.get(key, "0")) for key in ("tests", "failures", "errors", "skipped")}
+            if counts["tests"] <= 0 or any(counts[key] for key in ("failures", "errors", "skipped")):
+                raise SystemExit(f"本轮实际 suite 未达标: {path.name}: {counts}")
+            if node.get("name") in ARCHIVED_SUITES:
+                raise SystemExit(f"归档测试仍在本轮活跃报告: {node.get('name')}")
+            observed.append({"suite": node.get("name"), **counts, "report": rel_posix(path, root)})
         parsed = []
         for suite in suites:
             path = directory / f"TEST-{suite}.xml"
@@ -258,7 +334,9 @@ def junit_gate() -> dict:
             counts = {key: int(node.get(key, "0")) for key in ("tests", "failures", "errors", "skipped")}
             if counts["tests"] <= 0 or any(counts[k] for k in ("failures", "errors", "skipped")):
                 raise SystemExit(f"必测 suite 未达标: {suite}: {counts}")
-            parsed.append({"suite": suite, **counts, "report": rel_posix(path),
+            if node.get("name") != suite:
+                raise SystemExit(f"JUnit 文件与 suite 名称不符: {path.name}")
+            parsed.append({"suite": suite, **counts, "report": rel_posix(path, root),
                            "sha256": sha256(path.read_bytes())})
         # 归档套件不得作为本轮活跃报告出现（历史证据只在 archive 中）。
         active_archived = [s for s in ARCHIVED_SUITES if (directory / f"TEST-{s}.xml").is_file()]
@@ -274,6 +352,7 @@ def junit_gate() -> dict:
         "skipped": sum(item["skipped"] for item in all_suites),
         "suites": all_suites,
         "archivedSuitesKeptAsEvidenceOnly": ARCHIVED_SUITES,
+        "observedSuites": observed,
     }
 
 
@@ -327,6 +406,12 @@ def closure_gate(root: Path | None = None) -> dict:
     preview = read("galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/InstrumentMusicPreview.kt")
     if "import com.galaxy.autocluster.preview.SceneData" not in preview:
         raise SystemExit("InstrumentMusicPreview 丢失 SceneData 共享依赖")
+    for path in (root / "galaxy/cluster/src/main").rglob("*.kt"):
+        text = read_text(path)
+        if ("import com.galaxy.autocluster.theme." in text or
+                "package com.galaxy.autocluster.theme" in text or
+                "import com.galaxy.autocluster.runtime.ScenePreparation" in text):
+            raise SystemExit(f"活跃源码仍引用主题引擎: {rel_posix(path, root)}")
     return {
         "qnxClusterHookHealthChain": True,
         "rootOp11Op12Preserved": True,
@@ -334,6 +419,7 @@ def closure_gate(root: Path | None = None) -> dict:
         "prepareQnxReceiverPreserved": True,
         "serviceGradleBridgeRetired": True,
         "instrumentMusicPreviewSceneDataPreserved": True,
+        "activeThemeReferencesAbsent": True,
         "note": "源码调用闭包审计；不代表 QNX/车辆已运行或实屏通过",
     }
 
@@ -345,9 +431,21 @@ def source_gate() -> dict:
         if path.is_file() and "build" not in path.parts and path.suffix in {".kt", ".kts", ".xml", ".aidl"}:
             sources[rel_posix(path)] = sha256(path.read_bytes())
     archive_hashes = {}
-    for path in sorted((ROOT / ARCHIVE_ROOT).rglob("*")):
-        if path.is_file():
-            archive_hashes[rel_posix(path)] = sha256(path.read_bytes())
+    for archive in (ARCHIVE_ROOT, THEME_ARCHIVE_ROOT):
+        for path in sorted((ROOT / archive).rglob("*")):
+            if path.is_file():
+                archive_hashes[rel_posix(path)] = sha256(path.read_bytes())
+    validation_paths = set((ROOT / "tools/review/galaxy-r0-20261112").rglob("*.py"))
+    validation_paths.update((ROOT / "scripts/verify").rglob("*.py"))
+    validation_paths.update((ROOT / "scripts/verify").rglob("*.gradle"))
+    validation_paths.update(ROOT / name for name in (
+        ".gitattributes", "format/galaxy/.editorconfig",
+        "tools/review/galaxy-r0-20261112/format-files.txt",
+        "tools/review/galaxy-c2a-20261112/format_check.py",
+        "scripts/verify_projection_retirement.sh", "scripts/verify_projection_retirement_windows.ps1",
+        "scripts/verify_cluster_pages.sh", "scripts/verify_android_refactor.sh",
+    ))
+    validation_hashes = {rel_posix(path): sha256(path.read_bytes()) for path in sorted(validation_paths)}
     head = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=ROOT, text=True, encoding="utf-8").strip()
     status = subprocess.check_output(["git", "status", "--porcelain"], cwd=ROOT, text=True, encoding="utf-8")
     return {
@@ -357,6 +455,7 @@ def source_gate() -> dict:
         "sourceSha256": sources,
         "archiveFileCount": len(archive_hashes),
         "archiveSha256": archive_hashes,
+        "validationSourceSha256": validation_hashes,
         "apkBuilt": False,
         "vehicleValidated": False,
         "nativeAssetPreparationExcluded": True,
@@ -366,11 +465,12 @@ def source_gate() -> dict:
 def main() -> None:
     """汇总全部门槛为 VALIDATION.json；任何一项失败立即非零退出。"""
     REPORT.mkdir(parents=True, exist_ok=True)
-    fmt = json.loads((REPORT / "format-result.json").read_text())
+    fmt = json.loads(read_text(REPORT / "format-result.json"))
     record = {
         "task": "GALAXY-ANDROID-R0-20261112",
         "status": "READY_FOR_REVIEW" if len(sys.argv) > 1 and sys.argv[1] == "ready" else "VALIDATED",
         "archive": archive_gate(),
+        "themeArchive": theme_archive_gate(),
         "manifest": manifest_gate(),
         "classes": classes_gate(),
         "junit": junit_gate(),
@@ -379,9 +479,9 @@ def main() -> None:
         "source": source_gate(),
     }
     target = REPORT / "VALIDATION.json"
-    target.write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n")
-    (REPORT / "validation-result.json").write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n")
-    print(f"产物核对通过: 归档 {record['archive']['checkedCount']} / "
+    target.write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
+    (REPORT / "validation-result.json").write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")
+    print(f"产物核对通过: 旧整屏归档 {record['archive']['checkedCount']} / 主题归档 {record['themeArchive']['checkedCount']} / "
           f"manifest {record['manifest']['fileCount']} / class {record['classes']['classCount']} / "
           f"JUnit {record['junit']['requiredSuiteCount']} suites {record['junit']['totalCases']} cases / "
           f"源码 {record['source']['activeSourceCount']}")
