@@ -13,7 +13,8 @@ alwaysApply: true
 - S1业务a6b758f已复审并以2fb91e5集成，见docs/refactor/Cursor-S1-复审与集成-20261113.md；不重复实施或向完成分支写入。
 - S2业务03f14de已复审并以f2cbb7f集成，见docs/refactor/Cursor-S2-复审与集成-20261113.md；不向完成分支继续写入。
 - S3业务665b9f8已复审并以78feda1集成，见docs/refactor/Cursor-S3-复审与集成-20261113.md；不再写入已完成树。
-- 用户最新要求一次完整大任务、细到小任务级别。当前唯一任务：docs/refactor/A4-AutoService主体结构收官任务-20261113.md及A4-代码白名单-20261113.txt，33条业务路径。只在F:\GalaxyPlay\wt-autoservice-completion / feat/galaxy-autoservice-completion-20261113实施；基于已审S3，5dd76ce准备任务和验证。开工记录实际HEAD。
+- A4首次复审CHANGES_REQUIRED：整包由Codex保存为4def8fa，未集成。当前唯一任务：docs/refactor/A4-R1-复审修正任务-20261113.md，原A4任务与33条白名单继续有效。只在F:\GalaxyPlay\wt-autoservice-completion / feat/galaxy-autoservice-completion-20261113连续修完，一次交审；不重做C1–C4或伪造阶段提交。开工记录同步本任务后的实际HEAD。
+- Codex已修脚本7c9020a/f1ab1a0；sourceBaseline仍78feda1，scopeBaseline固定72f25db，回归12例。Cursor不改脚本/基线/规范，不再因已授权galaxy/AGENTS两行停工。上传回归与原行为用例补齐后必须完整入口零退出，局部通过不代表完成。
 - C1–C4为同一A4内检查点，真实编译/测试/格式和本地提交后直接继续下一点，不等用户/Codex逐点发令；整个A4全绿才READY_FOR_REVIEW并冻结等用户叫审计。只完成一部分不能宣称整包完成，不自行合并/推送或扩大产品/协议/设备边界。
 - wt-service-vehicle-feed及更早完成树冻结，不同步新任务使其重开未合并tip。A4仍保留旧整屏归档、OEM增强和原有线程/代次/FD/关闭合同，脚本由Codex直接维护。
 - 开工先报告当前绝对目录、分支、HEAD、未提交变更和本轮白名单，再实施。内部C1–C4完成格式、编译、实际用例和提交后继续；整个A4交付后冻结。缺项写 BLOCKED_VALIDATION。

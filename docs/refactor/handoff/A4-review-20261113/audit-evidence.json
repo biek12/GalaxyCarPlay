@@ -1,0 +1,80 @@
+{
+  "reviewStatus": "CHANGES_REQUIRED",
+  "candidateHead": "4def8fa82a3c525fa887245146d0db150c0b17f4",
+  "leaderUnchanged": "7806b0f0f9b99f8960a59766a96da74141aafd52",
+  "toolFixes": [
+    "7c9020a",
+    "f1ab1a0"
+  ],
+  "businessSourceBaseline": "78feda1e088a1a98ee25f21c762d467a1e65ea09",
+  "scopeBaseline": "72f25db97bdf641f97ee790fa47def753f2bd8c3",
+  "preservedCandidatePaths": 33,
+  "compileAndArtifactValidation": {
+    "serviceSuites": 48,
+    "serviceCases": 168,
+    "clusterSuites": 3,
+    "clusterCases": 12,
+    "requiredSuitesSubset": 28,
+    "requiredCasesSubset": 103,
+    "classCount": 281,
+    "activeSourceCount": 1038,
+    "archiveEntries": 97,
+    "kotlinFiles": 135,
+    "xmlFiles": 8,
+    "syntaxFiles": 11,
+    "toolRegressionTests": 12,
+    "note": "Full entry reached closure check after successful builds/tests; fixed script rechecked artifacts, without claiming original full entry exited zero."
+  },
+  "uploadProbe": {
+    "taskExitCode": 1,
+    "tests": 1,
+    "failures": 1,
+    "errors": 0,
+    "expectedError": "媒体上传不可用",
+    "actualError": null,
+    "invokesDeliveredProductionBinder": true,
+    "duplicateFdLeak": "source-supported path analysis; not an FD-count measurement"
+  },
+  "files": [
+    {
+      "path": ".work/lead-a4-review/full/VALIDATION-candidate.json",
+      "sha256": "eb1ae07cd942dbd05062dde4e2e0707989f9a7b476a651bdab51d470015ac2b8"
+    },
+    {
+      "path": ".work/lead-a4-review/full-console.log",
+      "sha256": "0f1ceb38852dcb0b96d0414be9b789d1e3163328c647b9f4874ae461a4b64ca1"
+    },
+    {
+      "path": ".work/lead-a4-review/full/logs/format.log",
+      "sha256": "32e171d2bcf716ebe21ee3e5da870d82b2857cf6cc6cacf895a81fed80a73361"
+    },
+    {
+      "path": ".work/lead-a4-review/full/logs/service-tests.log",
+      "sha256": "5650fb46099ff35f60f2a3dc06e92f77f4ddce38ff9a1a8f52f0e8c70114014f"
+    },
+    {
+      "path": ".work/lead-a4-review/full/logs/verify_cluster_pages.log",
+      "sha256": "85a1b9a909125ccb32233a62e145278723391148e6d77157e34171ab46c549f8"
+    },
+    {
+      "path": ".work/lead-a4-review/probe/java-console.log",
+      "sha256": "9639f2f27d6d1de1639ca389fbbddbe97775f25116505c9f0719b6c5094ac9d0"
+    },
+    {
+      "path": ".work/lead-a4-review/probe/TEST-upload-lease-probe.xml",
+      "sha256": "200fe5c7f4397f64bebe01d8549a9ec7ed3bf3947d1715aea664d920de5f5bc2"
+    },
+    {
+      "path": ".work/lead-a4-review/probe/src/com/ecarx/autoservice/ipc/UploadLeaseRegressionProbe.java",
+      "sha256": "c5295e991c1076264eb71abcaca4dfdb9d377dc21530de88972dd3d6367031a1"
+    },
+    {
+      "path": ".work/lead-a4-review/probe/probe.init.gradle",
+      "sha256": "a59be85f25e8e629067e660c99bdf3bc078f223e1a610d8ab308da9ec5198ed0"
+    }
+  ],
+  "merged": false,
+  "pushed": false,
+  "vehicleValidated": false,
+  "apkBuilt": false
+}
