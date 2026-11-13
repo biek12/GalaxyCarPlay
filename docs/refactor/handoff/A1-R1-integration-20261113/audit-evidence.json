@@ -1,0 +1,50 @@
+{
+  "reviewStatus": "REVIEW_PASSED_AND_INTEGRATED",
+  "candidate": "7f3b73e0dbfb1047308b246325411b0c479d8e89",
+  "merge": "3dc8d2b59806b5349fcd84662c11aa6a6aad708b",
+  "bothFullEntryExitCode": 0,
+  "serviceSuites": 48,
+  "serviceCases": 172,
+  "clusterSuites": 3,
+  "clusterCases": 12,
+  "clientSuites": 7,
+  "clientCases": 32,
+  "kotlinFiles": 145,
+  "xmlFiles": 16,
+  "syntaxFiles": 13,
+  "toolRegressions": 15,
+  "sourceCount": 1051,
+  "archiveEntries": 97,
+  "serviceClusterClassCount": 281,
+  "accountClasses": 7,
+  "accountHostManifests": 2,
+  "reviewed": [
+    "completion-time clock check at equality and after expiry",
+    "valid QR decode and no added requests",
+    "actual A-B-C coalescing with A recycled and B not encoded",
+    "owned worker exits on production close before cleanup",
+    "borrowed worker remains alive",
+    "existing binding/account/QR UI regression preserved"
+  ],
+  "evidence": [
+    {
+      "path": "F:\\GalaxyPlay\\wt-account-completion\\.work\\lead-a1-r1-review\\VALIDATION-7f3b73e.json",
+      "sha256": "1f95e94cf2f5a4b55607d229b7834c10fb232e9eef2be78a2acb467f9843aef0"
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-account-completion\\.work\\lead-a1-r1-review-console.log",
+      "sha256": "7b8cf7a42282b3bfeab8878d26bc4dbaf258a2cf1548099ac66e4ec2163a988f"
+    },
+    {
+      "path": "F:\\GalaxyPlay\\galaxycarplay\\.work\\a1-r1-integration-validation\\VALIDATION-3dc8d2b.json",
+      "sha256": "3f2e0357fc9cc89d5c06ed2dfa80a9708bee2faa5115d2c93026a19f54984bf0"
+    },
+    {
+      "path": "F:\\GalaxyPlay\\galaxycarplay\\.work\\a1-r1-integration-validation-console.log",
+      "sha256": "891d9239b67af8ff256239b5fcaa970426e589e97da1af8fd778bf11c17ad383"
+    }
+  ],
+  "vehicleValidated": false,
+  "apkBuilt": false,
+  "pushed": false
+}

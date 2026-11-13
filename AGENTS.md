@@ -4,6 +4,8 @@
 
 ## galaxy 代码整理与协作约束（2026-11-12 最新确认）
 
+- 2026-11-13 A1-R1业务`7f3b73e`经候选/Leader完整复验，已随A1以`3dc8d2b`集成：Client32例、Service172例、Cluster12例及完整产物门槛通过，QR完成时过期缺陷关闭。A1/R1分支完成冻结，见 [复审与集成](docs/refactor/Cursor-A1-R1-复审与集成-20261113.md)。当前唯一完整任务为 [A2 AutoClient完整会话重构](docs/refactor/A2-AutoClient完整会话重构任务-20261113.md)，`F:\GalaxyPlay\wt-client-session` / `feat/galaxy-client-session-20261113`，业务/范围基线3dc8d2b，Codex准备f9b9f5d。9路径、4 owner/4组新suite，24公开方法和32项实际JVM入口保持，连接/补发/回调/FD/Surface一次完成再统一交审。工具18例/语法15及Client32例baseline通过，A2业务未实施；仅离线、脚本Codex持有，不改AIDL/合同/其他App，不自行合并/推送/上车。以下A1当前/未通过均为历史。
+
 - 2026-11-13 A1候选`5f627f2`首次复审为 **CHANGES_REQUIRED，未合入Leader**。完整入口退出0，Client29例/Service172例/Cluster12例、格式与产物通过，四张真实PNG已查看；但生产Presenter＋Renderer探针复现编码完成时码已过期仍显示（1例1失败），且代次/线程退出测试有覆盖缺口。当前唯一任务为 [A1-R1二维码时效与资源交付修正](docs/refactor/A1-R1-二维码时效与资源交付修正任务-20261113.md)，同一目录/分支、原18路径，一次修完正式行为回归和完整交付再统一交审。没有新的脚本故障，工具仍由Codex持有；不重做已通过UI/账号业务，不自行合并/推送/上车。下条A1首次派发为历史。
 
 - 2026-11-13 A4-R1业务`37e3020`已候选/Leader完整复验并以`103bb75`集成：Service172例、Cluster12例、97项归档和KADB实际ASM通过。A4及R1分支完成冻结，首次CHANGES_REQUIRED记录为历史，见 [A4-R1复审与集成](docs/refactor/Cursor-A4-R1-复审与集成-20261113.md)。当前唯一完整任务是 [A1共享车辆账号重构](docs/refactor/A1-共享车辆账号完整重构任务-20261113.md)，目录`F:\GalaxyPlay\wt-account-completion`，分支`feat/galaxy-account-completion-20261113`，Codex准备提交`1972bb9`。一次完成XML/View Binding、状态/请求/轮询、QR与确认解绑/用例，原18条业务范围，内部验证提交后连续推进，整包交审。业务/范围基线均103bb75；脚本由Codex准备，15项工具回归及Client4套8例基线通过，但A1业务未实施。仅离线，不自行合并/推送/上车。
