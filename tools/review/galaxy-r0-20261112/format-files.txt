@@ -1,4 +1,4 @@
-# P1 final Kotlin/KTS files; planned additions intentionally mandatory. Codex owns this list.
+# S1 cumulative Kotlin/KTS scope; required final files, including IPC additions.
 galaxy/cluster/src/main/java/com/galaxy/autocluster/ClusterRenderService.kt
 galaxy/cluster/src/main/java/com/galaxy/autocluster/preview/SceneData.kt
 galaxy/cluster/src/main/java/com/galaxy/autocluster/preview/SceneMedia.kt
@@ -22,6 +22,9 @@ galaxy/service/src/main/java/com/ecarx/autoservice/ClusterBackgroundPng.kt
 galaxy/service/src/main/java/com/ecarx/autoservice/ClusterBackgroundStore.kt
 galaxy/service/src/main/java/com/ecarx/autoservice/KanziMediaPublisher.kt
 galaxy/service/src/main/java/com/ecarx/autoservice/OemArtworkWriter.kt
+galaxy/service/src/main/java/com/ecarx/autoservice/ipc/ClientRegistry.kt
+galaxy/service/src/main/java/com/ecarx/autoservice/ipc/ServiceCallerIdentity.kt
+galaxy/service/src/main/java/com/ecarx/autoservice/ipc/ServiceRequestQueue.kt
 galaxy/service/src/main/java/com/ecarx/autoservice/oem/ClusterHookController.kt
 galaxy/service/src/main/java/com/ecarx/autoservice/oem/ClusterHookReceipt.kt
 galaxy/service/src/main/java/com/ecarx/autoservice/platform/adb/AdbConnection.kt
@@ -85,6 +88,9 @@ galaxy/service/src/main/java/com/ecarx/autoservice/ui/home/ServiceHomePresenter.
 galaxy/service/src/main/java/com/ecarx/autoservice/ui/home/ServiceHomeState.kt
 galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleCollector.kt
 galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleRootExchange.kt
+galaxy/service/src/test/java/com/ecarx/autoservice/ipc/ClientRegistryTest.kt
+galaxy/service/src/test/java/com/ecarx/autoservice/ipc/ServiceCallerIdentityTest.kt
+galaxy/service/src/test/java/com/ecarx/autoservice/ipc/ServiceRequestQueueTest.kt
 galaxy/service/src/test/java/com/ecarx/autoservice/oem/ClusterElementPipelineTest.kt
 galaxy/service/src/test/java/com/ecarx/autoservice/platform/adb/AdbCryptoTest.kt
 galaxy/service/src/test/java/com/ecarx/autoservice/platform/adb/AdbKeyAuthorizationTest.kt

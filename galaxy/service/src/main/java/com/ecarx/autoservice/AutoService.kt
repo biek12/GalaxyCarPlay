@@ -18,6 +18,9 @@ import android.os.ParcelFileDescriptor
 import android.os.Process
 import android.os.SystemClock
 import android.view.Surface
+import com.ecarx.autoservice.ipc.ClientRegistry
+import com.ecarx.autoservice.ipc.ServiceCallerIdentity
+import com.ecarx.autoservice.ipc.ServiceRequestQueue
 import com.ecarx.autoservice.oem.ClusterHookController
 import com.ecarx.autoservice.platform.foundation.ClientPermissionPolicy
 import com.ecarx.autoservice.platform.foundation.PlatformAccess
@@ -31,6 +34,7 @@ import com.ecarx.autoservice.vehicle.VehicleCollector
 import com.ecarx.autoservice.vehicle.VehicleDemand
 import com.ecarx.autoservice.vehicle.VehicleFeed
 import com.ecarx.autoservice.vehicle.VehicleInventory
+import com.galaxy.auto.client.diagnostics.DiagnosticEvents
 import com.galaxy.auto.contract.AutoContract
 import com.galaxy.auto.contract.ClusterDisplayConfiguration
 import com.galaxy.auto.contract.IAutoCallback
@@ -153,42 +157,37 @@ class AutoService : Service() {
     private var latest = Bundle()
     private var recipients = emptyList<IAutoCallback>()
 
-    private fun uid(): Int {
-        val uid = Binder.getCallingUid()
-        check(
-            uid == Process.myUid() ||
-                packageManager.checkSignatures(uid, Process.myUid()) == PackageManager.SIGNATURE_MATCH,
-        ) {
-            "client_signature_rejected"
-        }
-        return uid
-    }
+    /**
+     * 调用身份只在 Binder 线程读取。签名和包名查询延迟到真正调用时，
+     * 构造服务时不取 packageManager，也不保存它的方法引用。
+     */
+    private val callerIdentity =
+        ServiceCallerIdentity(
+            callingUid = Binder::getCallingUid,
+            processUid = Process::myUid,
+            checkSignatures = { caller, own -> packageManager.checkSignatures(caller, own) },
+            packagesForUid = { uid -> packageManager.getPackagesForUid(uid) },
+        )
 
-    private fun enqueue(block: () -> Unit) {
-        val source =
-            packageManager
-                .getPackagesForUid(Binder.getCallingUid())
-                .orEmpty()
-                .filter {
-                    it in
-                        setOf(
-                            "com.ecarx.autoservice",
-                            "com.ecarx.carplay",
-                            "com.galaxy.autorecord",
-                            "com.galaxy.autocluster",
-                        )
-                }.joinToString(",")
-        main.post {
-            if (!closed) {
-                runCatching(block).onFailure {
-                    com.galaxy.auto.client.diagnostics.DiagnosticEvents
-                        .error("binder_request", it, mapOf("caller" to source))
-                    ServiceTrace.event("binder_request", it)
-                    state("request:${it.javaClass.simpleName}")
-                }
-            }
-        }
-    }
+    /**
+     * 复用本服务的 main 和 closed。失败时仍按原顺序报告，不在这一层再吞一次异常。
+     */
+    private val requestQueue =
+        ServiceRequestQueue(
+            main = main,
+            isClosed = { closed },
+            onFailure = { source, error ->
+                DiagnosticEvents.error("binder_request", error, mapOf("caller" to source))
+                ServiceTrace.event("binder_request", error)
+                state("request:${error.javaClass.simpleName}")
+            },
+        )
+
+    /** Binder 线程同步读取调用 UID；签名拒绝条件与原来一致。 */
+    private fun uid(): Int = callerIdentity.requireUid()
+
+    /** 在当前 Binder 线程生成诊断来源，再交给既有 main 排队。 */
+    private fun enqueue(block: () -> Unit) = requestQueue.enqueue(callerIdentity.source(), block)
 
     private fun receiveArtwork(owner: IBinder, calling: Int, fd: ParcelFileDescriptor, expectedTrack: String?) {
         val duplicate =
