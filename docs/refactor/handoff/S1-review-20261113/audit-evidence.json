@@ -1,0 +1,76 @@
+{
+  "task": "GALAXY-SERVICE-IPC-S1-20261113",
+  "audit": "PASS_INTEGRATED",
+  "codeCommit": "a6b758f6209197a19ab8335734770b8cd739c161",
+  "integrationCommit": "2fb91e5e04fc0cca3b4f1653afb1c06c77c98a1e",
+  "codeScope": {
+    "changedPaths": 9,
+    "outsideWhitelist": [],
+    "validationScriptsChangedByCursor": false
+  },
+  "review": [
+    "UID captured synchronously on Binder thread; self UID/signature short circuit preserved",
+    "Diagnostic source filter is not authorization; source captured before posting",
+    "Main Handler and execution-time closed guard preserved; same failure reporting order",
+    "ClientRegistry move preserves Lease identity, link/unlink, death generation check, feed retention, and cleanup order",
+    "Binder business methods, direct main.post paths, OEM intent and archived fullscreen behavior unchanged"
+  ],
+  "verification": {
+    "candidateReport": "F:\\GalaxyPlay\\wt-service-ipc\\.work\\lead-s1-review",
+    "leaderReport": "F:\\GalaxyPlay\\galaxycarplay\\.work\\s1-integration-validation",
+    "scriptRegressions": 7,
+    "formatKotlinKts": 107,
+    "formatXml": 7,
+    "syntaxFiles": 8,
+    "observed": {
+      "service": {
+        "suites": 37,
+        "cases": 145
+      },
+      "cluster": {
+        "suites": 3,
+        "cases": 12
+      }
+    },
+    "requiredSuiteSubset": 17,
+    "requiredCasesSubset": 80,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "archiveEntries": 97,
+    "classes": 237,
+    "activeSourceCount": 1012,
+    "kadb": {
+      "kadbVersion": "2.1.1",
+      "calls": [
+        {
+          "method": "parsePrivateKeyPem",
+          "owner": "com/ecarx/autoservice/platform/adb/AdbCrypto"
+        },
+        {
+          "method": "derivePublicKey",
+          "owner": "com/ecarx/autoservice/platform/adb/AdbCrypto"
+        }
+      ],
+      "transformedJar": "F:/GalaxyPlay/galaxycarplay/.work/gradle-home/caches/9.5.0/transforms/2e7b0692aa950345c6e328e546ade700/transformed/kadb-runtime.jar",
+      "transformedJarSha256": "04460a2cbfadc227aaa691d21d881bbbce02da15b51cba18cd7a5b39b9583363",
+      "targetClass": "galaxy/service/build/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes/com/ecarx/autoservice/platform/adb/AdbCrypto.class",
+      "targetClassSha256": "cc7dfed6c1f077ea6639731702fc07420165828d52ef9d694da4d72b2fa967ce",
+      "sourceHead": "2fb91e5e04fc0cca3b4f1653afb1c06c77c98a1e",
+      "apkBuilt": false,
+      "vehicleValidated": false
+    }
+  },
+  "logSha256": {
+    "F:\\GalaxyPlay\\wt-service-ipc\\.work\\lead-s1-review\\VALIDATION-a6b758f.json": "bd58fd26c768a10bb6ad79b1e1557985ec3f431d07e42751f98b9b705205aa18",
+    "F:\\GalaxyPlay\\wt-service-ipc\\.work\\lead-s1-review-console.log": "657812cc1259c9a9c4c7d24c25a63b175f0aede592818e1baefa0b67b33d4e55",
+    "F:\\GalaxyPlay\\galaxycarplay\\.work\\s1-integration-validation\\VALIDATION-2fb91e5.json": "a0f549310225edc8d5782ee5391674bc809a2d9f1856bc1e04b100a15befe194",
+    "F:\\GalaxyPlay\\galaxycarplay\\.work\\s1-integration-validation-console.log": "abc1899aa28b50b73781818787641bb5ab0f2984c6e3ea2089f685668fd446c6"
+  },
+  "apkBuilt": false,
+  "vehicleValidated": false,
+  "limitations": [
+    "Offline host tests with system boundary substitutes; not device Binder death/signature validation",
+    "Binder business methods and other AutoService owners remain for later scoped batches"
+  ]
+}
