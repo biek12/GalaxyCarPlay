@@ -1,0 +1,27 @@
+{
+  "task": "GALAXY-SERVICE-VEHICLE-FEED-S3-20261113",
+  "status": "PREPARED_CODE_PENDING",
+  "sourceBaseline": "f2cbb7f60898dfd8d0a519f9ee87b24b97c01c8a",
+  "sourceTree": "b01853b9e11aa29f777e3db9a131fed10e838d6b",
+  "verifiedCandidate": "03f14de67a296dff0971673f583b91a49ab327e5",
+  "candidateValidationSha256": "5678681d299d8defb87e5324234527740bedc3fb0a9808f101b22e2cc29530f4",
+  "baselineTreeEqualsVerifiedCandidate": true,
+  "sourceAndArchiveGitBlobsChecked": 1115,
+  "contentMismatches": [],
+  "aidlNativeLineEndings": [
+    "galaxy/contracts/src/main/aidl/com/galaxy/auto/contract/IAutoCallback.aidl",
+    "galaxy/contracts/src/main/aidl/com/galaxy/auto/contract/IAutoResult.aidl",
+    "galaxy/contracts/src/main/aidl/com/galaxy/auto/contract/IAutoService.aidl"
+  ],
+  "scriptRegressions": {
+    "tests": 7,
+    "failures": 0,
+    "errors": 0
+  },
+  "syntaxFiles": 8,
+  "finalFormatFileCount": 111,
+  "plannedNewCodeFiles": 2,
+  "fullS3GatePassed": false,
+  "apkBuilt": false,
+  "vehicleValidated": false
+}

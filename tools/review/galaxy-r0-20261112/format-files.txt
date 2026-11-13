@@ -1,4 +1,4 @@
-# S2 cumulative Kotlin/KTS scope; required final files.
+# S3 cumulative Kotlin/KTS scope; required final files.
 galaxy/cluster/src/main/java/com/galaxy/autocluster/ClusterRenderService.kt
 galaxy/cluster/src/main/java/com/galaxy/autocluster/preview/SceneData.kt
 galaxy/cluster/src/main/java/com/galaxy/autocluster/preview/SceneMedia.kt
@@ -88,6 +88,7 @@ galaxy/service/src/main/java/com/ecarx/autoservice/ui/diagnostic/DiagnosticPageC
 galaxy/service/src/main/java/com/ecarx/autoservice/ui/home/ServiceHomePresenter.kt
 galaxy/service/src/main/java/com/ecarx/autoservice/ui/home/ServiceHomeState.kt
 galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleCollector.kt
+galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleFeedDispatcher.kt
 galaxy/service/src/main/java/com/ecarx/autoservice/vehicle/VehicleRootExchange.kt
 galaxy/service/src/test/java/com/ecarx/autoservice/ipc/ClientRegistryTest.kt
 galaxy/service/src/test/java/com/ecarx/autoservice/ipc/ServiceCallerIdentityTest.kt
@@ -108,3 +109,4 @@ galaxy/service/src/test/java/com/ecarx/autoservice/platform/root/PlatformExecuti
 galaxy/service/src/test/java/com/ecarx/autoservice/platform/root/RootFramesTest.kt
 galaxy/service/src/test/java/com/ecarx/autoservice/platform/root/RootProjectionArchiveTest.kt
 galaxy/service/src/test/java/com/ecarx/autoservice/ui/ServiceHomeBehaviorTest.kt
+galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/VehicleFeedDispatcherTest.kt
