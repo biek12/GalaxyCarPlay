@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="vehicle_account_back">返回</string>
+    <string name="vehicle_account_back_description">返回上一页</string>
+    <string name="vehicle_account_title">车辆与账号</string>
+    <string name="vehicle_account_subtitle">AutoService · AutoRecord 共享</string>
+    <string name="vehicle_account_vehicle_label">我的车辆</string>
+    <string name="vehicle_account_model">银河 %1$s</string>
+    <string name="vehicle_account_versions">Android %1$s · AutoService %2$s</string>
+    <string name="vehicle_account_vehicle_note">绑定后可在网页查看实时画面与历史录像</string>
+    <string name="vehicle_account_bound_status">已绑定 · 长期有效</string>
+    <string name="vehicle_account_owner">%1$s  %2$s</string>
+    <string name="vehicle_account_bound_note">重启、更新 App 或调试窗口到期均保留绑定。</string>
+    <string name="vehicle_account_unbind">取消绑定</string>
+    <string name="vehicle_account_unbind_title">取消车辆绑定？</string>
+    <string name="vehicle_account_unbind_message">当前账号及其观看授权将立即失效，录像仍保留在车端。</string>
+    <string name="vehicle_account_unbind_keep">保留绑定</string>
+    <string name="vehicle_account_unbind_confirm">取消绑定</string>
+    <string name="vehicle_account_code_title_active">扫码添加车辆</string>
+    <string name="vehicle_account_code_title_idle">添加到我的账号</string>
+    <string name="vehicle_account_code_note">用手机相机扫描二维码，或在网页输入绑定码；随后在车端确认目标账号。</string>
+    <string name="vehicle_account_qr_description">车辆添加二维码</string>
+    <string name="vehicle_account_code_until">有效至 %1$s · 一次性使用</string>
+    <string name="vehicle_account_qr_error">二维码暂时无法显示，请使用绑定码或重新申请</string>
+    <string name="vehicle_account_code_refresh">重新申请绑定码</string>
+    <string name="vehicle_account_code_request">申请绑定码与二维码</string>
+    <string name="vehicle_account_binding_title">确认绑定账号</string>
+    <string name="vehicle_account_binding_account">%1$s\n%2$s</string>
+    <string name="vehicle_account_binding_note">确认后该账号可访问此车的录像与在线功能。</string>
+    <string name="vehicle_account_binding_confirm">确认是我的账号</string>
+    <string name="vehicle_account_binding_reject">拒绝此请求</string>
+    <string name="vehicle_account_online_pause">暂停车辆在线服务</string>
+    <string name="vehicle_account_online_enable">启用车辆在线服务</string>
+    <string name="vehicle_account_hint_connecting">正在连接 AutoService…</string>
+    <string name="vehicle_account_hint_processing">正在处理…</string>
+    <string name="vehicle_account_hint_disconnected">AutoService 未连接，请开启自动运行后重试</string>
+    <string name="vehicle_account_hint_enabled">绑定长期有效，直到主动取消；临时码仅用于首次添加</string>
+    <string name="vehicle_account_hint_disabled">启用后车辆通过自身网络连接，不依赖远程调试授权时长</string>
+</resources>
