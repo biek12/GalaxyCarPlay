@@ -50,6 +50,8 @@ val prepareClusterHook = "prepareClusterHook"
 tasks.named("preBuild") { dependsOn(prepareQnxReceiver, prepareClusterHook) }
 """)
     write(root, "galaxy/service/src/main/java/com/ecarx/autoservice/AutoService.kt",
+          '// 生命周期与装配\n')
+    write(root, "galaxy/service/src/main/java/com/ecarx/autoservice/ipc/ServiceSnapshotComposer.kt",
           'putBundle("mapStreamSize", MapStreamSize.DEFAULT.bundle())\n'
           'putBoolean("clusterLyricsRequested", !paused && elements?.music == true)\n'
           'putBoolean("qnxReady", false)\n'
