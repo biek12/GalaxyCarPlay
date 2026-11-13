@@ -455,8 +455,13 @@ def closure_gate(root: Path | None = None) -> dict:
     composer = read("galaxy/service/src/main/java/com/ecarx/autoservice/ipc/ServiceSnapshotComposer.kt")
     if "putBundle(\"mapStreamSize\", MapStreamSize.DEFAULT.bundle())" not in composer:
         raise SystemExit("快照组装器未兼容发布 MapStreamSize.DEFAULT")
-    if "clusterLyricsRequested" not in composer or "elements?.music == true" not in composer:
-        raise SystemExit("快照组装器歌词需求未收敛为实际 OEM music")
+    publication = read("galaxy/service/src/main/java/com/ecarx/autoservice/ipc/ServicePublication.kt")
+    composer_compact = "".join(composer.split())
+    publication_compact = "".join(publication.split())
+    if ('putBoolean("clusterLyricsRequested",input.clusterLyricsRequested())' not in composer_compact or
+            'clusterLyricsRequested={!paused()&&demand()?.music==true}' not in publication_compact or
+            'clients.elementDemand().takeIf{!paused()&&featuresRoot()}' not in publication_compact):
+        raise SystemExit("歌词需求未由实际 OEM music 经Publication传入组装器")
     import re
     for key in ("qnxReady", "projectionRequested"):
         if not re.search(r'putBoolean\(\s*"' + key + r'"\s*,\s*false\s*\)', composer):
