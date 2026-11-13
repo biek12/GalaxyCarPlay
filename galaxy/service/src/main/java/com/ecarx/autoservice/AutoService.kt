@@ -21,6 +21,7 @@ import android.view.Surface
 import com.ecarx.autoservice.ipc.ClientRegistry
 import com.ecarx.autoservice.ipc.ServiceCallerIdentity
 import com.ecarx.autoservice.ipc.ServiceRequestQueue
+import com.ecarx.autoservice.ipc.ServiceSnapshots
 import com.ecarx.autoservice.oem.ClusterHookController
 import com.ecarx.autoservice.platform.foundation.ClientPermissionPolicy
 import com.ecarx.autoservice.platform.foundation.PlatformAccess
@@ -146,16 +147,17 @@ class AutoService : Service() {
     private var visualMedia = Bundle()
     private var artworkVersion = 0L
     private var artworkGeneration = 0L
-    private val notify =
-        Runnable {
-            if (closed) return@Runnable
-            val state = synchronized(snapshotLock) { Bundle(latest) }
-            val list = synchronized(snapshotLock) { recipients.toList() }
-            list.forEach { callback -> runCatching { callback.onSnapshot(Bundle(state)) } }
-        }
-    private val snapshotLock = Any()
-    private var latest = Bundle()
-    private var recipients = emptyList<IAutoCallback>()
+
+    /**
+     * 快照缓存、接收者表和合并通知只放在这里。
+     * 借用已经创建的 callbacks 投递；构造时不读 closed，也不另开线程。
+     */
+    private val snapshots =
+        ServiceSnapshots(
+            post = callbacks::post,
+            remove = callbacks::removeCallbacks,
+            isClosed = { closed },
+        )
 
     /**
      * 调用身份只在 Binder 线程读取。签名和包名查询延迟到真正调用时，
@@ -257,7 +259,7 @@ class AutoService : Service() {
 
             override fun getSnapshot(): Bundle {
                 uid()
-                return synchronized(snapshotLock) { Bundle(latest) }
+                return snapshots.current()
             }
 
             override fun getVehicleCatalog(offset: Int, limit: Int): Bundle {
@@ -1438,12 +1440,7 @@ class AutoService : Service() {
                 })
         }
         kanziMedia?.update(snapshot, musicWanted)
-        synchronized(snapshotLock) {
-            latest = snapshot
-            recipients = clients.all().map { it.callback }
-        }
-        callbacks.removeCallbacks(notify)
-        if (recipients.isNotEmpty()) callbacks.post(notify)
+        snapshots.publish(snapshot, clients.all().map { it.callback })
     }
 
     override fun dump(fd: java.io.FileDescriptor, writer: java.io.PrintWriter, args: Array<out String>) {
@@ -1451,7 +1448,7 @@ class AutoService : Service() {
             writer.println("FOUNDATION_CHECK=" + foundationEvidence())
             return
         }
-        val snapshot = synchronized(snapshotLock) { Bundle(latest) }
+        val snapshot = snapshots.current()
         if ("--record-properties" in args) {
             writer.println("RECORD_PROPERTIES=" + inventory.diagnostics())
             return
