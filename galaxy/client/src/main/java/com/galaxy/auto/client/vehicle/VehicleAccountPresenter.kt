@@ -399,13 +399,19 @@ class VehicleAccountPresenter(
         qr.clear(binding.codeQr)
     }
 
-    /** 当前仍要显示这个地址：未关闭、未绑定、码未过期且地址没被新状态换掉。 */
+    /**
+     * 完成回调时是否仍能显示这个地址。
+     *
+     * `codeVisible` 来自上次解析，不能单独代表此刻仍有效。必须再用注入时钟比较 `expiresAt`，
+     * 到期时刻本身也算失效。不因此发请求，也不显示编码失败占位。
+     */
     private fun codeStillCurrent(scanUrl: String): Boolean {
         val current = shown
         return !closed &&
             current != null &&
             !current.bound &&
             current.codeVisible &&
+            current.expiresAt > clock() &&
             current.scanUrl == scanUrl
     }
 

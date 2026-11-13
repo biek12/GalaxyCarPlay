@@ -14,6 +14,7 @@ import com.google.zxing.MultiFormatReader
 import com.google.zxing.RGBLuminanceSource
 import com.google.zxing.common.HybridBinarizer
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -23,6 +24,8 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import org.robolectric.annotation.GraphicsMode
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
 /** 二维码测试走生产编码，只替换线程调度或注入会失败的编码边界。 */
@@ -99,23 +102,81 @@ class VehicleQrRendererTest {
         shadowOf(Looper.getMainLooper()).idle()
         assertNull(image.drawable)
         assertTrue(created.get().isRecycled)
+        assertTrue(fixture.thread.isAlive)
         runCatching { shadowOf(fixture.thread.looper).quitUnchecked() }
         fixture.thread.join(1000)
+    }
+
+    @Test
+    fun `后到的地址覆盖尚未完成的编码且中间地址不额外编码`() {
+        val image = image()
+        val urlA = "https://example.test/galaxy/app/vehicles#bind=aaa"
+        val urlB = "https://example.test/galaxy/app/vehicles#bind=bbb"
+        val urlC = "https://example.test/galaxy/app/vehicles#bind=ccc"
+        val encoded = mutableListOf<String>()
+        val createdA = AtomicReference<Bitmap>()
+        val started = CountDownLatch(1)
+        val release = CountDownLatch(1)
+        val thread = HandlerThread("qr-coalesce-${System.nanoTime()}").apply { start() }
+        shadowOf(thread.looper).unPause()
+        val renderer =
+            VehicleQrRenderer(
+                workerLooper = thread.looper,
+                encode = { url ->
+                    synchronized(encoded) { encoded += url }
+                    val bitmap = VehicleQrRenderer.encodeUrl(url)
+                    if (url == urlA) {
+                        createdA.set(bitmap)
+                        started.countDown()
+                        check(release.await(2, TimeUnit.SECONDS))
+                    }
+                    bitmap
+                },
+            )
+        try {
+            renderer.submit(urlA, image, { true }, {})
+            assertTrue(started.await(2, TimeUnit.SECONDS))
+            renderer.submit(urlB, image, { true }, {})
+            renderer.submit(urlC, image, { true }, {})
+            release.countDown()
+            val deadline = System.nanoTime() + 3_000_000_000L
+            while (image.drawable == null && System.nanoTime() < deadline) {
+                shadowOf(Looper.getMainLooper()).idle()
+                Thread.sleep(10)
+            }
+            assertEquals(listOf(urlA, urlC), synchronized(encoded) { encoded.toList() })
+            assertTrue(createdA.get().isRecycled)
+            assertEquals(urlC, decode(bitmap(image)))
+            renderer.close()
+            assertTrue(thread.isAlive)
+        } finally {
+            if (thread.isAlive) {
+                runCatching { shadowOf(thread.looper).quitUnchecked() }
+                thread.join(1000)
+            }
+        }
     }
 
     @Test
     fun `关闭后编码线程退出`() {
         val renderer = VehicleQrRenderer()
         val thread =
-            Thread
-                .getAllStackTraces()
-                .keys
-                .filterIsInstance<HandlerThread>()
-                .first { it.name == "vehicle-account-qr" }
-        renderer.close()
-        runCatching { shadowOf(thread.looper).quitUnchecked() }
-        thread.join(2000)
-        assertTrue(!thread.isAlive)
+            renderer.javaClass
+                .getDeclaredField(
+                    "thread",
+                ).apply { isAccessible = true }
+                .get(renderer) as HandlerThread
+        assertTrue(thread.isAlive)
+        try {
+            renderer.close()
+            thread.join(2000)
+            assertFalse(thread.isAlive)
+        } finally {
+            if (thread.isAlive) {
+                runCatching { shadowOf(thread.looper).quitUnchecked() }
+                thread.join(1000)
+            }
+        }
     }
 
     private class Fixture(

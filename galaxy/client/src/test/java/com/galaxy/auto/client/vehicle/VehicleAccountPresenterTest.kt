@@ -2,17 +2,27 @@ package com.galaxy.auto.client.vehicle
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import android.os.Bundle
+import android.os.Handler
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import com.galaxy.auto.client.R
 import com.galaxy.auto.client.databinding.ActivityVehicleAccountBinding
 import com.galaxy.auto.ui.GalaxyActionButton
+import com.google.zxing.BarcodeFormat
+import com.google.zxing.BinaryBitmap
+import com.google.zxing.DecodeHintType
+import com.google.zxing.MultiFormatReader
+import com.google.zxing.RGBLuminanceSource
+import com.google.zxing.common.HybridBinarizer
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -20,8 +30,11 @@ import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import org.robolectric.shadows.ShadowDialog
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicLong
+import java.util.concurrent.atomic.AtomicReference
 
 /** 真实 Presenter 绑定真实控件。连接端口只记录请求并在测试里回放。 */
 @RunWith(RobolectricTestRunner::class)
@@ -219,6 +232,105 @@ class VehicleAccountPresenterTest {
         assertEquals(0, harness.port.connects)
     }
 
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun `排队期间到达到期时刻或之后完成时不显示二维码也不追加请求`() {
+        listOf(NOW + 1000, NOW + 1500).forEach { completedAt ->
+            val created = AtomicReference<Bitmap>()
+            val page = realtimePage(created)
+            try {
+                page.now = NOW
+                page.presenter.onReady()
+                page.port.reply(0, timedCode(NOW + 1000))
+                page.now = completedAt
+                shadowOf(Looper.getMainLooper()).idle()
+                assertNull(page.binding.codeQr.drawable)
+                assertEquals(View.GONE, page.binding.codeError.visibility)
+                assertTrue(created.get().isRecycled)
+                assertEquals(listOf("state"), page.port.actions())
+            } finally {
+                page.presenter.close()
+            }
+        }
+    }
+
+    @Test
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
+    fun `编码在到期前完成时显示原地址且不追加请求`() {
+        val page = realtimePage(AtomicReference())
+        try {
+            page.now = NOW
+            page.presenter.onReady()
+            page.port.reply(0, timedCode(NOW + 1000))
+            shadowOf(Looper.getMainLooper()).idle()
+            val bitmap = (page.binding.codeQr.drawable as BitmapDrawable).bitmap
+            assertEquals(SCAN_URL, decode(bitmap))
+            assertFalse(bitmap.isRecycled)
+            assertEquals(listOf("state"), page.port.actions())
+        } finally {
+            page.presenter.close()
+        }
+    }
+
+    private fun realtimePage(created: AtomicReference<Bitmap>): RealtimePage {
+        val activity = Robolectric.buildActivity(Activity::class.java).setup().get()
+        val binding = ActivityVehicleAccountBinding.inflate(activity.layoutInflater)
+        activity.setContentView(binding.root)
+        val port = FakePort()
+        val clock = AtomicLong(NOW)
+        val presenter =
+            VehicleAccountPresenter(
+                binding = binding,
+                port = port,
+                qr =
+                    VehicleQrRenderer(
+                        main = Handler(Looper.getMainLooper()),
+                        workerLooper = Looper.getMainLooper(),
+                        encode = { url ->
+                            VehicleQrRenderer.encodeUrl(url).also(created::set)
+                        },
+                    ),
+                clock = { clock.get() },
+                onBack = {},
+            )
+        presenter.bindActions()
+        return RealtimePage(binding, port, presenter, clock)
+    }
+
+    /** 用真实编码器和主线程调度观察完成回调；不启动两秒轮询。 */
+    private class RealtimePage(
+        val binding: ActivityVehicleAccountBinding,
+        val port: FakePort,
+        val presenter: VehicleAccountPresenter,
+        private val clock: AtomicLong,
+    ) {
+        var now: Long
+            get() = clock.get()
+            set(value) {
+                clock.set(value)
+            }
+    }
+
+    private fun timedCode(expiresAt: Long) =
+        JSONObject()
+            .put("bound", false)
+            .put("enabled", false)
+            .put("code", "123456")
+            .put("expiresAt", expiresAt)
+            .put("scanUrl", SCAN_URL)
+            .toString()
+
+    private fun decode(bitmap: Bitmap): String {
+        val pixels = IntArray(bitmap.width * bitmap.height)
+        bitmap.getPixels(pixels, 0, bitmap.width, 0, 0, bitmap.width, bitmap.height)
+        val reader = MultiFormatReader()
+        reader.setHints(mapOf(DecodeHintType.POSSIBLE_FORMATS to listOf(BarcodeFormat.QR_CODE)))
+        return reader
+            .decode(
+                BinaryBitmap(HybridBinarizer(RGBLuminanceSource(bitmap.width, bitmap.height, pixels))),
+            ).text
+    }
+
     private class Harness(
         var now: Long = NOW,
     ) {
@@ -368,5 +480,6 @@ class VehicleAccountPresenterTest {
 
     private companion object {
         const val NOW = 1_700_000_000_000L
+        const val SCAN_URL = "https://example.test/vehicles#bind=123456"
     }
 }
