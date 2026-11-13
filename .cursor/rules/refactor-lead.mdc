@@ -12,9 +12,11 @@ alwaysApply: true
 - P1业务fbb5f65已复审并以1fb4210集成，见docs/refactor/Cursor-P1-复审与集成-20261113.md；不重复实施P1或向完成分支写入。
 - S1业务a6b758f已复审并以2fb91e5集成，见docs/refactor/Cursor-S1-复审与集成-20261113.md；不重复实施或向完成分支写入。
 - S2业务03f14de已复审并以f2cbb7f集成，见docs/refactor/Cursor-S2-复审与集成-20261113.md；不向完成分支继续写入。
-- 当前唯一业务任务：docs/refactor/S3-车辆订阅推送所有权任务-20261113.md，3条精确代码白名单。只在F:\GalaxyPlay\wt-service-vehicle-feed / feat/galaxy-service-vehicle-feed-20261113实施；基于已审S2，f3da009准备脚本。开工记录实际HEAD。只迁车辆值缓存、序号、补发与节流，复用Lease/VehicleFeed；不改采集/需求合并、协议、显示或其他Binder业务。
-- wt-service-snapshots、wt-service-ipc、wt-platform-ports、wt-theme-validation、wt-validation-windows、wt-theme-archive保持完成冻结，不同步新文档使其重新出现未合并提交。S3交付后等用户叫审计，不自行续跑下一批/A1。
-- 每轮先报告当前绝对目录、分支、HEAD、未提交变更和本轮白名单，再实施。完成格式、编译、实际用例和提交后冻结；缺项写 BLOCKED_VALIDATION。
+- S3业务665b9f8已复审并以78feda1集成，见docs/refactor/Cursor-S3-复审与集成-20261113.md；不再写入已完成树。
+- 用户最新要求一次完整大任务、细到小任务级别。当前唯一任务：docs/refactor/A4-AutoService主体结构收官任务-20261113.md及A4-代码白名单-20261113.txt，33条业务路径。只在F:\GalaxyPlay\wt-autoservice-completion / feat/galaxy-autoservice-completion-20261113实施；基于已审S3，5dd76ce准备任务和验证。开工记录实际HEAD。
+- C1–C4为同一A4内检查点，真实编译/测试/格式和本地提交后直接继续下一点，不等用户/Codex逐点发令；整个A4全绿才READY_FOR_REVIEW并冻结等用户叫审计。只完成一部分不能宣称整包完成，不自行合并/推送或扩大产品/协议/设备边界。
+- wt-service-vehicle-feed及更早完成树冻结，不同步新任务使其重开未合并tip。A4仍保留旧整屏归档、OEM增强和原有线程/代次/FD/关闭合同，脚本由Codex直接维护。
+- 开工先报告当前绝对目录、分支、HEAD、未提交变更和本轮白名单，再实施。内部C1–C4完成格式、编译、实际用例和提交后继续；整个A4交付后冻结。缺项写 BLOCKED_VALIDATION。
 - 不弱化测试、归档字节或产物检查；不把 help、源码搜索、缓存目录存在当作编译或测试通过。
 - 只归档旧整屏投屏，保留 OEM 背景/音乐卡片/Hook、CarPlay 主屏与数据、车辆订阅和基础身份。
 - 不连车、不安装、不操作 HMI、不启模拟器、不推远端、不改应用签名。Mac ZIP 仅作只读材料来源，不整包覆盖 Windows 源码/缓存。

@@ -1,0 +1,72 @@
+{
+  "task": "GALAXY-SERVICE-VEHICLE-FEED-S3-20261113",
+  "audit": "PASS_INTEGRATED",
+  "codeCommit": "665b9f888f3374e43d02efbc4484ab3e68d7cfb5",
+  "integrationCommit": "78feda1e088a1a98ee25f21c762d467a1e65ea09",
+  "codeScope": {
+    "changedPaths": 3,
+    "outsideWhitelist": [],
+    "validationScriptsChangedByCursor": false
+  },
+  "review": [
+    "Single volatile vehicle cache and feed sequence owner",
+    "Cache update then sentinel accept then one lease snapshot; enabled guard and no active/role filtering preserved",
+    "Per-lease lastFeedAt and minimum interval; one sequence per nonempty-target round including throttled/empty-output rounds",
+    "Replay shares sequence/cache, no new enabled guard, clear does not reset sequence or subscriptions",
+    "Existing VehicleFeed deepCopy, pre-post packet creation, per-callback failure isolation, and three clear positions preserved"
+  ],
+  "verification": {
+    "candidate": "F:\\GalaxyPlay\\wt-service-vehicle-feed\\.work\\lead-s3-review",
+    "leader": "F:\\GalaxyPlay\\galaxycarplay\\.work\\s3-integration-validation",
+    "scriptRegressions": 7,
+    "kotlinKts": 111,
+    "xml": 7,
+    "syntaxFiles": 8,
+    "observed": {
+      "service": {
+        "suites": 39,
+        "cases": 153
+      },
+      "cluster": {
+        "suites": 3,
+        "cases": 12
+      }
+    },
+    "requiredSuiteSubset": 19,
+    "requiredCasesSubset": 88,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "classes": 242,
+    "activeSourceCount": 1016,
+    "archiveEntries": 97,
+    "kadb": {
+      "kadbVersion": "2.1.1",
+      "calls": [
+        {
+          "method": "parsePrivateKeyPem",
+          "owner": "com/ecarx/autoservice/platform/adb/AdbCrypto"
+        },
+        {
+          "method": "derivePublicKey",
+          "owner": "com/ecarx/autoservice/platform/adb/AdbCrypto"
+        }
+      ],
+      "transformedJar": "F:/GalaxyPlay/galaxycarplay/.work/gradle-home/caches/9.5.0/transforms/2e7b0692aa950345c6e328e546ade700/transformed/kadb-runtime.jar",
+      "transformedJarSha256": "04460a2cbfadc227aaa691d21d881bbbce02da15b51cba18cd7a5b39b9583363",
+      "targetClass": "galaxy/service/build/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes/com/ecarx/autoservice/platform/adb/AdbCrypto.class",
+      "targetClassSha256": "cc7dfed6c1f077ea6639731702fc07420165828d52ef9d694da4d72b2fa967ce",
+      "sourceHead": "78feda1e088a1a98ee25f21c762d467a1e65ea09",
+      "apkBuilt": false,
+      "vehicleValidated": false
+    }
+  },
+  "logSha256": {
+    "F:\\GalaxyPlay\\wt-service-vehicle-feed\\.work\\lead-s3-review\\VALIDATION-665b9f8.json": "bae294301583710d16a2d7c7d994f353eae278a5e655673f9aec1f8c12f27a11",
+    "F:\\GalaxyPlay\\wt-service-vehicle-feed\\.work\\lead-s3-review-console.log": "ed4e466af08b997ded8b7bcd706ceb23b71ae52e395a6ab8dcb354e847622bd3",
+    "F:\\GalaxyPlay\\galaxycarplay\\.work\\s3-integration-validation\\VALIDATION-78feda1.json": "401e722fbc535876f3b1261676b7fcd450341da0fbb68074d242b4b8bfb65fd2",
+    "F:\\GalaxyPlay\\galaxycarplay\\.work\\s3-integration-validation-console.log": "15d24cec43ff75120f6662f5ba884be243c0a2e241e807ac373e34ad6a75019b"
+  },
+  "apkBuilt": false,
+  "vehicleValidated": false
+}
