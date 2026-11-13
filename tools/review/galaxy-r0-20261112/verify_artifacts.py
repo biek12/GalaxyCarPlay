@@ -60,6 +60,23 @@ REQUIRED_CLASSES = [
     "com/ecarx/autoservice/ipc/ServiceRequestQueue.class",
     "com/ecarx/autoservice/ipc/ServiceSnapshots.class",
     "com/ecarx/autoservice/vehicle/VehicleFeedDispatcher.class",
+    "com/ecarx/autoservice/vehicle/ServiceVehicleSession.class",
+    "com/ecarx/autoservice/platform/foundation/ServiceShellRequests.class",
+    "com/ecarx/autoservice/platform/foundation/ClientPermissionRequests.class",
+    "com/ecarx/autoservice/media/ServiceMediaSession.class",
+    "com/ecarx/autoservice/oem/ClusterElementsSession.class",
+    "com/ecarx/autoservice/remote/ServiceRemoteSession.class",
+    "com/ecarx/autoservice/sentinel/ServiceSentinelRequests.class",
+    "com/ecarx/autoservice/ipc/ServiceClientSessions.class",
+    "com/ecarx/autoservice/ipc/ServiceSnapshotComposer.class",
+    "com/ecarx/autoservice/ipc/ServicePublication.class",
+    "com/ecarx/autoservice/diagnostics/ServiceDiagnostics.class",
+    "com/ecarx/autoservice/ipc/AutoServiceBinder.class",
+    "com/ecarx/autoservice/media/KanziMediaPublisher.class",
+    "com/ecarx/autoservice/media/OemArtworkWriter.class",
+    "com/ecarx/autoservice/media/ArtworkProvider.class",
+    "com/ecarx/autoservice/media/NativeMediaSource.class",
+    "com/ecarx/autoservice/media/MediaAccessListener.class",
     *PREVIEW_CLASSES,
 ]
 # 本批必测：JUnit suite 必须真实存在、非空、零失败/错误/跳过。
@@ -81,6 +98,15 @@ REQUIRED_SUITES = {
         "com.ecarx.autoservice.ipc.ServiceRequestQueueTest",
         "com.ecarx.autoservice.ipc.ServiceSnapshotsTest",
         "com.ecarx.autoservice.vehicle.VehicleFeedDispatcherTest",
+        "com.ecarx.autoservice.vehicle.ServiceVehicleSessionTest",
+        "com.ecarx.autoservice.platform.foundation.ServicePlatformRequestsTest",
+        "com.ecarx.autoservice.media.ServiceMediaSessionTest",
+        "com.ecarx.autoservice.oem.ClusterElementsSessionTest",
+        "com.ecarx.autoservice.remote.ServiceRemoteSessionTest",
+        "com.ecarx.autoservice.ipc.ServicePublicationTest",
+        "com.ecarx.autoservice.diagnostics.ServiceDiagnosticsTest",
+        "com.ecarx.autoservice.ipc.AutoServiceBinderTest",
+        "com.ecarx.autoservice.ServiceCompletionBehaviorTest",
         "com.ecarx.autoservice.platform.foundation.FoundationRecoveryTest",
         "com.ecarx.autoservice.remote.RemoteConnectionStatusTest",
         "com.ecarx.autoservice.platform.root.RootFramesTest",
@@ -426,12 +452,20 @@ def closure_gate(root: Path | None = None) -> dict:
     for token in ("ensureComposition", "updateProjection", "GalaxyHabComposition"):
         if token in auto:
             raise SystemExit(f"AutoService 仍含旧输出链: {token}")
-    if "putBundle(\"mapStreamSize\", MapStreamSize.DEFAULT.bundle())" not in auto:
-        raise SystemExit("AutoService 未兼容发布 MapStreamSize.DEFAULT")
-    if "putBoolean(\"clusterLyricsRequested\", !paused && elements?.music == true)" not in auto:
-        raise SystemExit("AutoService 的歌词需求未收敛为实际 OEM music")
-    if "putBoolean(\"qnxReady\", false)" not in auto or "putBoolean(\"projectionRequested\", false)" not in auto:
-        raise SystemExit("AutoService 快照未恒为归档态")
+    composer = read("galaxy/service/src/main/java/com/ecarx/autoservice/ipc/ServiceSnapshotComposer.kt")
+    if "putBundle(\"mapStreamSize\", MapStreamSize.DEFAULT.bundle())" not in composer:
+        raise SystemExit("快照组装器未兼容发布 MapStreamSize.DEFAULT")
+    publication = read("galaxy/service/src/main/java/com/ecarx/autoservice/ipc/ServicePublication.kt")
+    composer_compact = "".join(composer.split())
+    publication_compact = "".join(publication.split())
+    if ('putBoolean("clusterLyricsRequested",input.clusterLyricsRequested())' not in composer_compact or
+            'clusterLyricsRequested={!paused()&&demand()?.music==true}' not in publication_compact or
+            'clients.elementDemand().takeIf{!paused()&&featuresRoot()}' not in publication_compact):
+        raise SystemExit("歌词需求未由实际 OEM music 经Publication传入组装器")
+    import re
+    for key in ("qnxReady", "projectionRequested"):
+        if not re.search(r'putBoolean\(\s*"' + key + r'"\s*,\s*false\s*\)', composer):
+            raise SystemExit("快照组装器未恒为归档态")
     preview = read("galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/InstrumentMusicPreview.kt")
     if "import com.galaxy.autocluster.preview.SceneData" not in preview:
         raise SystemExit("InstrumentMusicPreview 丢失 SceneData 共享依赖")
@@ -460,6 +494,13 @@ def kadb_transform_gate() -> dict:
     return inspect_artifacts(ROOT)
 
 
+def completion_gate() -> dict:
+    """最终A4结构及真实Manifest核对，检查点不能走此READY入口。"""
+    sys.path.insert(0, str(ROOT / "tools/review/galaxy-autoservice-a4-20261113"))
+    from completion import inspect
+    return inspect(ROOT)
+
+
 def source_gate() -> dict:
     """绑定最终源码/资源/KTS/归档摘要与工作树 HEAD。"""
     sources = {}
@@ -473,6 +514,8 @@ def source_gate() -> dict:
                 archive_hashes[rel_posix(path)] = sha256(path.read_bytes())
     validation_paths = set((ROOT / "tools/review/galaxy-r0-20261112").rglob("*.py"))
     validation_paths.update((ROOT / "tools/review/galaxy-platform-p1-20261113").rglob("*.py"))
+    validation_paths.update(p for p in (ROOT / "tools/review/galaxy-autoservice-a4-20261113").rglob("*")
+                            if p.is_file() and p.suffix in {".py", ".json", ".txt"})
     validation_paths.update((ROOT / "scripts/verify").rglob("*.py"))
     validation_paths.update((ROOT / "scripts/verify").rglob("*.gradle"))
     validation_paths.update(ROOT / name for name in (
@@ -504,7 +547,7 @@ def main() -> None:
     REPORT.mkdir(parents=True, exist_ok=True)
     fmt = json.loads(read_text(REPORT / "format-result.json"))
     record = {
-        "task": "GALAXY-SERVICE-VEHICLE-FEED-S3-20261113",
+        "task": "GALAXY-AUTOSERVICE-COMPLETION-A4-20261113",
         "status": "READY_FOR_REVIEW" if len(sys.argv) > 1 and sys.argv[1] == "ready" else "VALIDATED",
         "archive": archive_gate(),
         "themeArchive": theme_archive_gate(),
@@ -515,6 +558,7 @@ def main() -> None:
         "format": fmt,
         "closure": closure_gate(),
         "source": source_gate(),
+        "completion": completion_gate(),
     }
     target = REPORT / "VALIDATION.json"
     target.write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")

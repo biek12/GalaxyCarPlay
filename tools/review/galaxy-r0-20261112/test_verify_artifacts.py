@@ -50,16 +50,38 @@ val prepareClusterHook = "prepareClusterHook"
 tasks.named("preBuild") { dependsOn(prepareQnxReceiver, prepareClusterHook) }
 """)
     write(root, "galaxy/service/src/main/java/com/ecarx/autoservice/AutoService.kt",
+          '// 生命周期与装配\n')
+    write(root, "galaxy/service/src/main/java/com/ecarx/autoservice/ipc/ServiceSnapshotComposer.kt",
           'putBundle("mapStreamSize", MapStreamSize.DEFAULT.bundle())\n'
-          'putBoolean("clusterLyricsRequested", !paused && elements?.music == true)\n'
+          'putBoolean("clusterLyricsRequested", input.clusterLyricsRequested())\n'
           'putBoolean("qnxReady", false)\n'
           'putBoolean("projectionRequested", false)\n')
+    write(root, "galaxy/service/src/main/java/com/ecarx/autoservice/ipc/ServicePublication.kt",
+          'val demand = { clients.elementDemand().takeIf { !paused() && featuresRoot() } }\n'
+          'clusterLyricsRequested = { !paused() && demand()?.music == true }\n')
     write(root, "galaxy/cluster/src/main/java/com/galaxy/autocluster/ui/InstrumentMusicPreview.kt",
           "import com.galaxy.autocluster.preview.SceneData\n")
 
 
 class ArtifactGateTest(unittest.TestCase):
     """覆盖 E01 原字节、E03 注释误判和 E04 Windows 类路径。"""
+
+    def test_closure_checks_actual_publication_owner_and_composer_delegation(self) -> None:
+        """执行原闭包检查：需求迁入Publication后通过，绕过OEM music或组装委托仍拒绝。"""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            legal_closure_tree(root)
+            gates.closure_gate(root)
+            publication = root / "galaxy/service/src/main/java/com/ecarx/autoservice/ipc/ServicePublication.kt"
+            original = publication.read_text(encoding="utf-8")
+            publication.write_text(original.replace("!paused() && demand()?.music == true", "true"), encoding="utf-8")
+            with self.assertRaisesRegex(SystemExit, "歌词需求"):
+                gates.closure_gate(root)
+            publication.write_text(original, encoding="utf-8")
+            composer = root / "galaxy/service/src/main/java/com/ecarx/autoservice/ipc/ServiceSnapshotComposer.kt"
+            composer.write_text(composer.read_text(encoding="utf-8").replace("input.clusterLyricsRequested()", "true"), encoding="utf-8")
+            with self.assertRaisesRegex(SystemExit, "歌词需求"):
+                gates.closure_gate(root)
 
     def test_archive_matches_git_blob_and_rejects_one_byte(self) -> None:
         """真实归档 53 项三方相等；改一个字节必须失败，且不能改 manifest 摘要。"""

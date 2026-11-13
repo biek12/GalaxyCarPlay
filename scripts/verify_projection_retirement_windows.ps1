@@ -6,7 +6,9 @@ param(
     [string]$ReportDir = "",
     [string]$KtlintJar = "",
     [string]$Aapt2Path = "",
-    [string]$BashPath = ""
+    [string]$BashPath = "",
+    [ValidateSet("", "baseline", "C1", "C2", "C3", "C4")]
+    [string]$Checkpoint = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -56,6 +58,7 @@ $env:GALAXY_REFACTOR_CACHE = $CacheRoot
 $env:GALAXY_VERIFY_CACHE = $CacheRoot
 $env:GALAXY_KTLINT_JAR = $KtlintJar
 $env:GALAXY_R0_REPORT_DIR = $ReportDir
+$env:GALAXY_A4_CHECKPOINT = $Checkpoint
 $env:GALAXY_TEST_SHELL = Convert-ToToolPath $shellTool
 $env:GALAXY_TEST_CKSUM = Convert-ToToolPath $cksumTool
 $env:GALAXY_TEST_PATH_PREFIX = Convert-ToToolPath $usrBin

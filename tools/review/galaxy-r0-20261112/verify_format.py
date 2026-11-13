@@ -32,6 +32,7 @@ XML_FILES = [
     "galaxy/service/src/main/res/layout/include_service_features.xml",
     "galaxy/service/src/main/res/layout/include_service_overview.xml",
     "galaxy/service/src/main/res/values/strings.xml",
+    "galaxy/service/src/main/AndroidManifest.xml",
 ]
 PYTHON_FILES = [
     str(REVIEW / "archive_projection.py"),
@@ -41,6 +42,9 @@ PYTHON_FILES = [
     str(REVIEW / "test_theme_retirement.py"),
     str(REVIEW / "test_windows_entry.py"),
     "tools/review/galaxy-platform-p1-20261113/verify_kadb_transform.py",
+    "tools/review/galaxy-autoservice-a4-20261113/checkpoint.py",
+    "tools/review/galaxy-autoservice-a4-20261113/completion.py",
+    "tools/review/galaxy-autoservice-a4-20261113/test_completion.py",
     "scripts/verify_projection_retirement.sh",
 ]
 

@@ -1,11 +1,15 @@
-package com.ecarx.autoservice
+package com.ecarx.autoservice.media
 
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.os.Bundle
 import android.os.ParcelFileDescriptor
+import com.ecarx.autoservice.SerialWorker
+import com.ecarx.autoservice.ServiceTrace
 import com.ecarx.autoservice.platform.foundation.PlatformAccess
+import com.ecarx.autoservice.startup.AutoStartup
+import java.io.ByteArrayOutputStream
 import java.io.File
 
 /** 语义化封面写入只接受图像FD；目标、权限、缩放与原子替换全部由服务管理。 */
@@ -17,19 +21,20 @@ internal class OemArtworkWriter(
 
     @Volatile private var closed = false
 
+    /**
+     * 在自有 worker 上读取图像 FD、缩放到 130 并经 Root 原子替换原厂封面。
+     *
+     * 调用方交出 FD。成功、失败和关闭都在本方法里关闭它，结果只在尚未 close 时回给 [result]。
+     */
     fun write(fd: ParcelFileDescriptor, result: (Bundle) -> Unit) {
         worker.post {
             val value = Bundle()
             var file: File? = null
             try {
-                check(
-                    !closed &&
-                        com.ecarx.autoservice.startup.AutoStartup
-                            .enabled(context),
-                )
+                check(!closed && AutoStartup.enabled(context))
                 val bytes =
                     ParcelFileDescriptor.AutoCloseInputStream(fd).use { input ->
-                        val output = java.io.ByteArrayOutputStream()
+                        val output = ByteArrayOutputStream()
                         val buffer = ByteArray(8192)
                         while (true) {
                             val n = input.read(buffer)
@@ -97,6 +102,7 @@ internal class OemArtworkWriter(
         }
     }
 
+    /** 拒绝后续写入，并关闭平台访问和 worker。已经排队的任务仍会走完 finally。 */
     override fun close() {
         closed = true
         access.close()

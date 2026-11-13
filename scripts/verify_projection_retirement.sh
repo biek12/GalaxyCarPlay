@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# GALAXY-SERVICE-VEHICLE-FEED-S3-20261113：累计归档、平台、IPC及车辆订阅推送门槛。
+# GALAXY-AUTOSERVICE-COMPLETION-A4-20261113：累计门槛及任务内真实编译检查点。
 # 只离线编译/资源/JUnit/格式/产物核对；不打包 APK、不连车、不启模拟器、不远程部署。
 set -euo pipefail
 
@@ -113,6 +113,16 @@ ARGS=(--offline --no-daemon --no-configuration-cache --console=plain
   -I scripts/verify/lib/robolectric-offline.init.gradle
   -I scripts/verify/lib/kadb-transform.init.gradle
   -x :service:buildHab -x :service:prepareQnxReceiver -x :service:prepareClusterHook)
+
+if [ -n "${GALAXY_A4_CHECKPOINT:-}" ]; then
+  "$PY" tools/review/galaxy-autoservice-a4-20261113/checkpoint.py before "$GALAXY_A4_CHECKPOINT" \
+    2>&1 | tee "$LOG_DIR/checkpoint-format.log"
+  ./gradlew "${ARGS[@]}" :service:testDebugUnitTest :service:compileDebugAndroidTestKotlin :service:recordGalaxyKadbTransformInputs \
+    2>&1 | tee "$LOG_DIR/checkpoint-build.log"
+  "$PY" tools/review/galaxy-autoservice-a4-20261113/checkpoint.py after "$GALAXY_A4_CHECKPOINT" \
+    2>&1 | tee "$LOG_DIR/checkpoint-result.log"
+  exit 0
+fi
 
 # 只清本任务自身模块的 Kotlin class / merged manifest / test-results 输出目录，
 # 保证产物与 Manifest 都是本轮编译结果，不拿旧 build 的残留 class 冒充本轮产物；

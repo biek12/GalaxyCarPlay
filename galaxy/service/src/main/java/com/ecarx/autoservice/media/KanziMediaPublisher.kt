@@ -1,4 +1,4 @@
-package com.ecarx.autoservice
+package com.ecarx.autoservice.media
 
 import android.content.Context
 import android.graphics.Bitmap
@@ -7,17 +7,23 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.SystemClock
+import com.ecarx.autoservice.ClusterBackgroundStore
+import com.ecarx.autoservice.KanziMediaFrame
+import com.ecarx.autoservice.SerialWorker
+import com.ecarx.autoservice.ServiceTrace
 import com.ecarx.autoservice.platform.foundation.PlatformAccess
+import org.json.JSONObject
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.UUID
+import java.util.concurrent.ThreadLocalRandom
 
 /** AutoService独占跨系统写入。只写自有OTA桥目录，关闭不改原厂权限，租约到期恢复。 */
 internal class KanziMediaPublisher(
     private val context: Context,
     private val published: (Long, Int) -> Unit = { _, _ -> },
-    private val write: ((String, Int) -> org.json.JSONObject)? = null,
+    private val write: ((String, Int) -> JSONObject)? = null,
 ) : AutoCloseable {
     private val main = Handler(Looper.getMainLooper())
     private val worker = SerialWorker("AutoService-media-output")
@@ -31,7 +37,7 @@ internal class KanziMediaPublisher(
     private var session =
         UUID(
             System.currentTimeMillis(),
-            java.util.concurrent.ThreadLocalRandom
+            ThreadLocalRandom
                 .current()
                 .nextLong(),
         )
@@ -54,6 +60,11 @@ internal class KanziMediaPublisher(
             }
         }
 
+    /**
+     * 用最新快照决定是否输出。
+     *
+     * 配置或开关变化才推进代次。wanted 为真时立刻跑一拍并按 1 秒续订，为假时停表后再发一拍关闭。
+     */
     fun update(snapshot: Bundle, wanted: Boolean) {
         state = Bundle(snapshot)
         val next =
@@ -78,6 +89,7 @@ internal class KanziMediaPublisher(
         if (wanted)tick.run()else publish()
     }
 
+    /** 按当前代次把封面和媒体帧交给原写入边界；关闭或上一拍未完成时直接返回。 */
     private fun publish() {
         if (closed || busy)return
         val snapshot = Bundle(state)
@@ -92,7 +104,7 @@ internal class KanziMediaPublisher(
             session =
                 UUID(
                     maxOf(System.currentTimeMillis(), session.mostSignificantBits + 1),
-                    java.util.concurrent.ThreadLocalRandom
+                    ThreadLocalRandom
                         .current()
                         .nextLong(),
                 )
@@ -288,6 +300,7 @@ internal class KanziMediaPublisher(
         }
     }
 
+    /** 停止续订并关闭自有 worker 与平台访问，不改原厂权限。 */
     override fun close() {
         closed = true
         ++generation
