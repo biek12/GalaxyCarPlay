@@ -11,8 +11,9 @@ alwaysApply: true
 - T1预览模型代码efba581已复审并集成，Leader集成提交7aa0030；三个已完成归档/验证分支已在2026-11-13正式合并收口。不要重复执行T1或以旧R0阻断报告覆盖已验状态。
 - P1业务fbb5f65已复审并以1fb4210集成，见docs/refactor/Cursor-P1-复审与集成-20261113.md；不重复实施P1或向完成分支写入。
 - S1业务a6b758f已复审并以2fb91e5集成，见docs/refactor/Cursor-S1-复审与集成-20261113.md；不重复实施或向完成分支写入。
-- 当前唯一业务任务：docs/refactor/S2-快照发布所有权任务-20261113.md，3条精确代码白名单。只在F:\GalaxyPlay\wt-service-snapshots / feat/galaxy-service-snapshots-20261113实施；基于已审S1，cd0b166准备脚本。开工记录实际HEAD。本批只迁快照缓存、接收者表及通知合并，不改快照字段或publish中的业务启动/停止，不扩为整个Binder/车辆/媒体/OEM迁移。
-- wt-service-ipc、wt-platform-ports、wt-theme-validation、wt-validation-windows、wt-theme-archive保持完成冻结，不继续写入或同步新文档使其重新出现未合并提交。S2交付后等用户叫审计，不自行续跑下一批/A1。
+- S2业务03f14de已复审并以f2cbb7f集成，见docs/refactor/Cursor-S2-复审与集成-20261113.md；不向完成分支继续写入。
+- 当前唯一业务任务：docs/refactor/S3-车辆订阅推送所有权任务-20261113.md，3条精确代码白名单。只在F:\GalaxyPlay\wt-service-vehicle-feed / feat/galaxy-service-vehicle-feed-20261113实施；基于已审S2，f3da009准备脚本。开工记录实际HEAD。只迁车辆值缓存、序号、补发与节流，复用Lease/VehicleFeed；不改采集/需求合并、协议、显示或其他Binder业务。
+- wt-service-snapshots、wt-service-ipc、wt-platform-ports、wt-theme-validation、wt-validation-windows、wt-theme-archive保持完成冻结，不同步新文档使其重新出现未合并提交。S3交付后等用户叫审计，不自行续跑下一批/A1。
 - 每轮先报告当前绝对目录、分支、HEAD、未提交变更和本轮白名单，再实施。完成格式、编译、实际用例和提交后冻结；缺项写 BLOCKED_VALIDATION。
 - 不弱化测试、归档字节或产物检查；不把 help、源码搜索、缓存目录存在当作编译或测试通过。
 - 只归档旧整屏投屏，保留 OEM 背景/音乐卡片/Hook、CarPlay 主屏与数据、车辆订阅和基础身份。
