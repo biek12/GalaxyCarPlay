@@ -4,6 +4,8 @@
 
 ## galaxy 代码整理与协作约束（2026-11-12 最新确认）
 
+- 2026-11-13 S2业务`03f14de`经候选及Leader完整复验，已以`f2cbb7f`集成；Service149例、Cluster12例、109项格式及归档/KADB产物通过。S2分支完成冻结。**当前唯一业务任务为 [S3车辆订阅推送所有权](docs/refactor/S3-车辆订阅推送所有权任务-20261113.md)，在`F:\GalaxyPlay\wt-service-vehicle-feed` / `feat/galaxy-service-vehicle-feed-20261113`实施**；Codex以`f3da009`准备脚本，Cursor只写3条白名单代码。下文S2当前描述为历史。本批复用现有Lease/VehicleFeed，只迁缓存、序号、补发与节流，不改采集/需求或显示。完成真实门槛和提交后交审，通过即集成，不续拆下一批。见 [S2复审与集成](docs/refactor/Cursor-S2-复审与集成-20261113.md)。
+
 - 2026-11-13 S1业务`a6b758f`经候选和Leader完整复验，已以`2fb91e5`集成；Service145例、Cluster12例及格式/归档/KADB产物通过。S1分支完成冻结，不再写入。**当前唯一业务任务为 [S2快照发布所有权](docs/refactor/S2-快照发布所有权任务-20261113.md)，在`F:\GalaxyPlay\wt-service-snapshots` / `feat/galaxy-service-snapshots-20261113`实施**；Codex以`cd0b166`准备脚本，Cursor只写3条白名单内代码。下文S1当前任务描述为历史。快照字段/媒体/Hook更新顺序和其他业务保持；代码验证提交后交审，通过即集成，不自动扩拆下一批。见 [S1复审与集成](docs/refactor/Cursor-S1-复审与集成-20261113.md)。
 
 - 2026-11-13 P1业务`fbb5f65`已由Codex在候选与Leader完整复验，并以`1fb4210`合入`feat/galaxy-android-r0-20261112`；35套Service137例、Cluster12例、97项归档及KADB实际ASM通过。平台分支现为已集成完成态，停止继续写入。**当前唯一业务任务为 [S1 IPC入口与租约](docs/refactor/S1-IPC入口与租约任务-20261113.md)，在`F:\GalaxyPlay\wt-service-ipc` / `feat/galaxy-service-ipc-20261113`实施**；Codex已准备脚本，Cursor只写9条白名单内代码。下文P1当前/冻结描述均是历史。本批不自行续拆全部Binder或业务owner，完成实际门槛/提交后交审，通过即集成。详见 [P1复审与集成](docs/refactor/Cursor-P1-复审与集成-20261113.md)。

@@ -1,0 +1,73 @@
+{
+  "task": "GALAXY-SERVICE-SNAPSHOTS-S2-20261113",
+  "audit": "PASS_INTEGRATED",
+  "codeCommit": "03f14de67a296dff0971673f583b91a49ab327e5",
+  "integrationCommit": "f2cbb7f60898dfd8d0a519f9ee87b24b97c01c8a",
+  "codeScope": {
+    "changedPaths": 3,
+    "outsideWhitelist": [],
+    "validationScriptsChangedByCursor": false
+  },
+  "review": [
+    "Single owner of snapshot lock/cache/recipients/notification Runnable",
+    "getSnapshot authentication and dump branch order unchanged",
+    "Cache replacement remains after Kanzi update; snapshot schema and business orchestration unchanged",
+    "Same Runnable removed/reposted, separate read lock blocks preserved, closed checked at dispatch time",
+    "Top-level Bundle copies and per-recipient runCatching preserved; real Handler/Looper tests"
+  ],
+  "verification": {
+    "candidate": "F:\\GalaxyPlay\\wt-service-snapshots\\.work\\lead-s2-review",
+    "leader": "F:\\GalaxyPlay\\galaxycarplay\\.work\\s2-integration-validation",
+    "scriptRegressions": 7,
+    "kotlinKts": 109,
+    "xml": 7,
+    "syntaxFiles": 8,
+    "observed": {
+      "service": {
+        "suites": 38,
+        "cases": 149
+      },
+      "cluster": {
+        "suites": 3,
+        "cases": 12
+      }
+    },
+    "requiredSuiteSubset": 18,
+    "requiredCasesSubset": 84,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "classes": 240,
+    "activeSourceCount": 1014,
+    "archiveEntries": 97,
+    "kadb": {
+      "kadbVersion": "2.1.1",
+      "calls": [
+        {
+          "method": "parsePrivateKeyPem",
+          "owner": "com/ecarx/autoservice/platform/adb/AdbCrypto"
+        },
+        {
+          "method": "derivePublicKey",
+          "owner": "com/ecarx/autoservice/platform/adb/AdbCrypto"
+        }
+      ],
+      "transformedJar": "F:/GalaxyPlay/galaxycarplay/.work/gradle-home/caches/9.5.0/transforms/2e7b0692aa950345c6e328e546ade700/transformed/kadb-runtime.jar",
+      "transformedJarSha256": "04460a2cbfadc227aaa691d21d881bbbce02da15b51cba18cd7a5b39b9583363",
+      "targetClass": "galaxy/service/build/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes/com/ecarx/autoservice/platform/adb/AdbCrypto.class",
+      "targetClassSha256": "cc7dfed6c1f077ea6639731702fc07420165828d52ef9d694da4d72b2fa967ce",
+      "sourceHead": "f2cbb7f60898dfd8d0a519f9ee87b24b97c01c8a",
+      "apkBuilt": false,
+      "vehicleValidated": false
+    }
+  },
+  "deliveryNote": "Cursor artifact report was present and bound to final commit; STATUS/DELIVERY missing. Codex supplemented provenance-marked notes from real reports, without returning business code.",
+  "logSha256": {
+    "F:\\GalaxyPlay\\wt-service-snapshots\\.work\\lead-s2-review\\VALIDATION-03f14de.json": "5678681d299d8defb87e5324234527740bedc3fb0a9808f101b22e2cc29530f4",
+    "F:\\GalaxyPlay\\wt-service-snapshots\\.work\\lead-s2-review-console.log": "b59e90814f0a37a2416bae2099e4405a31f160b15486ded13b04f20b7a777886",
+    "F:\\GalaxyPlay\\galaxycarplay\\.work\\s2-integration-validation\\VALIDATION-f2cbb7f.json": "d2eef255697602b231b56afde4e53954c1133fd8841684f2329ac6c1f4637d38",
+    "F:\\GalaxyPlay\\galaxycarplay\\.work\\s2-integration-validation-console.log": "0a6b3deec7ee759ff99831fc50e5a89b9c9aa12cabaaa54c0f1a26963e61c696"
+  },
+  "apkBuilt": false,
+  "vehicleValidated": false
+}
