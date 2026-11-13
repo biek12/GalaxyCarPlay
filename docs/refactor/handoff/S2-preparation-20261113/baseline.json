@@ -1,0 +1,27 @@
+{
+  "task": "GALAXY-SERVICE-SNAPSHOTS-S2-20261113",
+  "status": "PREPARED_CODE_PENDING",
+  "sourceBaseline": "2fb91e5e04fc0cca3b4f1653afb1c06c77c98a1e",
+  "sourceTree": "ab4366804bbc5685fd29043164b3a89a49d86843",
+  "verifiedCandidate": "a6b758f6209197a19ab8335734770b8cd739c161",
+  "candidateValidationSha256": "bd58fd26c768a10bb6ad79b1e1557985ec3f431d07e42751f98b9b705205aa18",
+  "baselineTreeEqualsVerifiedCandidate": true,
+  "sourceAndArchiveGitBlobsChecked": 1113,
+  "contentMismatches": [],
+  "aidlNativeLineEndings": [
+    "galaxy/contracts/src/main/aidl/com/galaxy/auto/contract/IAutoCallback.aidl",
+    "galaxy/contracts/src/main/aidl/com/galaxy/auto/contract/IAutoResult.aidl",
+    "galaxy/contracts/src/main/aidl/com/galaxy/auto/contract/IAutoService.aidl"
+  ],
+  "scriptRegressions": {
+    "tests": 7,
+    "failures": 0,
+    "errors": 0
+  },
+  "syntaxFiles": 8,
+  "finalFormatFileCount": 109,
+  "plannedNewCodeFiles": 2,
+  "fullS2GatePassed": false,
+  "apkBuilt": false,
+  "vehicleValidated": false
+}

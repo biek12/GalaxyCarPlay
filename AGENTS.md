@@ -4,6 +4,8 @@
 
 ## galaxy 代码整理与协作约束（2026-11-12 最新确认）
 
+- 2026-11-13 S1业务`a6b758f`经候选和Leader完整复验，已以`2fb91e5`集成；Service145例、Cluster12例及格式/归档/KADB产物通过。S1分支完成冻结，不再写入。**当前唯一业务任务为 [S2快照发布所有权](docs/refactor/S2-快照发布所有权任务-20261113.md)，在`F:\GalaxyPlay\wt-service-snapshots` / `feat/galaxy-service-snapshots-20261113`实施**；Codex以`cd0b166`准备脚本，Cursor只写3条白名单内代码。下文S1当前任务描述为历史。快照字段/媒体/Hook更新顺序和其他业务保持；代码验证提交后交审，通过即集成，不自动扩拆下一批。见 [S1复审与集成](docs/refactor/Cursor-S1-复审与集成-20261113.md)。
+
 - 2026-11-13 P1业务`fbb5f65`已由Codex在候选与Leader完整复验，并以`1fb4210`合入`feat/galaxy-android-r0-20261112`；35套Service137例、Cluster12例、97项归档及KADB实际ASM通过。平台分支现为已集成完成态，停止继续写入。**当前唯一业务任务为 [S1 IPC入口与租约](docs/refactor/S1-IPC入口与租约任务-20261113.md)，在`F:\GalaxyPlay\wt-service-ipc` / `feat/galaxy-service-ipc-20261113`实施**；Codex已准备脚本，Cursor只写9条白名单内代码。下文P1当前/冻结描述均是历史。本批不自行续拆全部Binder或业务owner，完成实际门槛/提交后交审，通过即集成。详见 [P1复审与集成](docs/refactor/Cursor-P1-复审与集成-20261113.md)。
 
 - 2026-11-13 用户要求不能长期不合并，且应继续推进未集成业务。Codex已正式合入已完成的theme-archive、validation-windows、theme-validation三个分支，三次合并均保持已验证源码树不变；平台端口候选已在原worktree以`3574c57`接入R0/T1，脚本与任务准备提交`06209be`。**当前唯一实施任务为 [P1平台端口修正](docs/refactor/P1-平台端口修正任务-20261113.md)，在`F:\GalaxyPlay\wt-platform-ports`由Cursor写业务代码；Codex持有脚本、验证环境和后续审计集成。** 本条解除下文历史“无任务/平台冻结”，不授权提前合入未验平台代码或自行续跑Service主体/A1。完成真实门槛和提交后交审，通过即集成；仅离线、不推送。见 [分支收口与P1推进](docs/refactor/分支收口与P1推进-20261113.md)。
