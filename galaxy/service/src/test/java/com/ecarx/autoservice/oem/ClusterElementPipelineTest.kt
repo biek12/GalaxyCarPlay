@@ -7,7 +7,7 @@ import android.os.Bundle
 import android.os.Looper
 import android.os.ParcelFileDescriptor
 import com.ecarx.autoservice.ClusterBackgroundStore
-import com.ecarx.autoservice.KanziMediaPublisher
+import com.ecarx.autoservice.media.KanziMediaPublisher
 import com.galaxy.auto.contract.ClusterDisplayConfiguration
 import org.json.JSONObject
 import org.junit.Assert.assertArrayEquals
