@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# GALAXY-SERVICE-SNAPSHOTS-S2-20261113：累计归档、平台、IPC及快照发布门槛。
+# GALAXY-SERVICE-VEHICLE-FEED-S3-20261113：累计归档、平台、IPC及车辆订阅推送门槛。
 # 只离线编译/资源/JUnit/格式/产物核对；不打包 APK、不连车、不启模拟器、不远程部署。
 set -euo pipefail
 
