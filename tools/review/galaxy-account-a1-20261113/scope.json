@@ -1,0 +1,75 @@
+{
+  "task": "GALAXY-VEHICLE-ACCOUNT-A1-20261113",
+  "sourceBaseline": "103bb75ef0965a041ffec4744550d7bc32ae7b8a",
+  "scopeBaseline": "103bb75ef0965a041ffec4744550d7bc32ae7b8a",
+  "writeWhitelist": [
+    "galaxy/client/build.gradle.kts",
+    "galaxy/client/src/main/java/com/galaxy/auto/client/vehicle/VehicleAccountActivity.kt",
+    "galaxy/client/src/main/java/com/galaxy/auto/client/vehicle/VehicleAccountState.kt",
+    "galaxy/client/src/main/java/com/galaxy/auto/client/vehicle/VehicleAccountPresenter.kt",
+    "galaxy/client/src/main/java/com/galaxy/auto/client/vehicle/VehicleQrRenderer.kt",
+    "galaxy/client/src/main/java/com/galaxy/auto/client/vehicle/VehicleBindingRequestsAdapter.kt",
+    "galaxy/client/src/test/java/com/galaxy/auto/client/vehicle/VehicleAccountActivityTest.kt",
+    "galaxy/client/src/test/java/com/galaxy/auto/client/vehicle/VehicleAccountStateTest.kt",
+    "galaxy/client/src/test/java/com/galaxy/auto/client/vehicle/VehicleAccountPresenterTest.kt",
+    "galaxy/client/src/test/java/com/galaxy/auto/client/vehicle/VehicleQrRendererTest.kt",
+    "galaxy/client/src/main/res/layout/activity_vehicle_account.xml",
+    "galaxy/client/src/main/res/layout/item_vehicle_binding_request.xml",
+    "galaxy/client/src/main/res/values/vehicle_account.xml",
+    "galaxy/client/src/main/res/values-night/vehicle_account.xml",
+    "galaxy/client/src/main/res/values/strings.xml",
+    "galaxy/client/src/main/res/values/dimens.xml",
+    "galaxy/client/src/main/res/values/styles.xml",
+    "galaxy/client/src/main/res/drawable/vehicle_account_card.xml"
+  ],
+  "formatFiles": [
+    "galaxy/client/build.gradle.kts",
+    "galaxy/client/src/main/java/com/galaxy/auto/client/vehicle/VehicleAccountActivity.kt",
+    "galaxy/client/src/main/java/com/galaxy/auto/client/vehicle/VehicleAccountState.kt",
+    "galaxy/client/src/main/java/com/galaxy/auto/client/vehicle/VehicleAccountPresenter.kt",
+    "galaxy/client/src/main/java/com/galaxy/auto/client/vehicle/VehicleQrRenderer.kt",
+    "galaxy/client/src/main/java/com/galaxy/auto/client/vehicle/VehicleBindingRequestsAdapter.kt",
+    "galaxy/client/src/test/java/com/galaxy/auto/client/vehicle/VehicleAccountActivityTest.kt",
+    "galaxy/client/src/test/java/com/galaxy/auto/client/vehicle/VehicleAccountStateTest.kt",
+    "galaxy/client/src/test/java/com/galaxy/auto/client/vehicle/VehicleAccountPresenterTest.kt",
+    "galaxy/client/src/test/java/com/galaxy/auto/client/vehicle/VehicleQrRendererTest.kt"
+  ],
+  "xmlFiles": [
+    "galaxy/client/src/main/res/layout/activity_vehicle_account.xml",
+    "galaxy/client/src/main/res/layout/item_vehicle_binding_request.xml",
+    "galaxy/client/src/main/res/values/vehicle_account.xml",
+    "galaxy/client/src/main/res/values-night/vehicle_account.xml",
+    "galaxy/client/src/main/res/values/strings.xml",
+    "galaxy/client/src/main/res/values/dimens.xml",
+    "galaxy/client/src/main/res/values/styles.xml",
+    "galaxy/client/src/main/res/drawable/vehicle_account_card.xml"
+  ],
+  "productionTypes": [
+    "com/galaxy/auto/client/vehicle/VehicleAccountActivity",
+    "com/galaxy/auto/client/vehicle/VehicleAccountState",
+    "com/galaxy/auto/client/vehicle/VehicleAccountPresenter",
+    "com/galaxy/auto/client/vehicle/VehicleQrRenderer",
+    "com/galaxy/auto/client/vehicle/VehicleBindingRequestsAdapter"
+  ],
+  "requiredSuites": [
+    "com.galaxy.auto.client.vehicle.VehicleAccountActivityTest",
+    "com.galaxy.auto.client.vehicle.VehicleAccountStateTest",
+    "com.galaxy.auto.client.vehicle.VehicleAccountPresenterTest",
+    "com.galaxy.auto.client.vehicle.VehicleQrRendererTest",
+    "com.galaxy.auto.client.diagnostics.DiagnosticEventsTest",
+    "com.galaxy.auto.client.diagnostics.DiagnosticBudgetTest",
+    "com.galaxy.auto.client.recovery.ProcessRecoveryTest"
+  ],
+  "baselineSuites": [
+    "com.galaxy.auto.client.vehicle.VehicleAccountActivityTest",
+    "com.galaxy.auto.client.diagnostics.DiagnosticEventsTest",
+    "com.galaxy.auto.client.diagnostics.DiagnosticBudgetTest",
+    "com.galaxy.auto.client.recovery.ProcessRecoveryTest"
+  ],
+  "screenshots": [
+    "account-bound-light.png",
+    "account-code-pending-light.png",
+    "account-bound-night.png",
+    "account-error-night.png"
+  ]
+}

@@ -114,6 +114,13 @@ ARGS=(--offline --no-daemon --no-configuration-cache --console=plain
   -I scripts/verify/lib/kadb-transform.init.gradle
   -x :service:buildHab -x :service:prepareQnxReceiver -x :service:prepareClusterHook)
 
+if [ "${GALAXY_A4_CHECKPOINT:-}" = "A1-baseline" ]; then
+  ./gradlew "${ARGS[@]}" :auto-client:testDebugUnitTest :service:processDebugManifest :record:processDebugManifest \
+    2>&1 | tee "$LOG_DIR/account-baseline-build.log"
+  "$PY" tools/review/galaxy-account-a1-20261113/verify_account.py baseline \
+    2>&1 | tee "$LOG_DIR/account-baseline-result.log"
+  exit 0
+fi
 if [ -n "${GALAXY_A4_CHECKPOINT:-}" ]; then
   "$PY" tools/review/galaxy-autoservice-a4-20261113/checkpoint.py before "$GALAXY_A4_CHECKPOINT" \
     2>&1 | tee "$LOG_DIR/checkpoint-format.log"
@@ -124,12 +131,16 @@ if [ -n "${GALAXY_A4_CHECKPOINT:-}" ]; then
   exit 0
 fi
 
+"$PY" tools/review/galaxy-account-a1-20261113/verify_account.py before
+export GALAXY_ACCOUNT_SCREENSHOT_DIR="$GALAXY_R0_REPORT_DIR/screenshots"
+
 # 只清本任务自身模块的 Kotlin class / merged manifest / test-results 输出目录，
 # 保证产物与 Manifest 都是本轮编译结果，不拿旧 build 的残留 class 冒充本轮产物；
 # 不清共享缓存、不动其他工作树。用「重命名到唯一后缀」隔离旧产物（移动而非删除），
 # 这些目录都在被 .gitignore 忽略的 build/ 下，不进入 Git 提交。
 "$PY" - <<'PY'
 from pathlib import Path
+import os
 import time
 
 root = Path.cwd()
@@ -143,6 +154,10 @@ targets = [
     "galaxy/cluster/build/intermediates/merged_manifests",
     "galaxy/service/build/test-results",
     "galaxy/cluster/build/test-results",
+    "galaxy/client/build/intermediates/built_in_kotlinc",
+    "galaxy/client/build/intermediates/javac",
+    "galaxy/client/build/test-results",
+    "galaxy/record/build/intermediates/merged_manifests",
 ]
 for rel in targets:
     path = root / rel
@@ -153,6 +168,13 @@ for rel in targets:
         raise SystemExit(f"拒绝隔离非本任务编译目录: {rel}")
     path.rename(path.with_name(f"{path.name}.stale-{stamp}"))
     print(f"isolated {rel}")
+report = Path(os.environ["GALAXY_R0_REPORT_DIR"]).resolve()
+screenshots = Path(os.environ["GALAXY_ACCOUNT_SCREENSHOT_DIR"]).resolve()
+if screenshots.parent != report or screenshots.name != "screenshots":
+    raise SystemExit("拒绝隔离本次报告截图目录之外的路径")
+if screenshots.is_dir():
+    screenshots.rename(screenshots.with_name(f"screenshots.stale-{stamp}"))
+screenshots.mkdir(parents=True, exist_ok=True)
 PY
 
 # 1) 固定格式门槛：ktlint 1.4.1 二次幂等 + XML libxml 20913 语义/二次幂等 + 脚本语法。
@@ -164,6 +186,7 @@ bash scripts/verify_cluster_pages.sh 2>&1 | tee "$LOG_DIR/verify_cluster_pages.l
 # 3) 同一离线环境执行全部 Service 回归，并只编译 AndroidTest。
 # Python 继续要求精确必测 suite 非空，且所有实际报告零失败/错误/跳过。
 ./gradlew "${ARGS[@]}" :service:testDebugUnitTest :service:compileDebugAndroidTestKotlin :service:recordGalaxyKadbTransformInputs \
+  :auto-client:testDebugUnitTest :record:processDebugManifest \
   2>&1 | tee "$LOG_DIR/service-tests.log"
 "$PY" tools/review/galaxy-platform-p1-20261113/verify_kadb_transform.py \
   2>&1 | tee "$LOG_DIR/kadb-transform.log"
@@ -173,7 +196,7 @@ bash scripts/verify_cluster_pages.sh 2>&1 | tee "$LOG_DIR/verify_cluster_pages.l
 
 # 5) 保留实际 JUnit XML 与归档清单副本作为交付证据。
 mkdir -p "$LOG_DIR/junit"
-for module in service cluster; do
+for module in service cluster client; do
   for xml in galaxy/$module/build/test-results/testDebugUnitTest/TEST-*.xml; do
     test -f "$xml" || { echo "缺少 JUnit 报告: $module" >&2; exit 2; }
     cp "$xml" "$LOG_DIR/junit/$module-$(basename "$xml")"

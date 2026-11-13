@@ -7,7 +7,7 @@ param(
     [string]$KtlintJar = "",
     [string]$Aapt2Path = "",
     [string]$BashPath = "",
-    [ValidateSet("", "baseline", "C1", "C2", "C3", "C4")]
+    [ValidateSet("", "baseline", "C1", "C2", "C3", "C4", "A1-baseline")]
     [string]$Checkpoint = ""
 )
 
