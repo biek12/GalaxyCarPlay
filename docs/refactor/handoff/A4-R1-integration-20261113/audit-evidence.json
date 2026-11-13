@@ -1,0 +1,51 @@
+{
+  "status": "REVIEW_PASSED_AND_INTEGRATED",
+  "candidate": "37e3020d8b3b6339ba42b7157a7963abf3db3543",
+  "merge": "103bb75ef0965a041ffec4744550d7bc32ae7b8a",
+  "actualBothFullEntryExitCode": 0,
+  "serviceSuites": 48,
+  "serviceCases": 172,
+  "clusterSuites": 3,
+  "clusterCases": 12,
+  "requiredSuitesSubset": 28,
+  "requiredCasesSubset": 107,
+  "kotlinFiles": 135,
+  "xmlFiles": 8,
+  "syntaxFiles": 11,
+  "toolRegressions": 12,
+  "archiveEntries": 97,
+  "sourceFiles": 1038,
+  "classCount": 281,
+  "manifestCount": 4,
+  "reviewed": [
+    "upload lease and copy FD error boundary",
+    "real Registry identity and late replies",
+    "production publication and final key contract",
+    "real PNG AtomicFile and stale generation rejection",
+    "Provider signature/path/mode rejection",
+    "OEM failure and lease replacement/closed import",
+    "diagnostic branch precedence and same feed cache",
+    "Service destroy ordering and closed request handling"
+  ],
+  "evidence": [
+    {
+      "path": "F:\\GalaxyPlay\\wt-autoservice-completion\\.work\\lead-a4-r1-review\\VALIDATION-37e3020.json",
+      "sha256": "fe2c026b5af2faa965ef552d7f45479e08604c078dbf14f835b7f569bcd8cd4d"
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-autoservice-completion\\.work\\lead-a4-r1-review-console.log",
+      "sha256": "c7c8dd351042abb17244449d0f04a09b013c3a72d9c2fdd6c3351933183a562e"
+    },
+    {
+      "path": "F:\\GalaxyPlay\\galaxycarplay\\.work\\a4-r1-integration-validation\\VALIDATION-103bb75.json",
+      "sha256": "fb2920f45b87b3aea00f43722a5beb6d4644e3078c226f7607f3b0f206a89cac"
+    },
+    {
+      "path": "F:\\GalaxyPlay\\galaxycarplay\\.work\\a4-r1-integration-validation-console.log",
+      "sha256": "8385f37d06877d5993267e4245e26cf8680ae34452cf7eebd14f117a135e568e"
+    }
+  ],
+  "vehicleValidated": false,
+  "apkBuilt": false,
+  "pushed": false
+}
