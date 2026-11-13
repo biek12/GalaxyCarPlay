@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="vehicle_account_heading_padding">28dp</dimen>
+    <dimen name="vehicle_account_body_padding">24dp</dimen>
+    <dimen name="vehicle_account_card_padding">24dp</dimen>
+    <dimen name="vehicle_account_card_gap">16dp</dimen>
+    <dimen name="vehicle_account_corner">8dp</dimen>
+    <dimen name="vehicle_account_back_width">100dp</dimen>
+    <dimen name="vehicle_account_back_height">56dp</dimen>
+    <dimen name="vehicle_account_button_min_height">56dp</dimen>
+    <dimen name="vehicle_account_text_padding_top">5dp</dimen>
+    <dimen name="vehicle_account_text_padding_bottom">7dp</dimen>
+    <dimen name="vehicle_account_title">30sp</dimen>
+    <dimen name="vehicle_account_subtitle">15sp</dimen>
+    <dimen name="vehicle_account_label">14sp</dimen>
+    <dimen name="vehicle_account_model">26sp</dimen>
+    <dimen name="vehicle_account_body">18sp</dimen>
+    <dimen name="vehicle_account_detail">15sp</dimen>
+    <dimen name="vehicle_account_description">16sp</dimen>
+    <dimen name="vehicle_account_status">23sp</dimen>
+    <dimen name="vehicle_account_binding_name">20sp</dimen>
+    <dimen name="vehicle_account_code_text">24sp</dimen>
+    <dimen name="vehicle_account_expiry">14sp</dimen>
+    <dimen name="vehicle_account_hint">15sp</dimen>
+    <dimen name="vehicle_account_hint_margin_horizontal">28dp</dimen>
+    <dimen name="vehicle_account_hint_margin_bottom">16dp</dimen>
+    <dimen name="vehicle_account_qr">240dp</dimen>
+    <dimen name="vehicle_account_qr_margin">16dp</dimen>
+</resources>

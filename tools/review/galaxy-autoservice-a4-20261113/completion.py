@@ -34,10 +34,10 @@ def artwork_provider(root: Path = ROOT) -> dict:
     return {"manifests": checked, "runtimeSignatureCheckRequiresProductionTest": True}
 
 
-def inspect(root: Path = ROOT) -> dict:
+def inspect(root: Path = ROOT, check_business_scope: bool = True) -> dict:
     """最终必须完整交付；静态所有权检查不代替编译和实际运行用例。"""
     record = scope(root)
-    changed = check_scope(record, root)
+    changed = check_scope(record, root) if check_business_scope else []
     files = format_files("C4", record, root)
     auto = (root / "galaxy/service/src/main/java/com/ecarx/autoservice/AutoService.kt").read_text(encoding="utf-8")
     if re.search(r"object\s*:\s*IAutoService\s*\.\s*Stub", auto):
@@ -55,6 +55,7 @@ def inspect(root: Path = ROOT) -> dict:
                         for name in ("KanziMediaPublisher", "OemArtworkWriter", "ArtworkProvider"))]
     if leftovers:
         raise SystemExit(f"已迁media类型仍有旧根包class: {leftovers}")
-    return {"businessChangedPaths": changed, "checkedFormatFiles": len(files),
+    return {"businessChangedPaths": changed, "currentTaskScopeCheckedSeparately": not check_business_scope,
+            "checkedFormatFiles": len(files),
             "rootBinderMoved": True, "rootBusinessMethodsMoved": True,
             "artworkProvider": artwork_provider(root), "manualCallOrderReviewStillRequired": True}

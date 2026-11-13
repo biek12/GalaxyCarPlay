@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    style="@style/VehicleAccount.Card"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content">
+
+    <TextView
+        style="@style/VehicleAccount.Text.Status"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/vehicle_account_binding_title" />
+
+    <TextView
+        android:id="@+id/binding_account"
+        style="@style/VehicleAccount.Text.BindingName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        style="@style/VehicleAccount.Text.Detail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/vehicle_account_binding_note" />
+
+    <com.galaxy.auto.ui.GalaxyActionButton
+        android:id="@+id/binding_confirm"
+        style="@style/VehicleAccount.Button.Primary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/vehicle_account_binding_confirm" />
+
+    <com.galaxy.auto.ui.GalaxyActionButton
+        android:id="@+id/binding_reject"
+        style="@style/VehicleAccount.Button"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/vehicle_account_binding_reject" />
+</LinearLayout>

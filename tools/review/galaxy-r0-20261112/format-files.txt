@@ -1,4 +1,3 @@
-# A4 complete cumulative scope; final delivery requires every file.
 galaxy/cluster/src/main/java/com/galaxy/autocluster/ClusterRenderService.kt
 galaxy/cluster/src/main/java/com/galaxy/autocluster/preview/SceneData.kt
 galaxy/cluster/src/main/java/com/galaxy/autocluster/preview/SceneMedia.kt
@@ -134,3 +133,13 @@ galaxy/service/src/test/java/com/ecarx/autoservice/remote/ServiceRemoteSessionTe
 galaxy/service/src/test/java/com/ecarx/autoservice/ui/ServiceHomeBehaviorTest.kt
 galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/ServiceVehicleSessionTest.kt
 galaxy/service/src/test/java/com/ecarx/autoservice/vehicle/VehicleFeedDispatcherTest.kt
+galaxy/client/build.gradle.kts
+galaxy/client/src/main/java/com/galaxy/auto/client/vehicle/VehicleAccountActivity.kt
+galaxy/client/src/main/java/com/galaxy/auto/client/vehicle/VehicleAccountState.kt
+galaxy/client/src/main/java/com/galaxy/auto/client/vehicle/VehicleAccountPresenter.kt
+galaxy/client/src/main/java/com/galaxy/auto/client/vehicle/VehicleQrRenderer.kt
+galaxy/client/src/main/java/com/galaxy/auto/client/vehicle/VehicleBindingRequestsAdapter.kt
+galaxy/client/src/test/java/com/galaxy/auto/client/vehicle/VehicleAccountActivityTest.kt
+galaxy/client/src/test/java/com/galaxy/auto/client/vehicle/VehicleAccountStateTest.kt
+galaxy/client/src/test/java/com/galaxy/auto/client/vehicle/VehicleAccountPresenterTest.kt
+galaxy/client/src/test/java/com/galaxy/auto/client/vehicle/VehicleQrRendererTest.kt

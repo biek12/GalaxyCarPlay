@@ -1,0 +1,212 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@color/vehicle_account_bg"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/account_heading"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="@dimen/vehicle_account_heading_padding">
+
+        <com.galaxy.auto.ui.GalaxyActionButton
+            android:id="@+id/back_button"
+            style="@style/VehicleAccount.Button.Back"
+            android:layout_width="@dimen/vehicle_account_back_width"
+            android:layout_height="@dimen/vehicle_account_back_height"
+            android:contentDescription="@string/vehicle_account_back_description"
+            android:text="@string/vehicle_account_back" />
+
+        <TextView
+            android:id="@+id/page_title"
+            style="@style/VehicleAccount.Text.Title"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/vehicle_account_title" />
+
+        <TextView
+            android:id="@+id/page_subtitle"
+            style="@style/VehicleAccount.Text.Subtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/vehicle_account_subtitle" />
+    </LinearLayout>
+
+    <ScrollView
+        android:id="@+id/account_scroll"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true"
+        android:scrollbars="vertical">
+
+        <LinearLayout
+            android:id="@+id/account_body"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="@dimen/vehicle_account_body_padding">
+
+            <LinearLayout
+                android:id="@+id/vehicle_card"
+                style="@style/VehicleAccount.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone">
+
+                <TextView
+                    style="@style/VehicleAccount.Text.Label"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/vehicle_account_vehicle_label" />
+
+                <TextView
+                    android:id="@+id/vehicle_model"
+                    style="@style/VehicleAccount.Text.Model"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <TextView
+                    android:id="@+id/vehicle_versions"
+                    style="@style/VehicleAccount.Text.Detail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <TextView
+                    style="@style/VehicleAccount.Text.Detail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/vehicle_account_vehicle_note" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/bound_card"
+                style="@style/VehicleAccount.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/bound_status"
+                    style="@style/VehicleAccount.Text.StatusSuccess"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/vehicle_account_bound_status" />
+
+                <TextView
+                    android:id="@+id/owner_line"
+                    style="@style/VehicleAccount.Text.Body"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <TextView
+                    style="@style/VehicleAccount.Text.Detail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/vehicle_account_bound_note" />
+
+                <com.galaxy.auto.ui.GalaxyActionButton
+                    android:id="@+id/unbind_button"
+                    style="@style/VehicleAccount.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/vehicle_account_unbind" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/code_card"
+                style="@style/VehicleAccount.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone">
+
+                <TextView
+                    android:id="@+id/code_title"
+                    style="@style/VehicleAccount.Text.Status"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content" />
+
+                <TextView
+                    style="@style/VehicleAccount.Text.Description"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/vehicle_account_code_note" />
+
+                <ImageView
+                    android:id="@+id/code_qr"
+                    android:layout_width="@dimen/vehicle_account_qr"
+                    android:layout_height="@dimen/vehicle_account_qr"
+                    android:layout_gravity="center_horizontal"
+                    android:layout_marginTop="@dimen/vehicle_account_qr_margin"
+                    android:layout_marginBottom="@dimen/vehicle_account_qr_margin"
+                    android:contentDescription="@string/vehicle_account_qr_description"
+                    android:scaleType="fitCenter"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/code_value"
+                    style="@style/VehicleAccount.Text.Code"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/code_expiry"
+                    style="@style/VehicleAccount.Text.Expiry"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:visibility="gone" />
+
+                <TextView
+                    android:id="@+id/code_error"
+                    style="@style/VehicleAccount.Text.Detail"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    android:text="@string/vehicle_account_qr_error"
+                    android:visibility="gone" />
+
+                <com.galaxy.auto.ui.GalaxyActionButton
+                    android:id="@+id/request_code_button"
+                    style="@style/VehicleAccount.Button.Primary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/vehicle_account_code_request" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/binding_requests"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical" />
+
+            <LinearLayout
+                android:id="@+id/online_card"
+                style="@style/VehicleAccount.Card"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone">
+
+                <com.galaxy.auto.ui.GalaxyActionButton
+                    android:id="@+id/online_button"
+                    style="@style/VehicleAccount.Button"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/vehicle_account_online_enable" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+    <TextView
+        android:id="@+id/status_hint"
+        style="@style/VehicleAccount.Text.Hint"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="@dimen/vehicle_account_hint_margin_horizontal"
+        android:layout_marginEnd="@dimen/vehicle_account_hint_margin_horizontal"
+        android:layout_marginBottom="@dimen/vehicle_account_hint_margin_bottom"
+        android:text="@string/vehicle_account_hint_connecting" />
+</LinearLayout>

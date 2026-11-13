@@ -33,6 +33,14 @@ XML_FILES = [
     "galaxy/service/src/main/res/layout/include_service_overview.xml",
     "galaxy/service/src/main/res/values/strings.xml",
     "galaxy/service/src/main/AndroidManifest.xml",
+    "galaxy/client/src/main/res/layout/activity_vehicle_account.xml",
+    "galaxy/client/src/main/res/layout/item_vehicle_binding_request.xml",
+    "galaxy/client/src/main/res/values/vehicle_account.xml",
+    "galaxy/client/src/main/res/values-night/vehicle_account.xml",
+    "galaxy/client/src/main/res/values/strings.xml",
+    "galaxy/client/src/main/res/values/dimens.xml",
+    "galaxy/client/src/main/res/values/styles.xml",
+    "galaxy/client/src/main/res/drawable/vehicle_account_card.xml",
 ]
 PYTHON_FILES = [
     str(REVIEW / "archive_projection.py"),
@@ -45,6 +53,8 @@ PYTHON_FILES = [
     "tools/review/galaxy-autoservice-a4-20261113/checkpoint.py",
     "tools/review/galaxy-autoservice-a4-20261113/completion.py",
     "tools/review/galaxy-autoservice-a4-20261113/test_completion.py",
+    "tools/review/galaxy-account-a1-20261113/verify_account.py",
+    "tools/review/galaxy-account-a1-20261113/test_account.py",
     "scripts/verify_projection_retirement.sh",
 ]
 

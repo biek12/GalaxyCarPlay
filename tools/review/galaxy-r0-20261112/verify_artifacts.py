@@ -498,6 +498,13 @@ def completion_gate() -> dict:
     """最终A4结构及真实Manifest核对，检查点不能走此READY入口。"""
     sys.path.insert(0, str(ROOT / "tools/review/galaxy-autoservice-a4-20261113"))
     from completion import inspect
+    return inspect(ROOT, check_business_scope=False)
+
+
+def account_gate() -> dict:
+    """当前A1范围完整核验；A4结构保留，由新固定范围禁止改动已审业务。"""
+    sys.path.insert(0, str(ROOT / "tools/review/galaxy-account-a1-20261113"))
+    from verify_account import inspect
     return inspect(ROOT)
 
 
@@ -515,6 +522,8 @@ def source_gate() -> dict:
     validation_paths = set((ROOT / "tools/review/galaxy-r0-20261112").rglob("*.py"))
     validation_paths.update((ROOT / "tools/review/galaxy-platform-p1-20261113").rglob("*.py"))
     validation_paths.update(p for p in (ROOT / "tools/review/galaxy-autoservice-a4-20261113").rglob("*")
+                            if p.is_file() and p.suffix in {".py", ".json", ".txt"})
+    validation_paths.update(p for p in (ROOT / "tools/review/galaxy-account-a1-20261113").rglob("*")
                             if p.is_file() and p.suffix in {".py", ".json", ".txt"})
     validation_paths.update((ROOT / "scripts/verify").rglob("*.py"))
     validation_paths.update((ROOT / "scripts/verify").rglob("*.gradle"))
@@ -547,7 +556,7 @@ def main() -> None:
     REPORT.mkdir(parents=True, exist_ok=True)
     fmt = json.loads(read_text(REPORT / "format-result.json"))
     record = {
-        "task": "GALAXY-AUTOSERVICE-COMPLETION-A4-20261113",
+        "task": "GALAXY-VEHICLE-ACCOUNT-A1-20261113",
         "status": "READY_FOR_REVIEW" if len(sys.argv) > 1 and sys.argv[1] == "ready" else "VALIDATED",
         "archive": archive_gate(),
         "themeArchive": theme_archive_gate(),
@@ -559,6 +568,7 @@ def main() -> None:
         "closure": closure_gate(),
         "source": source_gate(),
         "completion": completion_gate(),
+        "account": account_gate(),
     }
     target = REPORT / "VALIDATION.json"
     target.write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")

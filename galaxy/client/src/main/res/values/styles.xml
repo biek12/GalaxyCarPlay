@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 点号样式的隐式父样式。具体角色都另有 parent，这里只满足资源链接。 -->
+    <style name="VehicleAccount" />
+
+    <!-- 账号页文字角色。字号和颜色来自本页资源，字体合同继承 GalaxyUi.TextAppearance。 -->
+    <style name="VehicleAccount.Text" parent="GalaxyUi.TextAppearance">
+        <item name="android:includeFontPadding">false</item>
+        <item name="android:paddingTop">@dimen/vehicle_account_text_padding_top</item>
+        <item name="android:paddingBottom">@dimen/vehicle_account_text_padding_bottom</item>
+        <item name="android:textColor">@color/vehicle_account_text</item>
+    </style>
+
+    <style name="VehicleAccount.Text.Title">
+        <item name="android:textSize">@dimen/vehicle_account_title</item>
+    </style>
+
+    <style name="VehicleAccount.Text.Subtitle">
+        <item name="android:textSize">@dimen/vehicle_account_subtitle</item>
+        <item name="android:textColor">@color/vehicle_account_muted</item>
+    </style>
+
+    <style name="VehicleAccount.Text.Label">
+        <item name="android:textSize">@dimen/vehicle_account_label</item>
+        <item name="android:textColor">@color/vehicle_account_muted</item>
+    </style>
+
+    <style name="VehicleAccount.Text.Model">
+        <item name="android:textSize">@dimen/vehicle_account_model</item>
+    </style>
+
+    <style name="VehicleAccount.Text.Body">
+        <item name="android:textSize">@dimen/vehicle_account_body</item>
+    </style>
+
+    <style name="VehicleAccount.Text.Detail">
+        <item name="android:textSize">@dimen/vehicle_account_detail</item>
+        <item name="android:textColor">@color/vehicle_account_muted</item>
+    </style>
+
+    <style name="VehicleAccount.Text.Description">
+        <item name="android:textSize">@dimen/vehicle_account_description</item>
+        <item name="android:textColor">@color/vehicle_account_muted</item>
+    </style>
+
+    <style name="VehicleAccount.Text.Status">
+        <item name="android:textSize">@dimen/vehicle_account_status</item>
+    </style>
+
+    <style name="VehicleAccount.Text.StatusSuccess">
+        <item name="android:textSize">@dimen/vehicle_account_status</item>
+        <item name="android:textColor">@color/vehicle_account_success</item>
+    </style>
+
+    <style name="VehicleAccount.Text.BindingName">
+        <item name="android:textSize">@dimen/vehicle_account_binding_name</item>
+    </style>
+
+    <style name="VehicleAccount.Text.Code">
+        <item name="android:gravity">center</item>
+        <item name="android:textSize">@dimen/vehicle_account_code_text</item>
+        <item name="android:fontFamily">monospace</item>
+        <item name="android:textIsSelectable">true</item>
+    </style>
+
+    <style name="VehicleAccount.Text.Expiry">
+        <item name="android:gravity">center</item>
+        <item name="android:textSize">@dimen/vehicle_account_expiry</item>
+        <item name="android:textColor">@color/vehicle_account_muted</item>
+    </style>
+
+    <style name="VehicleAccount.Text.Hint">
+        <item name="android:textSize">@dimen/vehicle_account_hint</item>
+        <item name="android:textColor">@color/vehicle_account_muted</item>
+    </style>
+
+    <!-- 卡片只提供账号页底色和 8dp 圆角，不复制公共按钮的测量。 -->
+    <style name="VehicleAccount.Card">
+        <item name="android:orientation">vertical</item>
+        <item name="android:padding">@dimen/vehicle_account_card_padding</item>
+        <item name="android:background">@drawable/vehicle_account_card</item>
+        <item name="android:layout_marginBottom">@dimen/vehicle_account_card_gap</item>
+    </style>
+
+    <!-- 主/次、禁用和焦点沿 GalaxyUi.Button 及其现有 ripple，只把账号页最小高度落到 56dp。 -->
+    <style name="VehicleAccount.Button" parent="GalaxyUi.Button">
+        <item name="android:minHeight">@dimen/vehicle_account_button_min_height</item>
+    </style>
+
+    <style name="VehicleAccount.Button.Primary">
+        <item name="android:background">@drawable/galaxy_ui_button_primary</item>
+        <item name="android:textColor">@color/galaxy_ui_button_primary_text</item>
+    </style>
+
+    <style name="VehicleAccount.Button.Back">
+        <item name="android:minWidth">@dimen/vehicle_account_back_width</item>
+        <item name="android:minHeight">@dimen/vehicle_account_back_height</item>
+    </style>
+</resources>
