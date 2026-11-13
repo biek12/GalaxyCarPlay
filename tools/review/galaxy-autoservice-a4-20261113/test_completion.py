@@ -1,5 +1,6 @@
 """直接运行A4原检查器读取真实形状的产物，不复制检查算法。"""
 import json
+import subprocess
 import tempfile
 import unittest
 from pathlib import Path
@@ -10,6 +11,38 @@ import completion
 
 class CompletionToolsTest(unittest.TestCase):
     """检查中间阶段严格性、实际JUnit负例及真实Manifest合同。"""
+
+    def test_scope_uses_fixed_handoff_and_rejects_later_outside_changes(self):
+        """调用原范围检查器：交接规范允许存在，后续规范/源码越界及未跟踪代码仍拒绝。"""
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            def git(*args):
+                return subprocess.check_output(["git", *args], cwd=root, text=True, encoding="utf-8").strip()
+            git("init", "-q")
+            galaxy = root / "galaxy"
+            galaxy.mkdir()
+            rules = galaxy / "AGENTS.md"
+            rules.write_text("source rules\n", encoding="utf-8")
+            code = galaxy / "allowed.kt"
+            code.write_text("source code\n", encoding="utf-8")
+            git("add", "--", "galaxy")
+            git("-c", "user.name=Test", "-c", "user.email=test@local.invalid", "commit", "-qm", "source")
+            source = git("rev-parse", "HEAD")
+            rules.write_text("authorized handoff rules\n", encoding="utf-8")
+            git("add", "--", "galaxy/AGENTS.md")
+            git("-c", "user.name=Test", "-c", "user.email=test@local.invalid", "commit", "-qm", "handoff")
+            record = {"sourceBaseline": source, "scopeBaseline": git("rev-parse", "HEAD"),
+                      "writeWhitelist": ["galaxy/allowed.kt"]}
+            code.write_text("candidate code\n", encoding="utf-8")
+            self.assertEqual(["galaxy/allowed.kt"], checkpoint.check_scope(record, root))
+            rules.write_text("unauthorized later rules\n", encoding="utf-8")
+            with self.assertRaisesRegex(SystemExit, "galaxy/AGENTS.md"):
+                checkpoint.check_scope(record, root)
+            rules.write_text("authorized handoff rules\n", encoding="utf-8")
+            extra = galaxy / "outside.kt"
+            extra.write_text("outside\n", encoding="utf-8")
+            with self.assertRaisesRegex(SystemExit, "galaxy/outside.kt"):
+                checkpoint.check_scope(record, root)
 
     def test_required_stage_suites_and_extra_failure(self):
         record = {"baselineServiceSuites": ["base"], "phases": [

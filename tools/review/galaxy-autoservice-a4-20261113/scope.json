@@ -1,6 +1,7 @@
 {
   "task": "GALAXY-AUTOSERVICE-COMPLETION-A4-20261113",
   "sourceBaseline": "78feda1e088a1a98ee25f21c762d467a1e65ea09",
+  "scopeBaseline": "72f25db97bdf641f97ee790fa47def753f2bd8c3",
   "baselineServiceSuites": [
     "com.ecarx.autoservice.platform.root.RootProjectionArchiveTest",
     "com.ecarx.autoservice.platform.root.PlatformExecutionTest",

@@ -31,9 +31,9 @@ def stages_through(name: str, record: dict) -> list[dict]:
 
 
 def check_scope(record: dict, root: Path = ROOT) -> list[str]:
-    """检查真实Git业务差异及未跟踪代码，不把Lead脚本准备提交算作Cursor代码。"""
+    """从固定交接提交检查真实Git差异；源码来源仍保留独立的sourceBaseline。"""
     changed = subprocess.check_output(
-        ["git", "diff", "--name-only", "--no-renames", record["sourceBaseline"], "--", "galaxy"],
+        ["git", "diff", "--name-only", "--no-renames", record["scopeBaseline"], "--", "galaxy"],
         cwd=root, text=True, encoding="utf-8",
     ).splitlines()
     untracked = subprocess.check_output(
