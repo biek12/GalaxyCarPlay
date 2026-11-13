@@ -2,6 +2,8 @@
 
 2026-11-13。用户明确要求一次下发大任务，同时保留此前小任务的文件、方法、顺序和验收细度。本任务一次完成AutoService剩余主体拆分，不再每迁一个类就等下一张任务单。内部C1–C4是同一任务的检查点，允许分别提交，检查通过后连续推进，整个A4完成才统一交审。
 
+首次复审补充：候选`4def8fa`为CHANGES_REQUIRED，当前按 [A4-R1集中修正](A4-R1-复审修正任务-20261113.md)一次完成剩余项；本文业务合同/范围保持。工具已由Codex修正，sourceBaseline=78feda1、scopeBaseline=72f25db，回归现为12例，后文10例是初次准备时数量。完整正式入口零退出后才可交审，不复用历史产物冒充新运行。
+
 ## 1. 起点、终点与执行权
 
 - 工作目录：`F:\GalaxyPlay\wt-autoservice-completion`；分支：`feat/galaxy-autoservice-completion-20261113`。

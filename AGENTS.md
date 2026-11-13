@@ -4,6 +4,8 @@
 
 ## galaxy 代码整理与协作约束（2026-11-12 最新确认）
 
+- 2026-11-13 A4首次复审为 **CHANGES_REQUIRED，未合入Leader**。原C1–C4未提交代码由Codex保存为候选`4def8fa`；业务编译/全量Service168例、Cluster12例通过，但真实Binder探针复现上传无效Lease丢失回执及副本无关闭路径，且原任务的发布顺序/封面等行为验证不完整。当前唯一实施任务为 [A4-R1集中修正](docs/refactor/A4-R1-复审修正任务-20261113.md)，沿同一worktree/分支、原33条范围一次完成并统一交审。Codex已修工具`7c9020a`/`f1ab1a0`，业务来源78feda1与范围起点72f25db分开，工具回归12例；不再让Cursor处理脚本。下条为A4首次下发历史。仍仅离线，不自行合并/推送/上车。
+
 - 2026-11-13 用户最新要求：**一次下发完整大任务，内部细到文件/方法/顺序/测试，不再每迁一个类就停等下一张任务单**。S3业务`665b9f8`已候选/Leader完整复验并以`78feda1`集成（Service153例、Cluster12例），S3完成冻结。当前唯一任务为 [A4 AutoService主体结构收官](docs/refactor/A4-AutoService主体结构收官任务-20261113.md)，目录`F:\GalaxyPlay\wt-autoservice-completion`，分支`feat/galaxy-autoservice-completion-20261113`。Codex以`5dd76ce`准备脚本/33条白名单/整包任务；Cursor连续完成C1–C4，每点真实编译/标准用例/格式/提交后直接继续，整个A4全绿才一次交审。内部检查点不是另派新批次，不受旧“小批交付即冻结”阻断；最终仍等用户叫Codex审计集成，禁止自行合并/推送/上车。下文S3当前任务为历史，见 [S3复审与集成](docs/refactor/Cursor-S3-复审与集成-20261113.md)。
 
 - 2026-11-13 S2业务`03f14de`经候选及Leader完整复验，已以`f2cbb7f`集成；Service149例、Cluster12例、109项格式及归档/KADB产物通过。S2分支完成冻结。**当前唯一业务任务为 [S3车辆订阅推送所有权](docs/refactor/S3-车辆订阅推送所有权任务-20261113.md)，在`F:\GalaxyPlay\wt-service-vehicle-feed` / `feat/galaxy-service-vehicle-feed-20261113`实施**；Codex以`f3da009`准备脚本，Cursor只写3条白名单代码。下文S2当前描述为历史。本批复用现有Lease/VehicleFeed，只迁缓存、序号、补发与节流，不改采集/需求或显示。完成真实门槛和提交后交审，通过即集成，不续拆下一批。见 [S2复审与集成](docs/refactor/Cursor-S2-复审与集成-20261113.md)。
