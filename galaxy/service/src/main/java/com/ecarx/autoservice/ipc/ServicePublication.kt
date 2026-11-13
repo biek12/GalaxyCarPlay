@@ -62,6 +62,11 @@ internal class ServicePublication(
         snapshots.publish(packet, clients.all().map { it.callback })
     }
 
+    /**
+     * 从各 owner 取本轮输入。
+     *
+     * getter 留到组装器对应字段才执行。元素需求再按暂停和 Root 开关过滤。
+     */
     private fun currentInput(): ServiceSnapshotComposer.Input {
         val demand = { clients.elementDemand().takeIf { !paused() && featuresRoot() } }
         return ServiceSnapshotComposer.Input(

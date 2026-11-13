@@ -3,6 +3,7 @@ package com.ecarx.autoservice.remote
 import android.content.Context
 import android.os.Bundle
 import android.os.Handler
+import android.os.IBinder
 import android.os.ParcelFileDescriptor
 import com.ecarx.autoservice.ipc.ClientRegistry
 import com.ecarx.autoservice.web.VehicleWebBridge
@@ -21,7 +22,7 @@ internal class ServiceRemoteSession(
     private val closed: () -> Boolean,
     private val paused: () -> Boolean,
     private val onPublish: () -> Unit,
-    private val leaseAlive: (ClientRegistry.Lease) -> Boolean,
+    private val clients: ClientRegistry,
     private val webFactory: () -> WebPort = { WebAdapter(VehicleWebBridge(context)) },
     private val commandFactory: ((String) -> Unit) -> CommandPort = { report ->
         CommandAdapter(RemoteBridge(context, report))
@@ -135,10 +136,12 @@ internal class ServiceRemoteSession(
     /**
      * 上传已经 dup 的副本。
      *
-     * 桥为空或上传抛错时关闭副本，并回「媒体上传不可用」。成功后的迟到租约不再回执。
+     * 租约校验和桥接上传在同一个 try 里。未登记、uid 不符、桥为空或上传抛错都关闭副本，
+     * 并回「媒体上传不可用」。成功后的迟到租约不再回执。调用方仍持有原输入。
      */
     fun upload(
-        lease: ClientRegistry.Lease,
+        owner: IBinder,
+        calling: Int,
         clipId: String,
         direction: String,
         copy: ParcelFileDescriptor,
@@ -146,9 +149,10 @@ internal class ServiceRemoteSession(
         result: IAutoResult,
     ) {
         try {
+            val lease = clients.require(owner, calling)
             checkNotNull(web).upload(clipId, direction, copy, length) { response ->
                 main.post {
-                    if (!closed() && leaseAlive(lease)) {
+                    if (!closed() && leaseStillHeld(lease)) {
                         postCallback(Runnable { runCatching { result.onResult(response) } })
                     }
                 }
@@ -183,7 +187,7 @@ internal class ServiceRemoteSession(
         } else {
             bridge.request(action, payload) { response ->
                 main.post {
-                    if (!closed() && leaseAlive(lease)) {
+                    if (!closed() && leaseStillHeld(lease)) {
                         onPublish()
                         postCallback(Runnable { runCatching { result.onResult(response) } })
                     }
@@ -203,6 +207,9 @@ internal class ServiceRemoteSession(
         command?.close()
         command = null
     }
+
+    /** 注册表里仍是当初那一个租约对象。移除或换上新对象后为假。 */
+    private fun leaseStillHeld(lease: ClientRegistry.Lease): Boolean = clients.all().any { it === lease }
 
     private class WebAdapter(
         private val bridge: VehicleWebBridge,

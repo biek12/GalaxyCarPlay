@@ -380,6 +380,7 @@ internal class AutoServiceBinder(
      * 上传媒体副本。
      *
      * 原 FD 仍由调用方持有，这里只 dup。记录仪包、片段号、方向和长度在排队前检查。
+     * 租约校验留在远程会话的同一个 try 里，失败仍关闭副本并回原上传错误。
      */
     override fun vehicleWebUpload(
         owner: IBinder,
@@ -409,8 +410,7 @@ internal class AutoServiceBinder(
         require(length in 12..268435456)
         val copy = ParcelFileDescriptor.dup(file.fileDescriptor)
         enqueue {
-            val lease = clients.require(owner, calling)
-            remote.upload(lease, clipId, direction, copy, length, result)
+            remote.upload(owner, calling, clipId, direction, copy, length, result)
         }
     }
 

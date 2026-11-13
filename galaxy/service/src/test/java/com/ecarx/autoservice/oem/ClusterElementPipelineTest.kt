@@ -6,6 +6,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.os.Looper
 import android.os.ParcelFileDescriptor
+import android.util.Base64
 import com.ecarx.autoservice.ClusterBackgroundStore
 import com.ecarx.autoservice.media.KanziMediaPublisher
 import com.galaxy.auto.contract.ClusterDisplayConfiguration
@@ -24,23 +25,27 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import org.robolectric.annotation.LooperMode
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
+import java.time.Duration
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [30], manifest = Config.NONE)
-@org.robolectric.annotation.GraphicsMode(org.robolectric.annotation.GraphicsMode.Mode.NATIVE)
+@GraphicsMode(GraphicsMode.Mode.NATIVE)
 @LooperMode(LooperMode.Mode.PAUSED)
 class ClusterElementPipelineTest {
     private val app: Context get() = RuntimeEnvironment.getApplication()
 
     private fun pump(condition: () -> Boolean) {
         repeat(300) {
-            shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofMillis(10))
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(10))
             if (condition())return
             Thread.sleep(10)
         }
@@ -139,7 +144,7 @@ class ClusterElementPipelineTest {
                     ->
                     JSONObject().put(
                         "receipt",
-                        android.util.Base64.encodeToString(receipt, android.util.Base64.NO_WRAP),
+                        Base64.encodeToString(receipt, Base64.NO_WRAP),
                     )
                 },
             )
@@ -147,7 +152,7 @@ class ClusterElementPipelineTest {
         controller.published(generation, expected)
         pump { controller.snapshot().getString("state") == "preparing" }
         assertEquals(0, starts.get()) // intent and healthy Root cannot claim a mounted UI
-        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(4))
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(4))
         pump { starts.get() == 1 }
         receipt =
             ByteBuffer
@@ -168,7 +173,7 @@ class ClusterElementPipelineTest {
                     putInt(48, 1)
                     putInt(52, 123)
                 }.array()
-        shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(1))
+        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(1))
         pump {
             controller.snapshot().getString("state") ==
                 "active"
@@ -206,8 +211,8 @@ class ClusterElementPipelineTest {
     }
 
     @Test fun rootDisabledAndLateStartCannotReactivateAfterStop() {
-        val entered = java.util.concurrent.CountDownLatch(1)
-        val release = java.util.concurrent.CountDownLatch(1)
+        val entered = CountDownLatch(1)
+        val release = CountDownLatch(1)
         val stopped = AtomicInteger()
         val controller =
             ClusterHookController(
@@ -216,7 +221,7 @@ class ClusterElementPipelineTest {
                 hookControl = { _, payload, _ ->
                     if (payload.getString("action") == "ensure") {
                         entered.countDown()
-                        check(release.await(5, java.util.concurrent.TimeUnit.SECONDS))
+                        check(release.await(5, TimeUnit.SECONDS))
                         JSONObject().put("state", "running")
                     } else {
                         stopped.incrementAndGet()
@@ -234,12 +239,12 @@ class ClusterElementPipelineTest {
         try {
             controller.update(true, false, config)
             controller.published(22, 1)
-            shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(5))
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(5))
             assertEquals(1L, entered.count)
             assertEquals("waiting-root", controller.snapshot().getString("state"))
             controller.update(true, true, config)
             controller.published(23, 1)
-            shadowOf(Looper.getMainLooper()).idleFor(java.time.Duration.ofSeconds(4))
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofSeconds(4))
             pump { entered.count == 0L }
             controller.update(false, true, null)
             release.countDown()

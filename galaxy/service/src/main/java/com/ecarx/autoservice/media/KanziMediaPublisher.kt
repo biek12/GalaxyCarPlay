@@ -12,16 +12,18 @@ import com.ecarx.autoservice.KanziMediaFrame
 import com.ecarx.autoservice.SerialWorker
 import com.ecarx.autoservice.ServiceTrace
 import com.ecarx.autoservice.platform.foundation.PlatformAccess
+import org.json.JSONObject
 import java.io.File
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.UUID
+import java.util.concurrent.ThreadLocalRandom
 
 /** AutoService独占跨系统写入。只写自有OTA桥目录，关闭不改原厂权限，租约到期恢复。 */
 internal class KanziMediaPublisher(
     private val context: Context,
     private val published: (Long, Int) -> Unit = { _, _ -> },
-    private val write: ((String, Int) -> org.json.JSONObject)? = null,
+    private val write: ((String, Int) -> JSONObject)? = null,
 ) : AutoCloseable {
     private val main = Handler(Looper.getMainLooper())
     private val worker = SerialWorker("AutoService-media-output")
@@ -35,7 +37,7 @@ internal class KanziMediaPublisher(
     private var session =
         UUID(
             System.currentTimeMillis(),
-            java.util.concurrent.ThreadLocalRandom
+            ThreadLocalRandom
                 .current()
                 .nextLong(),
         )
@@ -102,7 +104,7 @@ internal class KanziMediaPublisher(
             session =
                 UUID(
                     maxOf(System.currentTimeMillis(), session.mostSignificantBits + 1),
-                    java.util.concurrent.ThreadLocalRandom
+                    ThreadLocalRandom
                         .current()
                         .nextLong(),
                 )

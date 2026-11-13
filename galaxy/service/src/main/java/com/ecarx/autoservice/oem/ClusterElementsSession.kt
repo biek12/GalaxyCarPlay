@@ -179,6 +179,12 @@ internal class ClusterElementsSession(
         hook = null
     }
 
+    /**
+     * 在 main 上决定这张图片是否进入当前代次。
+     *
+     * 已关闭、租约不对或配置相同都关闭副本。新图片先记 pending，再交给背景 worker 导入。
+     * 导入完成后仍要是同一代次、同一个元素租约对象，才改 ready 或 failed，成功才增加修订。
+     */
     private fun acceptImage(
         owner: IBinder,
         calling: Int,

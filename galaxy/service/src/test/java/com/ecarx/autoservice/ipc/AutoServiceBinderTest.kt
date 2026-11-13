@@ -16,11 +16,14 @@ import com.ecarx.autoservice.remote.ServiceRemoteSession
 import com.ecarx.autoservice.sentinel.ServiceSentinelRequests
 import com.ecarx.autoservice.vehicle.ServiceVehicleSession
 import com.galaxy.auto.contract.AutoContract
+import com.galaxy.auto.contract.ClusterDisplayConfiguration
 import com.galaxy.auto.contract.IAutoCallback
 import com.galaxy.auto.contract.IAutoResult
 import com.galaxy.auto.contract.IAutoService
+import org.json.JSONObject
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -29,14 +32,23 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.Implementation
+import org.robolectric.annotation.Implements
+import org.robolectric.shadows.ShadowParcelFileDescriptor
 import java.io.File
+import java.io.FileDescriptor
+import java.io.IOException
 
 /**
  * 从真实 [IAutoService.Stub.asInterface] 进入生产 [AutoServiceBinder] 和真实 owner。
  * 同步拒绝必须发生在 main 任务运行之前。
  */
 @RunWith(RobolectricTestRunner::class)
-@Config(sdk = [30], manifest = Config.NONE)
+@Config(
+    sdk = [30],
+    manifest = Config.NONE,
+    shadows = [AutoServiceBinderTest.RecordingParcelFileDescriptor::class],
+)
 class AutoServiceBinderTest {
     private val main = Handler(Looper.getMainLooper())
     private val app get() = RuntimeEnvironment.getApplication()
@@ -53,6 +65,13 @@ class AutoServiceBinderTest {
     private val webActions = mutableListOf<String>()
     private val sentinel = mutableListOf<String>()
     private val states = mutableListOf<String>()
+    private var remotePaused = true
+    private var sentinelPaused = false
+    private var failUpload = false
+    private var holdUpload = false
+    private var heldUpload: ((Bundle) -> Unit)? = null
+    private val uploadEntered = mutableListOf<ParcelFileDescriptor>()
+    private lateinit var remoteSession: ServiceRemoteSession
 
     @Test
     fun `同步拒绝发生在排队前，角色归档和扫描本进程边界保持`() {
@@ -129,6 +148,147 @@ class AutoServiceBinderTest {
             } finally {
                 image.close()
             }
+        } finally {
+            registry.close()
+        }
+    }
+
+    @Test
+    fun `上传失败留在原错误里并关闭副本，成功后的旧租约不再回执`() {
+        packages = listOf("com.galaxy.autorecord")
+        RecordingParcelFileDescriptor.copies.clear()
+        val binder = binder()
+        val api = IAutoService.Stub.asInterface(binder)
+        val owner = Binder()
+        try {
+            val missing = uploadFile("missing.bin")
+            val missingResult = resultSlot()
+            api.vehicleWebUpload(Binder(), "clip", "front", missing, 16, missingResult)
+            shadowOf(main.looper).idle()
+            assertEquals("媒体上传不可用", missingResult.value?.getString("error"))
+            assertTrue(missing.fileDescriptor.valid())
+            assertTrue(uploadEntered.isEmpty())
+            assertTrue(states.isEmpty())
+            assertFalse(
+                RecordingParcelFileDescriptor.copies
+                    .last()
+                    .fileDescriptor
+                    .valid(),
+            )
+
+            api.attach(owner, AutoContract.OBSERVER, callback())
+            shadowOf(main.looper).idle()
+            val queued = uploadFile("queued.bin")
+            val queuedResult = resultSlot()
+            api.vehicleWebUpload(owner, "clip", "front", queued, 16, queuedResult)
+            registry.remove(owner)
+            shadowOf(main.looper).idle()
+            assertEquals("媒体上传不可用", queuedResult.value?.getString("error"))
+            assertTrue(queued.fileDescriptor.valid())
+            assertTrue(uploadEntered.isEmpty())
+            assertFalse(
+                RecordingParcelFileDescriptor.copies
+                    .last()
+                    .fileDescriptor
+                    .valid(),
+            )
+
+            api.attach(owner, AutoContract.OBSERVER, callback())
+            shadowOf(main.looper).idle()
+            callingUid = 1001
+            val mismatch = uploadFile("uid.bin")
+            val mismatchResult = resultSlot()
+            api.vehicleWebUpload(owner, "clip", "front", mismatch, 16, mismatchResult)
+            shadowOf(main.looper).idle()
+            assertEquals("媒体上传不可用", mismatchResult.value?.getString("error"))
+            assertTrue(mismatch.fileDescriptor.valid())
+            assertTrue(uploadEntered.isEmpty())
+            callingUid = 1000
+
+            val offline = uploadFile("offline.bin")
+            val offlineResult = resultSlot()
+            api.vehicleWebUpload(owner, "clip", "front", offline, 16, offlineResult)
+            shadowOf(main.looper).idle()
+            assertEquals("媒体上传不可用", offlineResult.value?.getString("error"))
+            assertTrue(offline.fileDescriptor.valid())
+            assertTrue(uploadEntered.isEmpty())
+
+            remotePaused = false
+            remoteSession.update()
+            failUpload = true
+            val broken = uploadFile("broken.bin")
+            val brokenResult = resultSlot()
+            api.vehicleWebUpload(owner, "clip", "front", broken, 16, brokenResult)
+            shadowOf(main.looper).idle()
+            assertEquals(1, uploadEntered.size)
+            assertEquals("媒体上传不可用", brokenResult.value?.getString("error"))
+            assertTrue(broken.fileDescriptor.valid())
+            assertFalse(uploadEntered.last().fileDescriptor.valid())
+            assertTrue(states.isEmpty())
+
+            failUpload = false
+            holdUpload = true
+            val input = uploadFile("ready.bin")
+            val success = resultSlot()
+            val publishedBefore = published.size
+            api.vehicleWebUpload(owner, "clip", "rear", input, 16, success)
+            shadowOf(main.looper).idle()
+            val taken = uploadEntered.last()
+            assertTrue(input.fileDescriptor.valid())
+            assertFalse(taken.fileDescriptor.valid())
+            assertNull(success.value)
+            registry.remove(owner)
+            heldUpload?.invoke(Bundle().apply { putBoolean("accepted", true) })
+            shadowOf(main.looper).idle()
+            assertNull(success.value)
+            assertEquals(publishedBefore, published.size)
+            assertTrue(states.isEmpty())
+        } finally {
+            registry.close()
+        }
+    }
+
+    @Test
+    fun `main上拒绝错误角色，Shell格式和哨兵开启约束在排队边界保持`() {
+        val binder = binder()
+        val api = IAutoService.Stub.asInterface(binder)
+        val owner = Binder()
+        try {
+            packages = listOf("com.ecarx.carplay")
+            api.attach(owner, AutoContract.OBSERVER, callback())
+            shadowOf(main.looper).idle()
+            api.publishMedia(owner, Bundle())
+            shadowOf(main.looper).idle()
+            assertEquals("IllegalStateException", states.last())
+
+            assertThrows(IllegalArgumentException::class.java) {
+                api.executeShell(owner, "NOPE", "id", 1000, result())
+            }
+            assertThrows(IllegalArgumentException::class.java) {
+                api.executeShell(owner, "ROOT", "", 1000, result())
+            }
+            shadowOf(main.looper).idle()
+            assertTrue(shells.isEmpty())
+
+            packages = listOf("com.ecarx.autoservice")
+            callingUid = processUid
+            assertThrows(IllegalStateException::class.java) {
+                api.vehicleWebRequest(owner, "record-poll", Bundle(), result())
+            }
+            assertTrue(webActions.isEmpty())
+
+            packages = listOf("com.galaxy.autorecord")
+            sentinelPaused = true
+            val denied = resultSlot()
+            api.configureSentinel(owner, true, denied)
+            shadowOf(main.looper).idle()
+            assertEquals(false, denied.value?.getBoolean("accepted"))
+            assertEquals("platform_disabled", denied.value?.getString("error"))
+            val closedSentinel = resultSlot()
+            api.configureSentinel(owner, false, closedSentinel)
+            shadowOf(main.looper).idle()
+            assertEquals(false, closedSentinel.value?.getBoolean("accepted"))
+            assertTrue(closedSentinel.value?.getString("error") != "platform_disabled")
         } finally {
             registry.close()
         }
@@ -220,7 +380,7 @@ class AutoServiceBinderTest {
                         override fun update(
                             active: Boolean,
                             ready: Boolean,
-                            config: com.galaxy.auto.contract.ClusterDisplayConfiguration?,
+                            config: ClusterDisplayConfiguration?,
                         ) = Unit
 
                         override fun published(
@@ -239,7 +399,7 @@ class AutoServiceBinderTest {
                 postShell = { shells += "shell" },
                 postMain = { it.run() },
                 postCallback = { it.run() },
-                executeShell = { _, _, _ -> org.json.JSONObject() },
+                executeShell = { _, _, _ -> JSONObject() },
                 closed = { false },
                 paused = { false },
                 automatic = { true },
@@ -250,7 +410,7 @@ class AutoServiceBinderTest {
                 postShell = {},
                 postMain = { it.run() },
                 postCallback = { it.run() },
-                executeShell = { _, _, _ -> org.json.JSONObject() },
+                executeShell = { _, _, _ -> JSONObject() },
                 ensureRoot = { "ready" },
                 closed = { false },
                 paused = { false },
@@ -260,15 +420,15 @@ class AutoServiceBinderTest {
                 permissionGranted = { _, _ -> true },
                 leaseAlive = { true },
             )
-        val remote =
+        remoteSession =
             ServiceRemoteSession(
                 context = app,
                 main = main,
                 postCallback = { it.run() },
                 closed = { false },
-                paused = { true },
+                paused = { remotePaused },
                 onPublish = {},
-                leaseAlive = { true },
+                clients = registry,
                 webFactory = {
                     object : ServiceRemoteSession.WebPort {
                         override fun start() = Unit
@@ -290,7 +450,19 @@ class AutoServiceBinderTest {
                             fd: ParcelFileDescriptor,
                             length: Long,
                             reply: (Bundle) -> Unit,
-                        ) = Unit
+                        ) {
+                            uploadEntered += fd
+                            if (failUpload) {
+                                error("upload")
+                            }
+                            check(fd.fileDescriptor.valid())
+                            fd.close()
+                            if (holdUpload) {
+                                heldUpload = reply
+                                return
+                            }
+                            reply(Bundle().apply { putBoolean("accepted", true) })
+                        }
                     }
                 },
                 commandFactory = {
@@ -323,25 +495,66 @@ class AutoServiceBinderTest {
                         it.run()
                     },
                     sentinel = { null },
-                    paused = { false },
+                    paused = { sentinelPaused },
                     rootEnabled = { true },
                     vehicleEnabled = { true },
                     automatic = { true },
                 ),
-            remote = remote,
+            remote = remoteSession,
             snapshots = ServiceSnapshots(post = { it.run() }, remove = {}, isClosed = { false }),
             publish = { published += "publish" },
         )
     }
 
     private fun imageConfig(): Bundle =
-        com.galaxy.auto.contract
-            .ClusterDisplayConfiguration(
-                com.galaxy.auto.contract.ClusterDisplayConfiguration.OEM_ELEMENTS,
-                com.galaxy.auto.contract.ClusterDisplayConfiguration.IMAGE_BACKGROUND,
-                true,
-                "image.png",
-            ).bundle()
+        ClusterDisplayConfiguration(
+            ClusterDisplayConfiguration.OEM_ELEMENTS,
+            ClusterDisplayConfiguration.IMAGE_BACKGROUND,
+            true,
+            "image.png",
+        ).bundle()
+
+    private fun uploadFile(name: String): ParcelFileDescriptor =
+        ParcelFileDescriptor.open(
+            File(app.cacheDir, name).apply { writeBytes(ByteArray(16)) },
+            ParcelFileDescriptor.MODE_READ_ONLY,
+        )
+
+    private fun resultSlot(): Slot = Slot()
+
+    private class Slot : IAutoResult.Stub() {
+        var value: Bundle? = null
+
+        override fun onResult(value: Bundle) {
+            this.value = Bundle(value)
+        }
+    }
+
+    /**
+     * 只接住 dup，打开和关闭仍用 Robolectric 原来的文件边界。
+     * 记录副本，用来观察上传失败后它已经被关掉。
+     */
+    @Implements(ParcelFileDescriptor::class)
+    class RecordingParcelFileDescriptor : ShadowParcelFileDescriptor() {
+        companion object {
+            val copies = mutableListOf<ParcelFileDescriptor>()
+
+            @JvmStatic
+            @Implementation(methodName = "dup")
+            @Throws(IOException::class)
+            fun recordDup(fd: FileDescriptor): ParcelFileDescriptor {
+                val method =
+                    ShadowParcelFileDescriptor::class.java.getDeclaredMethod(
+                        "dup",
+                        FileDescriptor::class.java,
+                    )
+                method.isAccessible = true
+                val copy = method.invoke(null, fd) as ParcelFileDescriptor
+                copies += copy
+                return copy
+            }
+        }
+    }
 
     private fun callback(states: MutableList<String> = mutableListOf()): IAutoCallback =
         object : IAutoCallback.Stub() {

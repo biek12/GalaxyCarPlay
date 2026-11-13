@@ -7,6 +7,7 @@ import android.os.Handler
 import android.os.Looper
 import android.os.ParcelFileDescriptor
 import android.view.Surface
+import com.ecarx.autoservice.ClusterBackgroundStore
 import com.ecarx.autoservice.ipc.ClientRegistry
 import com.galaxy.auto.contract.AutoContract
 import com.galaxy.auto.contract.ClusterDisplayConfiguration
@@ -26,7 +27,7 @@ import java.io.File
 import java.util.ArrayDeque
 
 /**
- * 用生产 [ClusterElementsSession]、真实 [com.ecarx.autoservice.ClusterBackgroundStore] 和租约核对图片导入。
+ * 用生产 [ClusterElementsSession]、真实 [ClusterBackgroundStore] 和租约核对图片导入。
  * Hook 只记录具名调用。
  */
 @RunWith(RobolectricTestRunner::class)
@@ -39,6 +40,7 @@ class ClusterElementsSessionTest {
     private val results = mutableListOf<Bundle>()
     private val statuses = mutableListOf<String>()
     private val hookCalls = mutableListOf<String>()
+    private var sessionClosed = false
 
     @Test
     fun `相同配置直接接受，成功失败和迟到都不覆盖下一代`() {
@@ -104,6 +106,75 @@ class ClusterElementsSessionTest {
         }
     }
 
+    @Test
+    fun `当前代次失败、租约替换和关闭都不改当前配置`() {
+        val registry = ClientRegistry {}
+        val session = session(registry)
+        val owner = Binder()
+        val lease = registry.attach(owner, 3, AutoContract.ELEMENTS, callback())
+        try {
+            val same =
+                ClusterDisplayConfiguration(
+                    ClusterDisplayConfiguration.OEM_ELEMENTS,
+                    ClusterDisplayConfiguration.IMAGE_BACKGROUND,
+                    true,
+                    "same.png",
+                )
+            lease.elements = same
+            val generation = session.imageGeneration
+            val sameFile = file("same-closed.png")
+            session.submitImage(owner, 3, same, sameFile, result())
+            shadowOf(main.looper).idle()
+            assertTrue(background.isEmpty())
+            assertEquals(generation, session.imageGeneration)
+            assertFalse(sameFile.fileDescriptor.valid())
+
+            val revision = session.revision
+            val bad = text("current-bad.png")
+            session.submitImage(owner, 3, image("current-bad.png"), bad, result())
+            shadowOf(main.looper).idle()
+            assertEquals("pending", session.configurationStatus)
+            background.removeFirst().run()
+            shadowOf(main.looper).idle()
+            assertEquals("failed", session.configurationStatus)
+            assertEquals(revision, session.revision)
+            assertEquals(same, lease.elements)
+            assertFalse(results.last().getBoolean("accepted"))
+            assertEquals("background_import_failed", results.last().getString("error"))
+            assertFalse(bad.fileDescriptor.valid())
+
+            val pending = file("replace.png")
+            session.submitImage(owner, 3, image("replace.png"), pending, result())
+            shadowOf(main.looper).idle()
+            val job = background.removeFirst()
+            registry.remove(owner)
+            val replacement = registry.attach(Binder(), 3, AutoContract.ELEMENTS, callback())
+            val status = session.configurationStatus
+            val revisionAfter = session.revision
+            job.run()
+            shadowOf(main.looper).idle()
+            assertEquals(status, session.configurationStatus)
+            assertEquals(revisionAfter, session.revision)
+            assertEquals(null, replacement.elements)
+            assertFalse(results.last().getBoolean("accepted"))
+            assertFalse(pending.fileDescriptor.valid())
+
+            sessionClosed = true
+            val closedFile = file("closed.png")
+            val resultsBefore = results.size
+            val generationBefore = session.imageGeneration
+            session.submitImage(owner, 3, image("closed.png"), closedFile, result())
+            shadowOf(main.looper).idle()
+            assertEquals(resultsBefore, results.size)
+            assertEquals(generationBefore, session.imageGeneration)
+            assertEquals(status, session.configurationStatus)
+            assertTrue(background.isEmpty())
+            assertFalse(closedFile.fileDescriptor.valid())
+        } finally {
+            registry.close()
+        }
+    }
+
     private lateinit var sessionStatusHolder: ClusterElementsSession
 
     private fun session(registry: ClientRegistry): ClusterElementsSession {
@@ -114,7 +185,7 @@ class ClusterElementsSessionTest {
                 postBackground = { background += it },
                 postCallback = { it.run() },
                 clients = registry,
-                closed = { false },
+                closed = { sessionClosed },
                 onPublish = { statuses += sessionStatusHolder.configurationStatus },
                 hookFactory = {
                     object : ClusterElementsSession.HookPort {

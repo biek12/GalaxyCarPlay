@@ -1,10 +1,14 @@
 package com.ecarx.autoservice.remote
 
+import android.os.Binder
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
 import android.os.ParcelFileDescriptor
+import android.view.Surface
 import com.ecarx.autoservice.ipc.ClientRegistry
+import com.galaxy.auto.contract.AutoContract
+import com.galaxy.auto.contract.IAutoCallback
 import com.galaxy.auto.contract.IAutoResult
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -29,10 +33,16 @@ class ServiceRemoteSessionTest {
     private val calls = mutableListOf<String>()
     private val results = mutableListOf<Bundle>()
     private var report: ((String) -> Unit)? = null
+    private val registry = ClientRegistry {}
     private var failUpload = false
+    private var holdUpload = false
+    private var holdRequest = false
+    private var heldUpload: ((Bundle) -> Unit)? = null
+    private var heldRequest: ((Bundle) -> Unit)? = null
+    private val uploadEntered = mutableListOf<String>()
+    private val order = mutableListOf<String>()
     private var closed = false
     private var paused = false
-    private var alive = true
     private var published = 0
 
     @Test
@@ -81,41 +91,75 @@ class ServiceRemoteSessionTest {
             session.update()
             assertEquals(listOf("web-start"), calls.toList())
 
-            val lease =
-                ClientRegistry.Lease(
-                    android.os.Binder(),
-                    1,
-                    "observer",
-                    callback(),
-                    android.os.IBinder.DeathRecipient {},
-                )
+            val owner = Binder()
+            val lease = registry.attach(owner, 1, AutoContract.OBSERVER, callback())
+            val publishedBefore = published
             session.request(lease, "state", Bundle(), result())
             shadowOf(main.looper).idle()
+            assertEquals(listOf("publish", "result"), order.takeLast(2))
             assertEquals("1", results.last().getString("ok"))
-            assertTrue(published >= 2)
+            assertTrue(published > publishedBefore)
 
             calls.clear()
             session.closeWeb()
             session.request(lease, "state", Bundle(), result())
             assertEquals("AutoService 自动运行已关闭", results.last().getString("error"))
+            assertTrue(uploadEntered.isEmpty())
 
-            failUpload = true
-            session.update()
-            val copy =
-                ParcelFileDescriptor.open(
-                    File(app.cacheDir, "clip.bin").apply {
-                        writeBytes(ByteArray(16))
-                    },
-                    ParcelFileDescriptor.MODE_READ_WRITE,
-                )
-            session.upload(lease, "clip", "front", copy, 16, result())
+            val missing = copy("missing.bin")
+            session.upload(Binder(), 1, "clip", "front", missing, 16, result())
             assertEquals("媒体上传不可用", results.last().getString("error"))
-            assertFalse(copy.fileDescriptor.valid())
-            alive = false
+            assertFalse(missing.fileDescriptor.valid())
+            assertTrue(uploadEntered.isEmpty())
+
+            val mismatch = copy("mismatch.bin")
+            session.upload(owner, 2, "clip", "front", mismatch, 16, result())
+            assertEquals("媒体上传不可用", results.last().getString("error"))
+            assertFalse(mismatch.fileDescriptor.valid())
+            assertTrue(uploadEntered.isEmpty())
+
+            val absent = copy("absent.bin")
+            session.upload(owner, 1, "clip", "front", absent, 16, result())
+            assertEquals("媒体上传不可用", results.last().getString("error"))
+            assertFalse(absent.fileDescriptor.valid())
+
+            session.update()
+            failUpload = true
+            val failed = copy("failed.bin")
+            session.upload(owner, 1, "clip", "front", failed, 16, result())
+            assertEquals(listOf("clip"), uploadEntered)
+            assertEquals("媒体上传不可用", results.last().getString("error"))
+            assertFalse(failed.fileDescriptor.valid())
+
+            failUpload = false
+            holdUpload = true
+            val held = copy("held.bin")
+            val publishedAtUpload = published
+            val resultsAtUpload = results.size
+            session.upload(owner, 1, "held", "front", held, 16, result())
+            assertEquals(listOf("clip", "held"), uploadEntered)
+            assertFalse(held.fileDescriptor.valid())
+            registry.remove(owner)
+            heldUpload?.invoke(Bundle().apply { putBoolean("accepted", true) })
+            shadowOf(main.looper).idle()
+            assertEquals(publishedAtUpload, published)
+            assertEquals(resultsAtUpload, results.size)
+
+            val replacement = registry.attach(Binder(), 1, AutoContract.OBSERVER, callback())
+            holdRequest = true
+            session.request(replacement, "state", Bundle(), result())
+            val publishedAtRequest = published
+            val resultsAtRequest = results.size
+            registry.remove(replacement.owner)
+            heldRequest?.invoke(Bundle().apply { putString("ok", "late") })
+            shadowOf(main.looper).idle()
+            assertEquals(publishedAtRequest, published)
+            assertEquals(resultsAtRequest, results.size)
             closed = false
         } finally {
             session.closeWeb()
             session.closeRemote()
+            registry.close()
         }
     }
 
@@ -126,8 +170,11 @@ class ServiceRemoteSessionTest {
             postCallback = { it.run() },
             closed = { closed },
             paused = { paused },
-            onPublish = { published += 1 },
-            leaseAlive = { alive },
+            onPublish = {
+                published += 1
+                order += "publish"
+            },
+            clients = registry,
             webFactory = {
                 object : ServiceRemoteSession.WebPort {
                     override fun start() {
@@ -143,6 +190,10 @@ class ServiceRemoteSessionTest {
                         payload: Bundle,
                         reply: (Bundle) -> Unit,
                     ) {
+                        if (holdRequest) {
+                            heldRequest = reply
+                            return
+                        }
                         reply(Bundle().apply { putString("ok", "1") })
                     }
 
@@ -153,10 +204,15 @@ class ServiceRemoteSessionTest {
                         length: Long,
                         reply: (Bundle) -> Unit,
                     ) {
+                        uploadEntered += clipId
                         if (failUpload) {
                             error("upload")
                         }
                         fd.close()
+                        if (holdUpload) {
+                            heldUpload = reply
+                            return
+                        }
                         reply(Bundle())
                     }
                 }
@@ -182,17 +238,24 @@ class ServiceRemoteSessionTest {
     private fun result(): IAutoResult =
         object : IAutoResult.Stub() {
             override fun onResult(value: Bundle) {
+                order += "result"
                 results += Bundle(value)
             }
         }
 
+    private fun copy(name: String): ParcelFileDescriptor =
+        ParcelFileDescriptor.open(
+            File(app.cacheDir, name).apply { writeBytes(ByteArray(16)) },
+            ParcelFileDescriptor.MODE_READ_WRITE,
+        )
+
     private fun callback() =
-        object : com.galaxy.auto.contract.IAutoCallback.Stub() {
+        object : IAutoCallback.Stub() {
             override fun onSnapshot(snapshot: Bundle) = Unit
 
             override fun onSurface(
                 role: String,
-                surface: android.view.Surface,
+                surface: Surface,
             ) = Unit
 
             override fun onProjectionState(

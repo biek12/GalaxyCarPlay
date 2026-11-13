@@ -258,6 +258,13 @@ internal class ServiceMediaSession(
         kanziMedia = null
     }
 
+    /**
+     * 采纳一份已经选定的媒体。
+     *
+     * 曲目变化才增加封面代次、清掉可视歌词并删除缓存封面。
+     * 原始歌词和时间轴长度一致时也清可视歌词，避免网络词盖住原车动态词。
+     * receivedAt 只接受 1 到当前时钟之间的 sampledAt，否则用当前时钟。
+     */
     private fun selectMedia(value: Bundle) {
         if (media.getString("track") != value.getString("track")) {
             ++artworkGeneration
@@ -276,6 +283,13 @@ internal class ServiceMediaSession(
             }
     }
 
+    /**
+     * 原车媒体回调。在回调线程上更新候选，封面编码交给 artwork worker。
+     *
+     * 原车非空时优先于 CarPlay。同一张 Bitmap 不重复编码。
+     * 缩放最长边 512；缩放若返回原图，就复制出独立位图，最后只回收这份 owned。
+     * 回到 main 后代次仍相同，才用 AtomicFile 提交。
+     */
     private fun nativeMusic(
         value: Bundle?,
         bitmap: Bitmap?,
@@ -339,6 +353,9 @@ internal class ServiceMediaSession(
         override fun close() = source.close()
     }
 
+    /**
+     * 最多读取 [max] 字节。超出立即失败，不把超界内容交给解码。
+     */
     private fun InputStream.readBytesBounded(max: Int): ByteArray {
         val output = ByteArrayOutputStream()
         val bytes = ByteArray(8192)

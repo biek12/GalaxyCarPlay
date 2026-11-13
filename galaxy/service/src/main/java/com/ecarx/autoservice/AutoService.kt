@@ -14,6 +14,8 @@ import android.os.Handler
 import android.os.IBinder
 import android.os.Looper
 import android.os.Process
+import android.util.Log
+import com.ecarx.autoservice.diagnostics.DiagnosticUploader
 import com.ecarx.autoservice.diagnostics.ServiceDiagnostics
 import com.ecarx.autoservice.ipc.AutoServiceBinder
 import com.ecarx.autoservice.ipc.ClientRegistry
@@ -30,12 +32,18 @@ import com.ecarx.autoservice.platform.foundation.PlatformAccess
 import com.ecarx.autoservice.platform.foundation.PlatformCoordinator
 import com.ecarx.autoservice.platform.foundation.ServiceShellRequests
 import com.ecarx.autoservice.remote.ServiceRemoteSession
+import com.ecarx.autoservice.sentinel.SentinelCoordinator
 import com.ecarx.autoservice.sentinel.ServiceSentinelRequests
 import com.ecarx.autoservice.settings.ServiceFeatures
 import com.ecarx.autoservice.startup.AutoStartup
 import com.ecarx.autoservice.vehicle.ServiceVehicleSession
 import com.galaxy.auto.client.diagnostics.DiagnosticEvents
+import com.galaxy.auto.client.recovery.ProcessRecovery
 import com.galaxy.auto.contract.AutoContract
+import java.io.File
+import java.io.FileDescriptor
+import java.io.PrintWriter
+import android.R as AndroidR
 
 /** 平台基础服务 owner。Binder 入口只鉴权、排队和按原顺序装配；业务状态在各 owner。 */
 class AutoService : Service() {
@@ -55,7 +63,7 @@ class AutoService : Service() {
     private lateinit var publication: ServicePublication
     private lateinit var diagnostics: ServiceDiagnostics
     private lateinit var binder: AutoServiceBinder
-    private var sentinel: com.ecarx.autoservice.sentinel.SentinelCoordinator? = null
+    private var sentinel: SentinelCoordinator? = null
     private val clients = ClientRegistry { owner -> main.post { sessions.detach(owner) } }
     private lateinit var platform: PlatformCoordinator
 
@@ -109,19 +117,23 @@ class AutoService : Service() {
             },
         )
 
+    /**
+     * 按原顺序装配各 owner，并在任何业务 start 之前接好发布。
+     *
+     * 自动运行关闭时保持暂停，不创建平台、不启动采集。工厂到这次调用才执行。
+     */
     override fun onCreate() {
         super.onCreate()
-        ServiceTrace.configure(java.io.File(filesDir, "diagnostics/app.log"))
-        com.ecarx.autoservice.diagnostics.DiagnosticUploader
-            .kick(this)
+        ServiceTrace.configure(File(filesDir, "diagnostics/app.log"))
+        DiagnosticUploader.kick(this)
         ServiceTrace.event("service_created")
         val prefs = getSharedPreferences("platform", 0)
         features = ServiceFeatures.read(this)
         sentinel =
-            com.ecarx.autoservice.sentinel.SentinelCoordinator(
+            SentinelCoordinator(
                 this,
                 { shellAccess.ensureRoot() },
-                { main.post { if (!closed)publish() } },
+                { main.post { if (!closed) publish() } },
                 { main.post { if (!closed) vehicle.recalculateDemand() } },
             )
         prefs.edit().putString("vehicleMode", if (features.root) "root" else "app").apply()
@@ -205,7 +217,7 @@ class AutoService : Service() {
                 closed = { closed },
                 paused = { paused },
                 onPublish = { publish() },
-                leaseAlive = { lease -> clients.all().any { it === lease } },
+                clients = clients,
             )
         sentinelRequests =
             ServiceSentinelRequests(
@@ -333,7 +345,7 @@ class AutoService : Service() {
             71,
             Notification
                 .Builder(this, "platform")
-                .setSmallIcon(android.R.drawable.ic_menu_compass)
+                .setSmallIcon(AndroidR.drawable.ic_menu_compass)
                 .setContentTitle(getString(R.string.service_notification_title))
                 .setContentText(getString(R.string.service_notification_text))
                 .setContentIntent(intent)
@@ -341,13 +353,23 @@ class AutoService : Service() {
         )
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        if (!com.galaxy.auto.client.recovery.ProcessRecovery.accepts(
-                this,
-                intent,
-            )
-        ) {
-            return if (AutoStartup.enabled(this))START_STICKY else START_NOT_STICKY
+    /**
+     * 处理恢复、远程授权、停服、换车型和功能开关。
+     *
+     * 停服先保留订阅再停采集、清缓存。换车型必须先停采集，再按新目录重算需求。
+     * 恢复意图被拒绝时不进入这些动作。
+     */
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int {
+        if (!ProcessRecovery.accepts(this, intent)) {
+            return if (AutoStartup.enabled(this)) {
+                START_STICKY
+            } else {
+                START_NOT_STICKY
+            }
         }
         if (intent?.action == "remote-authorize") {
             remoteSession.authorize(intent.getIntExtra("hours", 12))
@@ -400,7 +422,9 @@ class AutoService : Service() {
                 )
             }
         }
-        if (intent?.action == "start") AutoStartup.setEnabled(this, true)
+        if (intent?.action == "start") {
+            AutoStartup.setEnabled(this, true)
+        }
         applyFeatureSettings()
         if (paused) {
             paused = false
@@ -458,10 +482,10 @@ class AutoService : Service() {
         }
         publish()
         if (AutoStartup.enabled(this)) {
-            com.galaxy.auto.client.recovery.ProcessRecovery.arm(
+            ProcessRecovery.arm(
                 this,
                 Intent(this, AutoService::class.java).setAction("recovery"),
-                intent?.hasExtra(com.galaxy.auto.client.recovery.ProcessRecovery.EXTRA_GENERATION) == true,
+                intent?.hasExtra(ProcessRecovery.EXTRA_GENERATION) == true,
             )
         }
         return START_STICKY
@@ -472,7 +496,9 @@ class AutoService : Service() {
         val next = ServiceFeatures.read(this)
         val previous = features
         if (next == previous) return
-        if ((previous.root && !next.root) || (previous.vehicle && !next.vehicle))sentinel?.preparePlatformStop()
+        if ((previous.root && !next.root) || (previous.vehicle && !next.vehicle)) {
+            sentinel?.preparePlatformStop()
+        }
         features = next
         val connectionsChanged = previous.adb != next.adb || previous.root != next.root
         if (connectionsChanged) {
@@ -503,13 +529,15 @@ class AutoService : Service() {
         publish()
     }
 
+    /** 只有契约 action 返回 Binder。其他 action 不绑定。 */
     override fun onBind(intent: Intent?): IBinder? = if (intent?.action == AutoContract.ACTION) binder else null
 
+    /** 回到 main 后，服务已关闭就不再改状态或发布。 */
     private fun state(value: String) {
         main.post {
             if (!closed) {
                 status = value
-                android.util.Log.i("AutoService", value)
+                Log.i("AutoService", value)
                 publish()
             }
         }
@@ -517,7 +545,12 @@ class AutoService : Service() {
 
     private fun publish() = publication.publish()
 
-    override fun dump(fd: java.io.FileDescriptor, writer: java.io.PrintWriter, args: Array<out String>) {
+    /** 诊断文本仍由诊断 owner 按原分支写出。这里不另做一份缓存。 */
+    override fun dump(
+        fd: FileDescriptor,
+        writer: PrintWriter,
+        args: Array<out String>,
+    ) {
         diagnostics.dump(writer, args)
     }
 
@@ -529,13 +562,17 @@ class AutoService : Service() {
             else -> "{}"
         }
 
+    /**
+     * 按原 owner 顺序关闭。借用的 worker 留到各自原来的时点。
+     *
+     * 已经接收的任务可以走完 finally。关闭之后新的排队不再执行。
+     */
     override fun onDestroy() {
         sentinel?.close()
         sentinel = null
         remoteSession.closeWeb()
         remoteSession.closeRemote()
-        com.galaxy.auto.client.recovery.ProcessRecovery
-            .release(this, AutoStartup.enabled(this))
+        ProcessRecovery.release(this, AutoStartup.enabled(this))
         closed = true
         ++platformGeneration
         if (::platform.isInitialized) platform.close()
