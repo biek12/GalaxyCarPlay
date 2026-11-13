@@ -14,7 +14,7 @@ alwaysApply: true
 - S2业务03f14de已复审并以f2cbb7f集成，见docs/refactor/Cursor-S2-复审与集成-20261113.md；不向完成分支继续写入。
 - S3业务665b9f8已复审并以78feda1集成，见docs/refactor/Cursor-S3-复审与集成-20261113.md；不再写入已完成树。
 - A4-R1业务37e3020已复审并以103bb75集成，Service172例/Cluster12例通过，见docs/refactor/Cursor-A4-R1-复审与集成-20261113.md；首次未通过报告保留为历史，不再写入原完成树。
-- 当前唯一任务为docs/refactor/A1-共享车辆账号完整重构任务-20261113.md与A1-代码白名单-20261113.txt，18条业务路径。只在F:\GalaxyPlay\wt-account-completion / feat/galaxy-account-completion-20261113实施，业务/范围起点103bb75，1972bb9准备工具/任务。开工记录同步后的实际HEAD。
+- A1候选5f627f2首次复审CHANGES_REQUIRED，未集成：全量门槛通过，但真实Presenter/Renderer在完成时过期仍显示QR。当前唯一任务为docs/refactor/A1-R1-二维码时效与资源交付修正任务-20261113.md，原A1任务/18路径仍有效。只在F:\GalaxyPlay\wt-account-completion / feat/galaxy-account-completion-20261113修完，业务/范围起点103bb75。开工记录同步后的实际HEAD。
 - 一次完成账号页全部XML/状态/请求/QR/绑定流程，内部验证提交后直接继续，不逐类停等。最终不带Checkpoint的完整入口零退出、提交及SHA绑定后才READY_FOR_REVIEW并冻结。A1-baseline只供Codex自验，旧C1–C4不用于A1。不得伪造提交/日志，不自行合并/推送。
 - wt-autoservice-completion及更早完成树冻结，不同步新任务使其重开未合并tip。A1不得改AutoClient实现/AIDL/Service/Cluster/AutoRecord或恢复旧输出，脚本/环境由Codex直接处理。
 - 开工报告绝对目录、分支、HEAD、未提交变更和白名单；内部点通过后继续，整包交付后冻结。缺项写BLOCKED_VALIDATION，局部通过不能报完成。

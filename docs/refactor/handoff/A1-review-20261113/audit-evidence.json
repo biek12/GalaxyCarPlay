@@ -1,0 +1,89 @@
+{
+  "reviewStatus": "CHANGES_REQUIRED",
+  "candidate": "5f627f280654d2ecd6acf012c7b48d679608438a",
+  "leaderBusinessBaseline": "103bb75ef0965a041ffec4744550d7bc32ae7b8a",
+  "candidateFullEntryExitCode": 0,
+  "serviceSuites": 48,
+  "serviceCases": 172,
+  "clusterSuites": 3,
+  "clusterCases": 12,
+  "clientSuites": 7,
+  "clientCases": 29,
+  "toolRegressions": 15,
+  "kotlinFiles": 145,
+  "xmlFiles": 16,
+  "syntaxFiles": 13,
+  "archiveEntries": 97,
+  "sourceCount": 1051,
+  "accountRuntimeClasses": 7,
+  "accountHostManifests": 2,
+  "screenshotsViewed": [
+    {
+      "file": "account-bound-light.png",
+      "sha256": "fa83707af7c849e1b46fda8e9b3de7daafeb1a5b41ab520e43e7468461551bcf",
+      "width": 1080,
+      "height": 1800
+    },
+    {
+      "file": "account-code-pending-light.png",
+      "sha256": "cad7dd3149b6df99466ee965b039363c7e132887d2b8a2b536ae70e64bc8c2c9",
+      "width": 1080,
+      "height": 1800
+    },
+    {
+      "file": "account-bound-night.png",
+      "sha256": "0db293f3e22f77e141bec007b34cc2cb28ba8a6374538773dee9da8b9f1918f8",
+      "width": 1080,
+      "height": 1800
+    },
+    {
+      "file": "account-error-night.png",
+      "sha256": "d3b4010a4e62d26a224a7c5fa2d11ab922fa34d5eafa8a4ea87e59ca694c6ec9",
+      "width": 1080,
+      "height": 1800
+    }
+  ],
+  "qrExpiryProbe": {
+    "taskExitCode": 1,
+    "tests": 1,
+    "failures": 1,
+    "errors": 0,
+    "startedAt": 1700000000000,
+    "expiresAt": 1700000001000,
+    "completedAt": 1700000001000,
+    "pollNotStarted": true,
+    "expected": "ImageView drawable remains null",
+    "observed": "BitmapDrawable attached after expiry",
+    "productionPresenterAndRenderer": true
+  },
+  "evidence": [
+    {
+      "path": ".work/lead-a1-review/VALIDATION-5f627f2.json",
+      "sha256": "7c583f90056f9af275f2351a54e2855f8e3be028b04b9dcec08673f81398da15"
+    },
+    {
+      "path": ".work/lead-a1-review-console.log",
+      "sha256": "16bbe1eb6da75ff62b9d8e8710ad4facf780b9cc30a13677c0294d429579f091"
+    },
+    {
+      "path": ".work/lead-a1-probe/console.log",
+      "sha256": "e3bfb65675bfa98308ef7e24a0146a34435f6e65de5a6328eb9491d5b185924f"
+    },
+    {
+      "path": ".work/lead-a1-probe/TEST-qr-expiry-probe.xml",
+      "sha256": "da67712641a7b88d12a8aab9ecec1989c2925eebddf63651f164fc934279af4d"
+    },
+    {
+      "path": ".work/lead-a1-probe/src/com/galaxy/auto/client/vehicle/AccountQrExpiryProbe.java",
+      "sha256": "4cb00686fb50493ff79a962ac03a70de4828b21f3d503d4092edbb4b9adfbec0"
+    },
+    {
+      "path": ".work/lead-a1-probe/probe.init.gradle",
+      "sha256": "d81e95492082cbd2888f31276675c344fddd0c71796fd60898533f1a329da7a9"
+    }
+  ],
+  "merged": false,
+  "pushed": false,
+  "vehicleValidated": false,
+  "apkBuilt": false
+}
