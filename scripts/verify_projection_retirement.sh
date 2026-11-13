@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# GALAXY-SERVICE-IPC-S1-20261113：累计归档、平台端口与本批 IPC 的单命令门槛。
+# GALAXY-SERVICE-SNAPSHOTS-S2-20261113：累计归档、平台、IPC及快照发布门槛。
 # 只离线编译/资源/JUnit/格式/产物核对；不打包 APK、不连车、不启模拟器、不远程部署。
 set -euo pipefail
 
@@ -173,4 +173,4 @@ cp archive/legacy-fullscreen-projection/20261112/manifest.json "$LOG_DIR/archive
 cp archive/theme-engine/20261112/manifest.json "$LOG_DIR/theme-archive-manifest.json"
 cp "$GALAXY_R0_REPORT_DIR/format-result.json" "$LOG_DIR/format-result.json"
 
-echo "R0/P1/S1 门槛通过：格式、全下游/AndroidTest编译、全Service测试、KADB实际ASM、Manifest/class和归档摘要均已核对；未打包、未上车。"
+echo "累计重构门槛通过：格式、全下游/AndroidTest编译、全Service测试、KADB实际ASM、Manifest/class和归档摘要均已核对；未打包、未上车。"

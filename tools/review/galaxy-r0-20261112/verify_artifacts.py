@@ -58,6 +58,7 @@ REQUIRED_CLASSES = [
     "com/ecarx/autoservice/ipc/ClientRegistry.class",
     "com/ecarx/autoservice/ipc/ServiceCallerIdentity.class",
     "com/ecarx/autoservice/ipc/ServiceRequestQueue.class",
+    "com/ecarx/autoservice/ipc/ServiceSnapshots.class",
     *PREVIEW_CLASSES,
 ]
 # 本批必测：JUnit suite 必须真实存在、非空、零失败/错误/跳过。
@@ -77,6 +78,7 @@ REQUIRED_SUITES = {
         "com.ecarx.autoservice.ipc.ClientRegistryTest",
         "com.ecarx.autoservice.ipc.ServiceCallerIdentityTest",
         "com.ecarx.autoservice.ipc.ServiceRequestQueueTest",
+        "com.ecarx.autoservice.ipc.ServiceSnapshotsTest",
         "com.ecarx.autoservice.platform.foundation.FoundationRecoveryTest",
         "com.ecarx.autoservice.remote.RemoteConnectionStatusTest",
         "com.ecarx.autoservice.platform.root.RootFramesTest",
@@ -500,7 +502,7 @@ def main() -> None:
     REPORT.mkdir(parents=True, exist_ok=True)
     fmt = json.loads(read_text(REPORT / "format-result.json"))
     record = {
-        "task": "GALAXY-SERVICE-IPC-S1-20261113",
+        "task": "GALAXY-SERVICE-SNAPSHOTS-S2-20261113",
         "status": "READY_FOR_REVIEW" if len(sys.argv) > 1 and sys.argv[1] == "ready" else "VALIDATED",
         "archive": archive_gate(),
         "themeArchive": theme_archive_gate(),
