@@ -34,6 +34,7 @@ import com.ecarx.autoservice.vehicle.VehicleCatalog
 import com.ecarx.autoservice.vehicle.VehicleCollector
 import com.ecarx.autoservice.vehicle.VehicleDemand
 import com.ecarx.autoservice.vehicle.VehicleFeed
+import com.ecarx.autoservice.vehicle.VehicleFeedDispatcher
 import com.ecarx.autoservice.vehicle.VehicleInventory
 import com.galaxy.auto.client.diagnostics.DiagnosticEvents
 import com.galaxy.auto.contract.AutoContract
@@ -73,18 +74,25 @@ class AutoService : Service() {
     // viewport 协商与投影策略。CarPlay 主屏尺寸沿用 MapStreamSize.DEFAULT（1920×536）。
     private var media = Bundle()
     private var navigation = Bundle()
-
-    /** 订阅驱动采集的最新快照（只含订阅键），feed推送与拉取接口同源。 */
-    @Volatile private var signals = Bundle()
     private var sequence = 0L
-
-    /** 按需订阅的轮次序号；每轮自增一次，同一轮的多个租约共用一个值。 */
-    private var feedSequence = 0L
 
     @Volatile private var closed = false
     private var status = "created"
 
     @Volatile private var paused = false
+
+    /**
+     * 车辆值缓存、feed 序号和订阅扇出只放在这里。
+     * 边界延迟到真正发布或读取时才执行；构造不建线程。main 写缓存和序号，Binder 只读。
+     * 租约仍归 [ClientRegistry]。clear 只换空缓存，序号跨停服和换车型继续。
+     */
+    private val dispatcher =
+        VehicleFeedDispatcher(
+            post = callbacks::post,
+            isEnabled = { !closed && !paused && features.vehicle },
+            acceptValues = { sentinel?.accept(it) },
+            leases = { clients.all() },
+        )
     private val inputEpoch =
         java.util.UUID
             .randomUUID()
@@ -656,7 +664,7 @@ class AutoService : Service() {
                     lease.lastFeedAt = 0L
                     applyDemand()
                     // 订阅当下先补一次当前缓存，避免最多等一个采集节拍才有数据；未订阅的键不读车机。
-                    if (lease.feed.isNotEmpty()) publishFeedTo(lease, signals, SystemClock.elapsedRealtime())
+                    if (lease.feed.isNotEmpty()) dispatcher.replay(lease, SystemClock.elapsedRealtime())
                 }
             }
 
@@ -666,7 +674,7 @@ class AutoService : Service() {
                 check(AutoContract.feedKeysValid(keys))
                 return runCatching {
                     val accepted = VehicleFeed.validate(keys, modelPrefs())
-                    if (accepted.isEmpty()) Bundle() else VehicleFeed.select(signals, accepted)
+                    if (accepted.isEmpty()) Bundle() else dispatcher.select(accepted)
                 }.getOrElse { Bundle() }
             }
 
@@ -919,7 +927,7 @@ class AutoService : Service() {
                 publish()
             }, feed = { values, at ->
                 // 采集在自身worker线程；租约与Binder回调都在主线程，因此只投递不直接触碰。
-                main.post { publishFeed(values, at) }
+                main.post { dispatcher.publish(values, at) }
             })
         paused = !AutoStartup.enabled(this)
         startPlatformForeground()
@@ -1022,7 +1030,7 @@ class AutoService : Service() {
             // 停服只暂停采集，不清空订阅意图（否则客户端不会重发，恢复后永久没有车辆数据）。
             clients.retainFeeds()
             collector.stop()
-            signals = Bundle()
+            dispatcher.clear()
             discovery = "stopped"
             discoveredCount = 0
             if (::platform.isInitialized) platform.close()
@@ -1071,9 +1079,9 @@ class AutoService : Service() {
             // 换车型：订阅意图保留，但旧键未必属于新目录——按新目录摘掉无效键，有效键继续采集。
             // 整清会让客户端因“本地状态没变”不重发，换车型后永久没有车辆数据。
             clients.retainFeeds(vehicleKeys().toSet())
-            // 换车型还要丢掉上一个车型的缓存：publishFeedTo（订阅当下补发）没有 paused 守卫，
+            // 换车型还要丢掉上一个车型的缓存：订阅当下的 replay 不看 paused，
             // 留着旧快照会在下一次 setVehicleFeed 时补发上一个车型的值。
-            signals = Bundle()
+            dispatcher.clear()
             collector.stop()
             ++platformGeneration
             platform.close()
@@ -1137,7 +1145,7 @@ class AutoService : Service() {
         }
         if (previous.vehicle != next.vehicle || connectionsChanged) {
             collector.stop()
-            signals = Bundle()
+            dispatcher.clear()
             discovery = if (next.vehicle) "idle" else "disabled"
             discoveredCount = 0
             if (!paused && next.vehicle) {
@@ -1199,27 +1207,6 @@ class AutoService : Service() {
     }
 
     /**
-     * 按需订阅的每轮推送；主线程调用。
-     * 无订阅者、暂停或车辆采集关闭时直接返回，250ms采集节拍上不产生额外开销。
-     */
-    private fun publishFeed(values: Bundle, at: Long) {
-        if (closed || paused || !features.vehicle) return
-        // 缓存对外供给：拉取接口与订阅补发都用这一份，保证推/拉同源。
-        signals = values
-        sentinel?.accept(values)
-        val targets = clients.all().filter { it.feed.isNotEmpty() }
-        if (targets.isEmpty()) return
-        // 一轮只自增一次：同一轮的多个租约拿到同一个序号，跨租约可直接对齐节拍。
-        val round = ++feedSequence
-        targets.forEach { lease ->
-            // 按租约自己的间隔节流：1Hz的订阅者不会因为别人要250ms而收4倍数据。
-            if (lease.lastFeedAt != 0L && at - lease.lastFeedAt < lease.feedIntervalMillis) return@forEach
-            lease.lastFeedAt = at
-            sendFeed(lease, values, at, round)
-        }
-    }
-
-    /**
      * 把当前所有租约的订阅合并成采集需求：键取并集、间隔取最紧。
      * 空表表示没人订阅，采集端据此完全停摆（不读车机、不空转）。
      */
@@ -1233,20 +1220,6 @@ class AutoService : Service() {
                 } + listOf(sentinel?.demands.orEmpty().keys to 500),
             ),
         )
-    }
-
-    /** 订阅/改订阅当下的即时补发：此时还没有整轮节拍，序号单独分配。 */
-    private fun publishFeedTo(lease: ClientRegistry.Lease, values: Bundle, at: Long) {
-        sendFeed(lease, values, at, ++feedSequence)
-    }
-
-    private fun sendFeed(lease: ClientRegistry.Lease, values: Bundle, at: Long, round: Long) {
-        val out = VehicleFeed.select(values, lease.feed)
-        // 该租约本轮没有任何有效值就不发空包：不补0/不补默认值，消费者按maxAgeMillis自行判过期。
-        if (out.isEmpty) return
-        out.putLong("at", at)
-        out.putLong("sequence", round)
-        callbacks.post { runCatching { lease.callback.onVehicleFeed(out) } }
     }
 
     private fun selectMedia(value: Bundle) {
@@ -1455,7 +1428,7 @@ class AutoService : Service() {
         }
         if ("--record-fields" in args) {
             // 只读当前订阅缓存，不扫描、不额外读车辆属性；用于逐项核对录制端数据接线。
-            val withVehicle = Bundle(snapshot).apply { putBundle("vehicle", Bundle(signals)) }
+            val withVehicle = Bundle(snapshot).apply { putBundle("vehicle", dispatcher.snapshot()) }
             val keys =
                 VehicleCatalog.forModel(snapshot.getString("model") ?: "L6").map { it.key } +
                     VehicleCatalog.LEGACY_ALIASES.keys
@@ -1471,7 +1444,7 @@ class AutoService : Service() {
         }
         if ("--cluster-fields" in args) {
             // v4快照不含车辆值：诊断用当前订阅快照补上，保持同一份数据口径。
-            val withVehicle = Bundle(snapshot).apply { putBundle("vehicle", Bundle(signals)) }
+            val withVehicle = Bundle(snapshot).apply { putBundle("vehicle", dispatcher.snapshot()) }
             writer.println(
                 "CLUSTER_FIELDS=" +
                     ClusterFieldDiagnostics.collect(withVehicle, android.os.SystemClock.elapsedRealtime()),
