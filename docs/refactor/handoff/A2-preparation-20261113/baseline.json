@@ -1,0 +1,30 @@
+{
+  "status": "TOOLS_PREPARED_BUSINESS_NOT_IMPLEMENTED",
+  "sourceBaseline": "3dc8d2b59806b5349fcd84662c11aa6a6aad708b",
+  "businessDiffEmpty": true,
+  "businessPaths": 9,
+  "publicSourceMethods": 24,
+  "publicJvmEntrypoints": 32,
+  "baselineClientSuites": 7,
+  "baselineClientCases": 32,
+  "baselineCommandExitCode": 0,
+  "gradleTasksExecuted": 70,
+  "gradleTasksTotal": 70,
+  "wholeTaskReady": false,
+  "scriptRegressionTests": 18,
+  "syntaxFiles": 15,
+  "finalKotlinFiles": 154,
+  "finalXmlFiles": 16,
+  "evidence": [
+    {
+      "path": ".work/a2-tool-baseline/CLIENT_BASELINE.json",
+      "sha256": "e5cd260c41d11470b97a00e836af6703449579145e2306d791e56ff6ed63049c"
+    },
+    {
+      "path": ".work/a2-tool-baseline-console.log",
+      "sha256": "09f8df977829cbac152d839e17253040bdbaeae6201e07e983dc93bf0d18ca7b"
+    }
+  ],
+  "apkBuilt": false,
+  "vehicleValidated": false
+}

@@ -1,0 +1,137 @@
+{
+  "sourceBaseline": "3dc8d2b59806b5349fcd84662c11aa6a6aad708b",
+  "sourcePath": "galaxy/client/src/main/java/com/galaxy/auto/client/AutoClient.kt",
+  "sourceGitSha256": "631fadcd1187b73fa3dfa846a7e5c2ebc7f7f79957e4424f30edb0b7b83b2f80",
+  "publicApi": [
+    {
+      "declaration": "public com.galaxy.auto.client.AutoClient(android.content.Context, java.lang.String, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function2, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function0, boolean, boolean, int, kotlin.jvm.internal.DefaultConstructorMarker);",
+      "descriptor": "(Landroid/content/Context;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function0;ZZILkotlin/jvm/internal/DefaultConstructorMarker;)V"
+    },
+    {
+      "declaration": "public com.galaxy.auto.client.AutoClient(android.content.Context, java.lang.String, kotlin.jvm.functions.Function1<? super android.view.Surface, kotlin.Unit>, kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>, kotlin.jvm.functions.Function1<? super java.lang.String, kotlin.Unit>, kotlin.jvm.functions.Function1<? super java.lang.Integer, kotlin.Unit>, kotlin.jvm.functions.Function2<? super android.view.Surface, ? super java.lang.Long, kotlin.Unit>, kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>, kotlin.jvm.functions.Function0<kotlin.Unit>, boolean, boolean);",
+      "descriptor": "(Landroid/content/Context;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function0;ZZ)V"
+    },
+    {
+      "declaration": "public final void configureClusterElements(com.galaxy.auto.contract.ClusterDisplayConfiguration, java.io.File);",
+      "descriptor": "(Lcom/galaxy/auto/contract/ClusterDisplayConfiguration;Ljava/io/File;)V"
+    },
+    {
+      "declaration": "public final void configureScene(com.galaxy.auto.contract.SceneConfiguration);",
+      "descriptor": "(Lcom/galaxy/auto/contract/SceneConfiguration;)V"
+    },
+    {
+      "declaration": "public final void configureSentinel(boolean, kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>);",
+      "descriptor": "(ZLkotlin/jvm/functions/Function1;)V"
+    },
+    {
+      "declaration": "public final void connect();",
+      "descriptor": "()V"
+    },
+    {
+      "declaration": "public final void executeShell(java.lang.String, java.lang.String, int, kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>);",
+      "descriptor": "(Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/functions/Function1;)V"
+    },
+    {
+      "declaration": "public final void getVehicleValues(java.util.Collection<java.lang.String>, kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>);",
+      "descriptor": "(Ljava/util/Collection;Lkotlin/jvm/functions/Function1;)V"
+    },
+    {
+      "declaration": "public final void mediaCommand(int);",
+      "descriptor": "(I)V"
+    },
+    {
+      "declaration": "public final void prepareOemArtwork(byte[], kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>);",
+      "descriptor": "([BLkotlin/jvm/functions/Function1;)V"
+    },
+    {
+      "declaration": "public final void publishArtwork(byte[], java.lang.String);",
+      "descriptor": "([BLjava/lang/String;)V"
+    },
+    {
+      "declaration": "public final void publishMedia(android.os.Bundle);",
+      "descriptor": "(Landroid/os/Bundle;)V"
+    },
+    {
+      "declaration": "public final void publishNavigation(android.os.Bundle);",
+      "descriptor": "(Landroid/os/Bundle;)V"
+    },
+    {
+      "declaration": "public final void publishVisualMedia(android.os.Bundle);",
+      "descriptor": "(Landroid/os/Bundle;)V"
+    },
+    {
+      "declaration": "public final void reportSentinelIdle(long);",
+      "descriptor": "(J)V"
+    },
+    {
+      "declaration": "public final void requestClientPermissions(java.util.List<java.lang.String>, kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>);",
+      "descriptor": "(Ljava/util/List;Lkotlin/jvm/functions/Function1;)V"
+    },
+    {
+      "declaration": "public final void setActive(boolean);",
+      "descriptor": "(Z)V"
+    },
+    {
+      "declaration": "public final void setPreviewSurface(android.view.Surface);",
+      "descriptor": "(Landroid/view/Surface;)V"
+    },
+    {
+      "declaration": "public final void setProjectionPolicy(com.galaxy.auto.contract.ProjectionPolicy);",
+      "descriptor": "(Lcom/galaxy/auto/contract/ProjectionPolicy;)V"
+    },
+    {
+      "declaration": "public final void setVehicleFeed(java.util.Collection<java.lang.String>, int);",
+      "descriptor": "(Ljava/util/Collection;I)V"
+    },
+    {
+      "declaration": "public final void setVehicleScan(boolean);",
+      "descriptor": "(Z)V"
+    },
+    {
+      "declaration": "public final void vehiclePage(int, boolean, kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>);",
+      "descriptor": "(IZLkotlin/jvm/functions/Function1;)V"
+    },
+    {
+      "declaration": "public final void vehicleValue(int, int, int, kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>);",
+      "descriptor": "(IIILkotlin/jvm/functions/Function1;)V"
+    },
+    {
+      "declaration": "public final void vehicleWebRequest(java.lang.String, android.os.Bundle, kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>);",
+      "descriptor": "(Ljava/lang/String;Landroid/os/Bundle;Lkotlin/jvm/functions/Function1;)V"
+    },
+    {
+      "declaration": "public final void vehicleWebUpload(java.lang.String, java.lang.String, java.io.File, kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>);",
+      "descriptor": "(Ljava/lang/String;Ljava/lang/String;Ljava/io/File;Lkotlin/jvm/functions/Function1;)V"
+    },
+    {
+      "declaration": "public static void configureClusterElements$default(com.galaxy.auto.client.AutoClient, com.galaxy.auto.contract.ClusterDisplayConfiguration, java.io.File, int, java.lang.Object);",
+      "descriptor": "(Lcom/galaxy/auto/client/AutoClient;Lcom/galaxy/auto/contract/ClusterDisplayConfiguration;Ljava/io/File;ILjava/lang/Object;)V"
+    },
+    {
+      "declaration": "public static void executeShell$default(com.galaxy.auto.client.AutoClient, java.lang.String, java.lang.String, int, kotlin.jvm.functions.Function1, int, java.lang.Object);",
+      "descriptor": "(Lcom/galaxy/auto/client/AutoClient;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/functions/Function1;ILjava/lang/Object;)V"
+    },
+    {
+      "declaration": "public static void publishArtwork$default(com.galaxy.auto.client.AutoClient, byte[], java.lang.String, int, java.lang.Object);",
+      "descriptor": "(Lcom/galaxy/auto/client/AutoClient;[BLjava/lang/String;ILjava/lang/Object;)V"
+    },
+    {
+      "declaration": "public static void setVehicleFeed$default(com.galaxy.auto.client.AutoClient, java.util.Collection, int, int, java.lang.Object);",
+      "descriptor": "(Lcom/galaxy/auto/client/AutoClient;Ljava/util/Collection;IILjava/lang/Object;)V"
+    },
+    {
+      "declaration": "public static void vehiclePage$default(com.galaxy.auto.client.AutoClient, int, boolean, kotlin.jvm.functions.Function1, int, java.lang.Object);",
+      "descriptor": "(Lcom/galaxy/auto/client/AutoClient;IZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)V"
+    },
+    {
+      "declaration": "public static void vehicleWebRequest$default(com.galaxy.auto.client.AutoClient, java.lang.String, android.os.Bundle, kotlin.jvm.functions.Function1, int, java.lang.Object);",
+      "descriptor": "(Lcom/galaxy/auto/client/AutoClient;Ljava/lang/String;Landroid/os/Bundle;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V"
+    },
+    {
+      "declaration": "public void close();",
+      "descriptor": "()V"
+    }
+  ],
+  "compilerAccessBridgesExcluded": true,
+  "defaultArgumentEntrypointsIncluded": true
+}

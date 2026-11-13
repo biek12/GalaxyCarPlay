@@ -1,0 +1,9 @@
+galaxy/client/src/main/java/com/galaxy/auto/client/AutoClient.kt
+galaxy/client/src/main/java/com/galaxy/auto/client/ipc/ClientConnectionSession.kt
+galaxy/client/src/main/java/com/galaxy/auto/client/ipc/ClientCallbackDispatch.kt
+galaxy/client/src/main/java/com/galaxy/auto/client/ipc/ClientReplayPublisher.kt
+galaxy/client/src/main/java/com/galaxy/auto/client/ipc/ClientRequests.kt
+galaxy/client/src/test/java/com/galaxy/auto/client/ipc/AutoClientConnectionTest.kt
+galaxy/client/src/test/java/com/galaxy/auto/client/ipc/AutoClientCallbacksTest.kt
+galaxy/client/src/test/java/com/galaxy/auto/client/ipc/AutoClientReplayTest.kt
+galaxy/client/src/test/java/com/galaxy/auto/client/ipc/AutoClientRequestsTest.kt
