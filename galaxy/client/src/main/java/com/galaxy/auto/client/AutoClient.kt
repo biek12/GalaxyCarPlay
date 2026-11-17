@@ -1,17 +1,33 @@
 package com.galaxy.auto.client
 
-import android.content.ComponentName
 import android.content.Context
-import android.content.Intent
-import android.content.ServiceConnection
-import android.os.*
+import android.os.Bundle
+import android.os.Handler
+import android.os.HandlerThread
+import android.os.Looper
 import android.view.Surface
-import com.galaxy.auto.contract.*
+import com.galaxy.auto.client.ipc.ClientCallbackDispatch
+import com.galaxy.auto.client.ipc.ClientConnectionSession
+import com.galaxy.auto.client.ipc.ClientReplayPublisher
+import com.galaxy.auto.client.ipc.ClientRequests
+import com.galaxy.auto.contract.AutoContract
+import com.galaxy.auto.contract.ClusterDisplayConfiguration
+import com.galaxy.auto.contract.ProjectionPolicy
+import com.galaxy.auto.contract.SceneConfiguration
 import java.io.Closeable
-import java.util.concurrent.atomic.AtomicReference
+import java.io.File
 
-/** 每客户端一代Binder租约。主线程只接生命周期，远端调用和封面pipe均在独立worker。 */
-class AutoClient(context: Context, private val role: String,
+/**
+ * 每客户端一代Binder租约的公开门面。
+ *
+ * 构造参数、24个公开方法与默认值保持原样；本类只持app/main、一个AutoClient-$role
+ * worker与4个owner，负责装配、薄委托和逐项close顺序。业务缓存、ServiceConnection、
+ * IAutoCallback、临时文件与RPC闭包都不留在Facade；4个owner在构造期全部装配完毕后
+ * 才允许外部connect，装配传的是具体方法引用而不是可任意读写的Host。
+ */
+class AutoClient(
+    context: Context,
+    private val role: String,
     private val onSurface: (Surface?) -> Unit = {},
     private val onSnapshot: (Bundle) -> Unit = {},
     private val onState: (String) -> Unit = {},
@@ -26,332 +42,164 @@ class AutoClient(context: Context, private val role: String,
     private val main = Handler(Looper.getMainLooper())
     private val thread = HandlerThread("AutoClient-$role").apply { start() }
     private val io = Handler(thread.looper)
-    @Volatile private var owner: IBinder = Binder()
-    @Volatile private var closed = false
-    @Volatile private var api: IAutoService? = null
-    private val connectionLock = Any()
-    private var bound = false
-    @Volatile private var generation = 0
-    private var retries = 0
-    @Volatile private var lastMedia: Bundle? = null
-    @Volatile private var lastNavigation: Bundle? = null
-    @Volatile private var lastArtwork: TrackArtwork? = null
-    @Volatile private var lastScene: Bundle? = null
-    @Volatile private var lastElementPlan: Pair<Bundle,java.io.File?>? = null
-    @Volatile private var elementRevision=0L
-    private var previewSurface: Surface? = null // io线程持有自己的引用
-    private var borrowed: Surface? = null
-    @Volatile private var active = false
-    /** v4车辆信号订阅键与最小推送间隔；重连后要原样重放，否则断线恢复会静默失去订阅。 */
-    @Volatile private var feedKeys: List<String> = emptyList()
-    @Volatile private var feedInterval: Int = AutoContract.DEFAULT_FEED_INTERVAL_MS
-    private val media = AtomicReference<Bundle?>()
-    private val navigation = AtomicReference<Bundle?>()
-    private data class TrackArtwork(val track: String,val bytes: ByteArray)
-    private val art = AtomicReference<TrackArtwork?>()
-    private val scene = AtomicReference<Bundle?>()
-    private val policy = AtomicReference<Bundle?>()
-    private val flush = Runnable { flushLatest() }
-    private val connection = object : ServiceConnection {
-        override fun onServiceConnected(name: ComponentName, binder: IBinder) {
-            if (closed) return
-            val ticket = ++generation
-            val lease = Binder().also { owner = it }
-            retries = 0
-            val next = IAutoService.Stub.asInterface(binder)
-            val callback = object : IAutoCallback.Stub() {
-                override fun onSnapshot(snapshot: Bundle) { main.post {
-                    if (!closed && generation == ticket) {
-                        snapshot.classLoader = javaClass.classLoader
-                        if (snapshot.containsKey("command")) onCommand(snapshot.getInt("command")) else this@AutoClient.onSnapshot(snapshot)
-                    }
-                } }
-                override fun onSurface(kind: String, surface: Surface) { main.post {
-                    if (closed || generation != ticket) { surface.release(); return@post }
-                    val old = borrowed
-                    borrowed = surface
-                    onSurface(surface)
-                    onConfiguredSurface(surface, kind.substringAfter('@', "0").toLongOrNull() ?: 0)
-                    old?.release()
-                } }
-                override fun onProjectionState(kind: String, state: String) { main.post {
-                    if (!closed && generation == ticket) {
-                        if (state == "surface_closed") { onSurface(null); onConfiguredSurface(null, 0); borrowed?.release(); borrowed = null }
-                        onState(state)
-                    }
-                } }
-                override fun onVehicleFeed(values: Bundle) { (if (vehicleFeedOnWorker) io else main).post {
-                    if (!closed && generation == ticket) {
-                        values.classLoader = javaClass.classLoader
-                        this@AutoClient.onVehicleFeed(values)
-                    }
-                } }
-            }
-            io.post {
-                try {
-                    check(next.protocolVersion == AutoContract.VERSION) { "protocol_version_mismatch" }
-                    synchronized(connectionLock) {
-                        if (closed || generation != ticket) return@post
-                        api = next
-                    }
-                    next.attach(lease, role, callback)
-                    if (closed || generation != ticket) return@post
-                    lastElementPlan?.let { sendElements(next,lease,Bundle(it.first),it.second,elementRevision) }
-                    next.setActive(lease, active)
-                    // 与attach/setActive同一批补发，重连后订阅语义不依赖调用方再次触发。
-                    if (replayVehicleFeedOnConnect && feedKeys.isNotEmpty()) next.setVehicleFeed(lease, feedKeys.toTypedArray(), feedInterval)
-                    media.compareAndSet(null, lastMedia)
-                    navigation.compareAndSet(null, lastNavigation)
-                    art.compareAndSet(null, lastArtwork)
-                    scene.compareAndSet(null, lastScene)
-                    if (role == AutoContract.PREVIEW) next.setPreviewSurface(lease, previewSurface)
-                    flushLatest()
-                    main.post { if (!closed && generation == ticket) onReady() }
-                } catch (error: Exception) {
-                    com.galaxy.auto.client.diagnostics.DiagnosticEvents.error("binder_connect",error,mapOf("caller" to app.packageName,"method" to "attach"))
-                    state("connect:${error.javaClass.simpleName}")
-                }
-            }
-        }
-        override fun onServiceDisconnected(name: ComponentName) { lost("service_disconnected") }
-        override fun onNullBinding(name: ComponentName) { lost("binding_rejected"); rebind() }
-        override fun onBindingDied(name: ComponentName) { lost("binding_died"); rebind() }
+    private val ownerClassLoader = javaClass.classLoader
+    private val connection = ClientConnectionSession(app, role, main, io, onState, onReady)
+    private val callbacks =
+        ClientCallbackDispatch(
+            connection,
+            role,
+            main,
+            io,
+            ownerClassLoader,
+            vehicleFeedOnWorker,
+            onSurface,
+            onSnapshot,
+            onState,
+            onCommand,
+            onConfiguredSurface,
+            onVehicleFeed,
+        )
+    private val replay =
+        ClientReplayPublisher(connection, callbacks, app, role, main, io, replayVehicleFeedOnConnect, onState)
+    private val requests = ClientRequests(connection, app, main, io, ownerClassLoader)
+
+    init {
+        require(AutoContract.roleValid(role))
+        connection.attach(callbacks::callbackFor, replay::replayOnConnect, callbacks::releaseBorrowed)
     }
-    init { require(AutoContract.roleValid(role)) }
-    fun connect() {
-        check(Looper.myLooper() == Looper.getMainLooper())
-        if (closed || bound) return
-        val intent = Intent(AutoContract.ACTION).setComponent(ComponentName(AutoContract.SERVICE_PACKAGE, AutoContract.SERVICE_CLASS))
-        try {
-            app.startForegroundService(intent)
-            bound = app.bindService(intent, connection, Context.BIND_AUTO_CREATE)
-            if (!bound) { state("service_unavailable"); rebind() }
-        } catch (error: Exception) {
-            com.galaxy.auto.client.diagnostics.DiagnosticEvents.error("binder_bind",error,mapOf("caller" to app.packageName,"method" to "bindService"))
-            state("bind:${error.javaClass.simpleName}"); rebind()
-        }
-    }
-    fun setActive(value: Boolean) { active = value; io.post { call { it.setActive(owner, value) } } }
-    /** 先提交方案再激活；服务重连按相同顺序重放，不创建遮罩Surface。 */
-    fun configureClusterElements(value: ClusterDisplayConfiguration, image: java.io.File? = null) {
-        require(role == AutoContract.ELEMENTS)
-        val configuration = value.bundle()
-        val revision=++elementRevision
-        lastElementPlan=configuration to image
-        io.post { if(revision==elementRevision)call { sendElements(it,owner,Bundle(configuration),image,revision) } }
-    }
-    private fun sendElements(remote: IAutoService,lease: IBinder,value: Bundle,image: java.io.File?,revision:Long) {
-        if(value.getString("background")!=ClusterDisplayConfiguration.IMAGE_BACKGROUND){remote.configureClusterElements(lease,value);return}
-        check(image?.isFile==true){"background_image_missing"}
-        val ticket=generation
-        ParcelFileDescriptor.open(image,ParcelFileDescriptor.MODE_READ_ONLY).use { fd->
-            remote.configureClusterImage(lease,value,fd,object:IAutoResult.Stub(){override fun onResult(result:Bundle){
-                main.post{if(!closed&&generation==ticket&&elementRevision==revision&&!result.getBoolean("accepted"))onState("background_import_failed")}
-            }})
-        }
-    }
-    fun publishMedia(value: Bundle) {
-        val next = AutoContract.sanitizeMedia(value)
-        if (lastMedia?.getString("track") != next.getString("track")) { lastArtwork = null; art.set(null) }
-        lastMedia = next; media.set(next); scheduleFlush()
-    }
-    fun publishVisualMedia(value: Bundle) {
-        require(role==AutoContract.VISUAL_MUSIC)
-        val safe=AutoContract.sanitizeMedia(value)
-        io.post {call {it.publishVisualMedia(owner,safe)}}
-    }
-    fun publishNavigation(value: Bundle) {
-        lastNavigation = AutoContract.sanitizeNavigation(value); navigation.set(lastNavigation); scheduleFlush()
-    }
-    fun publishArtwork(bytes: ByteArray,track: String = lastMedia?.getString("track").orEmpty()) {
-        require(bytes.size <= 2 * 1024 * 1024)
-        lastArtwork = TrackArtwork(track,bytes.copyOf()); art.set(lastArtwork); scheduleFlush()
-    }
-    fun configureScene(value: SceneConfiguration) {
-        require(role == AutoContract.THEME || role == AutoContract.PREVIEW)
-        lastScene = value.bundle(); scene.set(lastScene); scheduleFlush()
-    }
-    fun setProjectionPolicy(value: ProjectionPolicy) { policy.set(value.bundle()); scheduleFlush() }
-    fun setPreviewSurface(value: Surface?) {
-        require(role == AutoContract.PREVIEW)
-        if(closed)return
-        if(value==null){lastScene=null;scene.set(null)}
-        val copy = value?.let { duplicateSurface(it) }
-        if(!io.post {
-            if (closed) { copy?.release(); return@post }
-            previewSurface?.release(); previewSurface = copy
-            call { it.setPreviewSurface(owner, copy) }
-        })copy?.release()
-    }
-    private fun scheduleFlush() { io.removeCallbacks(flush); io.post(flush) }
-    private fun flushLatest() {
-        val remote = api ?: return
-        if (closed) return
-        call {
-            scene.getAndSet(null)?.let { value -> remote.configureScene(owner, value) }
-            policy.getAndSet(null)?.let { value -> remote.setProjectionPolicy(owner, value) }
-            media.getAndSet(null)?.let { value -> remote.publishMedia(owner, value) }
-            navigation.getAndSet(null)?.let { value -> remote.publishNavigation(owner, value) }
-            art.getAndSet(null)?.let { artwork ->
-                val bytes=artwork.bytes
-                // 普通只读FD没有pipe写满/读端不消费造成的永久等待，临时文件仅在本App缓存中。
-                val file = java.io.File.createTempFile("auto-art-", ".bin", app.cacheDir)
-                try {
-                    file.writeBytes(bytes)
-                    ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY).use { fd -> remote.publishTrackArtwork(owner,artwork.track,fd) }
-                } finally { file.delete() }
-            }
-        }
-    }
-    fun prepareOemArtwork(bytes: ByteArray,result: (Bundle)->Unit) {
-        require(bytes.size<=2*1024*1024)
-        val ticket=generation
-        io.post {
-            val file=java.io.File.createTempFile("oem-artwork-",".bin",app.cacheDir)
-            try{
-                file.writeBytes(bytes)
-                val remote=api?:error("service_unavailable")
-                val callback=object:IAutoResult.Stub(){override fun onResult(value: Bundle){main.post{if(!closed&&generation==ticket)result(value)}}}
-                ParcelFileDescriptor.open(file,ParcelFileDescriptor.MODE_READ_ONLY).use{remote.prepareOemArtwork(owner,it,callback)}
-            }catch(error:Exception){main.post{if(!closed&&generation==ticket)result(Bundle().apply{putString("error",error.javaClass.simpleName)})}}
-            finally{file.delete()}
-        }
-    }
-    fun executeShell(transport: String, command: String, timeoutMillis: Int = 10000, result: (Bundle) -> Unit) {
-        val ticket = generation
-        io.post { call { remote -> remote.executeShell(owner, transport, command, timeoutMillis, object : IAutoResult.Stub() {
-            override fun onResult(value: Bundle) { main.post { if (!closed && generation == ticket) result(value) } }
-        }) } }
-    }
-    /** 权限回调与租约代次绑定。旧服务不支持追加接口时明确失败，不越过授权屏障。 */
-    fun requestClientPermissions(permissions: List<String>, result: (Bundle) -> Unit) {
-        require(permissions.isNotEmpty() && permissions.size <= 8)
-        val ticket = generation
-        io.post {
-            fun deliver(value: Bundle) { main.post { if (!closed && generation == ticket) result(value) } }
-            try {
-                val remote = api ?: error("service_unavailable")
-                remote.requestClientPermissions(owner, permissions.toTypedArray(), object : IAutoResult.Stub() {
-                    override fun onResult(value: Bundle) = deliver(value)
-                })
-            } catch (error: Exception) {
-                com.galaxy.auto.client.diagnostics.DiagnosticEvents.error("client_permission",error,mapOf("caller" to app.packageName,"method" to "requestClientPermissions","count" to permissions.size))
-                deliver(Bundle().apply { putBoolean("granted", false); putString("error", error.javaClass.simpleName) })
-            }
-        }
-    }
-    fun reportSentinelIdle(powerSequence:Long){io.post{call{it.reportSentinelIdle(owner,powerSequence)}}}
-    fun configureSentinel(enabled:Boolean,result:(Bundle)->Unit){
-        val ticket=generation
-        io.post{
-            fun deliver(value:Bundle){main.post{if(!closed&&generation==ticket)result(value)}}
-            try{checkNotNull(api){"service_unavailable"}.configureSentinel(owner,enabled,object:IAutoResult.Stub(){override fun onResult(value:Bundle)=deliver(value)})}
-            catch(e:Exception){deliver(Bundle().apply{putBoolean("accepted",false);putString("error",e.javaClass.simpleName)})}
-        }
-    }
-    fun vehicleWebUpload(clipId: String, direction: String, file: java.io.File, result: (Bundle) -> Unit) {
-        val ticket=generation
-        io.post {
-            fun deliver(value:Bundle){main.post{if(!closed&&generation==ticket)result(value)}}
-            try { ParcelFileDescriptor.open(file,ParcelFileDescriptor.MODE_READ_ONLY).use { fd ->
-                checkNotNull(api).vehicleWebUpload(owner,clipId,direction,fd,file.length(),object:IAutoResult.Stub(){override fun onResult(value:Bundle)=deliver(value)})
-            } }catch(error:Exception){deliver(Bundle().apply{putString("error","媒体传输失败")})}
-        }
-    }
-    fun vehicleWebRequest(action: String, payload: Bundle = Bundle(), result: (Bundle) -> Unit) {
-        val ticket = generation
-        io.post {
-            fun deliver(value: Bundle) { main.post { if (!closed && generation == ticket) result(value) } }
-            try {
-                checkNotNull(api) { "service_unavailable" }.vehicleWebRequest(owner, action, payload,
-                    object: IAutoResult.Stub() { override fun onResult(value: Bundle) = deliver(value) })
-            } catch (error: Exception) { deliver(Bundle().apply { putString("error",error.message ?: "service_unavailable") }) }
-        }
-    }
-    fun vehiclePage(offset: Int, catalog: Boolean = false, result: (Bundle) -> Unit) {
-        io.post { call { remote ->
-            val page = if (catalog) remote.getVehicleCatalog(offset, 32) else remote.getVehicleProperties(offset, 32)
-            main.post { if (!closed) result(page) }
-        } }
-    }
-    fun vehicleValue(propertyId: Int, areaId: Int, offset: Int, result: (Bundle) -> Unit) {
-        io.post { call { remote ->
-            val value = remote.getVehicleValue(propertyId, areaId, offset)
-            main.post { if (!closed) result(value) }
-        } }
-    }
-    fun mediaCommand(command: Int) { io.post { call { it.mediaCommand(owner, command) } } }
+
+    /** 主线程同步绑定入口，完整握手与恢复由Connection执行。 */
+    fun connect() = connection.connect()
+
+    /** 先写active再发io，重连按同一值补发。 */
+    fun setActive(value: Boolean) = replay.setActive(value)
+
+    /** 元素方案与图片FD由Publisher按revision提交。 */
+    fun configureClusterElements(
+        value: ClusterDisplayConfiguration,
+        image: File? = null,
+    ) = replay.configureClusterElements(value, image)
+
+    /** 媒体清洗、切歌清封面与保留值由Publisher负责。 */
+    fun publishMedia(value: Bundle) = replay.publishMedia(value)
+
+    /** 可视歌词只发本次调用，不建立重连缓存。 */
+    fun publishVisualMedia(value: Bundle) = replay.publishVisualMedia(value)
+
+    /** 导航清洗与保留值由Publisher负责。 */
+    fun publishNavigation(value: Bundle) = replay.publishNavigation(value)
+
+    /** 默认track在调用时取Publisher当时的lastMedia.track或空串。 */
+    fun publishArtwork(
+        bytes: ByteArray,
+        track: String = replay.defaultTrack(),
+    ) = replay.publishArtwork(bytes, track)
+
+    /** 场景兼容调用仍由Publisher保存并flush，服务端保持归档。 */
+    fun configureScene(value: SceneConfiguration) = replay.configureScene(value)
+
+    /** 策略只写待发槽，原本没有重连重放缓存。 */
+    fun setProjectionPolicy(value: ProjectionPolicy) = replay.setProjectionPolicy(value)
+
+    /** PREVIEW的Parcel复制、io投递与null清场景由CallbackDispatch与Publisher协作。 */
+    fun setPreviewSurface(value: Surface?) = callbacks.setPreviewSurface(value, replay::clearSceneForPreview)
+
+    /** OEM封面临时FD与票据回执由Requests按原边界处理。 */
+    fun prepareOemArtwork(
+        bytes: ByteArray,
+        result: (Bundle) -> Unit,
+    ) = requests.prepareOemArtwork(bytes, result)
+
+    /** Shell默认超时10000，调用时捕获代次；正文不进入诊断。 */
+    fun executeShell(
+        transport: String,
+        command: String,
+        timeoutMillis: Int = 10000,
+        result: (Bundle) -> Unit,
+    ) = requests.executeShell(transport, command, timeoutMillis, result)
+
+    /** 权限票据与granted=false回执形状由Requests保持。 */
+    fun requestClientPermissions(
+        permissions: List<String>,
+        result: (Bundle) -> Unit,
+    ) = requests.requestClientPermissions(permissions, result)
+
+    /** 哨兵空闲只传powerSequence，没有缓存或重放。 */
+    fun reportSentinelIdle(powerSequence: Long) = requests.reportSentinelIdle(powerSequence)
+
+    /** 哨兵配置的accepted=false回执形状由Requests保持。 */
+    fun configureSentinel(
+        enabled: Boolean,
+        result: (Bundle) -> Unit,
+    ) = requests.configureSentinel(enabled, result)
+
+    /** 上传只打开调用方文件的本次FD，回执与清理由Requests保持。 */
+    fun vehicleWebUpload(
+        clipId: String,
+        direction: String,
+        file: File,
+        result: (Bundle) -> Unit,
+    ) = requests.vehicleWebUpload(clipId, direction, file, result)
+
+    /** Web请求的message/service_unavailable错误形状由Requests保持。 */
+    fun vehicleWebRequest(
+        action: String,
+        payload: Bundle = Bundle(),
+        result: (Bundle) -> Unit,
+    ) = requests.vehicleWebRequest(action, payload, result)
+
+    /** 分页固定limit32，结果只判closed。 */
+    fun vehiclePage(
+        offset: Int,
+        catalog: Boolean = false,
+        result: (Bundle) -> Unit,
+    ) = requests.vehiclePage(offset, catalog, result)
+
+    /** 单值结果只判closed，不补另一种票据语义。 */
+    fun vehicleValue(
+        propertyId: Int,
+        areaId: Int,
+        offset: Int,
+        result: (Bundle) -> Unit,
+    ) = requests.vehicleValue(propertyId, areaId, offset, result)
+
+    /** 媒体命令不在客户端新增白名单。 */
+    fun mediaCommand(command: Int) = requests.mediaCommand(command)
+
+    /** 主线程同步校验后先保存订阅字段，io上读当前值发订阅。 */
+    fun setVehicleFeed(
+        keys: Collection<String>,
+        intervalMillis: Int = AutoContract.DEFAULT_FEED_INTERVAL_MS,
+    ) = replay.setVehicleFeed(keys, intervalMillis)
+
+    /** 只读服务端已采集缓存，不触发采集、不新加generation过滤。 */
+    fun getVehicleValues(
+        keys: Collection<String>,
+        result: (Bundle) -> Unit,
+    ) = requests.getVehicleValues(keys, result)
+
+    /** 诊断扫描的服务端本UID限制保持，不自动开启。 */
+    fun setVehicleScan(enabled: Boolean) = requests.setVehicleScan(enabled)
+
     /**
-     * 订阅语义车辆信号（v4）：空集合即取消订阅。
-     *
-     * [intervalMillis] 既是推送间隔也是该键的采集周期——服务端按它决定读车机的频率，
-     * 所以不要为了“更实时”随手填250，先确认消费端真的用得上。
-     * 只在主线程调用；非法键直接失败，不静默丢键——静默丢弃会让调用方以为已订阅。
+     * 唯一终态：Connection锁内取旧lease，随后按代次/元素→retry→借用Surface→unbind
+     * →清待发与保留→清feed的次序逐项交给对应owner，最后在io上detach/释放预览并quitSafely。
+     * 某一个owner不提供closeAll，避免提前吞掉其它owner职责；worker只退出原那一个。
      */
-    fun setVehicleFeed(keys: Collection<String>, intervalMillis: Int = AutoContract.DEFAULT_FEED_INTERVAL_MS) {
-        check(Looper.myLooper() == Looper.getMainLooper())
-        val next = keys.distinct().sorted()
-        require(AutoContract.feedKeysValid(next.toTypedArray())) { "invalid_feed_keys" }
-        require(AutoContract.feedIntervalValid(intervalMillis)) { "invalid_feed_interval" }
-        feedKeys = next; feedInterval = intervalMillis
-        io.post { call { it.setVehicleFeed(owner, feedKeys.toTypedArray(), feedInterval) } }
-    }
-    /** 直接读服务端已采集的缓存（不触发车机读取）；结果在主线程回调。 */
-    fun getVehicleValues(keys: Collection<String>, result: (Bundle) -> Unit) {
-        val next = keys.distinct().sorted()
-        require(AutoContract.feedKeysValid(next.toTypedArray())) { "invalid_feed_keys" }
-        io.post { call { remote ->
-            val values = remote.getVehicleValues(next.toTypedArray())
-            main.post { if (!closed) { values.classLoader = javaClass.classLoader; result(values) } }
-        } }
-    }
-    /** 全目录诊断扫描开关；只有本包（AutoService自带诊断界面）能生效。 */
-    fun setVehicleScan(enabled: Boolean) { io.post { call { it.setVehicleScan(enabled) } } }
-    private fun call(block: (IAutoService) -> Unit) {
-        val remote = api ?: return
-        if (!closed) try { block(remote) } catch (error: Exception) { com.galaxy.auto.client.diagnostics.DiagnosticEvents.error("binder_call",error,mapOf("caller" to app.packageName)); state("ipc:${error.javaClass.simpleName}") }
-    }
-    private fun state(value: String) { main.post { if (!closed) onState(value) } }
-    private fun lost(reason: String) {
-        if (closed) return
-        synchronized(connectionLock) { ++generation; api = null }
-        onSurface(null); borrowed?.release(); borrowed = null
-        onConfiguredSurface(null, 0)
-        onState(reason)
-    }
-    private val retry = Runnable { connect() }
-    private fun rebind() {
-        if (bound) { runCatching { app.unbindService(connection) }; bound = false }
-        if (!closed && retries < 3) {
-            main.removeCallbacks(retry)
-            main.postDelayed(retry, 1000L shl retries++)
-        }
-    }
     override fun close() {
         check(Looper.myLooper() == Looper.getMainLooper())
-        val closing = synchronized(connectionLock) {
-            if (closed) return
-            closed = true
-            (api to owner).also { api = null }
+        val closing = connection.beginClose() ?: return
+        connection.advanceGeneration()
+        replay.invalidateElements()
+        connection.removeRetry()
+        callbacks.releaseBorrowed()
+        connection.unbindForClose()
+        replay.clearPendingAndRetained()
+        replay.clearFeed()
+        io.post {
+            connection.detach(closing.first, closing.second)
+            callbacks.releasePreview()
+            thread.quitSafely()
         }
-        ++generation; ++elementRevision; lastElementPlan=null
-        main.removeCallbacks(retry)
-        onSurface(null); borrowed?.release(); borrowed = null
-        onConfiguredSurface(null, 0)
-        if (bound) { app.unbindService(connection); bound = false }
-        // 已排队的Surface任务必须运行其closed分支，才能释放独立引用。
-        // 其他IPC任务由call/flushLatest的closed检查失效，清理任务随后串行退出。
-        io.removeCallbacks(flush)
-        media.set(null); navigation.set(null); art.set(null)
-        scene.set(null); policy.set(null); lastScene = null
-        lastMedia = null; lastNavigation = null; lastArtwork = null
-        // close是终态：订阅键一并清空，避免残留意图在下一代连接里复活。
-        feedKeys = emptyList(); feedInterval = AutoContract.DEFAULT_FEED_INTERVAL_MS
-        io.post { runCatching { closing.first?.detach(closing.second) }; previewSurface?.release(); previewSurface = null; thread.quitSafely() }
-    }
-    private fun duplicateSurface(value: Surface): Surface {
-        val parcel = Parcel.obtain()
-        return try { value.writeToParcel(parcel, 0); parcel.setDataPosition(0); Surface.CREATOR.createFromParcel(parcel) }
-        finally { parcel.recycle() }
     }
 }
