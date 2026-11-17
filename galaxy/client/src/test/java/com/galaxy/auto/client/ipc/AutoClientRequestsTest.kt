@@ -8,6 +8,8 @@ import android.os.Looper
 import com.galaxy.auto.client.AutoClient
 import com.galaxy.auto.client.diagnostics.DiagnosticEvents
 import com.galaxy.auto.contract.AutoContract
+import org.json.JSONObject
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -29,6 +31,10 @@ import java.util.concurrent.CopyOnWriteArrayList
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [30])
 class AutoClientRequestsTest {
+    /** 以生产close收口本用例的客户端，任何退出失败都保留为测试失败。 */
+    @After
+    fun releaseClientWorkers() = AutoClientConnectionTest.releaseClients()
+
     private fun service() = AutoClientConnectionTest.RecordingService()
 
     private fun subject(
@@ -207,7 +213,13 @@ class AutoClientRequestsTest {
                 assertRemoteShape(shape, clip)
                 assertRemoteSuppressed(shape, died = true)
                 assertRemoteSuppressed(shape, died = false)
+                assertRemoteSuppressed(shape, died = true, remoteThrows = false)
+                assertRemoteSuppressed(shape, died = false, remoteThrows = false)
             }
+            val shell =
+                RemoteShape("executeShell", { client, reply -> client.executeShell("adb", "cmd", result = reply) }) {}
+            assertRemoteSuppressed(shell, died = true, remoteThrows = false)
+            assertRemoteSuppressed(shell, died = false, remoteThrows = false)
         } finally {
             clip.delete()
         }
@@ -227,13 +239,23 @@ class AutoClientRequestsTest {
             AutoClientConnectionTest.await { service.fdReads.get() > readsBeforeUpload }
             assertEquals("CLIP-DATA", service.fdText.last())
             assertTrue(clip.exists())
-            assertFalse(service.heldFd.last().fileDescriptor.valid())
+            assertFalse(
+                service.heldFd
+                    .last()
+                    .fileDescriptor
+                    .valid(),
+            )
 
             val readsBeforeOem = service.fdReads.get()
             client.prepareOemArtwork("OEM-DATA".toByteArray()) {}
             AutoClientConnectionTest.await { service.fdReads.get() > readsBeforeOem }
             assertEquals("OEM-DATA", service.fdText.last())
-            assertFalse(service.heldFd.last().fileDescriptor.valid())
+            assertFalse(
+                service.heldFd
+                    .last()
+                    .fileDescriptor
+                    .valid(),
+            )
             assertTrue(oemTemps(app).isEmpty())
 
             service.throwOn = "vehicleWebUpload"
@@ -245,7 +267,12 @@ class AutoClientRequestsTest {
             AutoClientConnectionTest.await { uploadReplies.isNotEmpty() }
             assertEquals("媒体传输失败", uploadReplies.single().getString("error"))
             assertTrue(clip.exists())
-            assertFalse(service.heldFd.last().fileDescriptor.valid())
+            assertFalse(
+                service.heldFd
+                    .last()
+                    .fileDescriptor
+                    .valid(),
+            )
             assertEquals("CLIP-DATA", service.fdText.last())
 
             service.throwOn = "prepareOemArtwork"
@@ -257,13 +284,23 @@ class AutoClientRequestsTest {
             AutoClientConnectionTest.await { oemReplies.isNotEmpty() && oemTemps(app).isEmpty() }
             assertEquals("IllegalStateException", oemReplies.single().getString("error"))
             assertEquals("OEM-ERR", service.fdText.last())
-            assertFalse(service.heldFd.last().fileDescriptor.valid())
+            assertFalse(
+                service.heldFd
+                    .last()
+                    .fileDescriptor
+                    .valid(),
+            )
 
             service.throwOn = "publishTrackArtwork"
             client.publishArtwork("ART-BYTES".toByteArray(), "track-art")
             AutoClientConnectionTest.await { states.any { it == "ipc:IllegalStateException" } }
             assertEquals("ART-BYTES", service.fdText.last())
-            assertFalse(service.heldFd.last().fileDescriptor.valid())
+            assertFalse(
+                service.heldFd
+                    .last()
+                    .fileDescriptor
+                    .valid(),
+            )
             assertTrue(artTemps(app).isEmpty())
         } finally {
             AutoClientConnectionTest.pumpAll()
@@ -286,13 +323,15 @@ class AutoClientRequestsTest {
         try {
             ensureDiagnostics()
             connect(client, service)
+            val previousRecords = diagnosticFiles().map { it.name }.toSet()
             service.throwOn = "executeShell"
             client.executeShell("adb", fiction) {}
             AutoClientConnectionTest.await { states.isNotEmpty() }
             assertEquals("ipc:IllegalStateException", states.single())
             assertFalse(states.any { it.contains(fiction) })
             val records = diagnosticText()
-            assertTrue(records.contains("binder_call"))
+            val newRecords = diagnosticFiles().filter { it.name !in previousRecords }.map { JSONObject(it.readText()) }
+            assertTrue(newRecords.any { it.optString("operation") == "binder_call" })
             assertFalse(records.contains(fiction))
             service.throwOn = null
 
@@ -362,11 +401,21 @@ class AutoClientRequestsTest {
             shape.assertReply(replies.single())
             if (shape.method == "vehicleWebUpload") {
                 assertTrue(clip.exists())
-                assertFalse(service.heldFd.last().fileDescriptor.valid())
+                assertFalse(
+                    service.heldFd
+                        .last()
+                        .fileDescriptor
+                        .valid(),
+                )
             }
             if (shape.method == "prepareOemArtwork") {
                 assertTrue(oemTemps(AutoClientConnectionTest.app()).isEmpty())
-                assertFalse(service.heldFd.last().fileDescriptor.valid())
+                assertFalse(
+                    service.heldFd
+                        .last()
+                        .fileDescriptor
+                        .valid(),
+                )
             }
         } finally {
             AutoClientConnectionTest.pumpAll()
@@ -377,19 +426,33 @@ class AutoClientRequestsTest {
     private fun assertRemoteSuppressed(
         shape: RemoteShape,
         died: Boolean,
+        remoteThrows: Boolean = true,
     ) {
         val service = service()
         val replies = CopyOnWriteArrayList<Bundle>()
         val client = subject(service)
         try {
             connect(client, service)
-            service.throwOn = shape.method
-            shape.call(client) { replies.add(it) }
+            service.throwOn = if (remoteThrows) shape.method else null
+            shape.call(client) {
+                assertEquals(Looper.getMainLooper(), Looper.myLooper())
+                replies.add(it)
+            }
             AutoClientConnectionTest.idleWorker(AutoClientConnectionTest.workerOf(client))
+            if (!remoteThrows) {
+                service.results.single().onResult(Bundle().apply { putBoolean("accepted", true) })
+                shadowOf(Looper.getMainLooper()).idle()
+                assertEquals(1, replies.size)
+                assertTrue(replies.single().getBoolean("accepted"))
+                replies.clear()
+            }
             if (died) {
                 AutoClientConnectionTest.connection().onBindingDied(AutoClientConnectionTest.SERVICE_NAME)
             } else {
                 client.close()
+            }
+            if (!remoteThrows) {
+                service.results.single().onResult(Bundle().apply { putBoolean("accepted", true) })
             }
             shadowOf(Looper.getMainLooper()).idle()
             assertTrue(replies.isEmpty())
@@ -418,21 +481,30 @@ class AutoClientRequestsTest {
         )
     }
 
-    private fun diagnosticText(): String {
+    /** 只读实际本地outbox文件，用文件身份区分本次和历史事件。 */
+    private fun diagnosticFiles(): List<File> {
         val directory = File(AutoClientConnectionTest.app().noBackupFilesDir, "diagnostic-outbox")
         return directory
             .listFiles()
             ?.filter { it.extension == "json" }
             ?.sortedBy { it.name }
-            ?.joinToString("\n") { it.readText() }
             .orEmpty()
     }
 
+    /** 读取完整本地记录用于脱敏断言，不输出虚构Shell正文或原始记录。 */
+    private fun diagnosticText(): String = diagnosticFiles().joinToString("\n") { it.readText() }
+
     private fun oemTemps(app: Context): List<File> =
-        app.cacheDir.listFiles { _, name -> name.startsWith("oem-artwork-") }?.toList().orEmpty()
+        app.cacheDir
+            .listFiles { _, name -> name.startsWith("oem-artwork-") }
+            ?.toList()
+            .orEmpty()
 
     private fun artTemps(app: Context): List<File> =
-        app.cacheDir.listFiles { _, name -> name.startsWith("auto-art-") }?.toList().orEmpty()
+        app.cacheDir
+            .listFiles { _, name -> name.startsWith("auto-art-") }
+            ?.toList()
+            .orEmpty()
 
     @Test
     fun `连接握手不自动开启诊断扫描`() {

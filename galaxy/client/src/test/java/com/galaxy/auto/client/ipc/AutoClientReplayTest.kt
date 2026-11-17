@@ -6,6 +6,7 @@ import com.galaxy.auto.contract.AutoContract
 import com.galaxy.auto.contract.ClusterDisplayConfiguration
 import com.galaxy.auto.contract.ProjectionPolicy
 import com.galaxy.auto.contract.SceneConfiguration
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotSame
@@ -27,6 +28,10 @@ import java.util.concurrent.atomic.AtomicInteger
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [30])
 class AutoClientReplayTest {
+    /** 清理限于本用例登记的真实客户端，不推进其它测试的线程。 */
+    @After
+    fun releaseClientWorkers() = AutoClientConnectionTest.releaseClients()
+
     private fun service() = AutoClientConnectionTest.RecordingService()
 
     private fun subject(
@@ -230,7 +235,12 @@ class AutoClientReplayTest {
             }
             assertEquals("IMAGE-BYTES", service.fdText.last())
             assertTrue(image.exists())
-            assertFalse(service.heldFd.last().fileDescriptor.valid())
+            assertFalse(
+                service.heldFd
+                    .last()
+                    .fileDescriptor
+                    .valid(),
+            )
             val current = service.results.last()
             current.onResult(rejected)
             AutoClientConnectionTest.await { states.count { it == "background_import_failed" } == 1 }
@@ -250,7 +260,9 @@ class AutoClientReplayTest {
             AutoClientConnectionTest.await { service.names().count { it == "attach" } >= 2 }
             val replayImages = service.names().count { it == "configureClusterImage" }
             client.configureClusterElements(configuration, image)
-            AutoClientConnectionTest.await { service.names().count { it == "configureClusterImage" } == replayImages + 1 }
+            AutoClientConnectionTest.await {
+                service.names().count { it == "configureClusterImage" } == replayImages + 1
+            }
             val resultA = service.results.last()
             client.configureClusterElements(configuration, image)
             AutoClientConnectionTest.await {
@@ -325,7 +337,12 @@ class AutoClientReplayTest {
                 service.fdReads.get() >= 1 && states.any { it == "ipc:IllegalStateException" }
             }
             assertEquals("IMAGE-ERR", service.fdText.last())
-            assertFalse(service.heldFd.last().fileDescriptor.valid())
+            assertFalse(
+                service.heldFd
+                    .last()
+                    .fileDescriptor
+                    .valid(),
+            )
             assertTrue(image.exists())
             assertFalse(states.contains("background_import_failed"))
         } finally {

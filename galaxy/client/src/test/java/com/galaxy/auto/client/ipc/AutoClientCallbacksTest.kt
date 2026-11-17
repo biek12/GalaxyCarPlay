@@ -16,6 +16,7 @@ import com.galaxy.auto.contract.AutoContract
 import com.galaxy.auto.contract.IAutoCallback
 import com.galaxy.auto.contract.IAutoResult
 import com.galaxy.auto.contract.IAutoService
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -30,6 +31,8 @@ import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 /**
  * 入站回调与两种Surface的真实线程、代次与释放次序用例。
@@ -40,6 +43,10 @@ import java.util.concurrent.CopyOnWriteArrayList
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [30])
 class AutoClientCallbacksTest {
+    /** 每次只收口本用例登记的客户端线程，避免下一场景借用遗留worker。 */
+    @After
+    fun releaseClientWorkers() = AutoClientConnectionTest.releaseClients()
+
     private data class Call(
         val name: String,
         val args: List<Any?>,
@@ -334,24 +341,31 @@ class AutoClientCallbacksTest {
     }
 
     @Test
-    fun `断线后旧代传入的Surface必须先释放且不回调`() {
-        val surfaces = CopyOnWriteArrayList<Surface?>()
-        val service = LocalService()
-        val subject = connected(service, role = AutoContract.THEME, onSurface = { surfaces.add(it) })
-        try {
-            shadowOf(RuntimeEnvironment.getApplication() as Application)
-                .boundServiceConnections
-                .single()
-                .onServiceDisconnected(SERVICE_NAME)
-            pump()
-            val before = surfaces.size
-            val stale = newSurface()
-            service.callback!!.onSurface("cluster@1", stale)
-            pump()
-            assertFalse(stale.isValid)
-            assertEquals(before, surfaces.size)
-        } finally {
-            subject.close()
+    fun `断线和close后传入的Surface都先释放且不回调`() {
+        for (closed in listOf(false, true)) {
+            val surfaces = CopyOnWriteArrayList<Surface?>()
+            val service = LocalService()
+            val subject = connected(service, role = AutoContract.THEME, onSurface = { surfaces.add(it) })
+            try {
+                if (closed) {
+                    subject.close()
+                } else {
+                    shadowOf(RuntimeEnvironment.getApplication() as Application)
+                        .boundServiceConnections
+                        .single()
+                        .onServiceDisconnected(SERVICE_NAME)
+                }
+                pump()
+                val before = surfaces.size
+                val stale = newSurface()
+                assertTrue(stale.isValid)
+                service.callback!!.onSurface("cluster@1", stale)
+                pump()
+                assertFalse(stale.isValid)
+                assertEquals(before, surfaces.size)
+            } finally {
+                subject.close()
+            }
         }
     }
 
@@ -470,9 +484,19 @@ class AutoClientCallbacksTest {
         val service = LocalService()
         val subject = connected(service, role = AutoContract.PREVIEW)
         val inputs = mutableListOf<Surface>()
+        val entered = CountDownLatch(1)
+        val resume = CountDownLatch(1)
         try {
             waitFor { previewCalls(service).isNotEmpty() }
             val baseline = previewCalls(service).size
+            // 后台Looper可以即时运行；用真实队列屏障固定先排复制、再close、最后执行的顺序。
+            assertTrue(
+                Handler(AutoClientConnectionTest.workerOf(subject).looper).post {
+                    entered.countDown()
+                    check(resume.await(5, TimeUnit.SECONDS)) { "预览测试屏障未释放" }
+                },
+            )
+            assertTrue(entered.await(5, TimeUnit.SECONDS))
             val created =
                 copiedSurfaces {
                     inputs.add(newSurface())
@@ -483,11 +507,13 @@ class AutoClientCallbacksTest {
             assertTrue(copy.isValid)
             assertTrue(inputs.single().isValid)
             subject.close()
+            resume.countDown()
             pump()
             assertFalse(copy.isValid)
             assertTrue(inputs.single().isValid)
             assertEquals(baseline, previewCalls(service).size)
         } finally {
+            resume.countDown()
             subject.close()
             inputs.filter { it.isValid }.forEach { it.release() }
         }
@@ -663,7 +689,10 @@ class AutoClientCallbacksTest {
         }
     }
 
-    private fun previewCalls(service: LocalService): List<Call> = service.calls.filter { it.name == "setPreviewSurface" }
+    private fun previewCalls(service: LocalService): List<Call> =
+        service.calls.filter {
+            it.name == "setPreviewSurface"
+        }
 
     /** 等待握手基数之后的第[offset]次业务调用，并返回这一次而不是可能被后续调用覆盖的last。 */
     private fun previewAt(
@@ -680,8 +709,7 @@ class AutoClientCallbacksTest {
         val created = mutableListOf<Surface>()
         val field = Surface::class.java.getField("CREATOR")
         field.isAccessible = true
-        @Suppress("UNCHECKED_CAST")
-        val original = field.get(null) as Parcelable.Creator<Surface>
+        val original = Surface.CREATOR
         val spy =
             object : Parcelable.Creator<Surface> {
                 override fun createFromParcel(source: Parcel): Surface {

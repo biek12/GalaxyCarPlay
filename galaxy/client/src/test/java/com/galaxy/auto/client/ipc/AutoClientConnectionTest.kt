@@ -3,6 +3,7 @@ package com.galaxy.auto.client.ipc
 import android.app.Application
 import android.content.ComponentName
 import android.os.Bundle
+import android.os.Handler
 import android.os.HandlerThread
 import android.os.IBinder
 import android.os.Looper
@@ -14,6 +15,7 @@ import com.galaxy.auto.contract.ClusterDisplayConfiguration
 import com.galaxy.auto.contract.IAutoCallback
 import com.galaxy.auto.contract.IAutoResult
 import com.galaxy.auto.contract.IAutoService
+import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
@@ -43,6 +45,10 @@ import java.util.concurrent.atomic.AtomicReference
 @RunWith(RobolectricTestRunner::class)
 @Config(sdk = [30])
 class AutoClientConnectionTest {
+    /** 每个用例结束都用生产close退出自有worker，失败后的强制清理不计为通过依据。 */
+    @After
+    fun releaseClientWorkers() = releaseClients()
+
     /** 记录型本地远端：按顺序保存动作与参数，可读取FD，可回放结果与注入异常。 */
     internal class RecordingService(
         @Volatile var version: Int = AutoContract.VERSION,
@@ -552,7 +558,7 @@ class AutoClientConnectionTest {
             val owner3 = service.attachedOwner
             assertNotSame(owner2, owner3)
 
-            shadowOf(app).declareComponentUnbindable(SERVICE_NAME)
+            shadowOf(app).setThrowInBindService(SecurityException("a2-test-denied"))
             startedCount(app)
             link.onBindingDied(SERVICE_NAME)
             advance(999)
@@ -571,7 +577,7 @@ class AutoClientConnectionTest {
             assertEquals(0, startedCount(app))
             assertEquals(3, ready)
 
-            clearUnbindable()
+            shadowOf(app).setThrowInBindService(null)
             subject.connect()
             settle { ready == 4 }
             val owner4 = service.attachedOwner
@@ -696,6 +702,27 @@ class AutoClientConnectionTest {
         internal fun workerOf(client: AutoClient): HandlerThread =
             workers[client] ?: error("客户端worker未绑定到本次实例")
 
+        /** 只关闭本用例登记的客户端；先断言生产退出，最后才允许失败清理。 */
+        internal fun releaseClients() {
+            val owned = workers.toMap()
+            try {
+                for ((client, worker) in owned) {
+                    client.close()
+                    idleWorker(worker)
+                    worker.join(1000)
+                    assertFalse("生产close未退出${worker.name}", worker.isAlive)
+                }
+            } finally {
+                for (worker in owned.values.filter { it.isAlive }) {
+                    worker.quit()
+                    worker.join(1000)
+                }
+                workers.clear()
+                workerProbes.clear()
+                feedOnWorker.clear()
+            }
+        }
+
         /**
          * 用真实vehicleFeed回调确认实例线程。vehicleFeedOnWorker=false时回调在main，不把它当成worker。
          */
@@ -712,15 +739,19 @@ class AutoClientConnectionTest {
 
         /**
          * 只idle这一条已绑定worker。
-         * 已由生产quit的looper在PAUSED模式下会抛出无消息的IllegalStateException，这不是任务执行错误。
-         * 其它异常继续抛出，避免把业务失败吞掉。
+         * 已由生产quit的looper不再接受Handler消息；以真实post结果识别这场退出竞态，
+         * 不用PAUSED模式不支持的hasQuit，也不按异常文本猜测执行错误。
          */
         internal fun idleWorker(worker: HandlerThread) {
             if (!worker.isAlive) return
+            val looper = worker.looper ?: return
+            val shadow = shadowOf(looper)
+            val handler = Handler(looper)
+            if (!handler.post {}) return
             try {
-                shadowOf(worker.looper).idle()
+                shadow.idle()
             } catch (error: IllegalStateException) {
-                if (!error.message.isNullOrEmpty() || error.cause != null) throw error
+                if (handler.post {}) throw error
             }
         }
 
@@ -731,24 +762,6 @@ class AutoClientConnectionTest {
                 idleWorker(worker)
             }
             shadowOf(Looper.getMainLooper()).idle()
-        }
-
-        /** 去掉declareComponentUnbindable，让同一客户端还能再次绑定成功。 */
-        internal fun clearUnbindable() {
-            val thread =
-                Class.forName("org.robolectric.RuntimeEnvironment")
-                    .getMethod("getActivityThread")
-                    .invoke(null)
-            val instrumentation = thread.javaClass.getMethod("getInstrumentation").invoke(thread)
-            val shadow =
-                Class.forName("org.robolectric.shadow.api.Shadow")
-                    .getMethod("extract", Object::class.java)
-                    .invoke(null, instrumentation)
-            val method = shadow.javaClass.getDeclaredMethod("getUnbindableComponents")
-            method.isAccessible = true
-            @Suppress("UNCHECKED_CAST")
-            val components = method.invoke(shadow) as MutableList<ComponentName>
-            components.remove(SERVICE_NAME)
         }
 
         private fun handlerThreads(): List<HandlerThread> =
