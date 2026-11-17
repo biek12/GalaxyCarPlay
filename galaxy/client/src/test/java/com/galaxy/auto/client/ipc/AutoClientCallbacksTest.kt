@@ -9,6 +9,7 @@ import android.os.IBinder
 import android.os.Looper
 import android.os.Parcel
 import android.os.ParcelFileDescriptor
+import android.os.Parcelable
 import android.view.Surface
 import com.galaxy.auto.client.AutoClient
 import com.galaxy.auto.contract.AutoContract
@@ -236,18 +237,9 @@ class AutoClientCallbacksTest {
         }
     }
 
-    private fun bind(service: LocalService) {
-        shadowOf(RuntimeEnvironment.getApplication() as Application)
-            .setComponentNameAndServiceForBindService(SERVICE_NAME, service)
-    }
-
-    /** main与存活worker各推进一次；worker队列在PAUSED下默认等待，必须显式idle。 */
+    /** 只推进本次绑定的客户端worker；执行错误由共享夹具直接抛出。 */
     private fun pump() {
-        shadowOf(Looper.getMainLooper()).idle()
-        Thread.getAllStackTraces().keys.filterIsInstance<HandlerThread>().forEach { thread ->
-            if (thread.isAlive) runCatching { shadowOf(thread.looper).idle() }
-        }
-        shadowOf(Looper.getMainLooper()).idle()
+        AutoClientConnectionTest.pumpAll()
     }
 
     /** 有界次数等待，不依赖Robolectric下的虚拟时钟推进。 */
@@ -266,18 +258,19 @@ class AutoClientCallbacksTest {
         role: String = AutoContract.OBSERVER,
         onSurface: (Surface?) -> Unit = {},
         onSnapshot: (Bundle) -> Unit = {},
+        onState: (String) -> Unit = {},
         onCommand: (Int) -> Unit = {},
         onConfiguredSurface: (Surface?, Long) -> Unit = { _, _ -> },
         onVehicleFeed: (Bundle) -> Unit = {},
         vehicleFeedOnWorker: Boolean = false,
     ): AutoClient {
-        bind(service)
         val subject =
-            AutoClient(
-                RuntimeEnvironment.getApplication(),
-                role,
+            AutoClientConnectionTest.createClient(
+                service,
+                role = role,
                 onSurface = onSurface,
                 onSnapshot = onSnapshot,
+                onState = onState,
                 onCommand = onCommand,
                 onConfiguredSurface = onConfiguredSurface,
                 onVehicleFeed = onVehicleFeed,
@@ -285,6 +278,7 @@ class AutoClientCallbacksTest {
             )
         subject.connect()
         waitFor { service.callback != null }
+        AutoClientConnectionTest.proveClientWorker(subject, service.callback!!)
         return subject
     }
 
@@ -431,41 +425,78 @@ class AutoClientCallbacksTest {
     fun `PREVIEW复制独立引用替换释放旧预览null清空且close释放`() {
         val service = LocalService()
         val subject = connected(service, role = AutoContract.PREVIEW)
+        val inputs = mutableListOf<Surface>()
         try {
-            val original = newSurface()
+            waitFor { previewCalls(service).isNotEmpty() }
+            val baseline = previewCalls(service).size
+            assertNull(previewCalls(service).last().args[1])
+
+            val original = newSurface().also { inputs.add(it) }
             subject.setPreviewSurface(original)
-            waitFor { service.names().contains("setPreviewSurface") }
-            val firstCopy = service.last("setPreviewSurface").args[1] as Surface
+            val firstCopy = previewAt(service, baseline, 1).args[1] as Surface
             assertNotSame(original, firstCopy)
             assertTrue(original.isValid)
+            assertTrue(firstCopy.isValid)
 
-            subject.setPreviewSurface(newSurface())
-            waitFor { service.names().count { it == "setPreviewSurface" } == 2 }
+            val replacement = newSurface().also { inputs.add(it) }
+            subject.setPreviewSurface(replacement)
+            val secondCopy = previewAt(service, baseline, 2).args[1] as Surface
+            assertNotSame(replacement, secondCopy)
             assertFalse(firstCopy.isValid)
-            val secondCopy = service.last("setPreviewSurface").args[1] as Surface
             assertTrue(secondCopy.isValid)
+            assertTrue(replacement.isValid)
 
             subject.setPreviewSurface(null)
-            waitFor { service.names().count { it == "setPreviewSurface" } == 3 }
-            assertNull(service.last("setPreviewSurface").args[1])
+            assertNull(previewAt(service, baseline, 3).args[1])
             assertFalse(secondCopy.isValid)
 
-            subject.setPreviewSurface(newSurface())
-            waitFor { service.names().count { it == "setPreviewSurface" } == 4 }
-            val lastCopy = service.last("setPreviewSurface").args[1] as Surface
+            val lastInput = newSurface().also { inputs.add(it) }
+            subject.setPreviewSurface(lastInput)
+            val lastCopy = previewAt(service, baseline, 4).args[1] as Surface
+            assertNotSame(lastInput, lastCopy)
+            assertTrue(lastCopy.isValid)
             subject.close()
             pump()
             assertFalse(lastCopy.isValid)
+            assertTrue(lastInput.isValid)
         } finally {
             subject.close()
+            inputs.filter { it.isValid }.forEach { it.release() }
+        }
+    }
+
+    @Test
+    fun `已排队的预览复制遇close被释放且不提交远端`() {
+        val service = LocalService()
+        val subject = connected(service, role = AutoContract.PREVIEW)
+        val inputs = mutableListOf<Surface>()
+        try {
+            waitFor { previewCalls(service).isNotEmpty() }
+            val baseline = previewCalls(service).size
+            val created =
+                copiedSurfaces {
+                    inputs.add(newSurface())
+                    subject.setPreviewSurface(inputs.single())
+                }
+            val copy = created.single { it !== inputs.single() }
+            assertEquals(baseline, previewCalls(service).size)
+            assertTrue(copy.isValid)
+            assertTrue(inputs.single().isValid)
+            subject.close()
+            pump()
+            assertFalse(copy.isValid)
+            assertTrue(inputs.single().isValid)
+            assertEquals(baseline, previewCalls(service).size)
+        } finally {
+            subject.close()
+            inputs.filter { it.isValid }.forEach { it.release() }
         }
     }
 
     @Test
     fun `非PREVIEW角色拒绝预览而io投递失败时原Surface不受影响`() {
         val mapService = LocalService()
-        bind(mapService)
-        val mapClient = AutoClient(RuntimeEnvironment.getApplication(), AutoContract.MAP)
+        val mapClient = AutoClientConnectionTest.createClient(mapService, role = AutoContract.MAP)
         val denied = runCatching { mapClient.setPreviewSurface(newSurface()) }.exceptionOrNull()
         assertTrue(denied is IllegalArgumentException)
         mapClient.close()
@@ -495,8 +526,179 @@ class AutoClientCallbacksTest {
                 {},
             )
         val original = newSurface()
-        dispatch.setPreviewSurface(original) {}
+        val created = copiedSurfaces { dispatch.setPreviewSurface(original) {} }
+        val copy = created.single()
+        assertNotSame(original, copy)
+        assertFalse(copy.isValid)
         assertTrue(original.isValid)
+        if (original.isValid) original.release()
+    }
+
+    @Test
+    fun `旧代次与close后丢弃入站回调且有效路径核对线程与classLoader`() {
+        for (kind in InboundKind.entries) {
+            assertInboundAccepted(kind, vehicleFeedOnWorker = false)
+            if (kind == InboundKind.FEED) assertInboundAccepted(kind, vehicleFeedOnWorker = true)
+            assertInboundDiscarded(kind, close = false)
+            assertInboundDiscarded(kind, close = true)
+        }
+    }
+
+    private enum class InboundKind { SNAPSHOT, COMMAND, PROJECTION, FEED }
+
+    private fun assertInboundAccepted(
+        kind: InboundKind,
+        vehicleFeedOnWorker: Boolean,
+    ) {
+        val snapshots = CopyOnWriteArrayList<Bundle>()
+        val commands = CopyOnWriteArrayList<Int>()
+        val states = CopyOnWriteArrayList<String>()
+        val feeds = CopyOnWriteArrayList<Bundle>()
+        val loopers = CopyOnWriteArrayList<Looper>()
+        val service = LocalService()
+        val subject =
+            connected(
+                service,
+                onSnapshot = {
+                    loopers.add(Looper.myLooper()!!)
+                    snapshots.add(it)
+                },
+                onCommand = {
+                    loopers.add(Looper.myLooper()!!)
+                    commands.add(it)
+                },
+                onState = {
+                    loopers.add(Looper.myLooper()!!)
+                    states.add(it)
+                },
+                onVehicleFeed = {
+                    loopers.add(Looper.myLooper()!!)
+                    feeds.add(it)
+                },
+                vehicleFeedOnWorker = vehicleFeedOnWorker,
+            )
+        val bundle = Bundle()
+        try {
+            fireInbound(service.callback!!, kind, bundle)
+            waitFor { loopers.isNotEmpty() }
+            val expected =
+                if (kind == InboundKind.FEED && vehicleFeedOnWorker) {
+                    AutoClientConnectionTest.workerOf(subject).looper
+                } else {
+                    Looper.getMainLooper()
+                }
+            assertSame(expected, loopers.single())
+            if (kind != InboundKind.PROJECTION) {
+                assertEquals(AutoClient::class.java.classLoader, bundle.classLoader)
+            }
+            when (kind) {
+                InboundKind.SNAPSHOT -> assertEquals("环路", snapshots.single().getString("road"))
+                InboundKind.COMMAND -> assertEquals(listOf(3), commands.toList())
+                InboundKind.PROJECTION -> assertEquals(listOf("visible"), states.toList())
+                InboundKind.FEED -> assertEquals("D", feeds.single().getString("gear"))
+            }
+        } finally {
+            subject.close()
+        }
+    }
+
+    private fun assertInboundDiscarded(
+        kind: InboundKind,
+        close: Boolean,
+    ) {
+        val snapshots = CopyOnWriteArrayList<Bundle>()
+        val commands = CopyOnWriteArrayList<Int>()
+        val states = CopyOnWriteArrayList<String>()
+        val feeds = CopyOnWriteArrayList<Bundle>()
+        val service = LocalService()
+        val subject =
+            connected(
+                service,
+                onSnapshot = { snapshots.add(it) },
+                onCommand = { commands.add(it) },
+                onState = { states.add(it) },
+                onVehicleFeed = { feeds.add(it) },
+                vehicleFeedOnWorker = true,
+            )
+        try {
+            val callback = service.callback!!
+            if (close) {
+                subject.close()
+            } else {
+                shadowOf(RuntimeEnvironment.getApplication() as Application)
+                    .boundServiceConnections
+                    .single()
+                    .onServiceDisconnected(SERVICE_NAME)
+                pump()
+            }
+            val before = snapshots.size + commands.size + feeds.size + states.count { it == "visible" || it == "late" }
+            fireInbound(callback, kind, Bundle())
+            pump()
+            val after = snapshots.size + commands.size + feeds.size + states.count { it == "visible" || it == "late" }
+            assertEquals(before, after)
+        } finally {
+            subject.close()
+        }
+    }
+
+    private fun fireInbound(
+        callback: IAutoCallback,
+        kind: InboundKind,
+        bundle: Bundle,
+    ) {
+        when (kind) {
+            InboundKind.SNAPSHOT -> {
+                bundle.putString("road", "环路")
+                callback.onSnapshot(bundle)
+            }
+            InboundKind.COMMAND -> {
+                bundle.putInt("command", 3)
+                callback.onSnapshot(bundle)
+            }
+            InboundKind.PROJECTION -> callback.onProjectionState("cluster", "visible")
+            InboundKind.FEED -> {
+                bundle.putString("gear", "D")
+                callback.onVehicleFeed(bundle)
+            }
+        }
+    }
+
+    private fun previewCalls(service: LocalService): List<Call> = service.calls.filter { it.name == "setPreviewSurface" }
+
+    /** 等待握手基数之后的第[offset]次业务调用，并返回这一次而不是可能被后续调用覆盖的last。 */
+    private fun previewAt(
+        service: LocalService,
+        baseline: Int,
+        offset: Int,
+    ): Call {
+        waitFor { previewCalls(service).size == baseline + offset }
+        return previewCalls(service)[baseline + offset - 1]
+    }
+
+    /** 观察Parcel复制出的Surface。生产私有字段不参与断言，观察结束后恢复系统CREATOR。 */
+    private fun copiedSurfaces(block: () -> Unit): List<Surface> {
+        val created = mutableListOf<Surface>()
+        val field = Surface::class.java.getField("CREATOR")
+        field.isAccessible = true
+        @Suppress("UNCHECKED_CAST")
+        val original = field.get(null) as Parcelable.Creator<Surface>
+        val spy =
+            object : Parcelable.Creator<Surface> {
+                override fun createFromParcel(source: Parcel): Surface {
+                    val surface = original.createFromParcel(source)
+                    created.add(surface)
+                    return surface
+                }
+
+                override fun newArray(size: Int): Array<Surface?> = original.newArray(size)
+            }
+        field.set(null, spy)
+        try {
+            block()
+        } finally {
+            field.set(null, original)
+        }
+        return created.toList()
     }
 
     private companion object {

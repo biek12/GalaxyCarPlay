@@ -17,6 +17,7 @@ import com.galaxy.auto.contract.IAutoService
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -27,7 +28,9 @@ import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
 import java.io.FileInputStream
 import java.time.Duration
+import java.util.IdentityHashMap
 import java.util.concurrent.CopyOnWriteArrayList
+import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
 /**
@@ -53,6 +56,7 @@ class AutoClientConnectionTest {
         val results = CopyOnWriteArrayList<IAutoResult>()
         val fdText = CopyOnWriteArrayList<String>()
         val heldFd = CopyOnWriteArrayList<ParcelFileDescriptor>()
+        val fdReads = AtomicInteger()
 
         @Volatile
         var callback: IAutoCallback? = null
@@ -78,10 +82,14 @@ class AutoClientConnectionTest {
             if (throwOn == name) throw IllegalStateException("remote_failure")
         }
 
-        /** 调用期间读取只读FD的真实字节；不关闭fd，所有权仍在客户端的use。 */
+        /**
+         * 调用期间读取只读FD的真实字节，读完才允许记录方法名。
+         * 不关闭fd，所有权仍在客户端的use；测试必须等[fdReads]而不是只看到方法名。
+         */
         private fun read(fd: ParcelFileDescriptor) {
             heldFd.add(fd)
             fdText.add(String(FileInputStream(fd.fileDescriptor).readBytes(), Charsets.UTF_8))
+            fdReads.incrementAndGet()
         }
 
         override fun getProtocolVersion(): Int {
@@ -150,8 +158,8 @@ class AutoClientConnectionTest {
             owner: IBinder,
             fd: ParcelFileDescriptor,
         ) {
-            record("publishArtwork", owner, fd)
             read(fd)
+            record("publishArtwork", owner, fd)
         }
 
         override fun executeShell(
@@ -239,8 +247,8 @@ class AutoClientConnectionTest {
             length: Long,
             result: IAutoResult,
         ) {
-            record("vehicleWebUpload", owner, clipId, direction, file, length, result)
             read(file)
+            record("vehicleWebUpload", owner, clipId, direction, file, length, result)
             results.add(result)
         }
 
@@ -259,8 +267,8 @@ class AutoClientConnectionTest {
             track: String,
             fd: ParcelFileDescriptor,
         ) {
-            record("publishTrackArtwork", owner, track, fd)
             read(fd)
+            record("publishTrackArtwork", owner, track, fd)
         }
 
         override fun prepareOemArtwork(
@@ -268,8 +276,8 @@ class AutoClientConnectionTest {
             fd: ParcelFileDescriptor,
             result: IAutoResult,
         ) {
-            record("prepareOemArtwork", owner, fd, result)
             read(fd)
+            record("prepareOemArtwork", owner, fd, result)
             results.add(result)
         }
 
@@ -279,8 +287,8 @@ class AutoClientConnectionTest {
             image: ParcelFileDescriptor,
             result: IAutoResult,
         ) {
-            record("configureClusterImage", owner, configuration, image, result)
             read(image)
+            record("configureClusterImage", owner, configuration, image, result)
             results.add(result)
         }
     }
@@ -290,18 +298,25 @@ class AutoClientConnectionTest {
         role: String = AutoContract.OBSERVER,
         onState: (String) -> Unit = {},
         onReady: () -> Unit = {},
-    ): AutoClient {
-        val app = RuntimeEnvironment.getApplication() as Application
-        shadowOf(app).setComponentNameAndServiceForBindService(SERVICE_NAME, service)
-        return AutoClient(app, role, onState = onState, onReady = onReady)
-    }
+        onSnapshot: (Bundle) -> Unit = {},
+        onCommand: (Int) -> Unit = {},
+        onVehicleFeed: (Bundle) -> Unit = {},
+    ): AutoClient =
+        createClient(
+            service,
+            role = role,
+            onState = onState,
+            onReady = onReady,
+            onSnapshot = onSnapshot,
+            onCommand = onCommand,
+            onVehicleFeed = onVehicleFeed,
+        )
 
     @Test
     fun `connect与close都要求主线程且构造不触发绑定`() {
         val app = RuntimeEnvironment.getApplication() as Application
         val service = RecordingService()
-        shadowOf(app).setComponentNameAndServiceForBindService(SERVICE_NAME, service)
-        val subject = AutoClient(app, AutoContract.OBSERVER)
+        val subject = createClient(service, role = AutoContract.OBSERVER)
         try {
             assertTrue(service.names().isEmpty())
             assertEquals(0, startedCount(app))
@@ -409,7 +424,7 @@ class AutoClientConnectionTest {
         val app = RuntimeEnvironment.getApplication() as Application
         shadowOf(app).declareComponentUnbindable(SERVICE_NAME)
         var ready = 0
-        val subject = AutoClient(app, AutoContract.OBSERVER, onReady = { ready++ })
+        val subject = createClient(RecordingService(), role = AutoContract.OBSERVER, onReady = { ready++ })
         try {
             subject.connect()
             pump()
@@ -441,7 +456,7 @@ class AutoClientConnectionTest {
         val states = CopyOnWriteArrayList<String>()
         val shadow = shadowOf(app)
         shadow.setThrowInBindService(SecurityException("denied"))
-        val subject = AutoClient(app, AutoContract.OBSERVER, onState = { states.add(it) })
+        val subject = createClient(RecordingService(), role = AutoContract.OBSERVER, onState = { states.add(it) })
         try {
             subject.connect()
             pump()
@@ -456,27 +471,124 @@ class AutoClientConnectionTest {
     fun `close用旧lease解绑幂等且自有worker真实退出`() {
         val app = RuntimeEnvironment.getApplication() as Application
         val states = CopyOnWriteArrayList<String>()
+        val snapshots = CopyOnWriteArrayList<Bundle>()
+        val commands = CopyOnWriteArrayList<Int>()
+        val feeds = CopyOnWriteArrayList<Bundle>()
         var ready = 0
         val service = RecordingService()
-        val subject = client(service, onState = { states.add(it) }, onReady = { ready++ })
-        subject.connect()
-        settle { ready == 1 }
-        val attached = service.attachedOwner
-        val worker =
-            Thread.getAllStackTraces().keys.firstOrNull { it.name == "AutoClient-${AutoContract.OBSERVER}" }
-        assertNotNull(worker)
-        subject.close()
-        subject.close()
-        settle { service.detachedOwner != null && !worker!!.isAlive }
-        assertSame(attached, service.detachedOwner)
-        assertEquals(0, shadowOf(app).boundServiceConnections.size)
-        assertEquals(1, service.names().count { it == "detach" })
-        assertEquals(1, service.names().count { it == "attach" })
-        shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(9000L))
-        pump()
-        assertEquals(1, service.names().count { it == "attach" })
-        assertEquals(1, service.names().count { it == "detach" })
-        assertTrue(states.isEmpty())
+        val subject =
+            client(
+                service,
+                onState = { states.add(it) },
+                onReady = { ready++ },
+                onSnapshot = { snapshots.add(it) },
+                onCommand = { commands.add(it) },
+                onVehicleFeed = { feeds.add(it) },
+            )
+        val worker = workerOf(subject)
+        try {
+            subject.connect()
+            settle { ready == 1 && service.callback != null }
+            proveClientWorker(subject, service.callback!!)
+            val attached = service.attachedOwner
+            subject.close()
+            subject.close()
+            service.callback!!.onSnapshot(Bundle().apply { putString("late", "snapshot") })
+            service.callback!!.onSnapshot(Bundle().apply { putInt("command", 9) })
+            service.callback!!.onProjectionState("cluster", "late-projection")
+            service.callback!!.onVehicleFeed(Bundle().apply { putString("gear", "R") })
+            settle { service.detachedOwner != null && !worker.isAlive }
+            assertSame(attached, service.detachedOwner)
+            assertEquals(0, shadowOf(app).boundServiceConnections.size)
+            assertEquals(1, service.names().count { it == "detach" })
+            assertEquals(1, service.names().count { it == "attach" })
+            assertTrue(snapshots.isEmpty())
+            assertTrue(commands.isEmpty())
+            assertTrue(feeds.isEmpty())
+            assertFalse(states.contains("late-projection"))
+            assertEquals(1, ready)
+            shadowOf(Looper.getMainLooper()).idleFor(Duration.ofMillis(9000L))
+            pump()
+            assertEquals(1, service.names().count { it == "attach" })
+            assertEquals(1, service.names().count { it == "detach" })
+            assertEquals(1, ready)
+            assertTrue(states.isEmpty())
+        } finally {
+            if (worker.isAlive) worker.quit()
+        }
+    }
+
+    @Test
+    fun `恢复成功后重试归零且重连使用新owner关闭只解绑当时lease`() {
+        val app = RuntimeEnvironment.getApplication() as Application
+        val service = RecordingService()
+        var ready = 0
+        val subject = client(service, onReady = { ready++ })
+        val worker = workerOf(subject)
+        try {
+            subject.connect()
+            settle { ready == 1 && service.callback != null }
+            proveClientWorker(subject, service.callback!!)
+            val link = connection()
+            val owner1 = service.attachedOwner
+            startedCount(app)
+
+            link.onBindingDied(SERVICE_NAME)
+            advance(999)
+            assertEquals(1, ready)
+            assertEquals(0, startedCount(app))
+            advance(1)
+            settle { ready == 2 }
+            val owner2 = service.attachedOwner
+            assertNotSame(owner1, owner2)
+            startedCount(app)
+
+            link.onBindingDied(SERVICE_NAME)
+            advance(999)
+            assertEquals(2, ready)
+            assertEquals(0, startedCount(app))
+            advance(1)
+            settle { ready == 3 }
+            val owner3 = service.attachedOwner
+            assertNotSame(owner2, owner3)
+
+            shadowOf(app).declareComponentUnbindable(SERVICE_NAME)
+            startedCount(app)
+            link.onBindingDied(SERVICE_NAME)
+            advance(999)
+            assertEquals(0, startedCount(app))
+            advance(1)
+            assertTrue(startedCount(app) >= 1)
+            advance(1999)
+            assertEquals(0, startedCount(app))
+            advance(1)
+            assertTrue(startedCount(app) >= 1)
+            advance(3999)
+            assertEquals(0, startedCount(app))
+            advance(1)
+            assertTrue(startedCount(app) >= 1)
+            advance(8000)
+            assertEquals(0, startedCount(app))
+            assertEquals(3, ready)
+
+            clearUnbindable()
+            subject.connect()
+            settle { ready == 4 }
+            val owner4 = service.attachedOwner
+            assertNotSame(owner3, owner4)
+            val attaches = service.names().count { it == "attach" }
+            subject.close()
+            subject.close()
+            settle { service.detachedOwner === owner4 && !worker.isAlive }
+            assertEquals(1, service.names().count { it == "detach" })
+            assertEquals(attaches, service.names().count { it == "attach" })
+            advance(8000)
+            assertEquals(attaches, service.names().count { it == "attach" })
+            assertEquals(1, service.names().count { it == "detach" })
+            assertEquals(4, ready)
+        } finally {
+            if (worker.isAlive) worker.quit()
+        }
     }
 
     /** 从真实非Looper线程调用，返回捕获到的异常。 */
@@ -502,13 +614,9 @@ class AutoClientConnectionTest {
         return count
     }
 
-    /** 推进main与所有真实AutoClient worker，不强制quit作为通过前提。 */
+    /** 只推进main与已绑定到客户端实例的worker，执行错误直接抛出。 */
     private fun pump() {
-        shadowOf(Looper.getMainLooper()).idle()
-        Thread.getAllStackTraces().keys.filterIsInstance<HandlerThread>().forEach { thread ->
-            if (thread.isAlive) runCatching { shadowOf(thread.looper).idle() }
-        }
-        shadowOf(Looper.getMainLooper()).idle()
+        pumpAll()
     }
 
     /** 有界次数推进直到真实行为发生，不依赖Robolectric下的虚拟时钟。 */
@@ -525,14 +633,126 @@ class AutoClientConnectionTest {
     companion object {
         internal val SERVICE_NAME = ComponentName(AutoContract.SERVICE_PACKAGE, AutoContract.SERVICE_CLASS)
 
-        /** 供其余三套复用：main与存活worker各推进一次，worker队列默认暂停需显式idle。 */
+        private const val WORKER_PROBE = "a2-worker-probe"
+        private val workers = IdentityHashMap<AutoClient, HandlerThread>()
+        private val workerProbes = IdentityHashMap<AutoClient, AtomicReference<HandlerThread?>>()
+        private val feedOnWorker = IdentityHashMap<AutoClient, Boolean>()
+
+        /**
+         * 构造真实客户端，并把本次启动的worker绑定到该实例。
+         *
+         * 只取构造前后HandlerThread集合的差，避免按全局同名线程任选一个。
+         * 随后可用[proveClientWorker]经vehicleFeedOnWorker回调确认就是这条线程。
+         */
+        internal fun createClient(
+            service: IBinder,
+            role: String = AutoContract.OBSERVER,
+            onSurface: (Surface?) -> Unit = {},
+            onSnapshot: (Bundle) -> Unit = {},
+            onState: (String) -> Unit = {},
+            onCommand: (Int) -> Unit = {},
+            onConfiguredSurface: (Surface?, Long) -> Unit = { _, _ -> },
+            onVehicleFeed: (Bundle) -> Unit = {},
+            onReady: () -> Unit = {},
+            replayVehicleFeedOnConnect: Boolean = true,
+            vehicleFeedOnWorker: Boolean = true,
+        ): AutoClient {
+            shadowOf(app()).setComponentNameAndServiceForBindService(SERVICE_NAME, service)
+            val seen = AtomicReference<HandlerThread?>()
+            val before = handlerThreads()
+            val client =
+                AutoClient(
+                    app(),
+                    role,
+                    onSurface = onSurface,
+                    onSnapshot = onSnapshot,
+                    onState = onState,
+                    onCommand = onCommand,
+                    onConfiguredSurface = onConfiguredSurface,
+                    onVehicleFeed = { bundle ->
+                        if (bundle.getBoolean(WORKER_PROBE)) {
+                            (Looper.myLooper()?.thread as? HandlerThread)?.let(seen::set)
+                        } else {
+                            onVehicleFeed(bundle)
+                        }
+                    },
+                    onReady = onReady,
+                    replayVehicleFeedOnConnect = replayVehicleFeedOnConnect,
+                    vehicleFeedOnWorker = vehicleFeedOnWorker,
+                )
+            val created = handlerThreads().filter { it !in before }
+            check(created.size == 1) {
+                "本次构造应只启动被测客户端自己的worker，实际=${created.map { it.name }}"
+            }
+            val worker = created.single()
+            check(worker.name == "AutoClient-$role") { "worker=${worker.name}" }
+            workers[client] = worker
+            workerProbes[client] = seen
+            feedOnWorker[client] = vehicleFeedOnWorker
+            return client
+        }
+
+        /** 被测客户端自己的worker；未登记说明没有走[createClient]。 */
+        internal fun workerOf(client: AutoClient): HandlerThread =
+            workers[client] ?: error("客户端worker未绑定到本次实例")
+
+        /**
+         * 用真实vehicleFeed回调确认实例线程。vehicleFeedOnWorker=false时回调在main，不把它当成worker。
+         */
+        internal fun proveClientWorker(
+            client: AutoClient,
+            callback: IAutoCallback,
+        ) {
+            if (feedOnWorker[client] != true) return
+            callback.onVehicleFeed(Bundle().apply { putBoolean(WORKER_PROBE, true) })
+            idleWorker(workerOf(client))
+            shadowOf(Looper.getMainLooper()).idle()
+            assertSame(workerOf(client), workerProbes.getValue(client).get())
+        }
+
+        /**
+         * 只idle这一条已绑定worker。
+         * 已由生产quit的looper在PAUSED模式下会抛出无消息的IllegalStateException，这不是任务执行错误。
+         * 其它异常继续抛出，避免把业务失败吞掉。
+         */
+        internal fun idleWorker(worker: HandlerThread) {
+            if (!worker.isAlive) return
+            try {
+                shadowOf(worker.looper).idle()
+            } catch (error: IllegalStateException) {
+                if (!error.message.isNullOrEmpty() || error.cause != null) throw error
+            }
+        }
+
+        /** 供其余三套复用：main与该实例worker各推进一次，worker队列默认暂停需显式idle。 */
         internal fun pumpAll() {
             shadowOf(Looper.getMainLooper()).idle()
-            Thread.getAllStackTraces().keys.filterIsInstance<HandlerThread>().forEach { thread ->
-                if (thread.isAlive) runCatching { shadowOf(thread.looper).idle() }
+            for (worker in workers.values.toList()) {
+                idleWorker(worker)
             }
             shadowOf(Looper.getMainLooper()).idle()
         }
+
+        /** 去掉declareComponentUnbindable，让同一客户端还能再次绑定成功。 */
+        internal fun clearUnbindable() {
+            val thread =
+                Class.forName("org.robolectric.RuntimeEnvironment")
+                    .getMethod("getActivityThread")
+                    .invoke(null)
+            val instrumentation = thread.javaClass.getMethod("getInstrumentation").invoke(thread)
+            val shadow =
+                Class.forName("org.robolectric.shadow.api.Shadow")
+                    .getMethod("extract", Object::class.java)
+                    .invoke(null, instrumentation)
+            val method = shadow.javaClass.getDeclaredMethod("getUnbindableComponents")
+            method.isAccessible = true
+            @Suppress("UNCHECKED_CAST")
+            val components = method.invoke(shadow) as MutableList<ComponentName>
+            components.remove(SERVICE_NAME)
+        }
+
+        private fun handlerThreads(): List<HandlerThread> =
+            Thread.getAllStackTraces().keys.mapNotNull { it as? HandlerThread }
 
         /** 供其余三套复用的有界等待，不依赖虚拟时钟。 */
         internal fun await(done: () -> Boolean) {

@@ -8,6 +8,7 @@ import com.galaxy.auto.contract.ProjectionPolicy
 import com.galaxy.auto.contract.SceneConfiguration
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -34,20 +35,19 @@ class AutoClientReplayTest {
         onState: (String) -> Unit = {},
         onReady: () -> Unit = {},
         replayVehicleFeedOnConnect: Boolean = true,
-    ): AutoClient {
-        AutoClientConnectionTest.bind(service)
-        return AutoClient(
-            AutoClientConnectionTest.app(),
-            role,
+    ): AutoClient =
+        AutoClientConnectionTest.createClient(
+            service,
+            role = role,
             onState = onState,
             onReady = onReady,
             replayVehicleFeedOnConnect = replayVehicleFeedOnConnect,
         )
-    }
 
     private fun ready(subject: AutoClient, service: AutoClientConnectionTest.RecordingService) {
         subject.connect()
         AutoClientConnectionTest.await { service.callback != null && service.names().contains("attach") }
+        AutoClientConnectionTest.proveClientWorker(subject, service.callback!!)
     }
 
     private fun media(track: String) =
@@ -215,6 +215,7 @@ class AutoClientReplayTest {
         val client = subject(service, role = AutoContract.ELEMENTS, onState = { states.add(it) })
         val app = AutoClientConnectionTest.app()
         val image = File(app.cacheDir, "a2-bg.png").apply { writeText("IMAGE-BYTES") }
+        val rejected = Bundle().apply { putBoolean("accepted", false) }
         try {
             val configuration =
                 ClusterDisplayConfiguration(
@@ -224,27 +225,111 @@ class AutoClientReplayTest {
                 )
             client.configureClusterElements(configuration, image)
             ready(client, service)
-            AutoClientConnectionTest.await { service.names().contains("configureClusterImage") }
+            AutoClientConnectionTest.await {
+                service.names().contains("configureClusterImage") && service.fdReads.get() >= 1
+            }
             assertEquals("IMAGE-BYTES", service.fdText.last())
             assertTrue(image.exists())
-            val result = service.results.last()
-            result.onResult(Bundle().apply { putBoolean("accepted", false) })
-            AutoClientConnectionTest.await { states.contains("background_import_failed") }
+            assertFalse(service.heldFd.last().fileDescriptor.valid())
+            val current = service.results.last()
+            current.onResult(rejected)
+            AutoClientConnectionTest.await { states.count { it == "background_import_failed" } == 1 }
 
-            val before = states.size
-            AutoClientConnectionTest.connection().onBindingDied(AutoClientConnectionTest.SERVICE_NAME)
+            val link = AutoClientConnectionTest.connection()
+            link.onBindingDied(AutoClientConnectionTest.SERVICE_NAME)
             AutoClientConnectionTest.pumpAll()
-            result.onResult(Bundle().apply { putBoolean("accepted", false) })
+            current.onResult(rejected)
             AutoClientConnectionTest.pumpAll()
-            assertEquals(before, states.size)
+            assertEquals(1, states.count { it == "background_import_failed" })
+            assertTrue(states.contains("binding_died"))
+            val disconnects = states.filter { it == "binding_died" || it == "service_disconnected" }
+            assertTrue(disconnects.contains("binding_died"))
+            assertFalse(disconnects.contains("background_import_failed"))
 
-            // revision在调用线程同步推进，旧回执即使再次到达也必须被丢弃。
+            AutoClientConnectionTest.advance(1000)
+            AutoClientConnectionTest.await { service.names().count { it == "attach" } >= 2 }
+            val replayImages = service.names().count { it == "configureClusterImage" }
             client.configureClusterElements(configuration, image)
+            AutoClientConnectionTest.await { service.names().count { it == "configureClusterImage" } == replayImages + 1 }
+            val resultA = service.results.last()
+            client.configureClusterElements(configuration, image)
+            AutoClientConnectionTest.await {
+                service.names().count { it == "configureClusterImage" } == replayImages + 2 &&
+                    service.fdReads.get() >= replayImages + 2
+            }
+            val resultB = service.results.last()
+            assertNotSame(resultA, resultB)
+            val failedBeforeRevision = states.count { it == "background_import_failed" }
+            resultA.onResult(rejected)
             AutoClientConnectionTest.pumpAll()
-            result.onResult(Bundle().apply { putBoolean("accepted", false) })
-            AutoClientConnectionTest.pumpAll()
-            assertEquals(before, states.size)
+            assertEquals(failedBeforeRevision, states.count { it == "background_import_failed" })
+            resultB.onResult(rejected)
+            AutoClientConnectionTest.await {
+                states.count { it == "background_import_failed" } == failedBeforeRevision + 1
+            }
+            assertTrue(image.exists())
+            assertTrue(service.heldFd.all { !it.fileDescriptor.valid() })
         } finally {
+            AutoClientConnectionTest.pumpAll()
+            client.close()
+            image.delete()
+        }
+    }
+
+    @Test
+    fun `flush异常不预先清空后续槽且无缓存的policy在重连后仍发出`() {
+        val states = CopyOnWriteArrayList<String>()
+        val service = service()
+        val client = subject(service, onState = { states.add(it) })
+        try {
+            ready(client, service)
+            service.throwOn = "configureScene"
+            client.configureScene(SceneConfiguration(token = 1L, themeId = "theme", map = null))
+            client.setProjectionPolicy(ProjectionPolicy())
+            client.publishMedia(media("KEEP"))
+            AutoClientConnectionTest.await { states.any { it == "ipc:IllegalStateException" } }
+            service.throwOn = null
+            AutoClientConnectionTest.connection().onBindingDied(AutoClientConnectionTest.SERVICE_NAME)
+            AutoClientConnectionTest.advance(1000)
+            AutoClientConnectionTest.await { service.names().count { it == "attach" } >= 2 }
+            AutoClientConnectionTest.pumpAll()
+            assertEquals(1, service.names().count { it == "setProjectionPolicy" })
+            val tracks =
+                service.calls
+                    .filter { it.name == "publishMedia" }
+                    .map { (it.args[1] as Bundle).getString("track") }
+            assertTrue(tracks.contains("KEEP"))
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun `图片远端异常关闭FD并保留输入文件且不发导入失败`() {
+        val states = CopyOnWriteArrayList<String>()
+        val service = service()
+        val client = subject(service, role = AutoContract.ELEMENTS, onState = { states.add(it) })
+        val image = File(AutoClientConnectionTest.app().cacheDir, "a2-bg-error.png").apply { writeText("IMAGE-ERR") }
+        try {
+            ready(client, service)
+            service.throwOn = "configureClusterImage"
+            client.configureClusterElements(
+                ClusterDisplayConfiguration(
+                    mode = ClusterDisplayConfiguration.OEM_ELEMENTS,
+                    background = ClusterDisplayConfiguration.IMAGE_BACKGROUND,
+                    image = "a2-bg-error.png",
+                ),
+                image,
+            )
+            AutoClientConnectionTest.await {
+                service.fdReads.get() >= 1 && states.any { it == "ipc:IllegalStateException" }
+            }
+            assertEquals("IMAGE-ERR", service.fdText.last())
+            assertFalse(service.heldFd.last().fileDescriptor.valid())
+            assertTrue(image.exists())
+            assertFalse(states.contains("background_import_failed"))
+        } finally {
+            AutoClientConnectionTest.pumpAll()
             client.close()
             image.delete()
         }
@@ -253,8 +338,7 @@ class AutoClientReplayTest {
     @Test
     fun `角色边界与policy可视媒体不建立重连保留缓存`() {
         val service = service()
-        AutoClientConnectionTest.bind(service)
-        val mapClient = AutoClient(AutoClientConnectionTest.app(), AutoContract.MAP)
+        val mapClient = AutoClientConnectionTest.createClient(service, role = AutoContract.MAP)
         assertTrue(
             runCatching {
                 mapClient.configureClusterElements(ClusterDisplayConfiguration())
