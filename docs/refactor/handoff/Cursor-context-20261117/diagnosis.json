@@ -1,0 +1,176 @@
+{
+  "date": "2026-11-17",
+  "source": "read-only Cursor local chat metadata; no conversation text, credentials or billing account data exported",
+  "metadataNotBillingLedger": true,
+  "a2ChatAvailableLocally": false,
+  "samples": [
+    {
+      "task": "A1 account completion",
+      "savedModelConfig": {
+        "modelName": "grok-4.7",
+        "maxMode": true,
+        "selectedModels": [
+          {
+            "modelId": "grok-4.7",
+            "parameters": [
+              {
+                "id": "context",
+                "value": "500k"
+              },
+              {
+                "id": "reasoning_effort",
+                "value": "high"
+              },
+              {
+                "id": "fast",
+                "value": "false"
+              }
+            ]
+          }
+        ]
+      },
+      "contextTokensUsed": 338999,
+      "contextTokenLimit": 500000,
+      "estimatedPromptTokensByCategory": {
+        "system_prompt": 2218,
+        "tools": 4906,
+        "rules": 13220,
+        "skills": 8689,
+        "mcp": 6891,
+        "subagents": 1520,
+        "summarized_conversation": 0,
+        "conversation": 301555
+      },
+      "billingUsageAvailable": false
+    },
+    {
+      "task": "A4 autoservice completion",
+      "savedModelConfig": {
+        "modelName": "grok-4.7",
+        "maxMode": true,
+        "selectedModels": [
+          {
+            "modelId": "grok-4.7",
+            "parameters": [
+              {
+                "id": "context",
+                "value": "500k"
+              },
+              {
+                "id": "reasoning_effort",
+                "value": "xhigh"
+              },
+              {
+                "id": "fast",
+                "value": "false"
+              }
+            ]
+          }
+        ]
+      },
+      "contextTokensUsed": 423259,
+      "contextTokenLimit": 500000,
+      "estimatedPromptTokensByCategory": {
+        "system_prompt": 2246,
+        "tools": 4921,
+        "rules": 12906,
+        "skills": 8715,
+        "mcp": 7322,
+        "subagents": 1525,
+        "summarized_conversation": 0,
+        "conversation": 385624
+      },
+      "billingUsageAvailable": false
+    },
+    {
+      "task": "A4-R1 correction",
+      "savedModelConfig": {
+        "modelName": "grok-4.7",
+        "maxMode": true,
+        "selectedModels": [
+          {
+            "modelId": "grok-4.7",
+            "parameters": [
+              {
+                "id": "context",
+                "value": "500k"
+              },
+              {
+                "id": "reasoning_effort",
+                "value": "xhigh"
+              },
+              {
+                "id": "fast",
+                "value": "false"
+              }
+            ]
+          }
+        ]
+      },
+      "contextTokensUsed": 320021,
+      "contextTokenLimit": 500000,
+      "estimatedPromptTokensByCategory": {
+        "system_prompt": 2236,
+        "tools": 4945,
+        "rules": 13155,
+        "skills": 8757,
+        "mcp": 6945,
+        "subagents": 1532,
+        "summarized_conversation": 0,
+        "conversation": 282451
+      },
+      "billingUsageAvailable": false
+    }
+  ],
+  "instructionChanges": [
+    {
+      "path": "AGENTS.md",
+      "beforeCharacters": 28107,
+      "afterCharacters": 2479,
+      "alwaysLoadedAfter": true
+    },
+    {
+      "path": "galaxy/AGENTS.md",
+      "beforeCharacters": 5602,
+      "afterCharacters": 5602,
+      "alwaysLoadedAfter": true
+    },
+    {
+      "path": ".cursor/rules/refactor-lead.mdc",
+      "beforeCharacters": 2039,
+      "afterCharacters": 163,
+      "alwaysLoadedAfter": true
+    },
+    {
+      "path": ".cursor/rules/service-cluster-project.mdc",
+      "beforeCharacters": 1380,
+      "afterCharacters": 1488,
+      "alwaysLoadedAfter": false
+    }
+  ],
+  "rootAndGalaxyAndAlwaysRuleCharactersBefore": 37128,
+  "rootAndGalaxyAndAlwaysRuleCharactersAfter": 8244,
+  "characterReductionPercent": 77.8,
+  "actualPostChangeCursorTokenMeasurement": null,
+  "dollarSavingsMeasured": false,
+  "note": "Saved maxMode field may be a compatibility field; it does not establish the pricing mode actually charged. Context figures are Cursor estimates, not accumulated billed token counts.",
+  "characterCounting": "Unicode characters with line endings normalized to LF, not model tokens",
+  "historicalToolActivity": [
+    {
+      "task": "A1 account completion",
+      "readCalls": 81,
+      "shellCalls": 46,
+      "gradleCommandMentions": 15,
+      "formatterCommandMentions": 11
+    },
+    {
+      "task": "A4 autoservice completion",
+      "readCalls": 134,
+      "autoServiceReads": 48,
+      "allAutoServiceReadsWereBoundedSlices": true,
+      "gradleCommandMentions": 15,
+      "note": "Counts include necessary work and cannot individually be classified as waste."
+    }
+  ],
+  "scopeNote": "galaxy/AGENTS.md retained byte-for-byte: the A2 business gate covers all galaxy paths and the fixed 9-path whitelist remains unchanged. The newer root/current-task instructions make historical mandatory full reads conditional."
+}
