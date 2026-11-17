@@ -346,7 +346,9 @@ class AutoClientCallbacksTest {
         val subject = connected(service, role = AutoContract.THEME, onSurface = { surfaces.add(it) })
         try {
             shadowOf(RuntimeEnvironment.getApplication() as Application)
-                .boundServiceConnections.single().onServiceDisconnected(SERVICE_NAME)
+                .boundServiceConnections
+                .single()
+                .onServiceDisconnected(SERVICE_NAME)
             pump()
             val before = surfaces.size
             val stale = newSurface()
@@ -387,13 +389,17 @@ class AutoClientCallbacksTest {
             }
         }
 
-        val surfaceClosed = observed { _, remote ->
-            remote.callback!!.onProjectionState("cluster", "surface_closed")
-        }
-        val lost = observed { _, _ ->
-            shadowOf(RuntimeEnvironment.getApplication() as Application)
-                .boundServiceConnections.single().onServiceDisconnected(SERVICE_NAME)
-        }
+        val surfaceClosed =
+            observed { _, remote ->
+                remote.callback!!.onProjectionState("cluster", "surface_closed")
+            }
+        val lost =
+            observed { _, _ ->
+                shadowOf(RuntimeEnvironment.getApplication() as Application)
+                    .boundServiceConnections
+                    .single()
+                    .onServiceDisconnected(SERVICE_NAME)
+            }
         val closed = observed { client, _ -> client.close() }
         assertTrue("surface_closed应在configured之后release", surfaceClosed)
         assertFalse("lost应在configured之前release", lost)

@@ -17,7 +17,6 @@ import com.galaxy.auto.contract.IAutoService
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
-import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -483,13 +482,14 @@ class AutoClientConnectionTest {
     /** 从真实非Looper线程调用，返回捕获到的异常。 */
     private fun offMain(block: () -> Unit): Throwable? {
         val captured = AtomicReference<Throwable?>()
-        val thread = Thread {
-            try {
-                block()
-            } catch (error: Throwable) {
-                captured.set(error)
+        val thread =
+            Thread {
+                try {
+                    block()
+                } catch (error: Throwable) {
+                    captured.set(error)
+                }
             }
-        }
         thread.start()
         thread.join(5000)
         return captured.get()

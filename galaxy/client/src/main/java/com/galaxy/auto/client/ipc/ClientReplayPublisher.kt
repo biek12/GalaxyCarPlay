@@ -33,7 +33,10 @@ class ClientReplayPublisher(
     private val onState: (String) -> Unit,
 ) {
     /** 封面待发项的曲目身份与已复制字节；调用方后续改动不影响保留值。 */
-    private data class TrackArtwork(val track: String, val bytes: ByteArray)
+    private data class TrackArtwork(
+        val track: String,
+        val bytes: ByteArray,
+    )
 
     @Volatile
     private var active = false

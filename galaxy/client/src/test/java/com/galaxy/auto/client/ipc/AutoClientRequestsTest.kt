@@ -44,7 +44,10 @@ class AutoClientRequestsTest {
     }
 
     private fun worker(): HandlerThread =
-        Thread.getAllStackTraces().keys.filterIsInstance<HandlerThread>()
+        Thread
+            .getAllStackTraces()
+            .keys
+            .filterIsInstance<HandlerThread>()
             .first { it.name == "AutoClient-${AutoContract.OBSERVER}" }
 
     @Test
@@ -205,12 +208,22 @@ class AutoClientRequestsTest {
             AutoClientConnectionTest.await { service.names().contains("vehicleWebUpload") }
             assertEquals("CLIP-DATA", service.fdText.last())
             assertTrue(clip.exists())
-            assertFalse(service.heldFd.last().fileDescriptor.valid())
+            assertFalse(
+                service.heldFd
+                    .last()
+                    .fileDescriptor
+                    .valid(),
+            )
 
             client.prepareOemArtwork("OEM-DATA".toByteArray()) {}
             AutoClientConnectionTest.await { service.names().contains("prepareOemArtwork") }
             assertEquals("OEM-DATA", service.fdText.last())
-            assertFalse(service.heldFd.last().fileDescriptor.valid())
+            assertFalse(
+                service.heldFd
+                    .last()
+                    .fileDescriptor
+                    .valid(),
+            )
             assertTrue(
                 app.cacheDir.listFiles { _, name -> name.startsWith("oem-artwork-") }.isNullOrEmpty(),
             )

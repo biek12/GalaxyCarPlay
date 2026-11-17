@@ -71,10 +71,23 @@ class AutoClientReplayTest {
             ready(client, service)
             val flushed =
                 service.names().filter {
-                    it in setOf("configureScene", "setProjectionPolicy", "publishMedia", "publishNavigation", "publishTrackArtwork")
+                    it in
+                        setOf(
+                            "configureScene",
+                            "setProjectionPolicy",
+                            "publishMedia",
+                            "publishNavigation",
+                            "publishTrackArtwork",
+                        )
                 }
             assertEquals(
-                listOf("configureScene", "setProjectionPolicy", "publishMedia", "publishNavigation", "publishTrackArtwork"),
+                listOf(
+                    "configureScene",
+                    "setProjectionPolicy",
+                    "publishMedia",
+                    "publishNavigation",
+                    "publishTrackArtwork",
+                ),
                 flushed,
             )
             assertEquals("T1", service.last("publishTrackArtwork").args[1])
@@ -82,7 +95,10 @@ class AutoClientReplayTest {
             assertEquals(1, service.names().count { it == "publishNavigation" })
             assertEquals("环路", (service.last("publishNavigation").args[1] as Bundle).getString("road"))
             assertFalse(
-                AutoClientConnectionTest.app().cacheDir.listFiles { _, name -> name.startsWith("auto-art-") }
+                AutoClientConnectionTest
+                    .app()
+                    .cacheDir
+                    .listFiles { _, name -> name.startsWith("auto-art-") }
                     ?.isNotEmpty() ?: false,
             )
         } finally {
@@ -123,7 +139,8 @@ class AutoClientReplayTest {
             AutoClientConnectionTest.advance(1000)
             AutoClientConnectionTest.await { readyCount.get() >= 2 }
             val sent =
-                service.calls.filter { it.name == "publishMedia" }
+                service.calls
+                    .filter { it.name == "publishMedia" }
                     .map { (it.args[1] as Bundle).getString("track") }
             assertEquals(listOf("A", "B"), sent)
         } finally {
@@ -136,7 +153,10 @@ class AutoClientReplayTest {
         fun run(replay: Boolean): Int {
             val service = service()
             val readyCount = AtomicInteger()
-            val client = subject(service, role = AutoContract.ELEMENTS, onReady = { readyCount.incrementAndGet() }, replayVehicleFeedOnConnect = replay)
+            val client =
+                subject(service, role = AutoContract.ELEMENTS, onReady = {
+                    readyCount.incrementAndGet()
+                }, replayVehicleFeedOnConnect = replay)
             try {
                 ready(client, service)
                 AutoClientConnectionTest.await { readyCount.get() == 1 }
@@ -235,11 +255,19 @@ class AutoClientReplayTest {
         val service = service()
         AutoClientConnectionTest.bind(service)
         val mapClient = AutoClient(AutoClientConnectionTest.app(), AutoContract.MAP)
-        assertTrue(runCatching { mapClient.configureClusterElements(ClusterDisplayConfiguration()) }.exceptionOrNull() is IllegalArgumentException)
-        assertTrue(runCatching { mapClient.publishVisualMedia(media("V")) }.exceptionOrNull() is IllegalArgumentException)
-        assertTrue(runCatching {
-            mapClient.configureScene(SceneConfiguration(token = 1L, themeId = "theme", map = null))
-        }.exceptionOrNull() is IllegalArgumentException)
+        assertTrue(
+            runCatching {
+                mapClient.configureClusterElements(ClusterDisplayConfiguration())
+            }.exceptionOrNull() is IllegalArgumentException,
+        )
+        assertTrue(
+            runCatching { mapClient.publishVisualMedia(media("V")) }.exceptionOrNull() is IllegalArgumentException,
+        )
+        assertTrue(
+            runCatching {
+                mapClient.configureScene(SceneConfiguration(token = 1L, themeId = "theme", map = null))
+            }.exceptionOrNull() is IllegalArgumentException,
+        )
         mapClient.close()
 
         val visual = service()
