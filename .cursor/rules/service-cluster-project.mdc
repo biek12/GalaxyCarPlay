@@ -1,6 +1,7 @@
 ---
 description: AutoService 与 AutoCluster 的模块边界、包和平台注入。改 galaxy/service 或 galaxy/cluster 时必须遵守。
-alwaysApply: true
+globs: galaxy/service/**,galaxy/cluster/**,archive/theme-engine/**,archive/legacy-fullscreen-projection/**
+alwaysApply: false
 ---
 
 # service / cluster 项目规则

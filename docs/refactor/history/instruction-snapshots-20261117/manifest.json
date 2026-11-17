@@ -1,0 +1,30 @@
+[
+  {
+    "path": "AGENTS.md",
+    "snapshot": "docs/refactor/history/instruction-snapshots-20261117/AGENTS.snapshot.md",
+    "bytes": 61210,
+    "characters": 28353,
+    "sha256": "e457bff7452758c666cf736c5f6971fa094c10fef565f8e69263a9a7b7e0350d"
+  },
+  {
+    "path": "galaxy/AGENTS.md",
+    "snapshot": "docs/refactor/history/instruction-snapshots-20261117/galaxy__AGENTS.snapshot.md",
+    "bytes": 13459,
+    "characters": 5677,
+    "sha256": "bcc7bc1878aca1851a87e7fedc00adda99cf384273b6c8c77116e36066dfdcf0"
+  },
+  {
+    "path": ".cursor/rules/refactor-lead.mdc",
+    "snapshot": "docs/refactor/history/instruction-snapshots-20261117/.cursor__rules__refactor-lead.mdc.snapshot.md",
+    "bytes": 3833,
+    "characters": 2065,
+    "sha256": "ab3cb9439dbf702c12ddc3402020455d5ab29b4d6ba97f572ddd1d861a5085a4"
+  },
+  {
+    "path": ".cursor/rules/service-cluster-project.mdc",
+    "snapshot": "docs/refactor/history/instruction-snapshots-20261117/.cursor__rules__service-cluster-project.mdc.snapshot.md",
+    "bytes": 2411,
+    "characters": 1402,
+    "sha256": "83a9cf98d38b044a399698fefa8b4f075f11ce2c1bfe828a815101fa04e19bd7"
+  }
+]
