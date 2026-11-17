@@ -1,0 +1,71 @@
+{
+  "task": "GALAXY-AUTOCLIENT-SESSION-A2-20261113",
+  "sourceBaseline": "3dc8d2b59806b5349fcd84662c11aa6a6aad708b",
+  "scopeBaseline": "3dc8d2b59806b5349fcd84662c11aa6a6aad708b",
+  "writeWhitelist": [
+    "galaxy/client/src/main/java/com/galaxy/auto/client/AutoClient.kt",
+    "galaxy/client/src/main/java/com/galaxy/auto/client/ipc/ClientConnectionSession.kt",
+    "galaxy/client/src/main/java/com/galaxy/auto/client/ipc/ClientCallbackDispatch.kt",
+    "galaxy/client/src/main/java/com/galaxy/auto/client/ipc/ClientReplayPublisher.kt",
+    "galaxy/client/src/main/java/com/galaxy/auto/client/ipc/ClientRequests.kt",
+    "galaxy/client/src/test/java/com/galaxy/auto/client/ipc/AutoClientConnectionTest.kt",
+    "galaxy/client/src/test/java/com/galaxy/auto/client/ipc/AutoClientCallbacksTest.kt",
+    "galaxy/client/src/test/java/com/galaxy/auto/client/ipc/AutoClientReplayTest.kt",
+    "galaxy/client/src/test/java/com/galaxy/auto/client/ipc/AutoClientRequestsTest.kt"
+  ],
+  "productionTypes": [
+    "com/galaxy/auto/client/AutoClient",
+    "com/galaxy/auto/client/ipc/ClientConnectionSession",
+    "com/galaxy/auto/client/ipc/ClientCallbackDispatch",
+    "com/galaxy/auto/client/ipc/ClientReplayPublisher",
+    "com/galaxy/auto/client/ipc/ClientRequests"
+  ],
+  "requiredSuites": [
+    "com.galaxy.auto.client.vehicle.VehicleAccountActivityTest",
+    "com.galaxy.auto.client.vehicle.VehicleAccountStateTest",
+    "com.galaxy.auto.client.vehicle.VehicleAccountPresenterTest",
+    "com.galaxy.auto.client.vehicle.VehicleQrRendererTest",
+    "com.galaxy.auto.client.diagnostics.DiagnosticEventsTest",
+    "com.galaxy.auto.client.diagnostics.DiagnosticBudgetTest",
+    "com.galaxy.auto.client.recovery.ProcessRecoveryTest",
+    "com.galaxy.auto.client.ipc.AutoClientConnectionTest",
+    "com.galaxy.auto.client.ipc.AutoClientCallbacksTest",
+    "com.galaxy.auto.client.ipc.AutoClientReplayTest",
+    "com.galaxy.auto.client.ipc.AutoClientRequestsTest"
+  ],
+  "baselineSuites": [
+    "com.galaxy.auto.client.vehicle.VehicleAccountActivityTest",
+    "com.galaxy.auto.client.vehicle.VehicleAccountStateTest",
+    "com.galaxy.auto.client.vehicle.VehicleAccountPresenterTest",
+    "com.galaxy.auto.client.vehicle.VehicleQrRendererTest",
+    "com.galaxy.auto.client.diagnostics.DiagnosticEventsTest",
+    "com.galaxy.auto.client.diagnostics.DiagnosticBudgetTest",
+    "com.galaxy.auto.client.recovery.ProcessRecoveryTest"
+  ],
+  "publicMethods": [
+    "connect",
+    "setActive",
+    "configureClusterElements",
+    "publishMedia",
+    "publishVisualMedia",
+    "publishNavigation",
+    "publishArtwork",
+    "configureScene",
+    "setProjectionPolicy",
+    "setPreviewSurface",
+    "prepareOemArtwork",
+    "executeShell",
+    "requestClientPermissions",
+    "reportSentinelIdle",
+    "configureSentinel",
+    "vehicleWebUpload",
+    "vehicleWebRequest",
+    "vehiclePage",
+    "vehicleValue",
+    "mediaCommand",
+    "setVehicleFeed",
+    "getVehicleValues",
+    "setVehicleScan",
+    "close"
+  ]
+}

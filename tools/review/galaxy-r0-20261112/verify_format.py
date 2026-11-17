@@ -55,6 +55,8 @@ PYTHON_FILES = [
     "tools/review/galaxy-autoservice-a4-20261113/test_completion.py",
     "tools/review/galaxy-account-a1-20261113/verify_account.py",
     "tools/review/galaxy-account-a1-20261113/test_account.py",
+    "tools/review/galaxy-client-a2-20261113/verify_client.py",
+    "tools/review/galaxy-client-a2-20261113/test_client.py",
     "scripts/verify_projection_retirement.sh",
 ]
 

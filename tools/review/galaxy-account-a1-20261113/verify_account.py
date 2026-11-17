@@ -81,10 +81,11 @@ def screenshots(record: dict, folder: Path) -> list[dict]:
     return rows
 
 
-def before(root: Path = ROOT) -> None:
+def before(root: Path = ROOT, check_business_scope: bool = True) -> None:
     """最终模式严格要求18项全部存在；不把工具准备当业务交付。"""
     record = scope(root)
-    check_scope(record, root)
+    if check_business_scope:
+        check_scope(record, root)
     missing = [p for p in record["writeWhitelist"] if not (root / p).is_file()]
     if missing:
         raise SystemExit(f"A1尚未完整实施: {missing}")
@@ -101,9 +102,9 @@ def colors(record: dict, root: Path = ROOT) -> None:
             raise SystemExit(f"A1既有日夜色板改变: {relative}")
 
 
-def inspect(root: Path = ROOT) -> dict:
+def inspect(root: Path = ROOT, check_business_scope: bool = True) -> dict:
     """真实编译类/双宿主Manifest/全Client套件；静态检查不代替行为用例。"""
-    before(root)
+    before(root, check_business_scope=check_business_scope)
     record = scope(root)
     build = root / "galaxy/client/build/intermediates"
     kotlin = build / "built_in_kotlinc/debug/compileDebugKotlin/classes"
@@ -116,7 +117,8 @@ def inspect(root: Path = ROOT) -> dict:
         raise SystemExit(f"A1缺少真实运行类/ViewBinding: {missing}")
     colors(record, root)
     report = Path(os.environ.get("GALAXY_R0_REPORT_DIR", str(root / ".work/a1-validation")))
-    return {"businessChangedPaths": check_scope(record, root), "junit": junit(record, root=root),
+    return {"businessChangedPaths": check_scope(record, root) if check_business_scope else [],
+            "currentTaskScopeCheckedSeparately": not check_business_scope, "junit": junit(record, root=root),
             "classes": [{"path": p.relative_to(root).as_posix(), "sha256": hashlib.sha256(p.read_bytes()).hexdigest()} for p in required],
             "manifests": manifests(root), "screenshots": screenshots(record, report / "screenshots"),
             "manualUiAndRequestOrderReviewRequired": True}

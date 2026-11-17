@@ -114,6 +114,13 @@ ARGS=(--offline --no-daemon --no-configuration-cache --console=plain
   -I scripts/verify/lib/kadb-transform.init.gradle
   -x :service:buildHab -x :service:prepareQnxReceiver -x :service:prepareClusterHook)
 
+if [ "${GALAXY_A4_CHECKPOINT:-}" = "A2-baseline" ]; then
+  ./gradlew "${ARGS[@]}" :auto-client:testDebugUnitTest \
+    2>&1 | tee "$LOG_DIR/client-baseline-build.log"
+  "$PY" tools/review/galaxy-client-a2-20261113/verify_client.py baseline \
+    2>&1 | tee "$LOG_DIR/client-baseline-result.log"
+  exit 0
+fi
 if [ "${GALAXY_A4_CHECKPOINT:-}" = "A1-baseline" ]; then
   ./gradlew "${ARGS[@]}" :auto-client:testDebugUnitTest :service:processDebugManifest :record:processDebugManifest \
     2>&1 | tee "$LOG_DIR/account-baseline-build.log"
@@ -131,7 +138,7 @@ if [ -n "${GALAXY_A4_CHECKPOINT:-}" ]; then
   exit 0
 fi
 
-"$PY" tools/review/galaxy-account-a1-20261113/verify_account.py before
+"$PY" tools/review/galaxy-client-a2-20261113/verify_client.py before
 export GALAXY_ACCOUNT_SCREENSHOT_DIR="$GALAXY_R0_REPORT_DIR/screenshots"
 
 # 只清本任务自身模块的 Kotlin class / merged manifest / test-results 输出目录，
