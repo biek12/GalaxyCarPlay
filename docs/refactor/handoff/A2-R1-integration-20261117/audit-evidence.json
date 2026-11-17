@@ -1,0 +1,312 @@
+{
+  "date": "2026-11-17",
+  "task": "A2 AutoClient complete session refactor + A2-R1",
+  "status": "AUDIT_PASSED_INTEGRATED",
+  "executor": "Codex takeover at user request after Cursor quota exhaustion",
+  "rawA2Candidate": "1822e78",
+  "cursorR1Checkpoint": "b6d50ae4a82f7585792fd9d10ba13092264c97f3",
+  "businessCandidate": "e56fd4b3553faf550b6063b66917c844f9d81b37",
+  "integrationCommit": "0627a5fabcec264dd61b607677a31eec2b31f5a2",
+  "leaderBranch": "feat/galaxy-android-r0-20261112",
+  "candidateAndIntegrationGitTreesIdentical": true,
+  "r1CandidateProductionUnchangedFrom": "4e587cb",
+  "finalDocOnlyRebindingRequired": true,
+  "modules": {
+    "client": {
+      "suiteCount": 11,
+      "tests": 66,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "service": {
+      "suiteCount": 48,
+      "tests": 172,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "cluster": {
+      "suiteCount": 3,
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "ui": {
+      "suiteCount": 2,
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    }
+  },
+  "toolRegressionCountPerWorktree": 18,
+  "candidateToolResults": [
+    {
+      "package": "galaxy-r0-20261112",
+      "command": [
+        "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/review/galaxy-r0-20261112",
+        "-p",
+        "test_*.py"
+      ],
+      "exitCode": 0,
+      "log": "F:\\GalaxyPlay\\wt-client-session\\.work\\a2-r1-delivery\\logs\\tools-galaxy-r0-20261112.log"
+    },
+    {
+      "package": "galaxy-autoservice-a4-20261113",
+      "command": [
+        "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/review/galaxy-autoservice-a4-20261113",
+        "-p",
+        "test_*.py"
+      ],
+      "exitCode": 0,
+      "log": "F:\\GalaxyPlay\\wt-client-session\\.work\\a2-r1-delivery\\logs\\tools-galaxy-autoservice-a4-20261113.log"
+    },
+    {
+      "package": "galaxy-account-a1-20261113",
+      "command": [
+        "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/review/galaxy-account-a1-20261113",
+        "-p",
+        "test_*.py"
+      ],
+      "exitCode": 0,
+      "log": "F:\\GalaxyPlay\\wt-client-session\\.work\\a2-r1-delivery\\logs\\tools-galaxy-account-a1-20261113.log"
+    },
+    {
+      "package": "galaxy-client-a2-20261113",
+      "command": [
+        "C:\\Users\\Administrator\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+        "-m",
+        "unittest",
+        "discover",
+        "-s",
+        "tools/review/galaxy-client-a2-20261113",
+        "-p",
+        "test_*.py"
+      ],
+      "exitCode": 0,
+      "log": "F:\\GalaxyPlay\\wt-client-session\\.work\\a2-r1-delivery\\logs\\tools-galaxy-client-a2-20261113.log"
+    }
+  ],
+  "leaderToolResults": [
+    {
+      "package": "galaxy-r0-20261112",
+      "exitCode": 0,
+      "log": "F:\\GalaxyPlay\\galaxycarplay\\.work\\a2-r1-integration-validation\\logs\\tools-galaxy-r0-20261112.log"
+    },
+    {
+      "package": "galaxy-autoservice-a4-20261113",
+      "exitCode": 0,
+      "log": "F:\\GalaxyPlay\\galaxycarplay\\.work\\a2-r1-integration-validation\\logs\\tools-galaxy-autoservice-a4-20261113.log"
+    },
+    {
+      "package": "galaxy-account-a1-20261113",
+      "exitCode": 0,
+      "log": "F:\\GalaxyPlay\\galaxycarplay\\.work\\a2-r1-integration-validation\\logs\\tools-galaxy-account-a1-20261113.log"
+    },
+    {
+      "package": "galaxy-client-a2-20261113",
+      "exitCode": 0,
+      "log": "F:\\GalaxyPlay\\galaxycarplay\\.work\\a2-r1-integration-validation\\logs\\tools-galaxy-client-a2-20261113.log"
+    }
+  ],
+  "format": {
+    "kotlinKts": 154,
+    "xml": 16,
+    "syntax": 15
+  },
+  "api": {
+    "publicMethods": 24,
+    "jvmEntries": 32,
+    "preserved": true,
+    "productionClasses": [
+      {
+        "path": "galaxy/client/build/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes/com/galaxy/auto/client/AutoClient.class",
+        "sha256": "aac226430457ca1e1b7061b9fbebd1b42012797fdf87c70b360cf4c26027e133"
+      },
+      {
+        "path": "galaxy/client/build/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes/com/galaxy/auto/client/ipc/ClientConnectionSession.class",
+        "sha256": "227cfa3973dc1e450c9b0bf6c3e86473702eb01945cc2ea6cc83a9544b2009da"
+      },
+      {
+        "path": "galaxy/client/build/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes/com/galaxy/auto/client/ipc/ClientCallbackDispatch.class",
+        "sha256": "4a23e943a253eee3573cc61fd46b4dd43e2b7998e95901bec927aeca139c7087"
+      },
+      {
+        "path": "galaxy/client/build/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes/com/galaxy/auto/client/ipc/ClientReplayPublisher.class",
+        "sha256": "7486cf124e0e136a9f17465c0ec64a19a57f605eea0a40eeb7c60d764f858628"
+      },
+      {
+        "path": "galaxy/client/build/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes/com/galaxy/auto/client/ipc/ClientRequests.class",
+        "sha256": "b17a6801a9887919064f2522a46e6a53c28bbc45e74f86e9ad3bd1d75e13638a"
+      }
+    ]
+  },
+  "scope": [
+    "galaxy/client/src/main/java/com/galaxy/auto/client/AutoClient.kt",
+    "galaxy/client/src/main/java/com/galaxy/auto/client/ipc/ClientCallbackDispatch.kt",
+    "galaxy/client/src/main/java/com/galaxy/auto/client/ipc/ClientConnectionSession.kt",
+    "galaxy/client/src/main/java/com/galaxy/auto/client/ipc/ClientReplayPublisher.kt",
+    "galaxy/client/src/main/java/com/galaxy/auto/client/ipc/ClientRequests.kt",
+    "galaxy/client/src/test/java/com/galaxy/auto/client/ipc/AutoClientCallbacksTest.kt",
+    "galaxy/client/src/test/java/com/galaxy/auto/client/ipc/AutoClientConnectionTest.kt",
+    "galaxy/client/src/test/java/com/galaxy/auto/client/ipc/AutoClientReplayTest.kt",
+    "galaxy/client/src/test/java/com/galaxy/auto/client/ipc/AutoClientRequestsTest.kt"
+  ],
+  "sourceGroups": {
+    "sourceSha256": {
+      "fileCount": 1059,
+      "candidateRawSha256": "3318a52affc4f636e01cd503ef3d41b06ce464c6bac4cb693b160313bad356f1",
+      "leaderRawSha256": "6f306de15fd084aeba7ce96a420623fff26c536c256cfb96793b633513dc701a",
+      "lfNormalizedSha256": "60c4d99bf3a5d370ce8b0d691fbb8111f63be092cf07bf672c0abcf7489a738f",
+      "rawDifferentFileCount": 906,
+      "allDifferencesOnlyCrLfVsLf": true
+    },
+    "archiveSha256": {
+      "fileCount": 101,
+      "candidateRawSha256": "e55db2602b1687b46982cf706872fc55758288c6e367dd9a997bd126d44477a5",
+      "leaderRawSha256": "468a077b882c171ed87d1ee0317ab885795d8b38b3565957e4f2f6b6e016851c",
+      "lfNormalizedSha256": "e55db2602b1687b46982cf706872fc55758288c6e367dd9a997bd126d44477a5",
+      "rawDifferentFileCount": 2,
+      "allDifferencesOnlyCrLfVsLf": true
+    },
+    "validationSourceSha256": {
+      "fileCount": 34,
+      "candidateRawSha256": "67d9523f17c44878d1c7fe2c4e6825ca95ef203610ec7240bed1ec60bf3446e3",
+      "leaderRawSha256": "a6f2cea2c084a1bd98c46cabc0219000e920e5b95c3b9f9044ad485f04983189",
+      "lfNormalizedSha256": "e33363e5f747e1db424f14e9bb23d4d5f5d19a6b7e3e5cf991ae72234bda2864",
+      "rawDifferentFileCount": 8,
+      "allDifferencesOnlyCrLfVsLf": true
+    }
+  },
+  "lineEndingNote": "Both trees and normalized source contents are identical; 906 source files, 2 archive metadata files and 8 tool/config files differ only in worktree CRLF/LF. Each full report binds its own raw bytes. No payload, business logic or assertions were changed to hide this difference.",
+  "artifactGates": {
+    "legacyArchiveFiles": 53,
+    "themeArchiveFiles": 44,
+    "serviceClusterClasses": 281,
+    "accountScreenshots": [
+      {
+        "file": "account-bound-light.png",
+        "sha256": "fa83707af7c849e1b46fda8e9b3de7daafeb1a5b41ab520e43e7468461551bcf",
+        "width": 1080,
+        "height": 1800
+      },
+      {
+        "file": "account-code-pending-light.png",
+        "sha256": "6e955c83502b4e6d4cf912f5dd3f860550053ef7a375cb5b73731d49575d8ed7",
+        "width": 1080,
+        "height": 1800
+      },
+      {
+        "file": "account-bound-night.png",
+        "sha256": "0db293f3e22f77e141bec007b34cc2cb28ba8a6374538773dee9da8b9f1918f8",
+        "width": 1080,
+        "height": 1800
+      },
+      {
+        "file": "account-error-night.png",
+        "sha256": "d3b4010a4e62d26a224a7c5fa2d11ab922fa34d5eafa8a4ea87e59ca694c6ec9",
+        "width": 1080,
+        "height": 1800
+      }
+    ],
+    "kadbTransform": {
+      "kadbVersion": "2.1.1",
+      "calls": [
+        {
+          "method": "parsePrivateKeyPem",
+          "owner": "com/ecarx/autoservice/platform/adb/AdbCrypto"
+        },
+        {
+          "method": "derivePublicKey",
+          "owner": "com/ecarx/autoservice/platform/adb/AdbCrypto"
+        }
+      ],
+      "transformedJar": "F:/GalaxyPlay/galaxycarplay/.work/gradle-home/caches/9.5.0/transforms/2e7b0692aa950345c6e328e546ade700/transformed/kadb-runtime.jar",
+      "transformedJarSha256": "04460a2cbfadc227aaa691d21d881bbbce02da15b51cba18cd7a5b39b9583363",
+      "targetClass": "galaxy/service/build/intermediates/built_in_kotlinc/debug/compileDebugKotlin/classes/com/ecarx/autoservice/platform/adb/AdbCrypto.class",
+      "targetClassSha256": "cc7dfed6c1f077ea6639731702fc07420165828d52ef9d694da4d72b2fa967ce",
+      "sourceHead": "0627a5fabcec264dd61b607677a31eec2b31f5a2",
+      "apkBuilt": false,
+      "vehicleValidated": false
+    }
+  },
+  "manualReview": {
+    "ownership": "Connection, generation, callback, replay, request and close order reviewed; R1 production identical to the previously audited candidate; no protocol or role changes",
+    "preview": "Independent handshake baseline and Surface copy/release observations; bounded real worker latch fixes enqueue-before-close order; public system CREATOR observer restored in finally",
+    "tickets": "Independent same-generation A/B revision and stale generation cases; request success positive controls before old-generation/close rejection; separate exception shapes",
+    "worker": "Instance-bound worker; production close termination asserted before forced failure cleanup; Handler.post detects queue shutdown without swallowing live-worker errors",
+    "diagnostics": "Actual new local binder_call record observed, fictional shell text absent; no enrollment or network configured"
+  },
+  "artifacts": [
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\a2-r1-delivery\\VALIDATION-e56fd4b.json",
+      "sha256": "25c12e2d2048431a542cda006fa5783d5ef13e2a5445e5c9ad5bad6530b5559f",
+      "bytes": 290303
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\a2-r1-delivery-console.log",
+      "sha256": "60fc6469d470b5757abfcdce8c88c0a0f116b07932de615c79d4eb5ab2d77718",
+      "bytes": 47223
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\a2-r1-delivery-exit.txt",
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+      "bytes": 3
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\a2-r1-delivery\\STATUS.md",
+      "sha256": "a13598d44d4b44f33bd24fa5e0b02228ef853cf6c869d0e77aaa9680f8381163",
+      "bytes": 1109
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\a2-r1-delivery\\DELIVERY.md",
+      "sha256": "d32081553eecf57c506acc94c10759fd078572c130455bb6d7ea2b22d137c2bd",
+      "bytes": 3324
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\a2-r1-delivery\\tool-results.json",
+      "sha256": "34192ec9fa4ca51d1945b82c09e43396ad90d649baad7139438bb3d88761c690",
+      "bytes": 1814
+    },
+    {
+      "path": "F:\\GalaxyPlay\\galaxycarplay\\.work\\a2-r1-integration-validation\\VALIDATION-0627a5f.json",
+      "sha256": "2927eab3e25973416c32c01b2c2d4481266ac1e909b51cb10789178309913a31",
+      "bytes": 290303
+    },
+    {
+      "path": "F:\\GalaxyPlay\\galaxycarplay\\.work\\a2-r1-integration-console.log",
+      "sha256": "5b734110706ab907c9f63c5e4ea0c219baa99b6766a0298ffda92d0ac02e001e",
+      "bytes": 59001
+    },
+    {
+      "path": "F:\\GalaxyPlay\\galaxycarplay\\.work\\a2-r1-integration-exit.txt",
+      "sha256": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+      "bytes": 3
+    },
+    {
+      "path": "F:\\GalaxyPlay\\galaxycarplay\\.work\\a2-r1-integration-validation\\tool-results.json",
+      "sha256": "2775af10e1b7b8cc1e9b3749bbcfd205a23d65a78e73c972b358002797b1f121",
+      "bytes": 803
+    }
+  ],
+  "apkBuilt": false,
+  "vehicleValidated": false,
+  "pushed": false
+}
