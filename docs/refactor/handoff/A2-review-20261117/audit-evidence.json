@@ -1,0 +1,686 @@
+{
+  "task": "GALAXY-AUTOCLIENT-SESSION-A2-20261113",
+  "reviewDate": "2026-11-17",
+  "status": "CHANGES_REQUIRED",
+  "integrated": false,
+  "wholeTaskReady": false,
+  "worktree": "F:\\GalaxyPlay\\wt-client-session",
+  "branch": "feat/galaxy-client-session-20261113",
+  "reportedHead": "237d216",
+  "rawCandidate": "1822e7836b305e6c14508620d897d95ec45cff23",
+  "formattedCandidate": "4e587cbf981a48452a666f18a06f5561b776811d",
+  "sourceBaseline": "3dc8d2b59806b5349fcd84662c11aa6a6aad708b",
+  "scopeBaseline": "3dc8d2b59806b5349fcd84662c11aa6a6aad708b",
+  "gate": {
+    "command": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\verify_projection_retirement_windows.ps1 -CacheRoot F:\\GalaxyPlay\\galaxycarplay\\.work -ReportDir F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117",
+    "exitCode": 1,
+    "postClientStepsExecuted": false
+  },
+  "tools": [
+    {
+      "path": "tools/review/galaxy-r0-20261112",
+      "exitCode": 0,
+      "tests": 8
+    },
+    {
+      "path": "tools/review/galaxy-autoservice-a4-20261113",
+      "exitCode": 0,
+      "tests": 4
+    },
+    {
+      "path": "tools/review/galaxy-account-a1-20261113",
+      "exitCode": 0,
+      "tests": 3
+    },
+    {
+      "path": "tools/review/galaxy-client-a2-20261113",
+      "exitCode": 0,
+      "tests": 3
+    }
+  ],
+  "format": {
+    "kotlin": 154,
+    "xml": 16,
+    "scriptSyntax": 15,
+    "productionChanges": "formatter output only after preserving raw candidate"
+  },
+  "publicApi": {
+    "publicApiPreserved": true,
+    "entryCount": 32,
+    "publicApi": [
+      {
+        "declaration": "public com.galaxy.auto.client.AutoClient(android.content.Context, java.lang.String, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function2, kotlin.jvm.functions.Function1, kotlin.jvm.functions.Function0, boolean, boolean, int, kotlin.jvm.internal.DefaultConstructorMarker);",
+        "descriptor": "(Landroid/content/Context;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function0;ZZILkotlin/jvm/internal/DefaultConstructorMarker;)V"
+      },
+      {
+        "declaration": "public com.galaxy.auto.client.AutoClient(android.content.Context, java.lang.String, kotlin.jvm.functions.Function1<? super android.view.Surface, kotlin.Unit>, kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>, kotlin.jvm.functions.Function1<? super java.lang.String, kotlin.Unit>, kotlin.jvm.functions.Function1<? super java.lang.Integer, kotlin.Unit>, kotlin.jvm.functions.Function2<? super android.view.Surface, ? super java.lang.Long, kotlin.Unit>, kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>, kotlin.jvm.functions.Function0<kotlin.Unit>, boolean, boolean);",
+        "descriptor": "(Landroid/content/Context;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function2;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function0;ZZ)V"
+      },
+      {
+        "declaration": "public final void configureClusterElements(com.galaxy.auto.contract.ClusterDisplayConfiguration, java.io.File);",
+        "descriptor": "(Lcom/galaxy/auto/contract/ClusterDisplayConfiguration;Ljava/io/File;)V"
+      },
+      {
+        "declaration": "public final void configureScene(com.galaxy.auto.contract.SceneConfiguration);",
+        "descriptor": "(Lcom/galaxy/auto/contract/SceneConfiguration;)V"
+      },
+      {
+        "declaration": "public final void configureSentinel(boolean, kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>);",
+        "descriptor": "(ZLkotlin/jvm/functions/Function1;)V"
+      },
+      {
+        "declaration": "public final void connect();",
+        "descriptor": "()V"
+      },
+      {
+        "declaration": "public final void executeShell(java.lang.String, java.lang.String, int, kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>);",
+        "descriptor": "(Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/functions/Function1;)V"
+      },
+      {
+        "declaration": "public final void getVehicleValues(java.util.Collection<java.lang.String>, kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>);",
+        "descriptor": "(Ljava/util/Collection;Lkotlin/jvm/functions/Function1;)V"
+      },
+      {
+        "declaration": "public final void mediaCommand(int);",
+        "descriptor": "(I)V"
+      },
+      {
+        "declaration": "public final void prepareOemArtwork(byte[], kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>);",
+        "descriptor": "([BLkotlin/jvm/functions/Function1;)V"
+      },
+      {
+        "declaration": "public final void publishArtwork(byte[], java.lang.String);",
+        "descriptor": "([BLjava/lang/String;)V"
+      },
+      {
+        "declaration": "public final void publishMedia(android.os.Bundle);",
+        "descriptor": "(Landroid/os/Bundle;)V"
+      },
+      {
+        "declaration": "public final void publishNavigation(android.os.Bundle);",
+        "descriptor": "(Landroid/os/Bundle;)V"
+      },
+      {
+        "declaration": "public final void publishVisualMedia(android.os.Bundle);",
+        "descriptor": "(Landroid/os/Bundle;)V"
+      },
+      {
+        "declaration": "public final void reportSentinelIdle(long);",
+        "descriptor": "(J)V"
+      },
+      {
+        "declaration": "public final void requestClientPermissions(java.util.List<java.lang.String>, kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>);",
+        "descriptor": "(Ljava/util/List;Lkotlin/jvm/functions/Function1;)V"
+      },
+      {
+        "declaration": "public final void setActive(boolean);",
+        "descriptor": "(Z)V"
+      },
+      {
+        "declaration": "public final void setPreviewSurface(android.view.Surface);",
+        "descriptor": "(Landroid/view/Surface;)V"
+      },
+      {
+        "declaration": "public final void setProjectionPolicy(com.galaxy.auto.contract.ProjectionPolicy);",
+        "descriptor": "(Lcom/galaxy/auto/contract/ProjectionPolicy;)V"
+      },
+      {
+        "declaration": "public final void setVehicleFeed(java.util.Collection<java.lang.String>, int);",
+        "descriptor": "(Ljava/util/Collection;I)V"
+      },
+      {
+        "declaration": "public final void setVehicleScan(boolean);",
+        "descriptor": "(Z)V"
+      },
+      {
+        "declaration": "public final void vehiclePage(int, boolean, kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>);",
+        "descriptor": "(IZLkotlin/jvm/functions/Function1;)V"
+      },
+      {
+        "declaration": "public final void vehicleValue(int, int, int, kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>);",
+        "descriptor": "(IIILkotlin/jvm/functions/Function1;)V"
+      },
+      {
+        "declaration": "public final void vehicleWebRequest(java.lang.String, android.os.Bundle, kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>);",
+        "descriptor": "(Ljava/lang/String;Landroid/os/Bundle;Lkotlin/jvm/functions/Function1;)V"
+      },
+      {
+        "declaration": "public final void vehicleWebUpload(java.lang.String, java.lang.String, java.io.File, kotlin.jvm.functions.Function1<? super android.os.Bundle, kotlin.Unit>);",
+        "descriptor": "(Ljava/lang/String;Ljava/lang/String;Ljava/io/File;Lkotlin/jvm/functions/Function1;)V"
+      },
+      {
+        "declaration": "public static void configureClusterElements$default(com.galaxy.auto.client.AutoClient, com.galaxy.auto.contract.ClusterDisplayConfiguration, java.io.File, int, java.lang.Object);",
+        "descriptor": "(Lcom/galaxy/auto/client/AutoClient;Lcom/galaxy/auto/contract/ClusterDisplayConfiguration;Ljava/io/File;ILjava/lang/Object;)V"
+      },
+      {
+        "declaration": "public static void executeShell$default(com.galaxy.auto.client.AutoClient, java.lang.String, java.lang.String, int, kotlin.jvm.functions.Function1, int, java.lang.Object);",
+        "descriptor": "(Lcom/galaxy/auto/client/AutoClient;Ljava/lang/String;Ljava/lang/String;ILkotlin/jvm/functions/Function1;ILjava/lang/Object;)V"
+      },
+      {
+        "declaration": "public static void publishArtwork$default(com.galaxy.auto.client.AutoClient, byte[], java.lang.String, int, java.lang.Object);",
+        "descriptor": "(Lcom/galaxy/auto/client/AutoClient;[BLjava/lang/String;ILjava/lang/Object;)V"
+      },
+      {
+        "declaration": "public static void setVehicleFeed$default(com.galaxy.auto.client.AutoClient, java.util.Collection, int, int, java.lang.Object);",
+        "descriptor": "(Lcom/galaxy/auto/client/AutoClient;Ljava/util/Collection;IILjava/lang/Object;)V"
+      },
+      {
+        "declaration": "public static void vehiclePage$default(com.galaxy.auto.client.AutoClient, int, boolean, kotlin.jvm.functions.Function1, int, java.lang.Object);",
+        "descriptor": "(Lcom/galaxy/auto/client/AutoClient;IZLkotlin/jvm/functions/Function1;ILjava/lang/Object;)V"
+      },
+      {
+        "declaration": "public static void vehicleWebRequest$default(com.galaxy.auto.client.AutoClient, java.lang.String, android.os.Bundle, kotlin.jvm.functions.Function1, int, java.lang.Object);",
+        "descriptor": "(Lcom/galaxy/auto/client/AutoClient;Ljava/lang/String;Landroid/os/Bundle;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)V"
+      },
+      {
+        "declaration": "public void close();",
+        "descriptor": "()V"
+      }
+    ],
+    "classes": [
+      {
+        "path": "galaxy\\client\\build\\intermediates\\built_in_kotlinc\\debug\\compileDebugKotlin\\classes\\com\\galaxy\\auto\\client\\AutoClient.class",
+        "sha256": "aac226430457ca1e1b7061b9fbebd1b42012797fdf87c70b360cf4c26027e133"
+      },
+      {
+        "path": "galaxy\\client\\build\\intermediates\\built_in_kotlinc\\debug\\compileDebugKotlin\\classes\\com\\galaxy\\auto\\client\\ipc\\ClientConnectionSession.class",
+        "sha256": "227cfa3973dc1e450c9b0bf6c3e86473702eb01945cc2ea6cc83a9544b2009da"
+      },
+      {
+        "path": "galaxy\\client\\build\\intermediates\\built_in_kotlinc\\debug\\compileDebugKotlin\\classes\\com\\galaxy\\auto\\client\\ipc\\ClientCallbackDispatch.class",
+        "sha256": "4a23e943a253eee3573cc61fd46b4dd43e2b7998e95901bec927aeca139c7087"
+      },
+      {
+        "path": "galaxy\\client\\build\\intermediates\\built_in_kotlinc\\debug\\compileDebugKotlin\\classes\\com\\galaxy\\auto\\client\\ipc\\ClientReplayPublisher.class",
+        "sha256": "7486cf124e0e136a9f17465c0ec64a19a57f605eea0a40eeb7c60d764f858628"
+      },
+      {
+        "path": "galaxy\\client\\build\\intermediates\\built_in_kotlinc\\debug\\compileDebugKotlin\\classes\\com\\galaxy\\auto\\client\\ipc\\ClientRequests.class",
+        "sha256": "b17a6801a9887919064f2522a46e6a53c28bbc45e74f86e9ad3bd1d75e13638a"
+      }
+    ]
+  },
+  "modules": {
+    "ui": {
+      "suiteCount": 2,
+      "tests": 17,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "failuresDetail": []
+    },
+    "service": {
+      "suiteCount": 48,
+      "tests": 172,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "failuresDetail": []
+    },
+    "cluster": {
+      "suiteCount": 3,
+      "tests": 12,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "failuresDetail": []
+    },
+    "client": {
+      "suiteCount": 11,
+      "tests": 60,
+      "failures": 2,
+      "errors": 0,
+      "skipped": 0,
+      "failuresDetail": [
+        {
+          "suite": "com.galaxy.auto.client.ipc.AutoClientCallbacksTest",
+          "test": "PREVIEW复制独立引用替换释放旧预览null清空且close释放",
+          "message": "java.lang.AssertionError: 真实异步行为未完成"
+        },
+        {
+          "suite": "com.galaxy.auto.client.ipc.AutoClientReplayTest",
+          "test": "图片方案用真实只读FD保留输入文件且旧代次与旧revision回执丢弃",
+          "message": "java.lang.AssertionError: expected:<1> but was:<3>"
+        }
+      ]
+    }
+  },
+  "sources": [
+    {
+      "path": "galaxy/client/src/main/java/com/galaxy/auto/client/AutoClient.kt",
+      "sha256": "938d46c302028edaf1d56e2ca27f3417c6c2560ebfc5bb1bbb20bcfd8475c28d",
+      "matchesFormattedCandidate": true
+    },
+    {
+      "path": "galaxy/client/src/main/java/com/galaxy/auto/client/ipc/ClientConnectionSession.kt",
+      "sha256": "f127862fbef441f785952d9def48257f6b4fa8cb6454094a5256017c99007ee5",
+      "matchesFormattedCandidate": true
+    },
+    {
+      "path": "galaxy/client/src/main/java/com/galaxy/auto/client/ipc/ClientCallbackDispatch.kt",
+      "sha256": "4daaa90e707cd64702e9f695ee2e67eed075fbc71ebef2425a47eaef82c98b44",
+      "matchesFormattedCandidate": true
+    },
+    {
+      "path": "galaxy/client/src/main/java/com/galaxy/auto/client/ipc/ClientReplayPublisher.kt",
+      "sha256": "d718aa46068439038020efdb6c2e446633eaaffc94d0fd2258c49c8a2f054147",
+      "matchesFormattedCandidate": true
+    },
+    {
+      "path": "galaxy/client/src/main/java/com/galaxy/auto/client/ipc/ClientRequests.kt",
+      "sha256": "696f6cb62ce0ec1407c6d84c00953f6db9abd6864932d3ed842e7fac4933bfe6",
+      "matchesFormattedCandidate": true
+    },
+    {
+      "path": "galaxy/client/src/test/java/com/galaxy/auto/client/ipc/AutoClientConnectionTest.kt",
+      "sha256": "8fa850f763b3cef513c0d953f2944868962c14bf40626ec6aca9353b99b3e9db",
+      "matchesFormattedCandidate": true
+    },
+    {
+      "path": "galaxy/client/src/test/java/com/galaxy/auto/client/ipc/AutoClientCallbacksTest.kt",
+      "sha256": "4bcc1ecf9a334a29e060cb37a9dbed10bb5d3bcc15e5ba553fe8e09874a3e67b",
+      "matchesFormattedCandidate": true
+    },
+    {
+      "path": "galaxy/client/src/test/java/com/galaxy/auto/client/ipc/AutoClientReplayTest.kt",
+      "sha256": "4046bd42a797c949000c131f5142e0017c71039979ae3dc488b8bb53f1ef75b7",
+      "matchesFormattedCandidate": true
+    },
+    {
+      "path": "galaxy/client/src/test/java/com/galaxy/auto/client/ipc/AutoClientRequestsTest.kt",
+      "sha256": "052c7067f8cc045b24ab863ebf00041f8eb3947e8e8d05517d6a7f12dd354feb",
+      "matchesFormattedCandidate": true
+    }
+  ],
+  "artifacts": [
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\client-TEST-com.galaxy.auto.client.diagnostics.DiagnosticBudgetTest.xml",
+      "sha256": "245aeb99f18083e30082596b8c12a215233513ae7b49d246c6d6a0c515d69e62",
+      "bytes": 527
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\client-TEST-com.galaxy.auto.client.diagnostics.DiagnosticEventsTest.xml",
+      "sha256": "0a54ae4311bedf34eef48c20a290b61fe007c2605a0c369330697ccf8317b8e4",
+      "bytes": 800
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\client-TEST-com.galaxy.auto.client.ipc.AutoClientCallbacksTest.xml",
+      "sha256": "147dc1fa3b237da0c79c79757dc570fac91d25c40c996ff08eaaaa7b81a85672",
+      "bytes": 4368
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\client-TEST-com.galaxy.auto.client.ipc.AutoClientConnectionTest.xml",
+      "sha256": "eb9ec14b75acad838ecfc4598bc6c34db5adcd79a8915a4a70ff37d7417ac1a9",
+      "bytes": 1476
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\client-TEST-com.galaxy.auto.client.ipc.AutoClientReplayTest.xml",
+      "sha256": "b36206848dd408bac06d36a1b3e44b10a4a6e6ec03fc8bd18e33af9f30b6088c",
+      "bytes": 4134
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\client-TEST-com.galaxy.auto.client.ipc.AutoClientRequestsTest.xml",
+      "sha256": "5a58532250889d551492ba5f3e1f1d7f88fb9f462401b92adc25f8ec17d72330",
+      "bytes": 1428
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\client-TEST-com.galaxy.auto.client.recovery.ProcessRecoveryTest.xml",
+      "sha256": "33c5fbbc67d205ae6d4498efc035e86c590d525c561d7e90d68601e88d6aea9d",
+      "bytes": 658
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\client-TEST-com.galaxy.auto.client.vehicle.VehicleAccountActivityTest.xml",
+      "sha256": "97adb42f4d495bcf41e97673ca135faa9e9165400f31040dc8bc096d27b4a98a",
+      "bytes": 3202
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\client-TEST-com.galaxy.auto.client.vehicle.VehicleAccountPresenterTest.xml",
+      "sha256": "e5c4cdcbbed468889c48d111af8bcd0d51ebf191c0d7423ab9e71a3483c29c30",
+      "bytes": 62391
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\client-TEST-com.galaxy.auto.client.vehicle.VehicleAccountStateTest.xml",
+      "sha256": "888ce86c5cfe4262c017c33c819f537ba00d5480fc66681beb313ddd14b0978f",
+      "bytes": 1305
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\client-TEST-com.galaxy.auto.client.vehicle.VehicleQrRendererTest.xml",
+      "sha256": "91913260c2210dc2a38ea5084963611a3ffcd73ffbe9fa3982b56f01d0db40e8",
+      "bytes": 1237
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\cluster-TEST-com.galaxy.autocluster.ClusterAppNavigationTest.xml",
+      "sha256": "1242ce6a4e854cb903617e837cb76f09dea75f2bf37d628154d547389b5986a8",
+      "bytes": 965
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\cluster-TEST-com.galaxy.autocluster.ClusterPageBehaviorTest.xml",
+      "sha256": "cc4b1ca137fa57fed75e8dcd48a08c4993e3a7c2da8ebe1f3b928efaa98f4ab6",
+      "bytes": 945
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\cluster-TEST-com.galaxy.autocluster.LegacyProjectionRetirementTest.xml",
+      "sha256": "88496e9a75e2ba74fb8d2063bb61fa1cdb942b304a4e3bc510ead3654e752f27",
+      "bytes": 945
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.diagnostics.NativeCrashContextTest.xml",
+      "sha256": "f7092317a72f86c6d150062c4aae0186253d719b3f931916c19790079dbedc8d",
+      "bytes": 668
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.diagnostics.ServiceDiagnosticsTest.xml",
+      "sha256": "b7e7108ea99adb6a36479cadc1549bc01045faced2e4849844d32842c52d35ea",
+      "bytes": 525
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.input.ClusterMenuInputTest.xml",
+      "sha256": "65fb2c60884a582f360ec2f6602c60796ba2ee2d7e10915ca940161a5f9381a6",
+      "bytes": 649
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.ipc.AutoServiceBinderTest.xml",
+      "sha256": "ed3864a1e9cc9184a086f5d533e11f8eeec9f0a148e9d35abd061521eaead7a9",
+      "bytes": 869
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.ipc.ClientRegistryTest.xml",
+      "sha256": "affff76af2c096271fc9330f6e03b55cfe68d6289bacd23c0c65c47f69eb0ffe",
+      "bytes": 1061
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.ipc.ServiceCallerIdentityTest.xml",
+      "sha256": "a9a38904a7d9904eedd9bfcd597f0e8500a87b7c3cdb8805dee792ebe8c630cc",
+      "bytes": 987
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.ipc.ServicePublicationTest.xml",
+      "sha256": "90ddfa6f99a0f8922cdc210eeca1fe7871423cea9152a412c0aa25ee4017c697",
+      "bytes": 691
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.ipc.ServiceRequestQueueTest.xml",
+      "sha256": "9d668b0643fad5103bec37eabe68f1e1d08e3d7d568b45a7308e8ab4f39f16f2",
+      "bytes": 776
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.ipc.ServiceSnapshotsTest.xml",
+      "sha256": "8c6136869498c9a65374124e91c6e6749e08318f1b9dd977db77674404389931",
+      "bytes": 966
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.KanziMediaFrameTest.xml",
+      "sha256": "e8d66da87e06a2b6c5e446e31df2323d87e0044aaac7ae4b7557c846d6e73f67",
+      "bytes": 628
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.media.ServiceMediaSessionTest.xml",
+      "sha256": "04ce0b6994b24bfc18541b3182f17b48dcbb418ab28f4bfb1832cc60f0cf018d",
+      "bytes": 20484
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.oem.ClusterElementPipelineTest.xml",
+      "sha256": "2064c0f449ecd5f65e4cc62ddcb2d37f3164c8c296b7449e5a5ab3345b750218",
+      "bytes": 936
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.oem.ClusterElementsSessionTest.xml",
+      "sha256": "f3f285486344763ded6ecd51c61ab4bb12bd92cdd7c3e88876b683cb74d0e277",
+      "bytes": 683
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.platform.adb.AdbCryptoTest.xml",
+      "sha256": "221148d2b76982c4d1e92178f548e61a26a36499dde64a7816ee9c1c3f1d9f79",
+      "bytes": 514
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.platform.adb.AdbKeyAuthorizationTest.xml",
+      "sha256": "fe7f45746ff140a371ace31061a5808c0cb37eb162532a9d1b962d2fe906dc28",
+      "bytes": 1018
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.platform.adb.AdbStartupTest.xml",
+      "sha256": "aed9ab51f5b78c4b82eeba3b90734b676e38b5773428ba64ae44c710db294212",
+      "bytes": 897
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.platform.foundation.AndroidRootBootstrapTest.xml",
+      "sha256": "cc3cfab456746cd9521b8ee897fb25b992dc732d5cbc00645aa35bd72aeb030b",
+      "bytes": 692
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.platform.foundation.ClientPermissionPolicyTest.xml",
+      "sha256": "5f04c04ec075e90a4efe82b9078412809c66c2304812c36db38a13108d0a2904",
+      "bytes": 568
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.platform.foundation.FoundationRecoveryTest.xml",
+      "sha256": "be74fdc22211b39726d61008170b1cda2ced5e32d17bdd49718008f0e0a5e9d1",
+      "bytes": 1068
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.platform.foundation.ServicePlatformRequestsTest.xml",
+      "sha256": "f25dc08cf2fc642a68e047adc0c20745a3a9c0ea58af998bcb7d96afb32d9b2d",
+      "bytes": 937
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.platform.hook.ClusterHookLifecycleTest.xml",
+      "sha256": "1c81986107b0bfb3f96a32239b1ecd65fa95922332eb40d6ae3ad053ed3c5807",
+      "bytes": 963
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.platform.hook.HookLeaseTest.xml",
+      "sha256": "1ff388fa2c719958c180fd44061ab9dc6e0666294041496c7d1ed013d2680994",
+      "bytes": 751
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.platform.hook.HookMaterialsTest.xml",
+      "sha256": "99929479dce8ebbc99ea9e4eba1eca7b887452d140a8006b46d6b0d66109f64a",
+      "bytes": 968
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.platform.qnx.QnxOemCredentialsTest.xml",
+      "sha256": "6dbea9e2b0b66a9af7e4e6de9b12ba402cafa2d0fb43afc3a89333915ef6f17b",
+      "bytes": 703
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.platform.root.PlatformExecutionTest.xml",
+      "sha256": "a98c12f0401a6e6b436a84e5d6661727465de8fe1eaab988fe5813b0fe992547",
+      "bytes": 977
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.platform.root.RootFramesTest.xml",
+      "sha256": "6ecb0c5898cd53b3507fa7cd7654b575645d1c8e02cbb909d473ccc8ef07c12f",
+      "bytes": 1089
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.platform.root.RootProjectionArchiveTest.xml",
+      "sha256": "6ed318cf47ec9f70f0fc9dd5c6f4176a1d6b93e0830126f79b07505474388933",
+      "bytes": 1037
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.remote.RemoteConnectionStatusTest.xml",
+      "sha256": "f16fb04451e72ae2795684496a468532c4f77be1e353eda168597cc9dfd888d9",
+      "bytes": 676
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.remote.ServiceRemoteSessionTest.xml",
+      "sha256": "63ce169b0a05a957833ae64fd5e380c8335851686d684c27df927ebe847ecfa4",
+      "bytes": 532
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.sentinel.SentinelPolicyTest.xml",
+      "sha256": "8aa62767fa8116ee62c0f750e82f32219ac22c0544f519d6e8f21b3df89280b3",
+      "bytes": 1012
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.ServiceCompletionBehaviorTest.xml",
+      "sha256": "a86a5b2ea16c2756510810030a8b6e70ef2562ea3ad01dfcd6a9e13b33aab66a",
+      "bytes": 526
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.startup.AutoStartupTest.xml",
+      "sha256": "931a642e20dd95a8660a54ef2895d8c415968c9fff3656cd5aab4c34dc1040b7",
+      "bytes": 619
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.ui.DiagnosticPageBehaviorTest.xml",
+      "sha256": "23ebdc62016b31150c389ab79df13ca9f36ab5592ee15436d8a3905007404c34",
+      "bytes": 2098
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.ui.ServiceHomeBehaviorTest.xml",
+      "sha256": "e104c9155359e40686c1990c3d0e8359e342ec732ef04b4b40d6480fb778949b",
+      "bytes": 1829
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.vehicle.ClusterFieldDiagnosticsTest.xml",
+      "sha256": "7c9923b3bf64b879824ce34b73152f6d4c294edf81d281b6cb8b8cbb738d84b1",
+      "bytes": 519
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.vehicle.PollScheduleTest.xml",
+      "sha256": "ec43877339bd18824837664f6c3ca0eddb6533464cd2e811963130185e8f91b3",
+      "bytes": 744
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.vehicle.ServiceVehicleSessionTest.xml",
+      "sha256": "6df8cb6fb36aaf6ed8af7eac84e14b48a95864df05128b6f1539e7b8ee6180b5",
+      "bytes": 888
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.vehicle.VehicleCatalogTest.xml",
+      "sha256": "47e568867115669eaa565b0c0d9b67ad26db2541dfa355725cfcd232d69b619a",
+      "bytes": 1364
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.vehicle.VehicleCollectorSchedulingTest.xml",
+      "sha256": "5bbc3fcf05f5a1f79f099e55b246a09215eea035e012672c2c61a7f9977f4902",
+      "bytes": 1106
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.vehicle.VehicleDemandPrecisionTest.xml",
+      "sha256": "92544a907304550873c3e4f1686c5608b73561633fa091efffc8dc8e9ea9b844",
+      "bytes": 641
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.vehicle.VehicleDemandTest.xml",
+      "sha256": "72acc4139596b89994038b4e074af7cc441098a3236655e4bd4ff6de3bb5bed9",
+      "bytes": 1171
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.vehicle.VehicleEventsTest.xml",
+      "sha256": "548028aea63e156917960c6e305fd178b39791ecaf848de7660b67d0bda9b576",
+      "bytes": 1836
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.vehicle.VehicleFeedDispatcherTest.xml",
+      "sha256": "c05b9e040fc9477a6ad1a308f283e9145150e8963161a5614b70dffed29a73a0",
+      "bytes": 1041
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.vehicle.VehicleFeedTest.xml",
+      "sha256": "345623d2b1aeb96a060ebc743938cb4c5176aaaaaeab652683aa9f035fd8443a",
+      "bytes": 1584
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.vehicle.VehicleInventoryTest.xml",
+      "sha256": "b4483f8fe3178b323ad129c15feca3dafceaa3dabc0b620984966e1e00aef4de",
+      "bytes": 753
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.vehicle.VehicleScanMergeTest.xml",
+      "sha256": "96b92686759699e5bc96273aec33a7f4edaab9a2a0d00f4a84342cf76dfca713",
+      "bytes": 1027
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.vehicle.VehicleSourceUnavailableTest.xml",
+      "sha256": "2b104d517be2e603d9a7c78e76f3618e769e53a1bc5a79a24ec6df9b2b1818fe",
+      "bytes": 679
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\service-TEST-com.ecarx.autoservice.vehicle.VhalNumericSourceTest.xml",
+      "sha256": "b4188e2e20acd42bdb9289070b57f006026ea3341b3bf74675867d4b9c94ef45",
+      "bytes": 952
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\ui-TEST-com.galaxy.auto.ui.GalaxyControlsTest.xml",
+      "sha256": "10307e9dfe37569b21b58fb732478585138e7cbb70b6333aebf4260ba6f3a02e",
+      "bytes": 622
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\junit\\ui-TEST-com.galaxy.auto.ui.GalaxyXmlComponentsTest.xml",
+      "sha256": "835832ecef62c8f9c65ddece1c9317a3731b744ed2ee9889fa7840f0b679c741",
+      "bytes": 8188
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\format-result.json",
+      "sha256": "1bf1859b0bd35d0fc484adc7e2edffca3b59f2d6dc120898a55842c105f94162",
+      "bytes": 21957
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\api-inspection.json",
+      "sha256": "ccbc3a9676c8af8adb50d5f05113da54adfb0595cc41e54a1585099f76cd942c",
+      "bytes": 9475
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\u1-result.json",
+      "sha256": "c03eedb41758df8a7ccd7992f0f3c4dce85e252eacbff82077ce79bb6f62265c",
+      "bytes": 156859
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\cluster-result.json",
+      "sha256": "1dab3b89a7d2bc6689ffda6f2f00b8c7c5069fad6a933ecc448a2a6177ce40ad",
+      "bytes": 158000
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\probe-junit.xml",
+      "sha256": "15875cd4347af27552f5c1140d090506a97ebf76c642c4198b2f9869570a9ade",
+      "bytes": 747
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\probe.init.gradle",
+      "sha256": "4c5cd2febbe310e91e51e93cb8f063bc0769ae151aaa8ea3e9b9f604cd9160dc",
+      "bytes": 217
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117\\probe\\AutoClientAuditProbeTest.kt",
+      "sha256": "13523d520d3ba1724ed95e093625321dd8a5af4a7983da8234a08d694663ecbe",
+      "bytes": 2662
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117-console.log",
+      "sha256": "8754b5f796f53bdd27717e4ca4a280865f198c7933f0450bf1ba6bb3f57ea216",
+      "bytes": 63899
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117-exit.txt",
+      "sha256": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04",
+      "bytes": 3
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-client-session\\.work\\lead-a2-review-20261117-probe.log",
+      "sha256": "5b430efcae8fda5fc5ad42d0f4a10a4f96c55dfa733b33ffbb0a3829d2da746b",
+      "bytes": 6609
+    }
+  ],
+  "probe": {
+    "testCount": 1,
+    "failures": 0,
+    "exitCode": 0,
+    "scope": "diagnostic only; full failed suite reports preserved separately",
+    "observations": "AUDIT beforeDisconnect=[background_import_failed]\nAUDIT afterDisconnect=[background_import_failed, binding_died, service_disconnected]\nAUDIT afterStaleResult=[background_import_failed, binding_died, service_disconnected]\nAUDIT initialPreview=[null]\n",
+    "initialSetupCorrections": [
+      "Gradle Android Kotlin source directory configuration",
+      "PowerShell dotted Gradle property argument quoting",
+      "probe image name changed from invalid .bin to contract-valid .png"
+    ]
+  },
+  "memoryChecks": {
+    "experience": "unavailable: no registered search/read tools",
+    "rules": "unavailable: no registered rule_search tool"
+  },
+  "apkBuilt": false,
+  "vehicleValidated": false,
+  "pushed": false
+}
