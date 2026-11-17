@@ -5,6 +5,8 @@ alwaysApply: true
 
 # 本轮协同入口
 
+- 2026-11-17 A2首轮CHANGES_REQUIRED，未集成Leader。原未提交候选1822e78、入口格式保存4e587cb；完整入口退出1，Client60例2失败，Service172例/Cluster12例通过。当前唯一执行docs/refactor/A2-R1-会话回归与交付修正任务-20261117.md，同一wt-client-session/分支和原9路径/3dc8d2b范围；旧A2派发为历史。修正式测试与资源/异常证据，一次整包交审，不改脚本或正常生产行为迎合错误测试、不续做下一业务。
+
 - 先读根与 galaxy/AGENTS.md、docs/refactor/Cursor协同总控-20261112.md、docs/refactor/Cursor首轮审计与修正任务-20261112.md。
 - 用户已指定 Cursor 实施、Codex 定方案和审计。不要因历史 DSH/WorkBuddy 路由停工，也不要自行规划下一轮结构。
 - 用户最新分工：脚本、验证环境和验证收口由 Codex 直接修改执行；Cursor 只实施业务代码，不再接纯脚本返工任务。
