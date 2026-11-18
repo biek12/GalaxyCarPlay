@@ -1,0 +1,137 @@
+{
+  "date": "2026-11-18",
+  "task": "M1",
+  "status": "PREPARED_FOR_IMPLEMENTATION",
+  "baselineHead": "3019fc2dd5442c32b0845c02364bda77b35e7569",
+  "fullCommon": {
+    "status": "FULL_COMMON_BASELINE_FAILED",
+    "head": "3019fc2dd5442c32b0845c02364bda77b35e7569",
+    "suiteCount": 243,
+    "tests": 1907,
+    "failures": 2,
+    "errors": 0,
+    "skipped": 0,
+    "failedSuites": [
+      {
+        "suite": "com.shilapi.xcertplay.CarPlayHostClusterStartupTest",
+        "sha256": "585ec1221bd89df4e2006ea6228c80b7a23bb85af38a78d6c1e4a3436f8dd10f",
+        "tests": 17,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "failedCases": [
+          "aReplacementSessionDetachesTheOldClusterSurfaceUntilItsOwnMainFrame"
+        ]
+      },
+      {
+        "suite": "com.shilapi.xcertplay.L7AgreementVersionTest",
+        "sha256": "803cd621a9a210b4cd8f7d3a1468c6ee54fc5a57c5e91a6366f7b717e17d8078",
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0,
+        "failedCases": [
+          "versionTracksTheNetworkLyricDisclosureRevision"
+        ]
+      }
+    ]
+  },
+  "m1Baseline": {
+    "status": "BASELINE_ONLY",
+    "wholeTaskReady": false,
+    "junit": {
+      "suiteCount": 7,
+      "caseCount": 33,
+      "suites": [
+        {
+          "suite": "com.ecarx.carplay.product.GalaxyStartupDefaultsTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "sha256": "d077dfe5b5c923c13857197b5f44839d886c5916daa267251a6e091d9c60f0c2"
+        },
+        {
+          "suite": "com.shilapi.xcertplay.GalaxyHostAdapterTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "sha256": "0b95092764b9cb49dd603d28b391b4b2de9af46b32ee0da5519446874648f1d9"
+        },
+        {
+          "suite": "com.shilapi.xcertplay.GalaxyHostChromeTest",
+          "tests": 3,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "sha256": "a6731553902b0ca6c4f92756e44819619129bd620fddb3ee571dfe494f6547ac"
+        },
+        {
+          "suite": "com.shilapi.xcertplay.GalaxyHostSessionTest",
+          "tests": 5,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "sha256": "c5feab96db05641f6dbbb2dc5daaa4f0a5b1bd2678f70d191a3fe2bdfa69e432"
+        },
+        {
+          "suite": "com.shilapi.xcertplay.HomeHotspotAccessTest",
+          "tests": 4,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "sha256": "4db47b8223a5cfa30aa198e74c2dd152f0ab743f1276522533cc678f46bbd7b8"
+        },
+        {
+          "suite": "com.shilapi.xcertplay.WifiDirectChannelSettingsTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "sha256": "cf41a20f27ed8109c25421e59c9ddc52759cb91f9fa9209d2b3de71802a0bd2c"
+        },
+        {
+          "suite": "com.shilapi.xcertplay.WirelessStartupControllerTest",
+          "tests": 7,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "sha256": "763abbb2b25aa37789cf515748b8c9df0eeb38c18beed9b715c79bed70ae8751"
+        }
+      ]
+    },
+    "head": "3019fc2dd5442c32b0845c02364bda77b35e7569",
+    "apkBuilt": false,
+    "vehicleValidated": false
+  },
+  "toolPreparationCommit": "241bcb2",
+  "toolRegressions": 22,
+  "fullCommonGatePolicy": "The existing cumulative gate is preserved. M1 adds seven related pre-existing and four new required Common suites. The full Common baseline still has two unrelated failures, retained as separate evidence.",
+  "artifacts": [
+    {
+      "path": "F:\\GalaxyPlay\\wt-settings-mainflow\\.work\\m1-preparation\\common-baseline.log",
+      "sha256": "7b92e9c9ed9710ecd7048a662586d686cf36712eedd2022dc8776af6dac8da39"
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-settings-mainflow\\.work\\m1-preparation\\common-real-sdk-baseline.log",
+      "sha256": "8787b6142bb1699c5ecf10c14e79e4e10f65d099131fc4f6afd0a4f023e01d82"
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-settings-mainflow\\.work\\m1-preparation\\common-baseline-summary.json",
+      "sha256": "d149cc53fe9840360b631867ad64e6568b2ac93a2a9558fc980428f0c2d68284"
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-settings-mainflow\\.work\\m1-preparation\\M1_BASELINE.json",
+      "sha256": "9a316436beb8935c6d506b5e48cce77c157acf43cba512b80c26dca5e4d94158"
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-settings-mainflow\\.work\\m1-preparation\\m1-baseline-console.log",
+      "sha256": "c1fffddd17e31a5ad970f088f370847c8d40e5e1f3ba01b1b91a888282fd6eae"
+    },
+    {
+      "path": "F:\\GalaxyPlay\\wt-settings-mainflow\\.work\\m1-preparation\\cache-prepare.log",
+      "sha256": "cc0414434103406a59f387c69ed83a0efdf554696e975c7c9dc68755cb6153e9"
+    }
+  ]
+}
