@@ -515,6 +515,13 @@ def client_gate() -> dict:
     return inspect(ROOT)
 
 
+def settings_gate() -> dict:
+    """核对M1页面运行类、截图及本批相关Common行为。"""
+    sys.path.insert(0, str(ROOT / "tools/review/galaxy-settings-m1-20261117"))
+    from verify_settings import inspect
+    return inspect(ROOT)
+
+
 def source_gate() -> dict:
     """绑定最终源码/资源/KTS/归档摘要与工作树 HEAD。"""
     sources = {}
@@ -536,8 +543,10 @@ def source_gate() -> dict:
                             if p.is_file() and p.suffix in {".py", ".json", ".txt"})
     validation_paths.update((ROOT / "scripts/verify").rglob("*.py"))
     validation_paths.update((ROOT / "scripts/verify").rglob("*.gradle"))
+    validation_paths.update(p for p in (ROOT / "tools/review/galaxy-settings-m1-20261117").iterdir()
+                            if p.is_file() and p.suffix in {".py", ".json"})
     validation_paths.update(ROOT / name for name in (
-        ".gitattributes", "format/galaxy/.editorconfig",
+        ".gitattributes", "format/galaxy/.editorconfig", "common/build.gradle.kts",
         "tools/review/galaxy-r0-20261112/format-files.txt",
         "tools/review/galaxy-c2a-20261112/format_check.py",
         "scripts/verify_projection_retirement.sh", "scripts/verify_projection_retirement_windows.ps1",
@@ -565,7 +574,7 @@ def main() -> None:
     REPORT.mkdir(parents=True, exist_ok=True)
     fmt = json.loads(read_text(REPORT / "format-result.json"))
     record = {
-        "task": "GALAXY-AUTOCLIENT-SESSION-A2-20261113",
+        "task": "GALAXY-SETTINGS-MAINFLOW-M1-20261117",
         "status": "READY_FOR_REVIEW" if len(sys.argv) > 1 and sys.argv[1] == "ready" else "VALIDATED",
         "archive": archive_gate(),
         "themeArchive": theme_archive_gate(),
@@ -579,6 +588,7 @@ def main() -> None:
         "completion": completion_gate(),
         "account": account_gate(),
         "client": client_gate(),
+        "settings": settings_gate(),
     }
     target = REPORT / "VALIDATION.json"
     target.write_text(json.dumps(record, ensure_ascii=False, indent=2) + "\n", encoding="utf-8", newline="\n")

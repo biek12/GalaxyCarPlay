@@ -33,7 +33,10 @@ val bridgeOrigin = providers.environmentVariable("GALAXY_ORIGIN")
 require(bridgeOrigin.startsWith("https://") && !bridgeOrigin.contains('"') && !bridgeOrigin.contains('\\') && !bridgeOrigin.contains('\n') && !bridgeOrigin.contains('\r'))
 
 android {
-    buildFeatures { buildConfig = true }
+    buildFeatures {
+        buildConfig = true
+        viewBinding = true
+    }
     namespace = "com.shilapi.xcertplay.host"
     compileSdk {
         version = release(37)

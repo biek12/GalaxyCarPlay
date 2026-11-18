@@ -51,7 +51,7 @@ def compare_api(expected: list[dict], actual: list[dict]) -> None:
 def before(root: Path = ROOT) -> None:
     """先拒绝越界与未完成文件，再进入格式/编译；不会将工具准备当作代码交付。"""
     record = scope(root)
-    check_scope(record, root)
+    checked_paths(root)
     missing = [p for p in record["writeWhitelist"] if not (root / p).is_file()]
     if missing:
         raise SystemExit(f"A2尚未完整实施: {missing}")
@@ -59,6 +59,18 @@ def before(root: Path = ROOT) -> None:
     names = re.findall(r"(?m)^    (?:public\s+)?(?:override\s+)?fun\s+(\w+)\s*\(", text)
     if sorted(names) != sorted(record["publicMethods"]):
         raise SystemExit("AutoClient公开24方法遗漏/新增，不能用默认空实现或改名完成迁移")
+
+
+def checked_paths(root: Path) -> list[str]:
+    """M1先核对自身固定范围，再保留A2九条路径和历史API检查。"""
+    record = scope(root)
+    m1 = root / "tools/review/galaxy-settings-m1-20261117"
+    a2_paths = set(record["writeWhitelist"])
+    if (m1 / "scope.json").is_file():
+        sys.path.insert(0, str(ROOT / m1.relative_to(root)))
+        from verify_settings import check_scope as check_m1_scope
+        record["writeWhitelist"] += check_m1_scope(root)
+    return sorted(set(check_scope(record, root)) & a2_paths)
 
 
 def inspect(root: Path = ROOT) -> dict:
@@ -73,7 +85,7 @@ def inspect(root: Path = ROOT) -> dict:
     expected = json.loads((root / HERE.relative_to(ROOT) / "api-contract.json").read_text(encoding="utf-8"))
     actual = api_surface(classes)
     compare_api(expected["publicApi"], actual)
-    return {"businessChangedPaths": check_scope(record, root), "junit": junit(record, root=root),
+    return {"businessChangedPaths": checked_paths(root), "junit": junit(record, root=root),
             "publicApi": actual, "publicApiPreserved": True,
             "classes": [{"path": p.relative_to(root).as_posix(), "sha256": hashlib.sha256(p.read_bytes()).hexdigest()} for p in paths],
             "manualStateThreadAndOwnershipReviewRequired": True}

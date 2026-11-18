@@ -16,6 +16,7 @@ import os
 import shutil
 import subprocess
 import sys
+import tempfile
 import xml.etree.ElementTree as ET
 from pathlib import Path
 
@@ -24,6 +25,14 @@ from format_check import ktlint_jar  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[3]
 REVIEW = Path("tools/review/galaxy-r0-20261112")
+M1_FILES = ROOT / "tools/review/galaxy-settings-m1-20261117/scope.json"
+
+
+def m1_paths(*suffixes: str) -> list[str]:
+    """使用同一白名单决定M1格式范围，避免新增路径遗漏。"""
+    return [name for name in json.loads(M1_FILES.read_text(encoding="utf-8"))["writeWhitelist"]
+            if name.endswith(suffixes)] if M1_FILES.is_file() else []
+
 XML_FILES = [
     "galaxy/cluster/src/main/AndroidManifest.xml",
     "galaxy/cluster/src/main/res/layout/activity_cluster.xml",
@@ -58,6 +67,9 @@ PYTHON_FILES = [
     "tools/review/galaxy-client-a2-20261113/verify_client.py",
     "tools/review/galaxy-client-a2-20261113/test_client.py",
     "scripts/verify_projection_retirement.sh",
+    "scripts/verify/lib/prepare_common_robolectric_cache.py",
+    "tools/review/galaxy-settings-m1-20261117/verify_settings.py",
+    "tools/review/galaxy-settings-m1-20261117/test_settings.py",
 ]
 
 
@@ -75,24 +87,23 @@ def kotlin_gate() -> dict:
         raise SystemExit(f"ktlint jar 摘要不符: {actual}")
     files = [line.strip() for line in (ROOT / REVIEW / "format-files.txt").read_text(encoding="utf-8").splitlines()
              if line.strip() and not line.lstrip().startswith("#")]
+    files.extend(m1_paths(".kt", ".kts"))
     if len(files) != len(set(files)):
         raise SystemExit("format-files.txt 存在重复路径")
     missing = [f for f in files if not (ROOT / f).is_file()]
     if missing:
         raise SystemExit(f"格式清单缺少文件: {missing}")
     script = ROOT / "tools/review/galaxy-c2a-20261112/format_check.py"
-    commands = [
-        [sys.executable, str(script), str(ROOT), "--files-from", str(ROOT / REVIEW / "format-files.txt"),
-         "--label", "R0", "--format"],
-        [sys.executable, str(script), str(ROOT), "--files-from", str(ROOT / REVIEW / "format-files.txt"),
-         "--label", "R0"],
-    ]
     logs = []
-    for command in commands:
-        result = subprocess.run(command, cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
-        logs.append(result.stdout + result.stderr)
-        if result.returncode or "No files matched" in (result.stdout + result.stderr):
-            raise SystemExit("ktlint 门槛失败:\n" + (result.stdout + result.stderr))
+    with tempfile.TemporaryDirectory() as temporary:
+        file_list = Path(temporary) / "kotlin-files.txt"
+        file_list.write_text("\n".join(files) + "\n", encoding="utf-8")
+        command = [sys.executable, str(script), str(ROOT), "--files-from", str(file_list), "--label", "R0"]
+        for options in (["--format"], []):
+            result = subprocess.run(command + options, cwd=ROOT, capture_output=True, text=True, encoding="utf-8", errors="replace")
+            logs.append(result.stdout + result.stderr)
+            if result.returncode or "No files matched" in (result.stdout + result.stderr):
+                raise SystemExit("ktlint 门槛失败:\n" + (result.stdout + result.stderr))
     return {
         "tool": "ktlint 1.4.1",
         "jarSha256": actual,
@@ -140,7 +151,7 @@ def xml_gate() -> dict:
     env = dict(os.environ, XMLLINT_INDENT="    ")
     lint = xmllint_bin()
     details = []
-    for name in XML_FILES:
+    for name in XML_FILES + m1_paths(".xml"):
         path = ROOT / name
         raw = path.read_bytes()
         # 1) 良构 parse

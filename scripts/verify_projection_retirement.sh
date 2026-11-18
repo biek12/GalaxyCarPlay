@@ -114,6 +114,26 @@ ARGS=(--offline --no-daemon --no-configuration-cache --console=plain
   -I scripts/verify/lib/kadb-transform.init.gradle
   -x :service:buildHab -x :service:prepareQnxReceiver -x :service:prepareClusterHook)
 
+M1_TOOL=tools/review/galaxy-settings-m1-20261117/verify_settings.py
+run_m1_common() {
+  "$PY" scripts/verify/lib/prepare_common_robolectric_cache.py --cache-root "$GALAXY_REFACTOR_CACHE"
+  local mode=$1
+  local suites
+  suites=$("$PY" "$M1_TOOL" suites "$mode")
+  local filters=()
+  while IFS= read -r suite; do
+    filters+=(--tests "${suite%$'\r'}")
+  done <<< "$suites"
+  export GALAXY_M1_SCREENSHOT_DIR="$GALAXY_R0_REPORT_DIR/screenshots"
+  ./gradlew "${ARGS[@]}" :mobile:processDebugResources :common:testDebugUnitTest "${filters[@]}" \
+    2>&1 | tee "$LOG_DIR/common-m1-tests.log"
+}
+
+if [ "${GALAXY_A4_CHECKPOINT:-}" = "M1-baseline" ]; then
+  run_m1_common baseline
+  "$PY" "$M1_TOOL" baseline
+  exit 0
+fi
 if [ "${GALAXY_A4_CHECKPOINT:-}" = "A2-baseline" ]; then
   ./gradlew "${ARGS[@]}" :auto-client:testDebugUnitTest \
     2>&1 | tee "$LOG_DIR/client-baseline-build.log"
@@ -139,6 +159,7 @@ if [ -n "${GALAXY_A4_CHECKPOINT:-}" ]; then
 fi
 
 "$PY" tools/review/galaxy-client-a2-20261113/verify_client.py before
+"$PY" "$M1_TOOL" before
 export GALAXY_ACCOUNT_SCREENSHOT_DIR="$GALAXY_R0_REPORT_DIR/screenshots"
 
 # 只清本任务自身模块的 Kotlin class / merged manifest / test-results 输出目录，
@@ -165,13 +186,16 @@ targets = [
     "galaxy/client/build/intermediates/javac",
     "galaxy/client/build/test-results",
     "galaxy/record/build/intermediates/merged_manifests",
+    "common/build/intermediates/built_in_kotlinc",
+    "common/build/intermediates/javac",
+    "common/build/test-results",
 ]
 for rel in targets:
     path = root / rel
     if not path.is_dir():
         continue
-    # 只接受本 worktree 内 galaxy/{service,cluster}/build 下的目录。
-    if not rel.startswith("galaxy/") or "/build/" not in rel:
+    # 只接受上面列出的本工作树编译目录。
+    if not rel.startswith(("galaxy/", "common/build/")) or "/build/" not in rel:
         raise SystemExit(f"拒绝隔离非本任务编译目录: {rel}")
     path.rename(path.with_name(f"{path.name}.stale-{stamp}"))
     print(f"isolated {rel}")
@@ -197,6 +221,7 @@ bash scripts/verify_cluster_pages.sh 2>&1 | tee "$LOG_DIR/verify_cluster_pages.l
   2>&1 | tee "$LOG_DIR/service-tests.log"
 "$PY" tools/review/galaxy-platform-p1-20261113/verify_kadb_transform.py \
   2>&1 | tee "$LOG_DIR/kadb-transform.log"
+run_m1_common final
 
 # 4) 真实产物/JUnit/归档摘要/最终源码 SHA256 核对，写父目录 VALIDATION.json。
 "$PY" tools/review/galaxy-r0-20261112/verify_artifacts.py ready 2>&1 | tee "$LOG_DIR/artifacts.log"
@@ -208,6 +233,9 @@ for module in service cluster client; do
     test -f "$xml" || { echo "缺少 JUnit 报告: $module" >&2; exit 2; }
     cp "$xml" "$LOG_DIR/junit/$module-$(basename "$xml")"
   done
+done
+for xml in common/build/test-results/testDebugUnitTest/TEST-*.xml; do
+  cp "$xml" "$LOG_DIR/junit/common-$(basename "$xml")"
 done
 cp archive/legacy-fullscreen-projection/20261112/manifest.json "$LOG_DIR/archive-manifest.json"
 cp archive/theme-engine/20261112/manifest.json "$LOG_DIR/theme-archive-manifest.json"
