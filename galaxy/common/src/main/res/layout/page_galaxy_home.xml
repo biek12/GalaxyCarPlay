@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/home_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center_horizontal"
+    android:orientation="vertical">
+
+    <LinearLayout
+        android:id="@+id/home_panel_slot"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+    <TextView
+        android:id="@+id/desktop_permission_hint"
+        style="@style/GalaxySettings.Description"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:paddingStart="@dimen/galaxy_settings_home_hint_padding_horizontal"
+        android:paddingTop="@dimen/galaxy_settings_home_hint_padding_top"
+        android:paddingEnd="@dimen/galaxy_settings_home_hint_padding_horizontal"
+        android:paddingBottom="@dimen/galaxy_settings_home_hint_padding_bottom"
+        android:text="@string/l7_desktop_home_permission"
+        android:visibility="gone" />
+</LinearLayout>

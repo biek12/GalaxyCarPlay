@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/connection_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/connection_choose_title"
+        style="@style/GalaxySettings.SectionTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/galaxy_ui_text_gap"
+        android:text="@string/l7_connection_choose" />
+
+    <TextView
+        android:id="@+id/connection_choose_hint"
+        style="@style/GalaxySettings.Description"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/galaxy_ui_section_title_gap"
+        android:text="@string/l7_connection_choose_hint" />
+
+    <com.galaxy.auto.ui.GalaxySettingsCard
+        android:id="@+id/connection_choice_card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/galaxy_ui_section_gap">
+
+        <com.galaxy.auto.ui.GalaxySettingRow
+            android:id="@+id/connection_wireless"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:galaxyDescription="@string/l7_connection_wireless_hint"
+            app:galaxyLeadingIcon="@drawable/ic_l7_hotspot"
+            app:galaxyTitle="@string/l7_start_wireless" />
+
+        <com.galaxy.auto.ui.GalaxySettingRow
+            android:id="@+id/connection_usb"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:galaxyDescription="@string/l7_connection_usb_hint"
+            app:galaxyLeadingIcon="@drawable/ic_l7_usb"
+            app:galaxyTitle="@string/l7_home_usb" />
+
+        <com.galaxy.auto.ui.GalaxySettingRow
+            android:id="@+id/connection_auth"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:galaxyDescription="@string/config_auth_default_hint"
+            app:galaxyLeadingIcon="@drawable/ic_l7_settings"
+            app:galaxyTitle="@string/l7_auth_title" />
+
+        <com.galaxy.auto.ui.GalaxySettingRow
+            android:id="@+id/connection_reconnect"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            app:galaxyDescription="@string/l7_reconnect_current_hint"
+            app:galaxyLeadingIcon="@drawable/ic_l7_refresh"
+            app:galaxyTitle="@string/l7_reconnect_current" />
+    </com.galaxy.auto.ui.GalaxySettingsCard>
+
+    <TextView
+        android:id="@+id/connection_auto_title"
+        style="@style/GalaxySettings.SectionTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/galaxy_ui_section_title_gap"
+        android:text="@string/automatic_connection" />
+
+    <com.galaxy.auto.ui.GalaxySettingsCard
+        android:id="@+id/connection_auto_card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/galaxy_ui_section_gap" />
+</LinearLayout>

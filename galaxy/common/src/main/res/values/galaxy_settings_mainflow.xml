@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="galaxy_settings_navigation_scrim">#22000000</color>
+    <dimen name="galaxy_settings_menu_width">132dp</dimen>
+    <dimen name="galaxy_settings_menu_inset">16dp</dimen>
+    <dimen name="galaxy_settings_handle_size">64dp</dimen>
+    <dimen name="galaxy_settings_handle_edge">8dp</dimen>
+    <dimen name="galaxy_settings_handle_travel_inset">16dp</dimen>
+    <dimen name="galaxy_settings_inset_compact">16dp</dimen>
+    <dimen name="galaxy_settings_inset_regular">24dp</dimen>
+    <dimen name="galaxy_settings_home_max_width">560dp</dimen>
+    <dimen name="galaxy_settings_home_icon">80dp</dimen>
+    <dimen name="galaxy_settings_home_icon_gap">24dp</dimen>
+    <dimen name="galaxy_settings_home_help_gap">32dp</dimen>
+    <dimen name="galaxy_settings_home_status_gap">20dp</dimen>
+    <dimen name="galaxy_settings_home_primary_gap">40dp</dimen>
+    <dimen name="galaxy_settings_home_button_gap">16dp</dimen>
+    <dimen name="galaxy_settings_home_hint_padding_horizontal">16dp</dimen>
+    <dimen name="galaxy_settings_home_hint_padding_top">20dp</dimen>
+    <dimen name="galaxy_settings_home_hint_padding_bottom">12dp</dimen>
+    <dimen name="galaxy_settings_title_padding_top">24dp</dimen>
+    <dimen name="galaxy_settings_title_padding_bottom">8dp</dimen>
+    <dimen name="galaxy_settings_content_padding_top">24dp</dimen>
+    <dimen name="galaxy_settings_content_padding_top_settings">16dp</dimen>
+    <dimen name="galaxy_settings_content_padding_bottom">24dp</dimen>
+    <dimen name="galaxy_settings_entry_gap">16dp</dimen>
+    <dimen name="galaxy_settings_hint_gap">16dp</dimen>
+    <dimen name="galaxy_settings_nav_padding_vertical">10dp</dimen>
+    <dimen name="galaxy_settings_nav_item_padding_horizontal">4dp</dimen>
+    <dimen name="galaxy_settings_nav_item_padding_vertical">13dp</dimen>
+    <dimen name="galaxy_settings_nav_item_margin_horizontal">8dp</dimen>
+    <dimen name="galaxy_settings_nav_item_gap">6dp</dimen>
+    <dimen name="galaxy_settings_nav_label_gap">2dp</dimen>
+    <dimen name="galaxy_settings_nav_dot">13dp</dimen>
+    <dimen name="galaxy_settings_nav_dot_stroke">2dp</dimen>
+    <dimen name="galaxy_settings_nav_item_radius">4dp</dimen>
+    <dimen name="galaxy_settings_wireless_hint_gap">20dp</dimen>
+    <dimen name="galaxy_settings_action_gap">12dp</dimen>
+    <style name="GalaxySettings" />
+    <style name="GalaxySettings.HomeTitle">
+        <item name="android:gravity">center</item>
+        <item name="android:textSize">40sp</item>
+        <item name="android:textColor">@color/product_ui_text</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+    <style name="GalaxySettings.HomeHelp" parent="GalaxyUi.TextAppearance.LegacySecondary">
+        <item name="android:gravity">center</item>
+        <item name="android:textColor">@color/product_ui_muted</item>
+    </style>
+    <style name="GalaxySettings.NavLabel">
+        <item name="android:gravity">center</item>
+        <item name="android:textSize">19sp</item>
+        <item name="android:textColor">@color/product_ui_text</item>
+        <item name="android:fontFamily">sans-serif-medium</item>
+        <item name="android:includeFontPadding">false</item>
+    </style>
+    <style name="GalaxySettings.SectionTitle" parent="GalaxyUi.TextAppearance.SectionTitle">
+        <item name="android:textColor">@color/product_ui_muted</item>
+    </style>
+    <style name="GalaxySettings.Description" parent="GalaxyUi.TextAppearance.Description">
+        <item name="android:textColor">@color/product_ui_muted</item>
+    </style>
+</resources>

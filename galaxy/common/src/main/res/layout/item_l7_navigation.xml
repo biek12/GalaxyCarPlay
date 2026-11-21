@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/navigation_item"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginStart="@dimen/galaxy_settings_nav_item_margin_horizontal"
+    android:layout_marginEnd="@dimen/galaxy_settings_nav_item_margin_horizontal"
+    android:layout_marginBottom="@dimen/galaxy_settings_nav_item_gap"
+    android:background="@drawable/galaxy_navigation_item"
+    android:clickable="true"
+    android:focusable="true"
+    android:gravity="center"
+    android:minHeight="@dimen/l7_nav_item_height"
+    android:orientation="vertical"
+    android:paddingStart="@dimen/galaxy_settings_nav_item_padding_horizontal"
+    android:paddingTop="@dimen/galaxy_settings_nav_item_padding_vertical"
+    android:paddingEnd="@dimen/galaxy_settings_nav_item_padding_horizontal"
+    android:paddingBottom="@dimen/galaxy_settings_nav_item_padding_vertical">
+
+    <FrameLayout
+        android:layout_width="@dimen/l7_nav_icon_size"
+        android:layout_height="@dimen/l7_nav_icon_size">
+
+        <ImageView
+            android:id="@+id/navigation_icon"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:importantForAccessibility="no" />
+
+        <View
+            android:id="@+id/navigation_dot"
+            android:layout_width="@dimen/galaxy_settings_nav_dot"
+            android:layout_height="@dimen/galaxy_settings_nav_dot"
+            android:layout_gravity="top|end"
+            android:background="@drawable/galaxy_navigation_dot"
+            android:importantForAccessibility="no"
+            android:visibility="invisible" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/navigation_label"
+        style="@style/GalaxySettings.NavLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="@dimen/galaxy_settings_nav_label_gap"
+        android:importantForAccessibility="no" />
+</LinearLayout>
