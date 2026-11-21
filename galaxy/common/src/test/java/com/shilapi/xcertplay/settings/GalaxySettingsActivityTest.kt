@@ -31,6 +31,7 @@ import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
 import org.robolectric.Shadows.shadowOf
 import org.robolectric.annotation.Config
+import org.robolectric.annotation.GraphicsMode
 import java.io.File
 import java.io.FileOutputStream
 
@@ -44,6 +45,7 @@ class GalaxySettingsActivityTest {
 
     @Test
     @Config(sdk = [30], qualifiers = "zh-rCN-w1080dp-h1800dp")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun clicksBackScrollAndSameDensityRefreshKeepTheShell() {
         val activity = launch("home")
         capture(activity, "m1-home-light.png")
@@ -133,19 +135,22 @@ class GalaxySettingsActivityTest {
 
     @Test
     @Config(sdk = [30], qualifiers = "zh-rCN-w1080dp-h1800dp-night")
+    @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun nightScreenshotsShowHomeAndBothWirelessModes() {
         val home = launch("home")
         capture(home, "m1-home-night.png")
-        AirPlayPersistence.saveWirelessHotspotMode(home, WirelessHotspotMode.MANUAL)
         val manual = launch("settings-connection-wireless")
         capture(manual, "m1-wireless-manual-night.png")
-        AirPlayPersistence.saveWirelessHotspotMode(manual, WirelessHotspotMode.WIFI_P2P)
-        val direct = launch("settings-connection-wireless")
+        val direct = launch("settings-connection-wireless", WirelessHotspotMode.WIFI_P2P)
         capture(direct, "m1-wireless-p2p-night.png")
     }
 
-    private fun launch(page: String): GalaxySettingsActivity {
+    private fun launch(
+        page: String,
+        mode: WirelessHotspotMode = WirelessHotspotMode.MANUAL,
+    ): GalaxySettingsActivity {
         prepare()
+        AirPlayPersistence.saveWirelessHotspotMode(RuntimeEnvironment.getApplication(), mode)
         val activity =
             Robolectric
                 .buildActivity(
@@ -168,21 +173,19 @@ class GalaxySettingsActivityTest {
     }
 
     private fun capture(activity: GalaxySettingsActivity, name: String) {
-        val root = activity.window.decorView
-        layout(root)
+        idle()
+        val content = activity.findViewById<View>(android.R.id.content)
+        val width = View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY)
+        val height = View.MeasureSpec.makeMeasureSpec(1800, View.MeasureSpec.EXACTLY)
+        content.measure(width, height)
+        content.layout(0, 0, 1080, 1800)
+        check(content.width > 0 && content.height > 0) { "screenshot page has no size" }
         val bitmap = Bitmap.createBitmap(1080, 1800, Bitmap.Config.ARGB_8888)
-        root.draw(Canvas(bitmap))
+        content.draw(Canvas(bitmap))
         val directory = File(System.getenv("GALAXY_M1_SCREENSHOT_DIR") ?: ".work/m1-delivery/screenshots")
         directory.mkdirs()
         FileOutputStream(File(directory, name)).use { bitmap.compress(Bitmap.CompressFormat.PNG, 100, it) }
         bitmap.recycle()
-    }
-
-    private fun layout(view: View) {
-        val width = View.MeasureSpec.makeMeasureSpec(1080, View.MeasureSpec.EXACTLY)
-        val height = View.MeasureSpec.makeMeasureSpec(1800, View.MeasureSpec.EXACTLY)
-        view.measure(width, height)
-        view.layout(0, 0, 1080, 1800)
     }
 
     private fun click(activity: GalaxySettingsActivity, label: String) {
