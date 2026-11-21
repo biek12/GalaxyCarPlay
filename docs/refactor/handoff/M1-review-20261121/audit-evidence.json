@@ -1,0 +1,47 @@
+{
+  "candidate": "a3b912bb29b66060ed3471572c020bedb310ba7d",
+  "comparison": "d629f4a",
+  "status": "CHANGES_REQUIRED",
+  "businessPaths": 28,
+  "localReportDir": "F:/GalaxyPlay/wt-settings-mainflow/.work/m1-lead-review",
+  "windowsGate": {
+    "exitCode": 0,
+    "junitCases": {
+      "common": 62,
+      "service": 172,
+      "cluster": 12,
+      "client": 66
+    },
+    "toolCases": 22,
+    "reviewedScreenshots": 6
+  },
+  "navigationProbe": {
+    "exitCode": 1,
+    "cases": 2,
+    "failures": 2
+  },
+  "sha256": {
+    "VALIDATION.json": "48752e714ada669cfc1f604bb63d0901d671a8bc2e3dd38d9a4a26a3ffd78e95",
+    "validation-result.json": "48752e714ada669cfc1f604bb63d0901d671a8bc2e3dd38d9a4a26a3ffd78e95",
+    "kadb-transform.json": "3000415c34d58efc6c6c78ce4c3409dd1056deff4cd7bd3302cd2fc845ae586a",
+    "probe-junit.xml": "41e8b581fa134d38da386151724be6dc9563facea5a532c831f10f9b6f35080a",
+    "probe/M1NavigationAuditProbe.kt": "3de264ba2ea98c52fe72e6d36de9efc9ff84ab7c79f8db305d1e736924bf17a7",
+    "probe.init.gradle": "593d95a68fbdc85146f575b48e9d12c0279dfbbb60f4e4af0dc0ad9bb4921398",
+    "contact-sheet.png": "2fbef14ff8a20df156661d452e5b8efe7757d13469ba5a574dd166b167c4e69e",
+    "../m1-lead-review-exit.txt": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+    "../m1-lead-review-console.log": "8a953487551ff727625a1de35fb976eb63ffe5f83afc0a43dd626e2fcd808eff",
+    "../m1-lead-review-probe-exit.txt": "f1b2f662800122bed0ff255693df89c4487fbdcf453d3524a42d4ec20c3d9c04",
+    "../m1-lead-review-probe.log": "d0282f2894c6e629e57eeb28068e83be19b442b7a1ad70f40d5da1425b68eecf",
+    "galaxy-account-a1-20261113-tools.log": "a976cfe4d337bf9127573aac1d2ad4ad5a8b80b3d1bd405d4326e40d7b30d08f",
+    "galaxy-autoservice-a4-20261113-tools.log": "3ebb06400594f002e17de6b2bdf0117607c1c8c960334a6e5e7c7259d323681c",
+    "galaxy-client-a2-20261113-tools.log": "c101df5a0c96a2222dd2f7b9e97c41e0a5473b1cea1f9f7a3bc1f1cd701f338d",
+    "galaxy-r0-20261112-tools.log": "a9dcc66a3114d1071cfd2390b939696b13494539e83b07f2ba67efc664b95eee",
+    "galaxy-settings-m1-20261117-tools.log": "4dedb32aae13aa74a2536690a07aa7ea7a42d50117abfc8f836a799dc08ae0a8",
+    "screenshots/m1-connection-light.png": "14bf43a32a0f25f1191420ef413f063f7315bd3eeee5f989328593a1a616bb6b",
+    "screenshots/m1-home-light.png": "eb875802c10e832f70610ac8d52d5a4b9a3fdbeafc3a8416fdcd8ada548ece8d",
+    "screenshots/m1-home-night.png": "9d9fcf29629591f11b9c57cdf79ee0f32d2638722aba2f6e7fb0f6a24da5ff04",
+    "screenshots/m1-settings-light.png": "79ad43e1fb4294ac45498e57df62302993eda86a187f1e763e72a142856ddacc",
+    "screenshots/m1-wireless-manual-night.png": "61ff38c942d654ecd319caae8e02a19b14ec19226ef2ec6c99ad6208d536f2e1",
+    "screenshots/m1-wireless-p2p-night.png": "a8ed36b439b4761916bbe2d69844fe7a1201c0cae192451b0f7cfef445ed1814"
+  }
+}
