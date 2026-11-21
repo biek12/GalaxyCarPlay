@@ -485,7 +485,7 @@ class GalaxySettingsActivity : ComponentActivity() {
             openConnectionMenu = { openSettings -> GalaxyConnectionMenu.select(this, openSettings) },
             confirmExit = { L7AppExit.confirm(this) },
             openCarHome = { startActivity(Intent(Intent.ACTION_MAIN).addCategory(Intent.CATEGORY_HOME)) },
-            sessionActive = { CarPlayBackgroundSession.active },
+            hasSession = { CarPlayBackgroundSession.hasSession() },
             openProjection = ::openProjection,
             expandNavigation = { ensureShell().expandNavigation() },
             systemBack = {

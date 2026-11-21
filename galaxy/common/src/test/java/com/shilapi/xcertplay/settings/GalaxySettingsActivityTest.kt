@@ -7,10 +7,14 @@ import android.graphics.Canvas
 import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
+import android.widget.FrameLayout
+import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
 import com.shilapi.xcertplay.AirPlayPersistence
 import com.shilapi.xcertplay.CarPlayBackgroundSession
+import com.shilapi.xcertplay.CarPlayHostActivity
+import com.shilapi.xcertplay.CarPlaySessionDisplay
 import com.shilapi.xcertplay.DiPlayPreferences
 import com.shilapi.xcertplay.GalaxySettingsActivity
 import com.shilapi.xcertplay.L7Agreement
@@ -18,14 +22,19 @@ import com.shilapi.xcertplay.L7Authentication
 import com.shilapi.xcertplay.L7ProjectionNavigation
 import com.shilapi.xcertplay.L7UiDensity
 import com.shilapi.xcertplay.host.R
+import com.shilapi.xcertplay.media.AndroidMediaSink
+import com.shilapi.xcertplay.orchestration.CarPlayController
 import com.shilapi.xcertplay.orchestration.WirelessHotspotMode
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
+import org.mockito.Mockito.mock
 import org.robolectric.Robolectric
 import org.robolectric.RobolectricTestRunner
 import org.robolectric.RuntimeEnvironment
@@ -134,6 +143,153 @@ class GalaxySettingsActivityTest {
     }
 
     @Test
+    @Config(sdk = [30], qualifiers = "zh-rCN-w1080dp-h1800dp")
+    fun pictureFromSettingsReturnsHomeOrTheExistingHostWithoutChangingSession() {
+        val plain = launch("settings")
+        clickDescription(plain, plain.getString(R.string.l7_nav_picture))
+        idle()
+        assertTrue(contains(plain, plain.getString(R.string.l7_entry_title)))
+        assertNull(shadowOf(plain).nextStartedActivity)
+
+        val waiting = launchWithSession("settings", active = false)
+        clickDescription(waiting.activity, waiting.activity.getString(R.string.l7_nav_picture))
+        idle()
+        assertHostOpened(waiting.activity)
+        waiting.session.assertUntouched()
+        assertTrue(contains(waiting.activity, waiting.activity.getString(R.string.l7_settings_navigation_hint)))
+
+        val connected = launchWithSession("settings", active = true)
+        clickDescription(connected.activity, connected.activity.getString(R.string.l7_nav_picture_connected))
+        idle()
+        assertHostOpened(connected.activity)
+        connected.session.assertUntouched()
+        assertTrue(contains(connected.activity, connected.activity.getString(R.string.l7_settings_navigation_hint)))
+    }
+
+    @Test
+    @Config(sdk = [30], qualifiers = "zh-rCN-w360dp-h480dp")
+    fun repeatedRefreshPageReturnAndDensityDoNotReplayAnOldScroll() {
+        val activity = launch("settings")
+        repeat(8) {
+            activity.onConfigurationChanged(activity.resources.configuration)
+            idle()
+        }
+        val scroll = scroll(activity)
+        assertTrue(layoutListeners(scroll) <= 1)
+        measure(activity, 720, 240)
+        idle()
+        assertEquals(0, layoutListeners(scroll))
+        scroll.scrollTo(0, 80)
+        val kept = scroll.scrollY
+        assertTrue(kept > 0)
+        measure(activity, 720, 200)
+        idle()
+        assertEquals(kept, scroll.scrollY)
+
+        clickDescription(activity, activity.getString(R.string.l7_nav_picture))
+        idle()
+        click(activity, activity.getString(R.string.settings))
+        idle()
+        val returned = scroll(activity)
+        measure(activity, 720, 240)
+        idle()
+        returned.scrollTo(0, 30)
+        val afterReturn = returned.scrollY
+        assertTrue(afterReturn > 0)
+        measure(activity, 720, 180)
+        idle()
+        assertEquals(afterReturn, returned.scrollY)
+
+        val previous = navigation(activity)
+        val config = android.content.res.Configuration(activity.resources.configuration)
+        config.densityDpi += 40
+        activity.onConfigurationChanged(config)
+        idle()
+        assertNotSame(previous, navigation(activity))
+        val rebuilt = scroll(activity)
+        measure(activity, 720, 240)
+        idle()
+        rebuilt.scrollTo(0, 50)
+        val afterDensity = rebuilt.scrollY
+        assertTrue(afterDensity > 0)
+        measure(activity, 720, 160)
+        idle()
+        assertEquals(afterDensity, rebuilt.scrollY)
+        assertTrue(layoutListeners(rebuilt) <= 1)
+    }
+
+    @Test
+    @Config(sdk = [30])
+    fun shellDropsStaleScrollRestoreAndKeepsTheVehicleScroller() {
+        val activity = launch("home")
+        val shell = GalaxySettingsShell(activity) { }
+        showBody(shell, activity, "settings", 20, 0)
+        repeat(8) { showBody(shell, activity, "settings", 20, 0) }
+        val settingsScroll = requireNotNull(shell.contentScroll)
+        assertEquals(1, layoutListeners(settingsScroll))
+        layoutScroll(settingsScroll, 1080, 400)
+        idle()
+        assertEquals(0, layoutListeners(settingsScroll))
+
+        showBody(shell, activity, "settings", 2000, 200)
+        showBody(shell, activity, "settings", 2000, 40)
+        val latest = requireNotNull(shell.contentScroll)
+        assertEquals(1, layoutListeners(latest))
+        layoutScroll(latest, 1080, 400)
+        idle()
+        assertEquals(40, latest.scrollY)
+        assertEquals(0, layoutListeners(latest))
+        latest.scrollTo(0, 10)
+        layoutScroll(latest, 1080, 420)
+        idle()
+        assertEquals(10, latest.scrollY)
+
+        showBody(shell, activity, "home", 2000, 0)
+        val homeScroll = requireNotNull(shell.contentScroll)
+        layoutScroll(homeScroll, 1080, 360)
+        idle()
+        assertEquals(0, homeScroll.scrollY)
+        homeScroll.scrollTo(0, 25)
+        layoutScroll(homeScroll, 1080, 340)
+        idle()
+        assertEquals(25, homeScroll.scrollY)
+
+        var vehicleScroll: ScrollView? = null
+        shell.show(
+            page = "settings-vehicle",
+            settingsPage = true,
+            title = "车辆",
+            backLabel = "返回",
+            onBack = null,
+            menuExpanded = false,
+            scrollPositions = emptyMap(),
+            installVehicle = { host ->
+                val scroller = ScrollView(activity)
+                scroller.addView(View(activity), LinearLayout.LayoutParams(10, 10))
+                host.addView(scroller, FrameLayout.LayoutParams(-1, -1))
+                vehicleScroll = scroller
+                scroller
+            },
+            onScroll = {},
+        ) { }
+        assertEquals(View.GONE, settingsScroll.visibility)
+        assertEquals(0, layoutListeners(settingsScroll))
+        assertSame(vehicleScroll, shell.contentScroll)
+        assertNotSame(settingsScroll, shell.contentScroll)
+
+        shell.discardForDensity()
+        showBody(shell, activity, "settings", 2000, 25)
+        val rebuilt = requireNotNull(shell.contentScroll)
+        assertNotSame(settingsScroll, rebuilt)
+        layoutScroll(rebuilt, 1080, 400)
+        idle()
+        rebuilt.scrollTo(0, 15)
+        layoutScroll(rebuilt, 1080, 380)
+        idle()
+        assertEquals(15, rebuilt.scrollY)
+    }
+
+    @Test
     @Config(sdk = [30], qualifiers = "zh-rCN-w1080dp-h1800dp-night")
     @GraphicsMode(GraphicsMode.Mode.NATIVE)
     fun nightScreenshotsShowHomeAndBothWirelessModes() {
@@ -151,6 +307,16 @@ class GalaxySettingsActivityTest {
     ): GalaxySettingsActivity {
         prepare()
         AirPlayPersistence.saveWirelessHotspotMode(RuntimeEnvironment.getApplication(), mode)
+        return start(page)
+    }
+
+    private fun launchWithSession(page: String, active: Boolean): SessionLaunch {
+        prepare()
+        val session = RecordingSession(active)
+        return SessionLaunch(start(page), session)
+    }
+
+    private fun start(page: String): GalaxySettingsActivity {
         val activity =
             Robolectric
                 .buildActivity(
@@ -214,6 +380,96 @@ class GalaxySettingsActivityTest {
         views(activity.window.decorView).filterIsInstance<ScrollView>().first { it.visibility == View.VISIBLE }
 
     private fun idle() = shadowOf(Looper.getMainLooper()).idle()
+
+    private fun assertHostOpened(activity: GalaxySettingsActivity) {
+        val intent = shadowOf(activity).nextStartedActivity
+        assertEquals(CarPlayHostActivity::class.java.name, intent?.component?.className)
+        assertEquals(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT, intent.flags and Intent.FLAG_ACTIVITY_REORDER_TO_FRONT)
+    }
+
+    private fun measure(activity: GalaxySettingsActivity, widthPx: Int, heightPx: Int) {
+        val width = View.MeasureSpec.makeMeasureSpec(widthPx, View.MeasureSpec.EXACTLY)
+        val height = View.MeasureSpec.makeMeasureSpec(heightPx, View.MeasureSpec.EXACTLY)
+        activity.window.decorView.measure(width, height)
+        activity.window.decorView.layout(0, 0, widthPx, heightPx)
+    }
+
+    private fun showBody(
+        shell: GalaxySettingsShell,
+        activity: GalaxySettingsActivity,
+        page: String,
+        childHeight: Int,
+        saved: Int,
+    ) {
+        shell.show(
+            page = page,
+            settingsPage = page.startsWith("settings"),
+            title = "标题",
+            backLabel = "返回",
+            onBack = null,
+            menuExpanded = false,
+            scrollPositions = mapOf(page to saved),
+            installVehicle = null,
+            onScroll = {},
+        ) { content ->
+            content.addView(
+                View(activity),
+                LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, childHeight),
+            )
+        }
+    }
+
+    private fun layoutScroll(scroll: ScrollView, widthPx: Int, heightPx: Int) {
+        val width = View.MeasureSpec.makeMeasureSpec(widthPx, View.MeasureSpec.EXACTLY)
+        val height = View.MeasureSpec.makeMeasureSpec(heightPx, View.MeasureSpec.EXACTLY)
+        scroll.measure(width, height)
+        scroll.layout(0, 0, widthPx, heightPx)
+    }
+
+    private fun layoutListeners(view: View): Int {
+        val info =
+            View::class.java
+                .getDeclaredField("mListenerInfo")
+                .apply { isAccessible = true }
+                .get(view) ?: return 0
+        val listeners =
+            info.javaClass
+                .getDeclaredField("mOnLayoutChangeListeners")
+                .apply { isAccessible = true }
+                .get(info)
+        return (listeners as? List<*>)?.size ?: 0
+    }
+
+    private data class SessionLaunch(
+        val activity: GalaxySettingsActivity,
+        val session: RecordingSession,
+    )
+
+    private class RecordingSession(
+        active: Boolean,
+    ) {
+        private val controller = mock(CarPlayController::class.java)
+        private var stops = 0
+
+        init {
+            CarPlayBackgroundSession.store(
+                controller,
+                mock(AndroidMediaSink::class.java),
+                800,
+                480,
+                Any(),
+                CarPlaySessionDisplay(800, 480, 0, false, false, 800, 480),
+            ) { stops++ }
+            CarPlayBackgroundSession.active = active
+        }
+
+        fun assertUntouched() {
+            assertSame(controller, CarPlayBackgroundSession.snapshot()?.controller)
+            assertEquals(0, stops)
+            assertTrue(CarPlayBackgroundSession.hasSession())
+            assertFalse(CarPlayBackgroundSession.isStopping())
+        }
+    }
 
     private fun views(root: View): Sequence<View> =
         sequence {

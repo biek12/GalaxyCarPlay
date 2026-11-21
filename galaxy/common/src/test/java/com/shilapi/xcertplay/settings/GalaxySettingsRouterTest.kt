@@ -56,11 +56,11 @@ class GalaxySettingsRouterTest {
         val harness = Harness()
         harness.page = "settings-general"
         harness.rendered = "settings-general"
-        harness.active = true
+        harness.sessionPresent = true
         harness.router.select("home")
         assertEquals("settings-general", harness.page)
         assertEquals(listOf("projection"), harness.events)
-        harness.active = false
+        harness.sessionPresent = false
         harness.router.select("home")
         assertEquals("home", harness.page)
         harness.router.select("connection")
@@ -113,7 +113,7 @@ class GalaxySettingsRouterTest {
         var lastSettings = "settings"
         var rendered: String? = null
         var dirty = false
-        var active = false
+        var sessionPresent = false
         var expandAvailable = true
         var proceed: (() -> Unit)? = null
         val router: GalaxySettingsRouter =
@@ -129,7 +129,7 @@ class GalaxySettingsRouterTest {
                 },
                 confirmExit = { events += "exit" },
                 openCarHome = { events += "car-home" },
-                sessionActive = { active },
+                hasSession = { sessionPresent },
                 openProjection = { events += "projection" },
                 expandNavigation = {
                     if (!expandAvailable) {

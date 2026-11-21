@@ -26,6 +26,9 @@ internal class GalaxySettingsShell(
     private var navigationView: L7ProjectionNavigation? = null
     private var navigationDensity = 0
     private var shownPage: String? = null
+    private var scrollGeneration = 0
+    private var scrollRestore: View.OnLayoutChangeListener? = null
+    private var scrollRestoreHost: ScrollView? = null
 
     /** 当前导航浮层；密度重建完成前为空。 */
     val navigation: L7ProjectionNavigation?
@@ -44,6 +47,7 @@ internal class GalaxySettingsShell(
      * 调用方需要先把展开状态记到自己的保存字段。
      */
     fun discardForDensity() {
+        retireScrollRestore()
         binding = null
         navigationView = null
         contentScroll = null
@@ -110,6 +114,7 @@ internal class GalaxySettingsShell(
         } else {
             views.settingsTitle.visibility = View.GONE
         }
+        retireScrollRestore()
         if (installVehicle != null) {
             views.settingsContent.removeAllViews()
             views.settingsScroll.visibility = View.GONE
@@ -132,36 +137,7 @@ internal class GalaxySettingsShell(
             content.setPaddingRelative(inset, px(top), inset, px(R.dimen.galaxy_settings_content_padding_bottom))
             buildContent(content)
             contentScroll = views.settingsScroll
-            val expected = page
-            val target = scrollPositions[expected] ?: 0
-            val scrollView = views.settingsScroll
-            scrollView.post { if (shownPage == expected) scrollView.scrollTo(0, target) }
-            scrollView.addOnLayoutChangeListener(
-                object : View.OnLayoutChangeListener {
-                    override fun onLayoutChange(
-                        view: View,
-                        left: Int,
-                        top: Int,
-                        right: Int,
-                        bottom: Int,
-                        oldLeft: Int,
-                        oldTop: Int,
-                        oldRight: Int,
-                        oldBottom: Int,
-                    ) {
-                        if (shownPage != expected) {
-                            scrollView.removeOnLayoutChangeListener(this)
-                            return
-                        }
-                        val child = scrollView.getChildAt(0) ?: return
-                        val range = child.height - scrollView.height
-                        if (range > 0) {
-                            scrollView.scrollTo(0, target.coerceAtMost(range))
-                            scrollView.removeOnLayoutChangeListener(this)
-                        }
-                    }
-                },
-            )
+            restoreScroll(views.settingsScroll, page, scrollPositions[page] ?: 0)
         }
         shownPage = page
         onScroll(contentScroll)
@@ -188,6 +164,64 @@ internal class GalaxySettingsShell(
                 created,
                 FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, FrameLayout.LayoutParams.MATCH_PARENT),
             )
+        }
+    }
+
+    /**
+     * 只为当前这一次显示登记恢复。
+     * 短页在完成布局后卸下监听；长页只把本次偏移夹进可滚范围。
+     */
+    private fun restoreScroll(scrollView: ScrollView, expected: String, target: Int) {
+        val generation = scrollGeneration
+        scrollView.post {
+            if (generation != scrollGeneration || shownPage != expected) return@post
+            scrollView.scrollTo(0, target)
+        }
+        val listener =
+            object : View.OnLayoutChangeListener {
+                override fun onLayoutChange(
+                    view: View,
+                    left: Int,
+                    top: Int,
+                    right: Int,
+                    bottom: Int,
+                    oldLeft: Int,
+                    oldTop: Int,
+                    oldRight: Int,
+                    oldBottom: Int,
+                ) {
+                    if (generation != scrollGeneration || shownPage != expected) {
+                        detachScrollRestore(scrollView, this)
+                        return
+                    }
+                    val child = scrollView.getChildAt(0)
+                    if (child == null || child.height <= 0 || scrollView.height <= 0) return
+                    val range = child.height - scrollView.height
+                    if (range > 0) scrollView.scrollTo(0, target.coerceAtMost(range))
+                    detachScrollRestore(scrollView, this)
+                }
+            }
+        scrollRestore = listener
+        scrollRestoreHost = scrollView
+        scrollView.addOnLayoutChangeListener(listener)
+    }
+
+    /** 换页、同页刷新和密度丢弃时作废已登记的恢复，避免旧偏移覆盖当前滚动。 */
+    private fun retireScrollRestore() {
+        scrollGeneration++
+        val listener = scrollRestore
+        val host = scrollRestoreHost
+        scrollRestore = null
+        scrollRestoreHost = null
+        if (listener != null && host != null) host.removeOnLayoutChangeListener(listener)
+    }
+
+    /** 当前这次恢复结束后卸下监听，避免短页把回调留到下一次布局。 */
+    private fun detachScrollRestore(scrollView: ScrollView, listener: View.OnLayoutChangeListener) {
+        scrollView.removeOnLayoutChangeListener(listener)
+        if (scrollRestore === listener) {
+            scrollRestore = null
+            scrollRestoreHost = null
         }
     }
 

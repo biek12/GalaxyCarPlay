@@ -14,7 +14,7 @@ internal class GalaxySettingsRouter(
     private val openConnectionMenu: (openSettings: () -> Unit) -> Unit,
     private val confirmExit: () -> Unit,
     private val openCarHome: () -> Unit,
-    private val sessionActive: () -> Boolean,
+    private val hasSession: () -> Boolean,
     private val openProjection: () -> Unit,
     private val expandNavigation: () -> Boolean,
     private val systemBack: () -> Unit,
@@ -32,7 +32,7 @@ internal class GalaxySettingsRouter(
 
     /**
      * 处理菜单目的地。
-     * 草稿未保存时只发起原确认，确认回调里才重新选择；连接、退出、车机首页和已连接画面不走普通换页。
+     * 草稿未保存时只发起原确认，确认回调里才重新选择；连接、退出、车机首页和已有会话的画面不走普通换页。
      */
     fun select(destination: String) {
         if (vehicleDirty()) {
@@ -47,7 +47,7 @@ internal class GalaxySettingsRouter(
                 }
             destination == "exit" -> confirmExit()
             destination == "car-home" -> openCarHome()
-            destination == "home" && sessionActive() -> openProjection()
+            destination == "home" && hasSession() -> openProjection()
             else -> {
                 val next = L7Routes.destination(page(), destination, lastSettingsPage())
                 if (page() != next) {
