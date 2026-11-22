@@ -1,0 +1,35 @@
+{
+  "candidate": "bb8dc4b807466608acccc91c3bda0300dd6a13a1",
+  "status": "REVIEW_PASSED",
+  "worktree": "F:/GalaxyPlay/wt-settings-mainflow",
+  "cursorWindowsGate": {
+    "exitCode": 0,
+    "junitCases": {
+      "common": 65,
+      "service": 172,
+      "cluster": 12,
+      "client": 66
+    }
+  },
+  "codexRegressionReplay": {
+    "exitCode": 0,
+    "cases": 2,
+    "failures": 0
+  },
+  "verified": {
+    "changedBusinessPaths": 28,
+    "sourceHashes": 1082,
+    "m1ClassHashes": 21,
+    "m1ScreenshotHashes": 6,
+    "kadbJarHash": true
+  },
+  "sha256RelativeToWork": {
+    "m1-delivery/VALIDATION.json": "6d16d6332fc3490d3a2c882652294b00401acfe8704ab69c8d137a93e91e287a",
+    "m1-delivery/logs/artifacts.log": "51c280c45ec4d8211997ac1cf91360a34141fae8c8d0d3129927220ec9b225b8",
+    "m1-delivery/logs/common-m1-tests.log": "91cc01ac97053306518aa8b795851519f1535006ff1e28a1f7a45756cb481c60",
+    "m1-r1-review/probe-exit.txt": "13bf7b3039c63bf5a50491fa3cfd8eb4e699d1ba1436315aef9cbe5711530354",
+    "m1-r1-review/probe-junit.xml": "c95b4afbb625594e599b3bcfa62237051384d43ad136685d18a8ecb097236ee6",
+    "m1-r1-review/probe.log": "378a0e8fad6b2098abc02a7afa9046d5969ba89cf837563dbf5e479bf35d8349",
+    "m1-lead-review/probe/M1NavigationAuditProbe.kt": "3de264ba2ea98c52fe72e6d36de9efc9ff84ab7c79f8db305d1e736924bf17a7"
+  }
+}
