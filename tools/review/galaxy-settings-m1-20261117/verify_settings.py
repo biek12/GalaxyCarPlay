@@ -24,7 +24,7 @@ def git_paths(root: Path, args: list[str]) -> set[str]:
 
 
 def check_scope(root: Path = ROOT) -> list[str]:
-    """所有App与上游源码只允许本单28条路径；准备好的Build配置只读。"""
+    """所有 App 与上游源码只允许清单内路径；准备好的构建配置只读。"""
     record = scope(root)
     roots = ["galaxy", "common/src", "shared", "archive", "gradle", "build.gradle.kts", "settings.gradle.kts"]
     changed = git_paths(root, ["diff", "--name-only", "--no-renames", "-z", record["scopeBaseline"], "--", *roots])

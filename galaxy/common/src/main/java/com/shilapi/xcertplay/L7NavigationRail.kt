@@ -53,8 +53,8 @@ internal class L7NavigationRail(
             fun foreground() =
                 context.getColor(
                     when {
-                        key == "home" && connected -> R.color.product_ui_connected
-                        row.isSelected -> R.color.product_ui_accent
+                        key == "home" && connected -> R.color.galaxy_navigation_connected_foreground
+                        row.isSelected -> R.color.galaxy_navigation_selected_foreground
                         else -> R.color.product_ui_text
                     },
                 )

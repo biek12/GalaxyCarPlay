@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- 导航标签与图标在渐变面板及选中底色上使用同一前景色。 -->
+    <color name="galaxy_navigation_selected_foreground">#074BB7</color>
+    <color name="galaxy_navigation_connected_foreground">#1B6537</color>
     <color name="galaxy_settings_navigation_scrim">#22000000</color>
     <dimen name="galaxy_settings_menu_width">132dp</dimen>
     <dimen name="galaxy_settings_menu_inset">16dp</dimen>

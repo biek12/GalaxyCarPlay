@@ -8,9 +8,11 @@ import android.os.Looper
 import android.view.View
 import android.view.ViewGroup
 import android.widget.FrameLayout
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
+import androidx.core.graphics.ColorUtils
 import com.shilapi.xcertplay.AirPlayPersistence
 import com.shilapi.xcertplay.CarPlayBackgroundSession
 import com.shilapi.xcertplay.CarPlayHostActivity
@@ -62,6 +64,7 @@ class GalaxySettingsActivityTest {
         idle()
         assertTrue(contains(activity, activity.getString(R.string.l7_settings_navigation_hint)))
         capture(activity, "m1-settings-light.png")
+        assertNavigationContrast(activity)
         click(activity, activity.getString(R.string.connection_setup))
         idle()
         assertTrue(contains(activity, activity.getString(R.string.l7_connection_choose)))
@@ -297,8 +300,44 @@ class GalaxySettingsActivityTest {
         capture(home, "m1-home-night.png")
         val manual = launch("settings-connection-wireless")
         capture(manual, "m1-wireless-manual-night.png")
+        assertNavigationContrast(manual)
         val direct = launch("settings-connection-wireless", WirelessHotspotMode.WIFI_P2P)
         capture(direct, "m1-wireless-p2p-night.png")
+    }
+
+    /** 校验同一导航实例的日夜选中态和已连接态，文字与图标共用前景。 */
+    private fun assertNavigationContrast(activity: GalaxySettingsActivity) {
+        val nav = navigation(activity)
+        val endpoints =
+            listOf(
+                activity.getColor(R.color.l7_settings_navigation_top),
+                activity.getColor(R.color.l7_settings_navigation_bottom),
+            )
+        val selectionOverlay = activity.getColor(R.color.product_ui_selected)
+        for (connected in listOf(false, true)) {
+            nav.setConnected(connected)
+            val labelId =
+                if (connected) R.string.l7_nav_picture_connected else R.string.settings
+            val label = activity.getString(labelId)
+            val row = views(nav).first { it.isClickable && it.contentDescription == label }
+            val foreground = row.findViewById<TextView>(R.id.navigation_label).currentTextColor
+            val icon = row.findViewById<ImageView>(R.id.navigation_icon)
+            assertEquals(foreground, icon.imageTintList?.defaultColor)
+            for (endpoint in endpoints) {
+                val background =
+                    if (row.isSelected) {
+                        ColorUtils.compositeColors(
+                            selectionOverlay,
+                            endpoint,
+                        )
+                    } else {
+                        endpoint
+                    }
+                val contrast = ColorUtils.calculateContrast(foreground, background)
+                assertTrue("导航项 $label 的前景对比度不足", contrast >= 4.5)
+            }
+        }
+        nav.setConnected(false)
     }
 
     private fun launch(
