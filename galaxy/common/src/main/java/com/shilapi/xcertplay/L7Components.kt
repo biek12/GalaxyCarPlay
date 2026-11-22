@@ -25,11 +25,7 @@ internal object L7Components {
         }
 
     fun actionButton(context: Context, title: String, primary: Boolean = false, click: () -> Unit) =
-        L7ActionButton(context).apply {
-            text = title
-            L7Ui.button(this, primary)
-            setOnClickListener { if (isEnabled) click() }
-        }
+        L7ActionButton(context).apply { bindActionButton(this, title, primary, click = click) }
 
     /** 显式图标不依赖按钮文案，车型名称更新及昼夜重绘后仍保留。 */
     fun actionButton(
@@ -39,12 +35,24 @@ internal object L7Components {
         primary: Boolean = false,
         click: () -> Unit,
     ) =
-        L7ActionButton(context).apply {
-            actionIcon = icon
-            text = title
-            L7Ui.button(this, primary)
-            setOnClickListener { if (isEnabled) click() }
-        }
+        L7ActionButton(context).apply { bindActionButton(this, title, primary, icon, click) }
+
+    /**
+     * 给 XML 中的原按钮补上与工厂相同的主次样式、图标和一次点击。
+     * 禁用时不回调；图标只使用调用方传入的资源。
+     */
+    fun bindActionButton(
+        button: L7ActionButton,
+        title: String,
+        primary: Boolean = false,
+        icon: Int? = null,
+        click: () -> Unit,
+    ) {
+        if (icon != null) button.actionIcon = icon
+        button.text = title
+        L7Ui.button(button, primary)
+        button.setOnClickListener { if (button.isEnabled) click() }
+    }
 
     /** 委托公共文字；宿主只覆盖颜色别名，字号/行距/字重只维护在 public UI。 */
     fun text(context: Context, value: String, secondary: Boolean = false) =
@@ -67,23 +75,29 @@ internal object L7Components {
         detail: String = "",
         icon: Int? = null,
         click: () -> Unit,
-    ): L7SettingRow =
-        L7SettingRow(context, title, detail, icon).apply {
-            setAccessory(
-                ImageView(context).apply {
-                    setImageResource(R.drawable.ic_l7_next)
-                    L7Ui.bind(
-                        this,
-                    ) { imageTintList = ColorStateList.valueOf(context.getColor(R.color.product_ui_muted)) }
-                    importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
-                },
-                dp(context, 32),
-                dp(context, 32),
-            )
-            isFocusable = true
-            L7Ui.rowFeedback(this)
-            setOnClickListener { if (isEnabled) click() }
-        }
+    ): L7SettingRow = L7SettingRow(context, title, detail, icon).apply { bindActionRow(this, click) }
+
+    /**
+     * 给 XML inflate 后的原设置行补上箭头、按压反馈和一次点击。
+     * 标题、说明和图标保持布局或调用方已经写入的内容，禁用时不回调。
+     */
+    fun bindActionRow(row: L7SettingRow, click: () -> Unit) {
+        val context = row.context
+        row.setAccessory(
+            ImageView(context).apply {
+                setImageResource(R.drawable.ic_l7_next)
+                L7Ui.bind(this) {
+                    imageTintList = ColorStateList.valueOf(context.getColor(R.color.product_ui_muted))
+                }
+                importantForAccessibility = View.IMPORTANT_FOR_ACCESSIBILITY_NO
+            },
+            dp(context, 32),
+            dp(context, 32),
+        )
+        row.isFocusable = true
+        L7Ui.rowFeedback(row)
+        row.setOnClickListener { if (row.isEnabled) click() }
+    }
 
     fun valueRow(context: Context, title: String, value: String, click: () -> Unit): L7SettingRow =
         actionRow(context, title, click = click).apply { setValue(value) }

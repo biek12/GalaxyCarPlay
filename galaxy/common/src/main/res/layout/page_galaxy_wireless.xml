@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/wireless_root"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/wireless_mode_title"
+        style="@style/GalaxySettings.SectionTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+
+    <TextView
+        android:id="@+id/wireless_mode_hint"
+        style="@style/GalaxySettings.Description"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/galaxy_settings_wireless_hint_gap"
+        android:text="@string/l7_connection_wireless_hint" />
+
+    <LinearLayout
+        android:id="@+id/wireless_prerequisite_slot"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+    <LinearLayout
+        android:id="@+id/wireless_settings_slot"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+    <LinearLayout
+        android:id="@+id/wireless_link_slot"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical" />
+
+    <TextView
+        android:id="@+id/wireless_join_title"
+        style="@style/GalaxySettings.SectionTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/galaxy_ui_section_title_gap" />
+
+    <com.galaxy.auto.ui.GalaxySettingsCard
+        android:id="@+id/wireless_join_card"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/galaxy_ui_section_gap">
+
+        <com.galaxy.auto.ui.GalaxySettingRow
+            android:id="@+id/wireless_join_row"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+    </com.galaxy.auto.ui.GalaxySettingsCard>
+
+    <LinearLayout
+        android:id="@+id/wireless_actions"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginBottom="@dimen/galaxy_ui_section_gap"
+        android:orientation="vertical">
+
+        <com.galaxy.auto.ui.GalaxyActionButton
+            android:id="@+id/wireless_connect"
+            style="@style/GalaxyUi.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content" />
+
+        <com.galaxy.auto.ui.GalaxyActionButton
+            android:id="@+id/wireless_disconnect"
+            style="@style/GalaxyUi.Button"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="@dimen/galaxy_settings_action_gap"
+            android:visibility="gone" />
+    </LinearLayout>
+</LinearLayout>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merge xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <View
+        android:id="@+id/navigation_scrim"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/galaxy_settings_navigation_scrim" />
+
+    <LinearLayout
+        android:id="@+id/navigation_panel"
+        android:layout_width="@dimen/galaxy_settings_menu_width"
+        android:layout_height="wrap_content"
+        android:layout_gravity="top|start"
+        android:layout_margin="@dimen/galaxy_settings_menu_inset"
+        android:clickable="true"
+        android:focusable="true"
+        android:orientation="vertical" />
+
+    <ImageButton
+        android:id="@+id/navigation_handle"
+        android:layout_width="@dimen/galaxy_settings_handle_size"
+        android:layout_height="@dimen/galaxy_settings_handle_size"
+        android:background="@android:color/transparent"
+        android:contentDescription="@string/l7_rail_expand" />
+</merge>

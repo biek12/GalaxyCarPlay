@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.galaxy.auto.ui.GalaxySettingsCard xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/settings_entry_card"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="@dimen/galaxy_settings_entry_gap">
+
+    <com.galaxy.auto.ui.GalaxySettingRow
+        android:id="@+id/settings_entry_row"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content" />
+</com.galaxy.auto.ui.GalaxySettingsCard>

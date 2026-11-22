@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ripple xmlns:android="http://schemas.android.com/apk/res/android" android:color="@color/product_ui_ripple">
+    <item>
+        <selector>
+            <item android:state_selected="true">
+                <shape>
+                    <gradient android:angle="270" android:endColor="@color/product_ui_selected" android:startColor="@color/product_ui_selected" />
+                    <corners android:radius="@dimen/galaxy_settings_nav_item_radius" />
+                </shape>
+            </item>
+            <item>
+                <shape>
+                    <solid android:color="@android:color/transparent" />
+                    <corners android:radius="@dimen/galaxy_settings_nav_item_radius" />
+                </shape>
+            </item>
+        </selector>
+    </item>
+</ripple>

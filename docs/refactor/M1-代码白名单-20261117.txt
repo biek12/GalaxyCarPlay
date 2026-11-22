@@ -24,5 +24,6 @@ galaxy/common/src/main/res/layout/item_galaxy_settings_entry.xml
 galaxy/common/src/main/res/layout/page_galaxy_connection.xml
 galaxy/common/src/main/res/layout/page_galaxy_wireless.xml
 galaxy/common/src/main/res/values/galaxy_settings_mainflow.xml
+galaxy/common/src/main/res/values-night/galaxy_settings_mainflow.xml
 galaxy/common/src/main/res/drawable/galaxy_navigation_dot.xml
 galaxy/common/src/main/res/drawable/galaxy_navigation_item.xml

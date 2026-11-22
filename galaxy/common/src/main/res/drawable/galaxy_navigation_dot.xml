@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android" android:shape="oval">
+    <solid android:color="@color/galaxy_navigation_connected_foreground" />
+    <stroke android:width="@dimen/galaxy_settings_nav_dot_stroke" android:color="@color/product_ui_surface" />
+</shape>

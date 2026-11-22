@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="galaxy_navigation_selected_foreground">#67B4FF</color>
+    <color name="galaxy_navigation_connected_foreground">@color/product_ui_connected</color>
+</resources>
